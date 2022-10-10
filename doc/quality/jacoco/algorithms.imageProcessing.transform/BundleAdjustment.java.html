@@ -268,7 +268,7 @@ public class BundleAdjustment {
 <span class="nc" id="L268">            throw new IllegalArgumentException(&quot;imageFeaturesMap size must equal &quot;</span>
             + &quot;the number of images which = coordsI[0].length/coordsW[0].length&quot;);
         }
-                
+
         //TODO: as part of &quot;fix the gauge&quot;, need to consider the first
         //    camera to have axes aligned with world axes, so that the
         //    origin of the world scence is [0,0,0] or [0,0,0,1]
@@ -589,8 +589,8 @@ public class BundleAdjustment {
                     
 <span class="nc" id="L590">                    fPrev = fTest;</span>
 
-<span class="nc" id="L592">                    double[][] _dt = MatrixUtil.elementwiseSubtract(extrTrans, extrTransTest);</span>
-<span class="nc" id="L593">                    double[][] _rt = MatrixUtil.elementwiseSubtract(extrRotThetas, extrRotThetasTest);</span>
+<span class="nc" id="L592">                    double[][] _dt = MatrixUtil.pointwiseSubtract(extrTrans, extrTransTest);</span>
+<span class="nc" id="L593">                    double[][] _rt = MatrixUtil.pointwiseSubtract(extrRotThetas, extrRotThetasTest);</span>
 <span class="nc" id="L594">                    double _dts = MatrixUtil.frobeniusNorm(_dt);</span>
 <span class="nc" id="L595">                    double _rts = MatrixUtil.frobeniusNorm(_rt);</span>
 <span class="nc" id="L596">                    log.fine(String.format(&quot;delta trans=%.3e, %s\n&quot;, _dts, FormatArray.toString(_dt, &quot;%.11e&quot;)));</span>
@@ -1026,7 +1026,7 @@ public class BundleAdjustment {
                     //MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNI, xIJHat);
 
                     // [1X3] - [1X3] = [1X3]
-<span class="nc" id="L1029">                    MatrixUtil.elementwiseSubtract(xIJ, xIJHat, fIJ);</span>
+<span class="nc" id="L1029">                    MatrixUtil.pointwiseSubtract(xIJ, xIJHat, fIJ);</span>
 <span class="nc bnc" id="L1030" title="All 2 branches missed.">                    if ((i % (nFeatures/3)) == 0) {</span>
 <span class="nc" id="L1031">                        log.fine(String.format(&quot;xWCNI=%s\n&quot;, FormatArray.toString(xWCNI, &quot;%.3e&quot;)));</span>
 <span class="nc" id="L1032">                        log.fine(String.format(&quot;xWCNDI=%s\n&quot;, FormatArray.toString(xWCNDI, &quot;%.3e&quot;)));</span>
@@ -1046,7 +1046,7 @@ public class BundleAdjustment {
                     // xIJC are the observed points in the camera reference frame with distortion removed
                     
                     // [1X3] - [1X3] = [1X3]
-                    MatrixUtil.elementwiseSubtract(xIJC, xWCNI, fIJ);
+                    MatrixUtil.pointwiseSubtract(xIJC, xWCNI, fIJ);
                 }
                 
                 //sum of squares
@@ -1074,7 +1074,7 @@ public class BundleAdjustment {
                 */
 
                 //[3 X 1]
-<span class="nc" id="L1077">                MatrixUtil.elementwiseSubtract(bPI, bIJTF, bPI);</span>
+<span class="nc" id="L1077">                MatrixUtil.pointwiseSubtract(bPI, bIJTF, bPI);</span>
                 
 <span class="nc bnc" id="L1079" title="All 2 branches missed.">                if ((i % (nFeatures / 3)) == 0) {</span>
 <span class="nc" id="L1080">                    log.fine(String.format(&quot;%d,%d) bPI=gradP=%s\n&quot;, i, j, FormatArray.toString(bPI, &quot;%.7e&quot;)));</span>
@@ -1089,8 +1089,8 @@ public class BundleAdjustment {
                 //    HPP_i = V_i = Σ_j(BIJT*B1J) 
                 // Engels: add jP^T*JP to upper triangular part of hPP aka V.
                 // sum bijsq over all images and set into diagonal of hPP_i which is V*_i
-                //     elementwise addition of 3X3 blocks:
-<span class="nc" id="L1093">                MatrixUtil.elementwiseAdd(hPPI, bIJsq, hPPI);</span>
+                //     pointwise addition of 3X3 blocks:
+<span class="nc" id="L1093">                MatrixUtil.pointwiseAdd(hPPI, bIJsq, hPPI);</span>
             
                 // temporary exit until find reasons for very large numbers in some
                 //   of the arrays
@@ -1107,7 +1107,7 @@ public class BundleAdjustment {
 <span class="nc" id="L1107">                    MatrixUtil.multiply(aIJT, aIJ, auxMA);</span>
 
 <span class="nc" id="L1109">                    mA.getBlock(auxMA2, j, j);</span>
-<span class="nc" id="L1110">                    MatrixUtil.elementwiseAdd(auxMA, auxMA2, auxMA3);</span>
+<span class="nc" id="L1110">                    MatrixUtil.pointwiseAdd(auxMA, auxMA2, auxMA3);</span>
 <span class="nc" id="L1111">                    mA.setBlock(auxMA3, j, j);</span>
         
                     //dont use U_j (= mA) yet, nor augment it with damping term
@@ -1138,7 +1138,7 @@ public class BundleAdjustment {
                     // fill bCJ with last entry for image J
 <span class="nc" id="L1139">                    System.arraycopy(bC, j*9, bCJ, 0, 9);</span>
      
-<span class="nc" id="L1141">                    MatrixUtil.elementwiseSubtract(bCJ, aIJTF, bCJ);</span>
+<span class="nc" id="L1141">                    MatrixUtil.pointwiseSubtract(bCJ, aIJTF, bCJ);</span>
 
                     //bC length is [9*mImages]
 <span class="nc" id="L1144">                    System.arraycopy(bCJ, 0, bC, j*9, 9);                    </span>
@@ -1266,7 +1266,7 @@ public class BundleAdjustment {
         
         // mA -= tPC*HPC  [9*mImages X 9*mImages]
 <span class="nc" id="L1268">        double[][] mARight = MatrixUtil.multiply(tPCBlocks.getA(), hPCBlocks.getA());</span>
-<span class="nc" id="L1269">        mARight = MatrixUtil.elementwiseSubtract(mA.getA(), mARight);</span>
+<span class="nc" id="L1269">        mARight = MatrixUtil.pointwiseSubtract(mA.getA(), mARight);</span>
 <span class="nc" id="L1270">        mA = new BlockMatrixIsometric(mARight, 9, 9);</span>
         
         /* TODO: (optional) Fix gauge by freezing coordinates and thereby reducing 

@@ -10,41 +10,39 @@ import algorithms.imageProcessing.util.AngleUtil;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  *
  * @author nichole
  */
-<span class="fc" id="L28">public class MiscMath {</span>
+<span class="fc" id="L26">public class MiscMath {</span>
 
     public static int findPowerOf10_2(float a) {
-<span class="fc" id="L31">        return MiscMath0.findPowerOf10_2(a);</span>
+<span class="fc" id="L29">        return MiscMath0.findPowerOf10_2(a);</span>
     }
 
     public static int findPowerOf10(float a) {
-<span class="fc" id="L35">        return MiscMath0.findPowerOf10(a);</span>
+<span class="fc" id="L33">        return MiscMath0.findPowerOf10(a);</span>
     }
 
     public static int findYMinIndex(float[] a) {
-<span class="fc" id="L39">        float min = Float.MAX_VALUE;</span>
-<span class="fc" id="L40">        int index = -1;</span>
-<span class="fc bfc" id="L41" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
-<span class="pc bpc" id="L42" title="1 of 4 branches missed.">            if ((a[i] &lt; min) &amp;&amp; !Float.isInfinite(a[i])) {</span>
-<span class="fc" id="L43">                min = a[i];</span>
-<span class="fc" id="L44">                index = i;</span>
+<span class="fc" id="L37">        float min = Float.MAX_VALUE;</span>
+<span class="fc" id="L38">        int index = -1;</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="pc bpc" id="L40" title="1 of 4 branches missed.">            if ((a[i] &lt; min) &amp;&amp; !Float.isInfinite(a[i])) {</span>
+<span class="fc" id="L41">                min = a[i];</span>
+<span class="fc" id="L42">                index = i;</span>
             }
         }
-<span class="fc" id="L47">        return index;</span>
+<span class="fc" id="L45">        return index;</span>
     }
 
     /**
@@ -53,27 +51,27 @@ import java.util.Set;
      * @return
      */
     public static float findMax(float[] a) {
-<span class="fc" id="L56">        return MiscMath0.findMax(a);</span>
+<span class="fc" id="L54">        return MiscMath0.findMax(a);</span>
     }
     
     public static double findMax(double[] a) {
-<span class="fc" id="L60">        double max = Double.MIN_VALUE;</span>
-<span class="fc bfc" id="L61" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
-<span class="fc bfc" id="L62" title="All 2 branches covered.">            if (a[i] &gt; max) {</span>
-<span class="fc" id="L63">                max = a[i];</span>
+<span class="fc" id="L58">        double max = Double.MIN_VALUE;</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">            if (a[i] &gt; max) {</span>
+<span class="fc" id="L61">                max = a[i];</span>
             }
         }
-<span class="fc" id="L66">        return max;</span>
+<span class="fc" id="L64">        return max;</span>
     }
     
     public static float findMax(float[] a, int nIndexes) {
-<span class="fc" id="L70">        float max = Float.NEGATIVE_INFINITY;</span>
-<span class="fc bfc" id="L71" title="All 2 branches covered.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
-<span class="fc bfc" id="L72" title="All 2 branches covered.">            if (a[i] &gt; max) {</span>
-<span class="fc" id="L73">                max = a[i];</span>
+<span class="fc" id="L68">        float max = Float.NEGATIVE_INFINITY;</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">            if (a[i] &gt; max) {</span>
+<span class="fc" id="L71">                max = a[i];</span>
             }
         }
-<span class="fc" id="L76">        return max;</span>
+<span class="fc" id="L74">        return max;</span>
     }
 
     /**
@@ -82,87 +80,87 @@ import java.util.Set;
      * @return
      */
     public static int findMax(int[] a) {
-<span class="fc" id="L85">        return MiscMath0.findMax(a);</span>
+<span class="fc" id="L83">        return MiscMath0.findMax(a);</span>
     }
     
     public static float findMax(float[][] img) {
         
-<span class="fc" id="L90">        return MiscMath0.findMax(img);</span>
+<span class="fc" id="L88">        return MiscMath0.findMax(img);</span>
     }
     
     public static int findMax(int[][] img) {
-<span class="nc" id="L94">        return MiscMath0.findMax(img);</span>
+<span class="nc" id="L92">        return MiscMath0.findMax(img);</span>
     }
 
     public static int findMax(int[] a, int nIndexes) {
-<span class="fc" id="L98">        int max = Integer.MIN_VALUE;</span>
-<span class="fc bfc" id="L99" title="All 2 branches covered.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
-<span class="pc bpc" id="L100" title="3 of 8 branches missed.">            if ((a[i] &gt; max) &amp;&amp; !Float.isInfinite(a[i]) &amp;&amp; !Float.isNaN(a[i]) </span>
+<span class="fc" id="L96">        int max = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
+<span class="pc bpc" id="L98" title="3 of 8 branches missed.">            if ((a[i] &gt; max) &amp;&amp; !Float.isInfinite(a[i]) &amp;&amp; !Float.isNaN(a[i]) </span>
                 &amp;&amp; (a[i] &lt; Float.MAX_VALUE)) {
-<span class="fc" id="L102">                max = a[i];</span>
+<span class="fc" id="L100">                max = a[i];</span>
             }
         }
-<span class="fc" id="L105">        return max;</span>
+<span class="fc" id="L103">        return max;</span>
     }
 
     public static float findMin(float[][] img) {
         
-<span class="fc" id="L110">        return MiscMath0.findMin(img);</span>
+<span class="fc" id="L108">        return MiscMath0.findMin(img);</span>
     }
     
     public static double findMin(double[][] img) {
         
-<span class="fc" id="L115">        return MiscMath0.findMin(img);</span>
+<span class="fc" id="L113">        return MiscMath0.findMin(img);</span>
     }
     
     public static double findMax(double[][] img) {
         
-<span class="fc" id="L120">        return MiscMath0.findMax(img);</span>
+<span class="fc" id="L118">        return MiscMath0.findMax(img);</span>
     }
     
     public static int findMin(int[][] img) {
-<span class="nc" id="L124">        return MiscMath0.findMin(img);</span>
+<span class="nc" id="L122">        return MiscMath0.findMin(img);</span>
     }
 
     public static float findMin(float[] a) {
-<span class="fc" id="L128">        return MiscMath0.findMin(a);</span>
+<span class="fc" id="L126">        return MiscMath0.findMin(a);</span>
     }
     
     public static float findMin(float[] a, int nIndexes) {
-<span class="nc" id="L132">        float min = Float.POSITIVE_INFINITY;</span>
-<span class="nc bnc" id="L133" title="All 2 branches missed.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
-<span class="nc bnc" id="L134" title="All 4 branches missed.">            if ((a[i] &lt; min) &amp;&amp; !Float.isInfinite(a[i])) {</span>
-<span class="nc" id="L135">                min = a[i];</span>
+<span class="nc" id="L130">        float min = Float.POSITIVE_INFINITY;</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
+<span class="nc bnc" id="L132" title="All 4 branches missed.">            if ((a[i] &lt; min) &amp;&amp; !Float.isInfinite(a[i])) {</span>
+<span class="nc" id="L133">                min = a[i];</span>
             }
         }
-<span class="nc" id="L138">        return min;</span>
+<span class="nc" id="L136">        return min;</span>
     }
 
     public static int findMin(int[] a) {
-<span class="fc" id="L142">        return MiscMath0.findMin(a);</span>
+<span class="fc" id="L140">        return MiscMath0.findMin(a);</span>
     }
     
     public static int findMin(int[] a, int nIndexes) {
-<span class="nc" id="L146">        int min = Integer.MAX_VALUE;</span>
-<span class="nc bnc" id="L147" title="All 2 branches missed.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
-<span class="nc bnc" id="L148" title="All 2 branches missed.">            if (a[i] &lt; min) {</span>
-<span class="nc" id="L149">                min = a[i];</span>
+<span class="nc" id="L144">        int min = Integer.MAX_VALUE;</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        for (int i = 0; i &lt; nIndexes; i++) {</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">            if (a[i] &lt; min) {</span>
+<span class="nc" id="L147">                min = a[i];</span>
             }
         }
-<span class="nc" id="L152">        return min;</span>
+<span class="nc" id="L150">        return min;</span>
     }
     
     public static int findMin(GreyscaleImage img, Set&lt;PairInt&gt; points) {
-<span class="fc" id="L156">        int min = Integer.MAX_VALUE;</span>
-<span class="fc bfc" id="L157" title="All 2 branches covered.">        for (PairInt p : points) {</span>
-<span class="fc" id="L158">            int x = p.getX();</span>
-<span class="fc" id="L159">            int y = p.getY();</span>
-<span class="fc" id="L160">            int v = img.getValue(x, y);</span>
-<span class="fc bfc" id="L161" title="All 2 branches covered.">            if (v &lt; min) {</span>
-<span class="fc" id="L162">                min = v;</span>
+<span class="fc" id="L154">        int min = Integer.MAX_VALUE;</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc" id="L156">            int x = p.getX();</span>
+<span class="fc" id="L157">            int y = p.getY();</span>
+<span class="fc" id="L158">            int v = img.getValue(x, y);</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">            if (v &lt; min) {</span>
+<span class="fc" id="L160">                min = v;</span>
             }
-<span class="fc" id="L164">        }</span>
-<span class="fc" id="L165">        return min;</span>
+<span class="fc" id="L162">        }</span>
+<span class="fc" id="L163">        return min;</span>
     }
 
     /**
@@ -171,49 +169,49 @@ import java.util.Set;
      * @return
      */
     public static int findYMaxIndex(float[] a) {
-<span class="fc" id="L174">        return MiscMath0.findYMaxIndex(a);</span>
+<span class="fc" id="L172">        return MiscMath0.findYMaxIndex(a);</span>
     }
 
     public static int findYMaxIndex(int[] a) {
-<span class="fc" id="L178">        return MiscMath0.findYMaxIndex(a);</span>
+<span class="fc" id="L176">        return MiscMath0.findYMaxIndex(a);</span>
     }
     
     public static int findYMaxIndex(long[] a) {
-<span class="nc" id="L182">        return MiscMath0.findYMaxIndex(a);</span>
+<span class="nc" id="L180">        return MiscMath0.findYMaxIndex(a);</span>
     }
     
     public static int[] findYMaxIndexes(int[] a) {
-<span class="nc bnc" id="L186" title="All 4 branches missed.">        if (a == null || a.length == 0) {</span>
-<span class="nc" id="L187">            return null;</span>
+<span class="nc bnc" id="L184" title="All 4 branches missed.">        if (a == null || a.length == 0) {</span>
+<span class="nc" id="L185">            return null;</span>
         }
-<span class="nc" id="L189">        int max = Integer.MIN_VALUE;</span>
-<span class="nc bnc" id="L190" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; i++) {</span>
-<span class="nc bnc" id="L191" title="All 4 branches missed.">            if ((a[i] &gt; max) &amp;&amp; (a[i] &lt; Integer.MAX_VALUE)) {</span>
-<span class="nc" id="L192">                max = a[i];</span>
+<span class="nc" id="L187">        int max = Integer.MIN_VALUE;</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="nc bnc" id="L189" title="All 4 branches missed.">            if ((a[i] &gt; max) &amp;&amp; (a[i] &lt; Integer.MAX_VALUE)) {</span>
+<span class="nc" id="L190">                max = a[i];</span>
             }
         }
-<span class="nc bnc" id="L195" title="All 2 branches missed.">        if (max == Integer.MIN_VALUE) {</span>
-<span class="nc" id="L196">            return null;</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">        if (max == Integer.MIN_VALUE) {</span>
+<span class="nc" id="L194">            return null;</span>
         }
-<span class="nc" id="L198">        int count = 0;</span>
-<span class="nc bnc" id="L199" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; i++) {</span>
-<span class="nc bnc" id="L200" title="All 2 branches missed.">            if (a[i] == max) {</span>
-<span class="nc" id="L201">                count++;</span>
+<span class="nc" id="L196">        int count = 0;</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">            if (a[i] == max) {</span>
+<span class="nc" id="L199">                count++;</span>
             }
         }
-<span class="nc" id="L204">        int[] indexes = new int[count];</span>
-<span class="nc" id="L205">        count = 0;</span>
-<span class="nc bnc" id="L206" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; i++) {</span>
-<span class="nc bnc" id="L207" title="All 2 branches missed.">            if (a[i] == max) {</span>
-<span class="nc" id="L208">                indexes[count] = i;</span>
-<span class="nc" id="L209">                count++;</span>
+<span class="nc" id="L202">        int[] indexes = new int[count];</span>
+<span class="nc" id="L203">        count = 0;</span>
+<span class="nc bnc" id="L204" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">            if (a[i] == max) {</span>
+<span class="nc" id="L206">                indexes[count] = i;</span>
+<span class="nc" id="L207">                count++;</span>
             }
         }
-<span class="nc" id="L212">        return indexes;</span>
+<span class="nc" id="L210">        return indexes;</span>
     }
     
     public static float[] calculateOuterRoundedMinAndMax(float[] a) {
-<span class="nc" id="L216">        return MiscMath0.calculateOuterRoundedMinAndMax(a);</span>
+<span class="nc" id="L214">        return MiscMath0.calculateOuterRoundedMinAndMax(a);</span>
     }
 
     /**
@@ -227,7 +225,7 @@ import java.util.Set;
      * @return
      */
     public static float roundDownByLargestPower(float f) {
-<span class="fc" id="L230">        return MiscMath0.roundDownByLargestPower(f);</span>
+<span class="fc" id="L228">        return MiscMath0.roundDownByLargestPower(f);</span>
     }
 
     /**
@@ -249,7 +247,7 @@ import java.util.Set;
     @return
     */
     public static float roundUpByLargestPower(float f) {
-<span class="fc" id="L252">        return MiscMath0.roundUpByLargestPower(f);</span>
+<span class="fc" id="L250">        return MiscMath0.roundUpByLargestPower(f);</span>
     }
     
     /*
@@ -261,22 +259,22 @@ import java.util.Set;
      */
     public static int poissonRandom(SecureRandom sr, int lambda) {
 
-<span class="fc" id="L264">        double L = Math.exp(-lambda);</span>
+<span class="fc" id="L262">        double L = Math.exp(-lambda);</span>
 
-<span class="fc" id="L266">        int k = 0;</span>
+<span class="fc" id="L264">        int k = 0;</span>
 
-<span class="fc" id="L268">        double p = 1;</span>
+<span class="fc" id="L266">        double p = 1;</span>
 
         do {
-<span class="fc" id="L271">            k = k + 1;</span>
+<span class="fc" id="L269">            k = k + 1;</span>
 
-<span class="fc" id="L273">            double u = sr.nextDouble();</span>
+<span class="fc" id="L271">            double u = sr.nextDouble();</span>
 
-<span class="fc" id="L275">            p = p * u;</span>
+<span class="fc" id="L273">            p = p * u;</span>
 
-<span class="fc bfc" id="L277" title="All 2 branches covered.">        } while (p &gt; L);</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">        } while (p &gt; L);</span>
 
-<span class="fc" id="L279">        return k - 1;</span>
+<span class="fc" id="L277">        return k - 1;</span>
     }
   
     /**
@@ -292,21 +290,21 @@ import java.util.Set;
      * @return
      */
     protected static double taylor(double number, int n) {
-<span class="fc" id="L295">        double x = number - 1.0;</span>
+<span class="fc" id="L293">        double x = number - 1.0;</span>
         
-<span class="fc" id="L297">        double sum = 0;</span>
-<span class="fc bfc" id="L298" title="All 2 branches covered.">        for (int i = 1; i &lt;= n; i++) {</span>
-<span class="fc" id="L299">            double f = Math.pow(x, i)/(float)i;</span>
-<span class="fc bfc" id="L300" title="All 2 branches covered.">            if (i % 2 == 0) {</span>
-<span class="fc" id="L301">                sum -= f;</span>
+<span class="fc" id="L295">        double sum = 0;</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">        for (int i = 1; i &lt;= n; i++) {</span>
+<span class="fc" id="L297">            double f = Math.pow(x, i)/(float)i;</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">            if (i % 2 == 0) {</span>
+<span class="fc" id="L299">                sum -= f;</span>
                 //System.out.print(&quot;     MINUS i=&quot; + i);
             } else {
-<span class="fc" id="L304">                sum += f;</span>
+<span class="fc" id="L302">                sum += f;</span>
                 //System.out.print(&quot;     PLUS i=&quot; + i);
             }            
         }
         
-<span class="fc" id="L309">        return sum;</span>
+<span class="fc" id="L307">        return sum;</span>
     }
     
     /**
@@ -317,7 +315,7 @@ import java.util.Set;
      */
     public static double[] getAvgAndStDev(int[] x) {
         
-<span class="fc" id="L320">        return MiscMath0.getAvgAndStDev(x, x.length);</span>
+<span class="fc" id="L318">        return MiscMath0.getAvgAndStDev(x, x.length);</span>
     }
     
     /**
@@ -327,7 +325,7 @@ import java.util.Set;
      * @return 
      */
     public static double[] getAvgAndStDev(int[] x, int length) {
-<span class="fc" id="L330">        return MiscMath0.getAvgAndStDev(x, length);</span>
+<span class="fc" id="L328">        return MiscMath0.getAvgAndStDev(x, length);</span>
     }
     
     /**
@@ -338,23 +336,23 @@ import java.util.Set;
      */
     public static double[] getAvgAndStDev(List&lt;Double&gt; x) {
         
-<span class="fc" id="L341">        int length = x.size();</span>
+<span class="fc" id="L339">        int length = x.size();</span>
         
-<span class="fc" id="L343">        double sumX = 0;</span>
-<span class="fc bfc" id="L344" title="All 2 branches covered.">        for (int i = 0; i &lt; length; i++) {</span>
-<span class="fc" id="L345">            sumX += x.get(i);</span>
+<span class="fc" id="L341">        double sumX = 0;</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">        for (int i = 0; i &lt; length; i++) {</span>
+<span class="fc" id="L343">            sumX += x.get(i);</span>
         }
         
-<span class="fc" id="L348">        double avgX = sumX/(double)length;</span>
+<span class="fc" id="L346">        double avgX = sumX/(double)length;</span>
         
-<span class="fc" id="L350">        sumX = 0;</span>
-<span class="fc bfc" id="L351" title="All 2 branches covered.">        for (int i = 0; i &lt; length; i++) {</span>
-<span class="fc" id="L352">            double diffX = x.get(i) - avgX;</span>
-<span class="fc" id="L353">            sumX += (diffX * diffX);</span>
+<span class="fc" id="L348">        sumX = 0;</span>
+<span class="fc bfc" id="L349" title="All 2 branches covered.">        for (int i = 0; i &lt; length; i++) {</span>
+<span class="fc" id="L350">            double diffX = x.get(i) - avgX;</span>
+<span class="fc" id="L351">            sumX += (diffX * diffX);</span>
         }
-<span class="fc" id="L355">        double stdDevX = (Math.sqrt(sumX/((double)length - 1.)));</span>
+<span class="fc" id="L353">        double stdDevX = (Math.sqrt(sumX/((double)length - 1.)));</span>
         
-<span class="fc" id="L357">        return new double[]{avgX, stdDevX};</span>
+<span class="fc" id="L355">        return new double[]{avgX, stdDevX};</span>
     }
     
     /**
@@ -364,7 +362,7 @@ import java.util.Set;
      * @return float[]{avg, stDev}
      */
     public static float[] getAvgAndStDev(float[] x) {        
-<span class="nc" id="L367">        return getAvgAndStDev(x, x.length);</span>
+<span class="nc" id="L365">        return getAvgAndStDev(x, x.length);</span>
     }
     
     /**
@@ -377,22 +375,22 @@ import java.util.Set;
      */
     public static float[] getAvgAndStDev(float[] x, int length) {
         
-<span class="nc" id="L380">        int n = length;</span>
-<span class="nc" id="L381">        double sumX = 0;</span>
-<span class="nc bnc" id="L382" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc" id="L383">            sumX += x[i];</span>
+<span class="nc" id="L378">        int n = length;</span>
+<span class="nc" id="L379">        double sumX = 0;</span>
+<span class="nc bnc" id="L380" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L381">            sumX += x[i];</span>
         }
         
-<span class="nc" id="L386">        float avgX = (float)(sumX/(float)n);</span>
+<span class="nc" id="L384">        float avgX = (float)(sumX/(float)n);</span>
         
-<span class="nc" id="L388">        sumX = 0;</span>
-<span class="nc bnc" id="L389" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc" id="L390">            double diffX = x[i] - avgX;</span>
-<span class="nc" id="L391">            sumX += (diffX * diffX);</span>
+<span class="nc" id="L386">        sumX = 0;</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L388">            double diffX = x[i] - avgX;</span>
+<span class="nc" id="L389">            sumX += (diffX * diffX);</span>
         }
-<span class="nc" id="L393">        float stdDevX = (float)(Math.sqrt(sumX/((float)n - 1.0f)));</span>
+<span class="nc" id="L391">        float stdDevX = (float)(Math.sqrt(sumX/((float)n - 1.0f)));</span>
         
-<span class="nc" id="L395">        return new float[]{avgX, stdDevX};</span>
+<span class="nc" id="L393">        return new float[]{avgX, stdDevX};</span>
     }
     
     /**
@@ -408,30 +406,30 @@ import java.util.Set;
     public static float[] getAvgAndStDevIgnoreForSentinel(int[] x, int length, 
         final int sentinel) {
         
-<span class="nc" id="L411">        int n = length;</span>
-<span class="nc" id="L412">        double sumX = 0;</span>
-<span class="nc" id="L413">        int count = 0;</span>
-<span class="nc bnc" id="L414" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc bnc" id="L415" title="All 2 branches missed.">            if (x[i] == sentinel) {</span>
-<span class="nc" id="L416">                continue;</span>
+<span class="nc" id="L409">        int n = length;</span>
+<span class="nc" id="L410">        double sumX = 0;</span>
+<span class="nc" id="L411">        int count = 0;</span>
+<span class="nc bnc" id="L412" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc bnc" id="L413" title="All 2 branches missed.">            if (x[i] == sentinel) {</span>
+<span class="nc" id="L414">                continue;</span>
             }
-<span class="nc" id="L418">            sumX += x[i];</span>
-<span class="nc" id="L419">            count++;</span>
+<span class="nc" id="L416">            sumX += x[i];</span>
+<span class="nc" id="L417">            count++;</span>
         }
         
-<span class="nc" id="L422">        float avgX = (float)(sumX/(float)count);</span>
+<span class="nc" id="L420">        float avgX = (float)(sumX/(float)count);</span>
         
-<span class="nc" id="L424">        sumX = 0;</span>
-<span class="nc bnc" id="L425" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc bnc" id="L426" title="All 2 branches missed.">            if (x[i] == sentinel) {</span>
-<span class="nc" id="L427">                continue;</span>
+<span class="nc" id="L422">        sumX = 0;</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc bnc" id="L424" title="All 2 branches missed.">            if (x[i] == sentinel) {</span>
+<span class="nc" id="L425">                continue;</span>
             }
-<span class="nc" id="L429">            double diffX = x[i] - avgX;</span>
-<span class="nc" id="L430">            sumX += (diffX * diffX);</span>
+<span class="nc" id="L427">            double diffX = x[i] - avgX;</span>
+<span class="nc" id="L428">            sumX += (diffX * diffX);</span>
         }
-<span class="nc" id="L432">        float stdDevX = (float)(Math.sqrt(sumX/(count - 1.0f)));</span>
+<span class="nc" id="L430">        float stdDevX = (float)(Math.sqrt(sumX/(count - 1.0f)));</span>
         
-<span class="nc" id="L434">        return new float[]{avgX, stdDevX};</span>
+<span class="nc" id="L432">        return new float[]{avgX, stdDevX};</span>
     }
     
     /**
@@ -447,30 +445,30 @@ import java.util.Set;
     public static float[] getAvgAndStDevIgnoreForSentinel(float[] x, int length, 
         final float sentinel) {
         
-<span class="nc" id="L450">        int n = length;</span>
-<span class="nc" id="L451">        double sumX = 0;</span>
-<span class="nc" id="L452">        int count = 0;</span>
-<span class="nc bnc" id="L453" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc bnc" id="L454" title="All 2 branches missed.">            if (x[i] == sentinel) {</span>
-<span class="nc" id="L455">                continue;</span>
+<span class="nc" id="L448">        int n = length;</span>
+<span class="nc" id="L449">        double sumX = 0;</span>
+<span class="nc" id="L450">        int count = 0;</span>
+<span class="nc bnc" id="L451" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc bnc" id="L452" title="All 2 branches missed.">            if (x[i] == sentinel) {</span>
+<span class="nc" id="L453">                continue;</span>
             }
-<span class="nc" id="L457">            sumX += x[i];</span>
-<span class="nc" id="L458">            count++;</span>
+<span class="nc" id="L455">            sumX += x[i];</span>
+<span class="nc" id="L456">            count++;</span>
         }
         
-<span class="nc" id="L461">        float avgX = (float)(sumX/(float)count);</span>
+<span class="nc" id="L459">        float avgX = (float)(sumX/(float)count);</span>
         
-<span class="nc" id="L463">        sumX = 0;</span>
-<span class="nc bnc" id="L464" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc bnc" id="L465" title="All 2 branches missed.">            if (x[i] == sentinel) {</span>
-<span class="nc" id="L466">                continue;</span>
+<span class="nc" id="L461">        sumX = 0;</span>
+<span class="nc bnc" id="L462" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc bnc" id="L463" title="All 2 branches missed.">            if (x[i] == sentinel) {</span>
+<span class="nc" id="L464">                continue;</span>
             }
-<span class="nc" id="L468">            double diffX = x[i] - avgX;</span>
-<span class="nc" id="L469">            sumX += (diffX * diffX);</span>
+<span class="nc" id="L466">            double diffX = x[i] - avgX;</span>
+<span class="nc" id="L467">            sumX += (diffX * diffX);</span>
         }
-<span class="nc" id="L471">        float stdDevX = (float)(Math.sqrt(sumX/(count - 1.0f)));</span>
+<span class="nc" id="L469">        float stdDevX = (float)(Math.sqrt(sumX/(count - 1.0f)));</span>
         
-<span class="nc" id="L473">        return new float[]{avgX, stdDevX};</span>
+<span class="nc" id="L471">        return new float[]{avgX, stdDevX};</span>
     }
     
     /**
@@ -481,22 +479,22 @@ import java.util.Set;
      */
     public static double[] getAvgAndStDev(double[] x) {
         
-<span class="fc" id="L484">        int n = x.length;</span>
-<span class="fc" id="L485">        double sumX = 0;</span>
-<span class="fc bfc" id="L486" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L487">            sumX += x[i];</span>
+<span class="fc" id="L482">        int n = x.length;</span>
+<span class="fc" id="L483">        double sumX = 0;</span>
+<span class="fc bfc" id="L484" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L485">            sumX += x[i];</span>
         }
         
-<span class="fc" id="L490">        double avgX = sumX/(double)n;</span>
+<span class="fc" id="L488">        double avgX = sumX/(double)n;</span>
         
-<span class="fc" id="L492">        sumX = 0;</span>
-<span class="fc bfc" id="L493" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L494">            double diffX = x[i] - avgX;</span>
-<span class="fc" id="L495">            sumX += (diffX * diffX);</span>
+<span class="fc" id="L490">        sumX = 0;</span>
+<span class="fc bfc" id="L491" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L492">            double diffX = x[i] - avgX;</span>
+<span class="fc" id="L493">            sumX += (diffX * diffX);</span>
         }
-<span class="fc" id="L497">        double stdDevX = Math.sqrt(sumX/(n - 1.0f));</span>
+<span class="fc" id="L495">        double stdDevX = Math.sqrt(sumX/(n - 1.0f));</span>
         
-<span class="fc" id="L499">        return new double[]{avgX, stdDevX};</span>
+<span class="fc" id="L497">        return new double[]{avgX, stdDevX};</span>
     }
     
     /**
@@ -506,40 +504,40 @@ import java.util.Set;
      */
     public static double[] getAvgAndStDev(GreyscaleImage img, Set&lt;PairInt&gt; points) {
         
-<span class="nc" id="L509">        int n = points.size();</span>
-<span class="nc" id="L510">        double sum = 0;</span>
-<span class="nc bnc" id="L511" title="All 2 branches missed.">        for (PairInt p : points) {</span>
-<span class="nc" id="L512">            sum += img.getValue(p.getX(), p.getY());</span>
-<span class="nc" id="L513">        }</span>
+<span class="nc" id="L507">        int n = points.size();</span>
+<span class="nc" id="L508">        double sum = 0;</span>
+<span class="nc bnc" id="L509" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc" id="L510">            sum += img.getValue(p.getX(), p.getY());</span>
+<span class="nc" id="L511">        }</span>
         
-<span class="nc" id="L515">        double avg = sum/(double)n;</span>
+<span class="nc" id="L513">        double avg = sum/(double)n;</span>
         
-<span class="nc" id="L517">        sum = 0;</span>
-<span class="nc bnc" id="L518" title="All 2 branches missed.">        for (PairInt p : points) {</span>
-<span class="nc" id="L519">            int v = img.getValue(p.getX(), p.getY());</span>
-<span class="nc" id="L520">            double diffX = v - avg;</span>
-<span class="nc" id="L521">            sum += (diffX * diffX);</span>
-<span class="nc" id="L522">        }</span>
-<span class="nc" id="L523">        double stdDevX = Math.sqrt(sum/((double)n - 1.0));</span>
+<span class="nc" id="L515">        sum = 0;</span>
+<span class="nc bnc" id="L516" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc" id="L517">            int v = img.getValue(p.getX(), p.getY());</span>
+<span class="nc" id="L518">            double diffX = v - avg;</span>
+<span class="nc" id="L519">            sum += (diffX * diffX);</span>
+<span class="nc" id="L520">        }</span>
+<span class="nc" id="L521">        double stdDevX = Math.sqrt(sum/((double)n - 1.0));</span>
         
-<span class="nc" id="L525">        return new double[]{avg, stdDevX};</span>
+<span class="nc" id="L523">        return new double[]{avg, stdDevX};</span>
     }
     
     public static int[] add(int[] x, int amount) {
         
-<span class="nc bnc" id="L530" title="All 2 branches missed.">        if (x == null) {</span>
-<span class="nc" id="L531">            throw new IllegalArgumentException(&quot;x cannot be null&quot;);</span>
+<span class="nc bnc" id="L528" title="All 2 branches missed.">        if (x == null) {</span>
+<span class="nc" id="L529">            throw new IllegalArgumentException(&quot;x cannot be null&quot;);</span>
         }
         
-<span class="nc" id="L534">        int[] out = new int[x.length];</span>
+<span class="nc" id="L532">        int[] out = new int[x.length];</span>
         
-<span class="nc" id="L536">        int n = x.length;</span>
+<span class="nc" id="L534">        int n = x.length;</span>
         
-<span class="nc bnc" id="L538" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc" id="L539">            out[i] = x[i] + amount;</span>
+<span class="nc bnc" id="L536" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L537">            out[i] = x[i] + amount;</span>
         }
         
-<span class="nc" id="L542">        return out;</span>
+<span class="nc" id="L540">        return out;</span>
     }
     
     /**
@@ -551,7 +549,7 @@ import java.util.Set;
      */
     public static long computeNDivNMinusK(int n, int k) {
 
-<span class="fc" id="L554">        return MiscMath0.computeNDivNMinusK(n, k);</span>
+<span class="fc" id="L552">        return MiscMath0.computeNDivNMinusK(n, k);</span>
     }
     
     /**
@@ -566,7 +564,7 @@ import java.util.Set;
      */
     public static long computeNDivKTimesNMinusK(int n, int k) {
 
-<span class="fc" id="L569">        return MiscMath0.computeNDivKTimesNMinusK(n, k);</span>
+<span class="fc" id="L567">        return MiscMath0.computeNDivKTimesNMinusK(n, k);</span>
     }
     
     /**
@@ -577,7 +575,7 @@ import java.util.Set;
      */
     public static long factorial(int n) {
 
-<span class="fc" id="L580">        return MiscMath0.factorial(n);</span>
+<span class="fc" id="L578">        return MiscMath0.factorial(n);</span>
     }
     
     /**
@@ -588,7 +586,7 @@ import java.util.Set;
      */
     public static BigInteger factorialBigInteger(int n) {
 
-<span class="fc" id="L591">        return MiscMath0.factorialBigInteger(n);</span>
+<span class="fc" id="L589">        return MiscMath0.factorialBigInteger(n);</span>
     }
     
     /**
@@ -599,33 +597,33 @@ import java.util.Set;
      */
     public static void readSetBits(Long bitstring, List&lt;Integer&gt; outputIndexes) {
         
-<span class="pc bpc" id="L602" title="1 of 2 branches missed.">        if (bitstring == null) {</span>
-<span class="nc" id="L603">            throw new IllegalArgumentException(&quot;bitstring cannot be null&quot;);</span>
+<span class="pc bpc" id="L600" title="1 of 2 branches missed.">        if (bitstring == null) {</span>
+<span class="nc" id="L601">            throw new IllegalArgumentException(&quot;bitstring cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L605" title="1 of 2 branches missed.">        if (outputIndexes == null) {</span>
-<span class="nc" id="L606">            throw new IllegalArgumentException(&quot;outputIndexes cannot be null&quot;);</span>
+<span class="pc bpc" id="L603" title="1 of 2 branches missed.">        if (outputIndexes == null) {</span>
+<span class="nc" id="L604">            throw new IllegalArgumentException(&quot;outputIndexes cannot be null&quot;);</span>
         }
         
-<span class="fc" id="L609">        long b = bitstring.longValue();</span>
+<span class="fc" id="L607">        long b = bitstring.longValue();</span>
         
-<span class="fc" id="L611">        int count = 0;</span>
+<span class="fc" id="L609">        int count = 0;</span>
         
-<span class="fc bfc" id="L613" title="All 2 branches covered.">        while (b &gt; 0) {</span>
+<span class="fc bfc" id="L611" title="All 2 branches covered.">        while (b &gt; 0) {</span>
             
-<span class="fc" id="L615">            long idx = (b &amp; 1L);</span>
+<span class="fc" id="L613">            long idx = (b &amp; 1L);</span>
             
-<span class="fc bfc" id="L617" title="All 2 branches covered.">            if (idx == 1) {</span>
-<span class="fc" id="L618">                outputIndexes.add(Integer.valueOf(count));</span>
+<span class="fc bfc" id="L615" title="All 2 branches covered.">            if (idx == 1) {</span>
+<span class="fc" id="L616">                outputIndexes.add(Integer.valueOf(count));</span>
             }
             
-<span class="fc" id="L621">            b &gt;&gt;= 1L;</span>
+<span class="fc" id="L619">            b &gt;&gt;= 1L;</span>
             
-<span class="fc" id="L623">            count++;</span>
-<span class="fc" id="L624">        }</span>
-<span class="fc" id="L625">    }</span>
+<span class="fc" id="L621">            count++;</span>
+<span class="fc" id="L622">        }</span>
+<span class="fc" id="L623">    }</span>
     
      /**
-      * solve for the roots of equation a0 * x^3 + a1 * x^2 + a2 * x + a4 = 0;
+      * solve for the roots of equation a * x^3 + b * x^2 + c * x + d = 0;
       * 
       * most of the method is adapted from 
       * http://www.csse.uwa.edu.au/~pk/research/matlabfns/Misc/cubicroots.m
@@ -647,60 +645,60 @@ import java.util.Set;
 
         Nov 2008
          
-      * @param a
-      * @param b
-      * @param c
-      * @param d
+      * @param a coeff for 3rd order
+      * @param b coeff for 2nd order
+      * @param c coeff for 1st order
+      * @param d coeff for 0th order
       * @return 
       */
     public static double[] solveCubicRoots(double a, double b, double c, 
         double d) {
         
-<span class="fc" id="L659">        b /= a; </span>
-<span class="fc" id="L660">        c /= a; </span>
-<span class="fc" id="L661">        d /= a;</span>
-<span class="fc" id="L662">        double bOn3 = b/3.;</span>
+<span class="fc" id="L657">        b /= a; </span>
+<span class="fc" id="L658">        c /= a; </span>
+<span class="fc" id="L659">        d /= a;</span>
+<span class="fc" id="L660">        double bOn3 = b/3.;</span>
     
-<span class="fc" id="L664">        double q = (3.*c - b*b)/9.;</span>
-<span class="fc" id="L665">        double r = (9.*b*c - 27.*d - 2.*b*b*b)/54.;</span>
-<span class="fc" id="L666">        double discriminant = q*q*q + r*r;</span>
+<span class="fc" id="L662">        double q = (3.*c - b*b)/9.;</span>
+<span class="fc" id="L663">        double r = (9.*b*c - 27.*d - 2.*b*b*b)/54.;</span>
+<span class="fc" id="L664">        double discriminant = q*q*q + r*r;</span>
             
-<span class="fc bfc" id="L668" title="All 2 branches covered.">        if (discriminant &gt;= 0) {</span>
+<span class="pc bpc" id="L666" title="1 of 2 branches missed.">        if (discriminant &gt;= 0) {</span>
             
             // discriminant &gt; 0: one root is real and two complex conjugate
             // discriminant == 0 : all roots are real and at least two are equal
             
-<span class="fc" id="L673">            double s = realcuberoot(r + Math.sqrt(discriminant));   </span>
-<span class="fc" id="L674">            double t = realcuberoot(r - Math.sqrt(discriminant));</span>
+<span class="nc" id="L671">            double s = realcuberoot(r + Math.sqrt(discriminant));   </span>
+<span class="nc" id="L672">            double t = realcuberoot(r - Math.sqrt(discriminant));</span>
     
-<span class="fc" id="L676">            double root = s + t - bOn3;</span>
+<span class="nc" id="L674">            double root = s + t - bOn3;</span>
         
-<span class="fc" id="L678">            return new double[]{root};</span>
+<span class="nc" id="L676">            return new double[]{root};</span>
             
         } else {
 
             //  all roots are real and unequal
             
-<span class="fc" id="L684">            double rho = Math.sqrt(r*r - discriminant); </span>
-<span class="fc" id="L685">            double cubeRootrho = realcuberoot(rho);</span>
-<span class="fc" id="L686">            double thetaOn3 = Math.acos(r/rho)/3.;</span>
+<span class="fc" id="L682">            double rho = Math.sqrt(r*r - discriminant); </span>
+<span class="fc" id="L683">            double cubeRootrho = realcuberoot(rho);</span>
+<span class="fc" id="L684">            double thetaOn3 = Math.acos(r/rho)/3.;</span>
         
-<span class="fc" id="L688">            double crRhoCosThetaOn3 = cubeRootrho * Math.cos(thetaOn3);</span>
-<span class="fc" id="L689">            double crRhoSinThetaOn3 = cubeRootrho * Math.sin(thetaOn3);   </span>
+<span class="fc" id="L686">            double crRhoCosThetaOn3 = cubeRootrho * Math.cos(thetaOn3);</span>
+<span class="fc" id="L687">            double crRhoSinThetaOn3 = cubeRootrho * Math.sin(thetaOn3);   </span>
 
-<span class="fc" id="L691">            double[] root = new double[3];</span>
-<span class="fc" id="L692">            root[0] = 2. * crRhoCosThetaOn3 - bOn3;</span>
-<span class="fc" id="L693">            root[1] = -crRhoCosThetaOn3 - bOn3 - Math.sqrt(3.)*crRhoSinThetaOn3;</span>
-<span class="fc" id="L694">            root[2] = -crRhoCosThetaOn3 - bOn3 + Math.sqrt(3.)*crRhoSinThetaOn3;</span>
+<span class="fc" id="L689">            double[] root = new double[3];</span>
+<span class="fc" id="L690">            root[0] = 2. * crRhoCosThetaOn3 - bOn3;</span>
+<span class="fc" id="L691">            root[1] = -crRhoCosThetaOn3 - bOn3 - Math.sqrt(3.)*crRhoSinThetaOn3;</span>
+<span class="fc" id="L692">            root[2] = -crRhoCosThetaOn3 - bOn3 + Math.sqrt(3.)*crRhoSinThetaOn3;</span>
             
-<span class="fc" id="L696">            return root;</span>
+<span class="fc" id="L694">            return root;</span>
         }   
     }
    
     public static double realcuberoot(double x) {
-<span class="fc bfc" id="L701" title="All 2 branches covered.">        double sign = (x &lt; 0.) ? -1 : 1;</span>
-<span class="fc" id="L702">        double y = sign * Math.pow(Math.abs(x), 1./3.);</span>
-<span class="fc" id="L703">        return y;</span>
+<span class="pc bpc" id="L699" title="1 of 2 branches missed.">        double sign = (x &lt; 0.) ? -1 : 1;</span>
+<span class="fc" id="L700">        double y = sign * Math.pow(Math.abs(x), 1./3.);</span>
+<span class="fc" id="L701">        return y;</span>
     }
     
     /**
@@ -720,62 +718,38 @@ import java.util.Set;
      * @param nMax the upper limit from which to choose numbers from for 
      * 'selected', where the possible numbers are 0 through nMax-1.
      */
-    public static void chooseRandomly(SecureRandom sr, int[] selected, int nMax) {
+    public static void chooseRandomly(Random rand, int[] selected, int nMax) {
         
-<span class="pc bpc" id="L725" title="1 of 2 branches missed.">        if (nMax &lt; selected.length) {</span>
-<span class="nc" id="L726">            throw new IllegalArgumentException(&quot;cannot draw &quot; + </span>
-<span class="nc" id="L727">                Integer.toString(selected.length) + &quot; distinct random numbers &quot;</span>
-<span class="nc" id="L728">                + &quot; from only &quot; + Integer.toString(nMax) + &quot; numbers&quot;);</span>
+<span class="pc bpc" id="L723" title="1 of 2 branches missed.">        if (nMax &lt; selected.length) {</span>
+<span class="nc" id="L724">            throw new IllegalArgumentException(&quot;cannot draw &quot; + </span>
+<span class="nc" id="L725">                Integer.toString(selected.length) + &quot; distinct random numbers &quot;</span>
+<span class="nc" id="L726">                + &quot; from only &quot; + Integer.toString(nMax) + &quot; numbers&quot;);</span>
         }
-        
-        // TODO: ideally, would like to be able to predict the ith iteration of 
-        // a subset chooser (@see getNextSubsetBitstring)
-      
-<span class="fc bfc" id="L734" title="All 2 branches covered.">        if (selected.length == nMax) {</span>
-<span class="fc bfc" id="L735" title="All 2 branches covered.">            for (int i = 0; i &lt; selected.length; i++) {</span>
-<span class="fc" id="L736">                selected[i] = i;</span>
+
+<span class="fc bfc" id="L729" title="All 2 branches covered.">        if (selected.length == nMax) {</span>
+<span class="fc bfc" id="L730" title="All 2 branches covered.">            for (int i = 0; i &lt; selected.length; i++) {</span>
+<span class="fc" id="L731">                selected[i] = i;</span>
             }
-<span class="fc" id="L738">            return;</span>
+<span class="fc" id="L733">            return;</span>
         }
-        
-<span class="fc" id="L741">        int nLimit = selected.length * 3;</span>
-        // when nMax is smaller than some limit, choose randomly from 
-        // unchosen numbers
-<span class="fc bfc" id="L744" title="All 2 branches covered.">        if (nMax &lt; nLimit) {</span>
-            
-            // populate numbers to choose from:
-<span class="fc" id="L747">            List&lt;Integer&gt; numbers = new ArrayList&lt;Integer&gt;();</span>
-<span class="fc bfc" id="L748" title="All 2 branches covered.">            for (int i = 0; i &lt; nMax; i++) {</span>
-<span class="fc" id="L749">                numbers.add(Integer.valueOf(i));</span>
+
+<span class="fc" id="L736">        TIntSet in = new TIntHashSet();</span>
+<span class="fc" id="L737">        int count = 0;</span>
+        int a;
+<span class="fc bfc" id="L739" title="All 2 branches covered.">        while (count &lt; selected.length) {</span>
+<span class="fc" id="L740">            a = rand.nextInt(nMax);</span>
+<span class="fc bfc" id="L741" title="All 2 branches covered.">            while (!in.add(a)) {</span>
+<span class="fc" id="L742">                a = rand.nextInt(nMax);</span>
             }
-            
-<span class="fc bfc" id="L752" title="All 2 branches covered.">            for (int i = 0; i &lt; selected.length; i++) {</span>
-<span class="fc" id="L753">                int selIdx = sr.nextInt(numbers.size());</span>
-<span class="fc" id="L754">                Integer sel = numbers.get(selIdx);</span>
-<span class="fc" id="L755">                selected[i] = sel.intValue();</span>
-<span class="fc" id="L756">                numbers.remove(sel);</span>
-            }
-            
-<span class="fc" id="L759">            return;</span>
+<span class="fc" id="L744">            ++count;</span>
         }
-        
-<span class="fc bfc" id="L762" title="All 2 branches covered.">        for (int i = 0; i &lt; selected.length; i++) {</span>
-<span class="fc" id="L763">            int sel = sr.nextInt(nMax);</span>
-<span class="fc bfc" id="L764" title="All 2 branches covered.">            while (contains(selected, i, sel)) {</span>
-<span class="fc" id="L765">                sel = sr.nextInt(nMax);</span>
-            }
-<span class="fc" id="L767">            selected[i] = sel;</span>
+<span class="fc" id="L746">        TIntIterator iter = in.iterator();</span>
+<span class="fc" id="L747">        count = 0;</span>
+<span class="fc bfc" id="L748" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L749">            selected[count] = iter.next();</span>
+<span class="fc" id="L750">            ++count;</span>
         }
-<span class="fc" id="L769">    }</span>
-    
-    private static boolean contains(int[] values, int lastIdx, int valueToCheck) {
-<span class="fc bfc" id="L772" title="All 2 branches covered.">        for (int i = 0; i &lt; lastIdx; i++) {</span>
-<span class="fc bfc" id="L773" title="All 2 branches covered.">            if (values[i] == valueToCheck) {</span>
-<span class="fc" id="L774">                return true;</span>
-            }
-        }
-<span class="fc" id="L777">        return false;</span>
-    }
+<span class="fc" id="L752">    }</span>
     
      /**
      * for the given histogram, returns the indexes of the primary peak and
@@ -788,72 +762,72 @@ import java.util.Set;
      * @return 
      */
     public static List&lt;Integer&gt; findStrongPeakIndexes(HistogramHolder h, float frac) {
-<span class="fc" id="L791">        return MiscMath0.findStrongPeakIndexes(h, frac);</span>
+<span class="fc" id="L765">        return MiscMath0.findStrongPeakIndexes(h, frac);</span>
     }
 
     public static int findLastZeroIndex(HistogramHolder h) {
-<span class="nc" id="L795">        int n = h.getXHist().length;</span>
-<span class="nc" id="L796">        int lastZeroIdx = n - 1;</span>
-<span class="nc bnc" id="L797" title="All 2 branches missed.">        for (int i = (n - 1); i &gt; -1; i--) {</span>
-<span class="nc" id="L798">            int y = h.getYHist()[i];</span>
-<span class="nc bnc" id="L799" title="All 2 branches missed.">            if (y &gt; 0) {</span>
-<span class="nc" id="L800">                break;</span>
+<span class="nc" id="L769">        int n = h.getXHist().length;</span>
+<span class="nc" id="L770">        int lastZeroIdx = n - 1;</span>
+<span class="nc bnc" id="L771" title="All 2 branches missed.">        for (int i = (n - 1); i &gt; -1; i--) {</span>
+<span class="nc" id="L772">            int y = h.getYHist()[i];</span>
+<span class="nc bnc" id="L773" title="All 2 branches missed.">            if (y &gt; 0) {</span>
+<span class="nc" id="L774">                break;</span>
             }
-<span class="nc" id="L802">            lastZeroIdx = i;</span>
+<span class="nc" id="L776">            lastZeroIdx = i;</span>
         }
-<span class="nc" id="L804">        return lastZeroIdx;</span>
+<span class="nc" id="L778">        return lastZeroIdx;</span>
     }
     
     public static int findFirstNonZeroIndex(HistogramHolder h) {
-<span class="nc" id="L808">        int n = h.getXHist().length;</span>
-<span class="nc" id="L809">        int firstNonZero = -1;</span>
-<span class="nc bnc" id="L810" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc" id="L811">            int y = h.getYHist()[i];</span>
-<span class="nc bnc" id="L812" title="All 2 branches missed.">            if (y &gt; 0) {</span>
-<span class="nc" id="L813">                firstNonZero = i;</span>
-<span class="nc" id="L814">                break;</span>
+<span class="nc" id="L782">        int n = h.getXHist().length;</span>
+<span class="nc" id="L783">        int firstNonZero = -1;</span>
+<span class="nc bnc" id="L784" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L785">            int y = h.getYHist()[i];</span>
+<span class="nc bnc" id="L786" title="All 2 branches missed.">            if (y &gt; 0) {</span>
+<span class="nc" id="L787">                firstNonZero = i;</span>
+<span class="nc" id="L788">                break;</span>
             }
         }
-<span class="nc" id="L817">        return firstNonZero;</span>
+<span class="nc" id="L791">        return firstNonZero;</span>
     }
     
     public static int findFirstNonZeroIndex(int[] h) {
-<span class="nc" id="L821">        int n = h.length;</span>
-<span class="nc" id="L822">        int firstNonZero = -1;</span>
-<span class="nc bnc" id="L823" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc" id="L824">            int y = h[i];</span>
-<span class="nc bnc" id="L825" title="All 2 branches missed.">            if (y &gt; 0) {</span>
-<span class="nc" id="L826">                firstNonZero = i;</span>
-<span class="nc" id="L827">                break;</span>
+<span class="nc" id="L795">        int n = h.length;</span>
+<span class="nc" id="L796">        int firstNonZero = -1;</span>
+<span class="nc bnc" id="L797" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L798">            int y = h[i];</span>
+<span class="nc bnc" id="L799" title="All 2 branches missed.">            if (y &gt; 0) {</span>
+<span class="nc" id="L800">                firstNonZero = i;</span>
+<span class="nc" id="L801">                break;</span>
             }
         }
-<span class="nc" id="L830">        return firstNonZero;</span>
+<span class="nc" id="L804">        return firstNonZero;</span>
     }
     
     public static int findLastNonZeroIndex(HistogramHolder h) {
-<span class="nc" id="L834">        int n = h.getXHist().length;</span>
-<span class="nc" id="L835">        int idx = -1;</span>
-<span class="nc bnc" id="L836" title="All 2 branches missed.">        for (int i = (n - 1); i &gt; -1; --i) {</span>
-<span class="nc" id="L837">            int y = h.getYHist()[i];</span>
-<span class="nc bnc" id="L838" title="All 2 branches missed.">            if (y &gt; 0) {</span>
-<span class="nc" id="L839">                idx = i;</span>
-<span class="nc" id="L840">                break;</span>
+<span class="nc" id="L808">        int n = h.getXHist().length;</span>
+<span class="nc" id="L809">        int idx = -1;</span>
+<span class="nc bnc" id="L810" title="All 2 branches missed.">        for (int i = (n - 1); i &gt; -1; --i) {</span>
+<span class="nc" id="L811">            int y = h.getYHist()[i];</span>
+<span class="nc bnc" id="L812" title="All 2 branches missed.">            if (y &gt; 0) {</span>
+<span class="nc" id="L813">                idx = i;</span>
+<span class="nc" id="L814">                break;</span>
             }
         }
-<span class="nc" id="L843">        return idx;</span>
+<span class="nc" id="L817">        return idx;</span>
     }
 
     public static int findLastNonZeroIndex(int[] h) {
-<span class="nc" id="L847">        int n = h.length;</span>
-<span class="nc" id="L848">        int idx = -1;</span>
-<span class="nc bnc" id="L849" title="All 2 branches missed.">        for (int i = (n - 1); i &gt; -1; --i) {</span>
-<span class="nc" id="L850">            int y = h[i];</span>
-<span class="nc bnc" id="L851" title="All 2 branches missed.">            if (y &gt; 0) {</span>
-<span class="nc" id="L852">                idx = i;</span>
-<span class="nc" id="L853">                break;</span>
+<span class="nc" id="L821">        int n = h.length;</span>
+<span class="nc" id="L822">        int idx = -1;</span>
+<span class="nc bnc" id="L823" title="All 2 branches missed.">        for (int i = (n - 1); i &gt; -1; --i) {</span>
+<span class="nc" id="L824">            int y = h[i];</span>
+<span class="nc bnc" id="L825" title="All 2 branches missed.">            if (y &gt; 0) {</span>
+<span class="nc" id="L826">                idx = i;</span>
+<span class="nc" id="L827">                break;</span>
             }
         }
-<span class="nc" id="L856">        return idx;</span>
+<span class="nc" id="L830">        return idx;</span>
     }
     
     /**
@@ -863,7 +837,7 @@ import java.util.Set;
      * @return minMaxXY int[]{xMin, xMax, yMin, yMax}
      */
     public static int[] findMinMaxXY(Collection&lt;PairInt&gt; points) {
-<span class="fc" id="L866">        return MiscMath0.findMinMaxXY(points);</span>
+<span class="fc" id="L840">        return MiscMath0.findMinMaxXY(points);</span>
     }
     
     /**
@@ -873,7 +847,7 @@ import java.util.Set;
      * @return minMaxXY int[]{xMin, xMax, yMin, yMax}
      */
     public static int[] findMinMaxXY(TIntSet pixelIdxs, int imgWidth) {
-<span class="fc" id="L876">        return MiscMath0.findMinMaxXY(pixelIdxs, imgWidth);</span>
+<span class="fc" id="L850">        return MiscMath0.findMinMaxXY(pixelIdxs, imgWidth);</span>
     }
     
     /**
@@ -883,7 +857,7 @@ import java.util.Set;
      * @return minMaxXY int[]{xMin, xMax, yMin, yMax}
      */
     public static int[] findMinMaxXY(PairIntArray points) {
-<span class="fc" id="L886">        return MiscMath0.findMinMaxXY(points);</span>
+<span class="fc" id="L860">        return MiscMath0.findMinMaxXY(points);</span>
     }
     
     /**
@@ -894,7 +868,7 @@ import java.util.Set;
      */
     public static int numberOfBits(int v) {
         
-<span class="fc" id="L897">        return MiscMath0.numberOfBits(v);</span>
+<span class="fc" id="L871">        return MiscMath0.numberOfBits(v);</span>
     }
   
     /**
@@ -905,7 +879,7 @@ import java.util.Set;
      */
     public static int numberOfBits(long v) {
         
-<span class="fc" id="L908">        return MiscMath0.numberOfBits(v);</span>
+<span class="fc" id="L882">        return MiscMath0.numberOfBits(v);</span>
     }
         
     /**
@@ -914,11 +888,11 @@ import java.util.Set;
      * @return 
      */
     public static int bitReverse(int v, int nBits) {
-<span class="fc" id="L917">        return MiscMath0.bitReverse(v, nBits);</span>
+<span class="fc" id="L891">        return MiscMath0.bitReverse(v, nBits);</span>
     }
     
     public static boolean isAPowerOf2(int n) {
-<span class="fc" id="L921">        return MiscMath0.isAPowerOf2(n);</span>
+<span class="fc" id="L895">        return MiscMath0.isAPowerOf2(n);</span>
     }
     
     /**
@@ -940,13 +914,13 @@ import java.util.Set;
      */
     public static double calculatePolarTheta(double x, double y) {
        
-<span class="fc" id="L943">        double theta = Math.atan2(y, x);</span>
+<span class="fc" id="L917">        double theta = Math.atan2(y, x);</span>
         
-<span class="pc bpc" id="L945" title="1 of 4 branches missed.">        if (Double.isFinite(theta) &amp;&amp; (theta &lt; 0)) {</span>
-<span class="fc" id="L946">            theta += 2. * Math.PI;</span>
+<span class="pc bpc" id="L919" title="1 of 4 branches missed.">        if (Double.isFinite(theta) &amp;&amp; (theta &lt; 0)) {</span>
+<span class="fc" id="L920">            theta += 2. * Math.PI;</span>
         }
         
-<span class="fc" id="L949">        return theta;</span>
+<span class="fc" id="L923">        return theta;</span>
     }
 
     /**
@@ -961,33 +935,33 @@ import java.util.Set;
     public static float[] writeDegreeIntervals(float rotStart, float rotStop, 
         float rotDelta) {
         
-<span class="fc bfc" id="L964" title="All 2 branches covered.">        float rotStopMinusStart = (rotStop &lt; rotStart) ? </span>
-<span class="fc" id="L965">            ((360 - rotStart) + rotStop) : (rotStop - rotStart);</span>
+<span class="fc bfc" id="L938" title="All 2 branches covered.">        float rotStopMinusStart = (rotStop &lt; rotStart) ? </span>
+<span class="fc" id="L939">            ((360 - rotStart) + rotStop) : (rotStop - rotStart);</span>
         
-<span class="fc" id="L967">        int nRot = (int)((rotStopMinusStart/rotDelta) + 1);</span>
-<span class="fc" id="L968">        int np = 0;</span>
-<span class="pc bpc" id="L969" title="1 of 2 branches missed.">        if (((rotStopMinusStart + 1) % rotDelta) != 0) {</span>
-<span class="nc" id="L970">            np++;</span>
+<span class="fc" id="L941">        int nRot = (int)((rotStopMinusStart/rotDelta) + 1);</span>
+<span class="fc" id="L942">        int np = 0;</span>
+<span class="pc bpc" id="L943" title="1 of 2 branches missed.">        if (((rotStopMinusStart + 1) % rotDelta) != 0) {</span>
+<span class="nc" id="L944">            np++;</span>
         }
-<span class="fc" id="L972">        float[] rotation = new float[nRot + np];</span>
-<span class="fc bfc" id="L973" title="All 2 branches covered.">        for (int i = 0; i &lt; nRot; ++i) {</span>
-<span class="fc" id="L974">            float r = rotStart + (i * rotDelta);</span>
-<span class="fc bfc" id="L975" title="All 2 branches covered.">            if (r &gt; 359) {</span>
-<span class="fc" id="L976">                r -= 360;</span>
+<span class="fc" id="L946">        float[] rotation = new float[nRot + np];</span>
+<span class="fc bfc" id="L947" title="All 2 branches covered.">        for (int i = 0; i &lt; nRot; ++i) {</span>
+<span class="fc" id="L948">            float r = rotStart + (i * rotDelta);</span>
+<span class="fc bfc" id="L949" title="All 2 branches covered.">            if (r &gt; 359) {</span>
+<span class="fc" id="L950">                r -= 360;</span>
             }
-<span class="fc" id="L978">            rotation[i] = (int)r;</span>
+<span class="fc" id="L952">            rotation[i] = (int)r;</span>
         }
-<span class="pc bpc" id="L980" title="1 of 2 branches missed.">        if (np &gt; 0) {</span>
-<span class="nc" id="L981">            rotation[rotation.length - 1] = rotStop;</span>
+<span class="pc bpc" id="L954" title="1 of 2 branches missed.">        if (np &gt; 0) {</span>
+<span class="nc" id="L955">            rotation[rotation.length - 1] = rotStop;</span>
         }
         
-<span class="fc" id="L984">        return rotation;</span>
+<span class="fc" id="L958">        return rotation;</span>
     }
 
     public static List&lt;Integer&gt; findStrongPeakIndexesDescSort(
         HistogramHolder hist, float fracMax) {
 
-<span class="fc" id="L990">        return MiscMath0.findStrongPeakIndexesDescSort(hist, fracMax);</span>
+<span class="fc" id="L964">        return MiscMath0.findStrongPeakIndexesDescSort(hist, fracMax);</span>
     }
     
     /**
@@ -1000,7 +974,7 @@ import java.util.Set;
      */
     public static byte[] writeToBigEndianBytes(long value) {
     
-<span class="fc" id="L1003">        return MiscMath0.writeToBigEndianBytes(value);</span>
+<span class="fc" id="L977">        return MiscMath0.writeToBigEndianBytes(value);</span>
     }
    
     /**
@@ -1012,143 +986,143 @@ import java.util.Set;
      */
     public static PairIntArray shuffle(PairIntArray source) throws NoSuchAlgorithmException {
         
-<span class="nc" id="L1015">        SecureRandom sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
-<span class="nc" id="L1016">        long seed = System.currentTimeMillis();</span>
-<span class="nc" id="L1017">        sr.setSeed(seed);</span>
+<span class="nc" id="L989">        SecureRandom sr = SecureRandom.getInstance(&quot;SHA1PRNG&quot;);</span>
+<span class="nc" id="L990">        long seed = System.currentTimeMillis();</span>
+<span class="nc" id="L991">        sr.setSeed(seed);</span>
         
-<span class="nc" id="L1019">        PairIntArray out = new PairIntArray();</span>
+<span class="nc" id="L993">        PairIntArray out = new PairIntArray();</span>
         
-<span class="nc" id="L1021">        int n = source.getN();</span>
+<span class="nc" id="L995">        int n = source.getN();</span>
         
-<span class="nc bnc" id="L1023" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc bnc" id="L997" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
              
-<span class="nc bnc" id="L1025" title="All 2 branches missed.">            int j = (i == 0) ? 0 : sr.nextInt(out.getN());</span>
+<span class="nc bnc" id="L999" title="All 2 branches missed.">            int j = (i == 0) ? 0 : sr.nextInt(out.getN());</span>
             
-<span class="nc bnc" id="L1027" title="All 2 branches missed.">            if (j == out.getN()) {</span>
-<span class="nc" id="L1028">                out.add(source.getX(i), source.getY(i));</span>
+<span class="nc bnc" id="L1001" title="All 2 branches missed.">            if (j == out.getN()) {</span>
+<span class="nc" id="L1002">                out.add(source.getX(i), source.getY(i));</span>
             } else {
-<span class="nc" id="L1030">                out.add(out.getX(j), out.getY(j));</span>
-<span class="nc" id="L1031">                out.set(j, source.getX(i), source.getY(i));</span>
+<span class="nc" id="L1004">                out.add(out.getX(j), out.getY(j));</span>
+<span class="nc" id="L1005">                out.set(j, source.getX(i), source.getY(i));</span>
             }
         }
         
-<span class="nc" id="L1035">        return out;</span>
+<span class="nc" id="L1009">        return out;</span>
     }
     
     public static PairIntArray get20NeighborOffsets() {
         
-<span class="fc" id="L1040">        return MiscMath0.get20NeighborOffsets();</span>
+<span class="fc" id="L1014">        return MiscMath0.get20NeighborOffsets();</span>
     }
     
     public static int calculateSumXOR(int[] d1, int[] d2) {
         
-<span class="nc bnc" id="L1045" title="All 2 branches missed.">        assert(d1.length == d2.length);</span>
+<span class="nc bnc" id="L1019" title="All 2 branches missed.">        assert(d1.length == d2.length);</span>
         
-<span class="nc" id="L1047">        int sum = 0;</span>
+<span class="nc" id="L1021">        int sum = 0;</span>
         
-<span class="nc bnc" id="L1049" title="All 2 branches missed.">        for (int i = 0; i &lt; d1.length; ++i) {</span>
-<span class="nc" id="L1050">            sum += (d1[i] ^ d2[i]);</span>
+<span class="nc bnc" id="L1023" title="All 2 branches missed.">        for (int i = 0; i &lt; d1.length; ++i) {</span>
+<span class="nc" id="L1024">            sum += (d1[i] ^ d2[i]);</span>
         }
                 
-<span class="nc" id="L1053">        return sum;</span>
+<span class="nc" id="L1027">        return sum;</span>
     }
     
     public static float calculateSSD(int[] a, int[] b, int sentinel) {
         
-<span class="nc bnc" id="L1058" title="All 2 branches missed.">        if (a.length != b.length) {</span>
-<span class="nc" id="L1059">            throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L1032" title="All 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L1033">            throw new IllegalArgumentException(</span>
             &quot;a and b must have the same lengths&quot;);
         }
                 
-<span class="nc" id="L1063">        int count = 0;</span>
-<span class="nc" id="L1064">        double sum = 0;</span>
+<span class="nc" id="L1037">        int count = 0;</span>
+<span class="nc" id="L1038">        double sum = 0;</span>
         
-<span class="nc bnc" id="L1066" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L1040" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
             
-<span class="nc" id="L1068">            int v1 = a[i];</span>
-<span class="nc bnc" id="L1069" title="All 2 branches missed.">            if (v1 == sentinel) {</span>
-<span class="nc" id="L1070">                continue;</span>
+<span class="nc" id="L1042">            int v1 = a[i];</span>
+<span class="nc bnc" id="L1043" title="All 2 branches missed.">            if (v1 == sentinel) {</span>
+<span class="nc" id="L1044">                continue;</span>
             }
-<span class="nc" id="L1072">            int v2 = b[i];</span>
-<span class="nc bnc" id="L1073" title="All 2 branches missed.">            if (v2 == sentinel) {</span>
-<span class="nc" id="L1074">                continue;</span>
+<span class="nc" id="L1046">            int v2 = b[i];</span>
+<span class="nc bnc" id="L1047" title="All 2 branches missed.">            if (v2 == sentinel) {</span>
+<span class="nc" id="L1048">                continue;</span>
             }
             
-<span class="nc" id="L1077">            int diff = v1 - v2;</span>
+<span class="nc" id="L1051">            int diff = v1 - v2;</span>
             
-<span class="nc" id="L1079">            sum += (diff * diff);</span>
+<span class="nc" id="L1053">            sum += (diff * diff);</span>
             
-<span class="nc" id="L1081">            count++;</span>
+<span class="nc" id="L1055">            count++;</span>
         }
-<span class="nc" id="L1083">        sum /= (double)count;</span>
+<span class="nc" id="L1057">        sum /= (double)count;</span>
                 
-<span class="nc" id="L1085">        return (float)sum;</span>
+<span class="nc" id="L1059">        return (float)sum;</span>
     }
     
     public static float calculateAngular360SSD(int[] a, int[] b, int sentinel) {
         
-<span class="nc bnc" id="L1090" title="All 2 branches missed.">        if (a.length != b.length) {</span>
-<span class="nc" id="L1091">            throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L1064" title="All 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L1065">            throw new IllegalArgumentException(</span>
             &quot;a and b must have the same lengths&quot;);
         }
                 
-<span class="nc" id="L1095">        int count = 0;</span>
+<span class="nc" id="L1069">        int count = 0;</span>
         
-<span class="nc" id="L1097">        double sum = 0;</span>
+<span class="nc" id="L1071">        double sum = 0;</span>
         
-<span class="nc bnc" id="L1099" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L1073" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
             
-<span class="nc" id="L1101">            int v1 = a[i];</span>
-<span class="nc bnc" id="L1102" title="All 2 branches missed.">            if (v1 == sentinel) {</span>
-<span class="nc" id="L1103">                continue;</span>
+<span class="nc" id="L1075">            int v1 = a[i];</span>
+<span class="nc bnc" id="L1076" title="All 2 branches missed.">            if (v1 == sentinel) {</span>
+<span class="nc" id="L1077">                continue;</span>
             }
-<span class="nc" id="L1105">            int v2 = b[i];</span>
-<span class="nc bnc" id="L1106" title="All 2 branches missed.">            if (v2 == sentinel) {</span>
-<span class="nc" id="L1107">                continue;</span>
+<span class="nc" id="L1079">            int v2 = b[i];</span>
+<span class="nc bnc" id="L1080" title="All 2 branches missed.">            if (v2 == sentinel) {</span>
+<span class="nc" id="L1081">                continue;</span>
             }
             
-<span class="nc" id="L1110">            float diff = AngleUtil.getAngleDifference(v1, v2);</span>
+<span class="nc" id="L1084">            float diff = AngleUtil.getAngleDifference(v1, v2);</span>
             
-<span class="nc" id="L1112">            sum += (diff * diff);</span>
+<span class="nc" id="L1086">            sum += (diff * diff);</span>
             
-<span class="nc" id="L1114">            count++;</span>
+<span class="nc" id="L1088">            count++;</span>
         }
         
-<span class="nc" id="L1117">        sum /= (double)count;</span>
+<span class="nc" id="L1091">        sum /= (double)count;</span>
                 
-<span class="nc" id="L1119">        return (float)sum;</span>
+<span class="nc" id="L1093">        return (float)sum;</span>
     }
    
     public static float calculateSSD(float[] a, float[] b, float sentinel) {
         
-<span class="nc bnc" id="L1124" title="All 2 branches missed.">        if (a.length != b.length) {</span>
-<span class="nc" id="L1125">            throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L1098" title="All 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L1099">            throw new IllegalArgumentException(</span>
             &quot;a and b must have the same lengths&quot;);
         }
                 
-<span class="nc" id="L1129">        int count = 0;</span>
-<span class="nc" id="L1130">        double sum = 0;</span>
+<span class="nc" id="L1103">        int count = 0;</span>
+<span class="nc" id="L1104">        double sum = 0;</span>
         
-<span class="nc bnc" id="L1132" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L1106" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
             
-<span class="nc" id="L1134">            float v1 = a[i];</span>
-<span class="nc bnc" id="L1135" title="All 2 branches missed.">            if (v1 == sentinel) {</span>
-<span class="nc" id="L1136">                continue;</span>
+<span class="nc" id="L1108">            float v1 = a[i];</span>
+<span class="nc bnc" id="L1109" title="All 2 branches missed.">            if (v1 == sentinel) {</span>
+<span class="nc" id="L1110">                continue;</span>
             }
-<span class="nc" id="L1138">            float v2 = b[i];</span>
-<span class="nc bnc" id="L1139" title="All 2 branches missed.">            if (v2 == sentinel) {</span>
-<span class="nc" id="L1140">                continue;</span>
+<span class="nc" id="L1112">            float v2 = b[i];</span>
+<span class="nc bnc" id="L1113" title="All 2 branches missed.">            if (v2 == sentinel) {</span>
+<span class="nc" id="L1114">                continue;</span>
             }
             
-<span class="nc" id="L1143">            float diff = v1 - v2;</span>
+<span class="nc" id="L1117">            float diff = v1 - v2;</span>
             
-<span class="nc" id="L1145">            sum += (diff * diff);</span>
+<span class="nc" id="L1119">            sum += (diff * diff);</span>
             
-<span class="nc" id="L1147">            count++;</span>
+<span class="nc" id="L1121">            count++;</span>
         }
-<span class="nc" id="L1149">        sum /= (double)count;</span>
+<span class="nc" id="L1123">        sum /= (double)count;</span>
                 
-<span class="nc" id="L1151">        return (float)sum;</span>
+<span class="nc" id="L1125">        return (float)sum;</span>
     }
     
     /**
@@ -1166,8 +1140,8 @@ import java.util.Set;
      */
     public static float calculateCosineSimilarity(float[] a, float[] b, float sentinel) {
         
-<span class="nc bnc" id="L1169" title="All 2 branches missed.">        if (a.length != b.length) {</span>
-<span class="nc" id="L1170">            throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L1143" title="All 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L1144">            throw new IllegalArgumentException(</span>
             &quot;a and b must have the same lengths&quot;);
         }
         
@@ -1176,26 +1150,26 @@ import java.util.Set;
         ------------------------------------------------------------------------------
         sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]...) * sqrt(b[0]*b[0] + b[1]*b[1] + ...)
         */     
-<span class="nc" id="L1179">        int count = 0;</span>
-<span class="nc" id="L1180">        double aDotB = 0;</span>
-<span class="nc" id="L1181">        double aMagn = 0;</span>
-<span class="nc" id="L1182">        double bMagn = 0;</span>
-<span class="nc bnc" id="L1183" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc" id="L1184">            float a1 = a[i];</span>
-<span class="nc" id="L1185">            float b1 = a[i];</span>
-<span class="nc bnc" id="L1186" title="All 4 branches missed.">            if (a1 == sentinel || b1 == sentinel) {</span>
-<span class="nc" id="L1187">                continue;</span>
+<span class="nc" id="L1153">        int count = 0;</span>
+<span class="nc" id="L1154">        double aDotB = 0;</span>
+<span class="nc" id="L1155">        double aMagn = 0;</span>
+<span class="nc" id="L1156">        double bMagn = 0;</span>
+<span class="nc bnc" id="L1157" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc" id="L1158">            float a1 = a[i];</span>
+<span class="nc" id="L1159">            float b1 = a[i];</span>
+<span class="nc bnc" id="L1160" title="All 4 branches missed.">            if (a1 == sentinel || b1 == sentinel) {</span>
+<span class="nc" id="L1161">                continue;</span>
             }
-<span class="nc" id="L1189">            aDotB += (a1 * b1); </span>
-<span class="nc" id="L1190">            aMagn += (a1 * a1);</span>
-<span class="nc" id="L1191">            bMagn += (b1 * b1);</span>
-<span class="nc" id="L1192">            count++;</span>
+<span class="nc" id="L1163">            aDotB += (a1 * b1); </span>
+<span class="nc" id="L1164">            aMagn += (a1 * a1);</span>
+<span class="nc" id="L1165">            bMagn += (b1 * b1);</span>
+<span class="nc" id="L1166">            count++;</span>
         }
-<span class="nc" id="L1194">        aMagn = Math.sqrt(aMagn);</span>
-<span class="nc" id="L1195">        bMagn = Math.sqrt(bMagn);</span>
-<span class="nc" id="L1196">        double cosSim = aDotB/(aMagn*bMagn);</span>
+<span class="nc" id="L1168">        aMagn = Math.sqrt(aMagn);</span>
+<span class="nc" id="L1169">        bMagn = Math.sqrt(bMagn);</span>
+<span class="nc" id="L1170">        double cosSim = aDotB/(aMagn*bMagn);</span>
         
-<span class="nc" id="L1198">        return (float)cosSim;</span>
+<span class="nc" id="L1172">        return (float)cosSim;</span>
     }
     
     /**
@@ -1213,8 +1187,8 @@ import java.util.Set;
      */
     public static float calculateCosineSimilarity(int[] a, int[] b, int sentinel) {
         
-<span class="nc bnc" id="L1216" title="All 2 branches missed.">        if (a.length != b.length) {</span>
-<span class="nc" id="L1217">            throw new IllegalArgumentException(</span>
+<span class="nc bnc" id="L1190" title="All 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L1191">            throw new IllegalArgumentException(</span>
             &quot;a and b must have the same lengths&quot;);
         }
         
@@ -1223,26 +1197,26 @@ import java.util.Set;
         ------------------------------------------------------------------------------
         sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]...) * sqrt(b[0]*b[0] + b[1]*b[1] + ...)
         */     
-<span class="nc" id="L1226">        int count = 0;</span>
-<span class="nc" id="L1227">        double aDotB = 0;</span>
-<span class="nc" id="L1228">        double aMagn = 0;</span>
-<span class="nc" id="L1229">        double bMagn = 0;</span>
-<span class="nc bnc" id="L1230" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc" id="L1231">            float a1 = a[i];</span>
-<span class="nc" id="L1232">            float b1 = a[i];</span>
-<span class="nc bnc" id="L1233" title="All 4 branches missed.">            if (a1 == sentinel || b1 == sentinel) {</span>
-<span class="nc" id="L1234">                continue;</span>
+<span class="nc" id="L1200">        int count = 0;</span>
+<span class="nc" id="L1201">        double aDotB = 0;</span>
+<span class="nc" id="L1202">        double aMagn = 0;</span>
+<span class="nc" id="L1203">        double bMagn = 0;</span>
+<span class="nc bnc" id="L1204" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc" id="L1205">            float a1 = a[i];</span>
+<span class="nc" id="L1206">            float b1 = a[i];</span>
+<span class="nc bnc" id="L1207" title="All 4 branches missed.">            if (a1 == sentinel || b1 == sentinel) {</span>
+<span class="nc" id="L1208">                continue;</span>
             }
-<span class="nc" id="L1236">            aDotB += (a1 * b1); </span>
-<span class="nc" id="L1237">            aMagn += (a1 * a1);</span>
-<span class="nc" id="L1238">            bMagn += (b1 * b1);</span>
-<span class="nc" id="L1239">            count++;</span>
+<span class="nc" id="L1210">            aDotB += (a1 * b1); </span>
+<span class="nc" id="L1211">            aMagn += (a1 * a1);</span>
+<span class="nc" id="L1212">            bMagn += (b1 * b1);</span>
+<span class="nc" id="L1213">            count++;</span>
         }
-<span class="nc" id="L1241">        aMagn = Math.sqrt(aMagn);</span>
-<span class="nc" id="L1242">        bMagn = Math.sqrt(bMagn);</span>
-<span class="nc" id="L1243">        double cosSim = aDotB/(aMagn*bMagn);</span>
+<span class="nc" id="L1215">        aMagn = Math.sqrt(aMagn);</span>
+<span class="nc" id="L1216">        bMagn = Math.sqrt(bMagn);</span>
+<span class="nc" id="L1217">        double cosSim = aDotB/(aMagn*bMagn);</span>
         
-<span class="nc" id="L1245">        return (float)cosSim;</span>
+<span class="nc" id="L1219">        return (float)cosSim;</span>
     }
     
     /**
@@ -1254,34 +1228,34 @@ import java.util.Set;
      */
     public static float sumSquaredError(int[] a, int sentinel, int centralIdx) {
         
-<span class="nc" id="L1257">        int n = a.length;</span>
+<span class="nc" id="L1231">        int n = a.length;</span>
         
-<span class="nc" id="L1259">        int vc = a[centralIdx];</span>
+<span class="nc" id="L1233">        int vc = a[centralIdx];</span>
         
-<span class="nc bnc" id="L1261" title="All 2 branches missed.">        if (vc == sentinel) {</span>
-<span class="nc" id="L1262">            throw new IllegalStateException(</span>
+<span class="nc bnc" id="L1235" title="All 2 branches missed.">        if (vc == sentinel) {</span>
+<span class="nc" id="L1236">            throw new IllegalStateException(</span>
             &quot;ERROR: the central value for the array is somehow sentinel&quot;);
         }
         
-<span class="nc" id="L1266">        int count = 0;</span>
+<span class="nc" id="L1240">        int count = 0;</span>
         
-<span class="nc" id="L1268">        double sum = 0;</span>
+<span class="nc" id="L1242">        double sum = 0;</span>
         
-<span class="nc bnc" id="L1270" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L1244" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
             
-<span class="nc" id="L1272">            int v1 = a[i];</span>
-<span class="nc bnc" id="L1273" title="All 2 branches missed.">            if (v1 == sentinel) {</span>
-<span class="nc" id="L1274">                continue;</span>
+<span class="nc" id="L1246">            int v1 = a[i];</span>
+<span class="nc bnc" id="L1247" title="All 2 branches missed.">            if (v1 == sentinel) {</span>
+<span class="nc" id="L1248">                continue;</span>
             }
             
-<span class="nc" id="L1277">            int diff = a[i] - vc;</span>
+<span class="nc" id="L1251">            int diff = a[i] - vc;</span>
         
-<span class="nc" id="L1279">            sum += (diff * diff);</span>
-<span class="nc" id="L1280">            count++;</span>
+<span class="nc" id="L1253">            sum += (diff * diff);</span>
+<span class="nc" id="L1254">            count++;</span>
         }
-<span class="nc" id="L1282">        sum /= (double)count;</span>
+<span class="nc" id="L1256">        sum /= (double)count;</span>
                        
-<span class="nc" id="L1284">        return (float)sum;</span>
+<span class="nc" id="L1258">        return (float)sum;</span>
     }
 
     /**
@@ -1294,36 +1268,36 @@ import java.util.Set;
     public static float sumSquaredAngular360Error(int[] a, int sentinel, 
         int centralIdx) {
         
-<span class="nc" id="L1297">        int n = a.length;</span>
+<span class="nc" id="L1271">        int n = a.length;</span>
         
-<span class="nc" id="L1299">        int vc = a[centralIdx];</span>
+<span class="nc" id="L1273">        int vc = a[centralIdx];</span>
         
-<span class="nc bnc" id="L1301" title="All 2 branches missed.">        if (vc == sentinel) {</span>
-<span class="nc" id="L1302">            throw new IllegalStateException(</span>
+<span class="nc bnc" id="L1275" title="All 2 branches missed.">        if (vc == sentinel) {</span>
+<span class="nc" id="L1276">            throw new IllegalStateException(</span>
             &quot;ERROR: the central value for the array is somehow sentinel&quot;);
         }
         
-<span class="nc" id="L1306">        int count = 0;</span>
+<span class="nc" id="L1280">        int count = 0;</span>
         
-<span class="nc" id="L1308">        double sum = 0;</span>
+<span class="nc" id="L1282">        double sum = 0;</span>
         
-<span class="nc bnc" id="L1310" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L1284" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
             
-<span class="nc" id="L1312">            int v1 = a[i];</span>
-<span class="nc bnc" id="L1313" title="All 2 branches missed.">            if (v1 == sentinel) {</span>
-<span class="nc" id="L1314">                continue;</span>
+<span class="nc" id="L1286">            int v1 = a[i];</span>
+<span class="nc bnc" id="L1287" title="All 2 branches missed.">            if (v1 == sentinel) {</span>
+<span class="nc" id="L1288">                continue;</span>
             }
             
-<span class="nc" id="L1317">            float diff = AngleUtil.getAngleDifference(v1, vc);</span>
+<span class="nc" id="L1291">            float diff = AngleUtil.getAngleDifference(v1, vc);</span>
         
-<span class="nc" id="L1319">            sum += (diff * diff);</span>
+<span class="nc" id="L1293">            sum += (diff * diff);</span>
             
-<span class="nc" id="L1321">            count++;</span>
+<span class="nc" id="L1295">            count++;</span>
         }
         
-<span class="nc" id="L1324">        sum /= (double)count;</span>
+<span class="nc" id="L1298">        sum /= (double)count;</span>
                        
-<span class="nc" id="L1326">        return (float)sum;</span>
+<span class="nc" id="L1300">        return (float)sum;</span>
     }
 
     /**
@@ -1336,36 +1310,36 @@ import java.util.Set;
      */
     public static float sumSquaredError(float[] a, float sentinel, int centralPixIdx) {
         
-<span class="nc" id="L1339">        int n = a.length;</span>
+<span class="nc" id="L1313">        int n = a.length;</span>
         
-<span class="nc" id="L1341">        float vc = a[centralPixIdx];</span>
+<span class="nc" id="L1315">        float vc = a[centralPixIdx];</span>
         
-<span class="nc bnc" id="L1343" title="All 2 branches missed.">        if (vc == sentinel) {</span>
-<span class="nc" id="L1344">            throw new IllegalStateException(</span>
+<span class="nc bnc" id="L1317" title="All 2 branches missed.">        if (vc == sentinel) {</span>
+<span class="nc" id="L1318">            throw new IllegalStateException(</span>
             &quot;ERROR: the central value for the array is somehow sentinel&quot;);
         }
         
-<span class="nc" id="L1348">        int count = 0;</span>
+<span class="nc" id="L1322">        int count = 0;</span>
         
-<span class="nc" id="L1350">        double sum = 0;</span>
+<span class="nc" id="L1324">        double sum = 0;</span>
         
-<span class="nc bnc" id="L1352" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc bnc" id="L1326" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
             
-<span class="nc" id="L1354">            float v1 = a[i];</span>
-<span class="nc bnc" id="L1355" title="All 2 branches missed.">            if (v1 == sentinel) {</span>
-<span class="nc" id="L1356">                continue;</span>
+<span class="nc" id="L1328">            float v1 = a[i];</span>
+<span class="nc bnc" id="L1329" title="All 2 branches missed.">            if (v1 == sentinel) {</span>
+<span class="nc" id="L1330">                continue;</span>
             }
             
-<span class="nc" id="L1359">            float diff = a[i] - vc;</span>
+<span class="nc" id="L1333">            float diff = a[i] - vc;</span>
         
-<span class="nc" id="L1361">            sum += (diff * diff);</span>
+<span class="nc" id="L1335">            sum += (diff * diff);</span>
             
-<span class="nc" id="L1363">            count++;</span>
+<span class="nc" id="L1337">            count++;</span>
         }
         
-<span class="nc" id="L1366">        sum /= (double)count;</span>
+<span class="nc" id="L1340">        sum /= (double)count;</span>
                        
-<span class="nc" id="L1368">        return (float)sum;</span>
+<span class="nc" id="L1342">        return (float)sum;</span>
     }
 
     /**
@@ -1384,33 +1358,33 @@ import java.util.Set;
     public static LinkedHashSet&lt;PairInt&gt; lexicographicallyOrderPointsBySort(
         Set&lt;PairInt&gt; points) {
         
-<span class="fc" id="L1387">        int n = points.size();</span>
+<span class="fc" id="L1361">        int n = points.size();</span>
         
-<span class="fc" id="L1389">        LinkedHashSet&lt;PairInt&gt; ordered = new LinkedHashSet&lt;PairInt&gt;(n);</span>
+<span class="fc" id="L1363">        LinkedHashSet&lt;PairInt&gt; ordered = new LinkedHashSet&lt;PairInt&gt;(n);</span>
         
-<span class="fc" id="L1391">        int[] x = new int[n];</span>
-<span class="fc" id="L1392">        int[] y = new int[n];</span>
+<span class="fc" id="L1365">        int[] x = new int[n];</span>
+<span class="fc" id="L1366">        int[] y = new int[n];</span>
         
         // O(N_points)
-<span class="fc" id="L1395">        int count = 0;</span>
-<span class="fc bfc" id="L1396" title="All 2 branches covered.">        for (PairInt p : points) {</span>
-<span class="fc" id="L1397">            x[count] = p.getX();</span>
-<span class="fc" id="L1398">            y[count] = p.getY();</span>
-<span class="fc" id="L1399">            count++;</span>
-<span class="fc" id="L1400">        }</span>
+<span class="fc" id="L1369">        int count = 0;</span>
+<span class="fc bfc" id="L1370" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc" id="L1371">            x[count] = p.getX();</span>
+<span class="fc" id="L1372">            y[count] = p.getY();</span>
+<span class="fc" id="L1373">            count++;</span>
+<span class="fc" id="L1374">        }</span>
         
         // O(N_points * lg2(O(N_points)))
-<span class="fc" id="L1403">        MultiArrayMergeSort.sortBy1stArgThen2nd(x, y);</span>
+<span class="fc" id="L1377">        MultiArrayMergeSort.sortBy1stArgThen2nd(x, y);</span>
         
         // O(N_points)
-<span class="fc bfc" id="L1406" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc bfc" id="L1380" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
             
-<span class="fc" id="L1408">            PairInt p = new PairInt(x[i], y[i]);</span>
+<span class="fc" id="L1382">            PairInt p = new PairInt(x[i], y[i]);</span>
             
-<span class="fc" id="L1410">            ordered.add(p);</span>
+<span class="fc" id="L1384">            ordered.add(p);</span>
         }
         
-<span class="fc" id="L1413">        return ordered;</span>
+<span class="fc" id="L1387">        return ordered;</span>
     }
     
     /**
@@ -1431,146 +1405,146 @@ import java.util.Set;
     public static LinkedHashSet&lt;PairInt&gt; lexicographicallyOrderPointsByScan(
         Set&lt;PairInt&gt; points, int w, int h) {
         
-<span class="fc" id="L1434">        LinkedHashSet&lt;PairInt&gt; ordered = new LinkedHashSet&lt;PairInt&gt;(w * h);</span>
+<span class="fc" id="L1408">        LinkedHashSet&lt;PairInt&gt; ordered = new LinkedHashSet&lt;PairInt&gt;(w * h);</span>
         
-<span class="fc bfc" id="L1436" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="fc bfc" id="L1437" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc bfc" id="L1410" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L1411" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
                 
-<span class="fc" id="L1439">                PairInt p = new PairInt(i, j);</span>
+<span class="fc" id="L1413">                PairInt p = new PairInt(i, j);</span>
                 
-<span class="fc bfc" id="L1441" title="All 2 branches covered.">                if (points.contains(p)) {</span>
-<span class="fc" id="L1442">                    ordered.add(p);</span>
+<span class="fc bfc" id="L1415" title="All 2 branches covered.">                if (points.contains(p)) {</span>
+<span class="fc" id="L1416">                    ordered.add(p);</span>
                 }
             }
         }
         
-<span class="fc" id="L1447">        return ordered;</span>
+<span class="fc" id="L1421">        return ordered;</span>
     }
 
     public static long findMaxForByteCompressed(long[] aL, int len, 
         int itemNDatum, int datumNBits, int minDatum) {
         
-<span class="fc" id="L1453">        long mask = (1L &lt;&lt; datumNBits) - 1L;</span>
+<span class="fc" id="L1427">        long mask = (1L &lt;&lt; datumNBits) - 1L;</span>
         
-<span class="fc" id="L1455">        long max = Long.MIN_VALUE;</span>
+<span class="fc" id="L1429">        long max = Long.MIN_VALUE;</span>
         
-<span class="fc bfc" id="L1457" title="All 2 branches covered.">        for (int elementIdx = 0; elementIdx &lt; len; ++elementIdx) {</span>
-<span class="fc" id="L1458">            long total = aL[elementIdx];</span>
-<span class="fc bfc" id="L1459" title="All 2 branches covered.">            for (int i = 0; i &lt; itemNDatum; i++) {</span>
-<span class="fc" id="L1460">                long v = (total &gt;&gt; (long)(i * datumNBits)) &amp; mask;</span>
-<span class="fc" id="L1461">                v += minDatum;</span>
-<span class="fc bfc" id="L1462" title="All 2 branches covered.">                if (v &gt; max) {</span>
-<span class="fc" id="L1463">                    max = v;</span>
+<span class="fc bfc" id="L1431" title="All 2 branches covered.">        for (int elementIdx = 0; elementIdx &lt; len; ++elementIdx) {</span>
+<span class="fc" id="L1432">            long total = aL[elementIdx];</span>
+<span class="fc bfc" id="L1433" title="All 2 branches covered.">            for (int i = 0; i &lt; itemNDatum; i++) {</span>
+<span class="fc" id="L1434">                long v = (total &gt;&gt; (long)(i * datumNBits)) &amp; mask;</span>
+<span class="fc" id="L1435">                v += minDatum;</span>
+<span class="fc bfc" id="L1436" title="All 2 branches covered.">                if (v &gt; max) {</span>
+<span class="fc" id="L1437">                    max = v;</span>
                 }
             }
         }
         
-<span class="fc" id="L1468">        return max;</span>
+<span class="fc" id="L1442">        return max;</span>
     }
     
     public static long findMinForByteCompressed(long[] aL, int len, 
         int itemNDatum, int datumNBits, int minDatum) {
                 
-<span class="nc" id="L1474">        long mask = (1L &lt;&lt; datumNBits) - 1L;</span>
+<span class="nc" id="L1448">        long mask = (1L &lt;&lt; datumNBits) - 1L;</span>
         
-<span class="nc" id="L1476">        long min = Long.MAX_VALUE;</span>
+<span class="nc" id="L1450">        long min = Long.MAX_VALUE;</span>
         
-<span class="nc bnc" id="L1478" title="All 2 branches missed.">        for (int elementIdx = 0; elementIdx &lt; len; ++elementIdx) {</span>
-<span class="nc" id="L1479">            long total = aL[elementIdx];</span>
-<span class="nc bnc" id="L1480" title="All 2 branches missed.">            for (int i = 0; i &lt; itemNDatum; i++) {</span>
-<span class="nc" id="L1481">                long v = (total &gt;&gt; (long)(i * datumNBits)) &amp; mask;</span>
-<span class="nc" id="L1482">                v += minDatum;</span>
-<span class="nc bnc" id="L1483" title="All 2 branches missed.">                if (v &lt; min) {</span>
-<span class="nc" id="L1484">                    min = v;</span>
+<span class="nc bnc" id="L1452" title="All 2 branches missed.">        for (int elementIdx = 0; elementIdx &lt; len; ++elementIdx) {</span>
+<span class="nc" id="L1453">            long total = aL[elementIdx];</span>
+<span class="nc bnc" id="L1454" title="All 2 branches missed.">            for (int i = 0; i &lt; itemNDatum; i++) {</span>
+<span class="nc" id="L1455">                long v = (total &gt;&gt; (long)(i * datumNBits)) &amp; mask;</span>
+<span class="nc" id="L1456">                v += minDatum;</span>
+<span class="nc bnc" id="L1457" title="All 2 branches missed.">                if (v &lt; min) {</span>
+<span class="nc" id="L1458">                    min = v;</span>
                 }
             }
         }
         
-<span class="nc" id="L1489">        return min;</span>
+<span class="nc" id="L1463">        return min;</span>
     }
 
     public static int findMaxForByteCompressed(int[] a, int len, int itemNDatum, 
         int datumNBits, int minDatum) {
         
-<span class="nc" id="L1495">        int mask = (1 &lt;&lt; datumNBits) - 1;</span>
+<span class="nc" id="L1469">        int mask = (1 &lt;&lt; datumNBits) - 1;</span>
         
-<span class="nc" id="L1497">        int max = Integer.MIN_VALUE;</span>
+<span class="nc" id="L1471">        int max = Integer.MIN_VALUE;</span>
         
-<span class="nc bnc" id="L1499" title="All 2 branches missed.">        for (int elementIdx = 0; elementIdx &lt; len; ++elementIdx) {</span>
-<span class="nc" id="L1500">            int total = a[elementIdx];</span>
-<span class="nc bnc" id="L1501" title="All 2 branches missed.">            for (int i = 0; i &lt; itemNDatum; i++) {</span>
-<span class="nc" id="L1502">                int v = (total &gt;&gt; (i * datumNBits)) &amp; mask;</span>
-<span class="nc" id="L1503">                v += minDatum;</span>
-<span class="nc bnc" id="L1504" title="All 2 branches missed.">                if (v &gt; max) {</span>
-<span class="nc" id="L1505">                    max = v;</span>
+<span class="nc bnc" id="L1473" title="All 2 branches missed.">        for (int elementIdx = 0; elementIdx &lt; len; ++elementIdx) {</span>
+<span class="nc" id="L1474">            int total = a[elementIdx];</span>
+<span class="nc bnc" id="L1475" title="All 2 branches missed.">            for (int i = 0; i &lt; itemNDatum; i++) {</span>
+<span class="nc" id="L1476">                int v = (total &gt;&gt; (i * datumNBits)) &amp; mask;</span>
+<span class="nc" id="L1477">                v += minDatum;</span>
+<span class="nc bnc" id="L1478" title="All 2 branches missed.">                if (v &gt; max) {</span>
+<span class="nc" id="L1479">                    max = v;</span>
                 }
             }
         }
         
-<span class="nc" id="L1510">        return max;</span>
+<span class="nc" id="L1484">        return max;</span>
     }
     
     public static int findMinForByteCompressed(int[] a, int len, int itemNDatum, 
         int datumNBits, int minDatum) {
         
-<span class="nc" id="L1516">        int mask = (1 &lt;&lt; datumNBits) - 1;</span>
+<span class="nc" id="L1490">        int mask = (1 &lt;&lt; datumNBits) - 1;</span>
         
-<span class="nc" id="L1518">        int min = Integer.MAX_VALUE;</span>
+<span class="nc" id="L1492">        int min = Integer.MAX_VALUE;</span>
         
-<span class="nc bnc" id="L1520" title="All 2 branches missed.">        for (int elementIdx = 0; elementIdx &lt; len; ++elementIdx) {</span>
-<span class="nc" id="L1521">            int total = a[elementIdx];</span>
-<span class="nc bnc" id="L1522" title="All 2 branches missed.">            for (int i = 0; i &lt; itemNDatum; i++) {</span>
-<span class="nc" id="L1523">                int v = (total &gt;&gt; (i * datumNBits)) &amp; mask;</span>
-<span class="nc" id="L1524">                v += minDatum;</span>
-<span class="nc bnc" id="L1525" title="All 2 branches missed.">                if (v &lt; min) {</span>
-<span class="nc" id="L1526">                    min = v;</span>
+<span class="nc bnc" id="L1494" title="All 2 branches missed.">        for (int elementIdx = 0; elementIdx &lt; len; ++elementIdx) {</span>
+<span class="nc" id="L1495">            int total = a[elementIdx];</span>
+<span class="nc bnc" id="L1496" title="All 2 branches missed.">            for (int i = 0; i &lt; itemNDatum; i++) {</span>
+<span class="nc" id="L1497">                int v = (total &gt;&gt; (i * datumNBits)) &amp; mask;</span>
+<span class="nc" id="L1498">                v += minDatum;</span>
+<span class="nc bnc" id="L1499" title="All 2 branches missed.">                if (v &lt; min) {</span>
+<span class="nc" id="L1500">                    min = v;</span>
                 }
             }
         }
         
-<span class="nc" id="L1531">        return min;</span>
+<span class="nc" id="L1505">        return min;</span>
     }
 
     public static float[] findMinXY2(List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; crLists) {
         
-<span class="nc" id="L1536">        float minX = Float.MAX_VALUE;</span>
-<span class="nc" id="L1537">        float minY = Float.MAX_VALUE;</span>
+<span class="nc" id="L1510">        float minX = Float.MAX_VALUE;</span>
+<span class="nc" id="L1511">        float minY = Float.MAX_VALUE;</span>
         
-<span class="nc bnc" id="L1539" title="All 2 branches missed.">        for (List&lt;CurvatureScaleSpaceContour&gt; list : crLists) {</span>
-<span class="nc bnc" id="L1540" title="All 2 branches missed.">            for (CurvatureScaleSpaceContour cr : list) {</span>
-<span class="nc" id="L1541">                float x = cr.getPeakDetails()[0].getXCoord();</span>
-<span class="nc" id="L1542">                float y = cr.getPeakDetails()[0].getYCoord();</span>
-<span class="nc bnc" id="L1543" title="All 2 branches missed.">                if (x &lt; minX) {</span>
-<span class="nc" id="L1544">                    minX = x;</span>
+<span class="nc bnc" id="L1513" title="All 2 branches missed.">        for (List&lt;CurvatureScaleSpaceContour&gt; list : crLists) {</span>
+<span class="nc bnc" id="L1514" title="All 2 branches missed.">            for (CurvatureScaleSpaceContour cr : list) {</span>
+<span class="nc" id="L1515">                float x = cr.getPeakDetails()[0].getXCoord();</span>
+<span class="nc" id="L1516">                float y = cr.getPeakDetails()[0].getYCoord();</span>
+<span class="nc bnc" id="L1517" title="All 2 branches missed.">                if (x &lt; minX) {</span>
+<span class="nc" id="L1518">                    minX = x;</span>
                 }
-<span class="nc bnc" id="L1546" title="All 2 branches missed.">                if (y &lt; minY) {</span>
-<span class="nc" id="L1547">                    minY = y;</span>
+<span class="nc bnc" id="L1520" title="All 2 branches missed.">                if (y &lt; minY) {</span>
+<span class="nc" id="L1521">                    minY = y;</span>
                 }
-<span class="nc" id="L1549">            }</span>
-<span class="nc" id="L1550">        }</span>
+<span class="nc" id="L1523">            }</span>
+<span class="nc" id="L1524">        }</span>
         
-<span class="nc" id="L1552">        return new float[]{minX, minY};</span>
+<span class="nc" id="L1526">        return new float[]{minX, minY};</span>
     }
 
     public static float[] findMaxXY2(List&lt;List&lt;CurvatureScaleSpaceContour&gt;&gt; crLists) {
         
-<span class="nc" id="L1557">        float maxX = Float.NEGATIVE_INFINITY;</span>
-<span class="nc" id="L1558">        float maxY = Float.NEGATIVE_INFINITY;</span>
+<span class="nc" id="L1531">        float maxX = Float.NEGATIVE_INFINITY;</span>
+<span class="nc" id="L1532">        float maxY = Float.NEGATIVE_INFINITY;</span>
         
-<span class="nc bnc" id="L1560" title="All 2 branches missed.">        for (List&lt;CurvatureScaleSpaceContour&gt; list : crLists) {</span>
-<span class="nc bnc" id="L1561" title="All 2 branches missed.">            for (CurvatureScaleSpaceContour cr : list) {</span>
-<span class="nc" id="L1562">                float x = cr.getPeakDetails()[0].getXCoord();</span>
-<span class="nc" id="L1563">                float y = cr.getPeakDetails()[0].getYCoord();</span>
-<span class="nc bnc" id="L1564" title="All 2 branches missed.">                if (x &gt; maxX) {</span>
-<span class="nc" id="L1565">                    maxX = x;</span>
+<span class="nc bnc" id="L1534" title="All 2 branches missed.">        for (List&lt;CurvatureScaleSpaceContour&gt; list : crLists) {</span>
+<span class="nc bnc" id="L1535" title="All 2 branches missed.">            for (CurvatureScaleSpaceContour cr : list) {</span>
+<span class="nc" id="L1536">                float x = cr.getPeakDetails()[0].getXCoord();</span>
+<span class="nc" id="L1537">                float y = cr.getPeakDetails()[0].getYCoord();</span>
+<span class="nc bnc" id="L1538" title="All 2 branches missed.">                if (x &gt; maxX) {</span>
+<span class="nc" id="L1539">                    maxX = x;</span>
                 }
-<span class="nc bnc" id="L1567" title="All 2 branches missed.">                if (y &gt; maxY) {</span>
-<span class="nc" id="L1568">                    maxY = y;</span>
+<span class="nc bnc" id="L1541" title="All 2 branches missed.">                if (y &gt; maxY) {</span>
+<span class="nc" id="L1542">                    maxY = y;</span>
                 }
-<span class="nc" id="L1570">            }</span>
-<span class="nc" id="L1571">        }</span>
+<span class="nc" id="L1544">            }</span>
+<span class="nc" id="L1545">        }</span>
         
-<span class="nc" id="L1573">        return new float[]{maxX, maxY};</span>
+<span class="nc" id="L1547">        return new float[]{maxX, maxY};</span>
     }
    
     /**
@@ -1582,32 +1556,32 @@ import java.util.Set;
      */
     public static int[] rescale(double[] a, int vi, int vf) {
         
-<span class="fc" id="L1585">        double minV = Double.MAX_VALUE;</span>
-<span class="fc" id="L1586">        double maxV = Double.MIN_VALUE;</span>
+<span class="fc" id="L1559">        double minV = Double.MAX_VALUE;</span>
+<span class="fc" id="L1560">        double maxV = Double.MIN_VALUE;</span>
         
-<span class="fc bfc" id="L1588" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="fc" id="L1589">            double v = a[i];</span>
-<span class="fc bfc" id="L1590" title="All 2 branches covered.">            if (v &lt; minV) {</span>
-<span class="fc" id="L1591">                minV = v;</span>
+<span class="fc bfc" id="L1562" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="fc" id="L1563">            double v = a[i];</span>
+<span class="fc bfc" id="L1564" title="All 2 branches covered.">            if (v &lt; minV) {</span>
+<span class="fc" id="L1565">                minV = v;</span>
             }
-<span class="fc bfc" id="L1593" title="All 2 branches covered.">            if (v &gt; maxV) {</span>
-<span class="fc" id="L1594">                maxV = v;</span>
+<span class="fc bfc" id="L1567" title="All 2 branches covered.">            if (v &gt; maxV) {</span>
+<span class="fc" id="L1568">                maxV = v;</span>
             }
         }
-<span class="fc" id="L1597">        double range = maxV - minV;</span>
+<span class="fc" id="L1571">        double range = maxV - minV;</span>
         
-<span class="fc" id="L1599">        double scale = ((double)(vf - vi))/range;</span>
+<span class="fc" id="L1573">        double scale = ((double)(vf - vi))/range;</span>
  
-<span class="fc" id="L1601">        int[] scaled = new int[a.length];</span>
+<span class="fc" id="L1575">        int[] scaled = new int[a.length];</span>
         
-<span class="fc bfc" id="L1603" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="fc bfc" id="L1577" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
             
-<span class="fc" id="L1605">            double v = (a[i] - minV) * scale;</span>
+<span class="fc" id="L1579">            double v = (a[i] - minV) * scale;</span>
             
-<span class="fc" id="L1607">            scaled[i] = (int)Math.round(v);</span>
+<span class="fc" id="L1581">            scaled[i] = (int)Math.round(v);</span>
         }
         
-<span class="fc" id="L1610">        return scaled;</span>
+<span class="fc" id="L1584">        return scaled;</span>
     }
     
     /**
@@ -1619,35 +1593,35 @@ import java.util.Set;
      */
     public static int[][] rescale(double[][] a, int vi, int vf) {
         
-<span class="nc" id="L1622">        double minV = Double.MAX_VALUE;</span>
-<span class="nc" id="L1623">        double maxV = Double.MIN_VALUE;</span>
+<span class="nc" id="L1596">        double minV = Double.MAX_VALUE;</span>
+<span class="nc" id="L1597">        double maxV = Double.MIN_VALUE;</span>
         
-<span class="nc" id="L1625">        int[][] out = new int[a.length][];</span>
+<span class="nc" id="L1599">        int[][] out = new int[a.length][];</span>
         
-<span class="nc bnc" id="L1627" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc" id="L1628">            out[i] = new int[a[i].length];</span>
-<span class="nc bnc" id="L1629" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
-<span class="nc" id="L1630">                double v = a[i][j];</span>
-<span class="nc bnc" id="L1631" title="All 2 branches missed.">                if (v &lt; minV) {</span>
-<span class="nc" id="L1632">                    minV = v;</span>
+<span class="nc bnc" id="L1601" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc" id="L1602">            out[i] = new int[a[i].length];</span>
+<span class="nc bnc" id="L1603" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
+<span class="nc" id="L1604">                double v = a[i][j];</span>
+<span class="nc bnc" id="L1605" title="All 2 branches missed.">                if (v &lt; minV) {</span>
+<span class="nc" id="L1606">                    minV = v;</span>
                 }
-<span class="nc bnc" id="L1634" title="All 2 branches missed.">                if (v &gt; maxV) {</span>
-<span class="nc" id="L1635">                    maxV = v;</span>
+<span class="nc bnc" id="L1608" title="All 2 branches missed.">                if (v &gt; maxV) {</span>
+<span class="nc" id="L1609">                    maxV = v;</span>
                 }
             }
         }
-<span class="nc" id="L1639">        double range = maxV - minV;</span>
+<span class="nc" id="L1613">        double range = maxV - minV;</span>
         
-<span class="nc" id="L1641">        double scale = ((double)(vf - vi))/range;</span>
+<span class="nc" id="L1615">        double scale = ((double)(vf - vi))/range;</span>
          
-<span class="nc bnc" id="L1643" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc bnc" id="L1644" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {            </span>
-<span class="nc" id="L1645">                double v = (a[i][j] - minV) * scale;</span>
-<span class="nc" id="L1646">                out[i][j] = (int)Math.round(v);</span>
+<span class="nc bnc" id="L1617" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L1618" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {            </span>
+<span class="nc" id="L1619">                double v = (a[i][j] - minV) * scale;</span>
+<span class="nc" id="L1620">                out[i][j] = (int)Math.round(v);</span>
             }
         }
         
-<span class="nc" id="L1650">        return out;</span>
+<span class="nc" id="L1624">        return out;</span>
     }
     
     /**
@@ -1658,29 +1632,29 @@ import java.util.Set;
      */
     public static void rescale(GreyscaleImage a, int vi, int vf) {
         
-<span class="fc" id="L1661">        int minV = Integer.MAX_VALUE;</span>
-<span class="fc" id="L1662">        int maxV = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1635">        int minV = Integer.MAX_VALUE;</span>
+<span class="fc" id="L1636">        int maxV = Integer.MIN_VALUE;</span>
         
-<span class="fc bfc" id="L1664" title="All 2 branches covered.">        for (int i = 0; i &lt; a.getNPixels(); ++i) {</span>
-<span class="fc" id="L1665">            int v = a.getValue(i);</span>
-<span class="fc bfc" id="L1666" title="All 2 branches covered.">            if (v &lt; minV) {</span>
-<span class="fc" id="L1667">                minV = v;</span>
+<span class="fc bfc" id="L1638" title="All 2 branches covered.">        for (int i = 0; i &lt; a.getNPixels(); ++i) {</span>
+<span class="fc" id="L1639">            int v = a.getValue(i);</span>
+<span class="fc bfc" id="L1640" title="All 2 branches covered.">            if (v &lt; minV) {</span>
+<span class="fc" id="L1641">                minV = v;</span>
             }
-<span class="fc bfc" id="L1669" title="All 2 branches covered.">            if (v &gt; maxV) {</span>
-<span class="fc" id="L1670">                maxV = v;</span>
+<span class="fc bfc" id="L1643" title="All 2 branches covered.">            if (v &gt; maxV) {</span>
+<span class="fc" id="L1644">                maxV = v;</span>
             }
         }
-<span class="fc" id="L1673">        int range = maxV - minV;</span>
+<span class="fc" id="L1647">        int range = maxV - minV;</span>
         
-<span class="fc" id="L1675">        double scale = ((double)(vf - vi))/range;</span>
+<span class="fc" id="L1649">        double scale = ((double)(vf - vi))/range;</span>
          
-<span class="fc bfc" id="L1677" title="All 2 branches covered.">        for (int i = 0; i &lt; a.getNPixels(); ++i) {</span>
+<span class="fc bfc" id="L1651" title="All 2 branches covered.">        for (int i = 0; i &lt; a.getNPixels(); ++i) {</span>
             
-<span class="fc" id="L1679">            double v = (a.getValue(i) - minV) * scale;</span>
+<span class="fc" id="L1653">            double v = (a.getValue(i) - minV) * scale;</span>
             
-<span class="fc" id="L1681">            a.setValue(i, (int)Math.round(v));</span>
+<span class="fc" id="L1655">            a.setValue(i, (int)Math.round(v));</span>
         } 
-<span class="fc" id="L1683">    }</span>
+<span class="fc" id="L1657">    }</span>
     
     /**
      * rescale a to values between vi and vf, inclusive.  the input array a is
@@ -1692,30 +1666,30 @@ import java.util.Set;
      */
     public static float[] rescale(float[] a, int vi, int vf) {
         
-<span class="nc" id="L1695">        float minV = Float.MAX_VALUE;</span>
-<span class="nc" id="L1696">        float maxV = Float.NEGATIVE_INFINITY;</span>
+<span class="nc" id="L1669">        float minV = Float.MAX_VALUE;</span>
+<span class="nc" id="L1670">        float maxV = Float.NEGATIVE_INFINITY;</span>
         
-<span class="nc bnc" id="L1698" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc" id="L1699">            float v = a[i];</span>
-<span class="nc bnc" id="L1700" title="All 2 branches missed.">            if (v &lt; minV) {</span>
-<span class="nc" id="L1701">                minV = v;</span>
+<span class="nc bnc" id="L1672" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc" id="L1673">            float v = a[i];</span>
+<span class="nc bnc" id="L1674" title="All 2 branches missed.">            if (v &lt; minV) {</span>
+<span class="nc" id="L1675">                minV = v;</span>
             }
-<span class="nc bnc" id="L1703" title="All 2 branches missed.">            if (v &gt; maxV) {</span>
-<span class="nc" id="L1704">                maxV = v;</span>
+<span class="nc bnc" id="L1677" title="All 2 branches missed.">            if (v &gt; maxV) {</span>
+<span class="nc" id="L1678">                maxV = v;</span>
             }
         }
-<span class="nc" id="L1707">        float range = maxV - minV;</span>
+<span class="nc" id="L1681">        float range = maxV - minV;</span>
         
-<span class="nc" id="L1709">        float scale = ((float)(vf - vi))/range;</span>
+<span class="nc" id="L1683">        float scale = ((float)(vf - vi))/range;</span>
          
-<span class="nc" id="L1711">        float[] scaled = new float[a.length];</span>
+<span class="nc" id="L1685">        float[] scaled = new float[a.length];</span>
         
-<span class="nc bnc" id="L1713" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L1687" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
                         
-<span class="nc" id="L1715">            scaled[i] = (a[i] - minV) * scale;</span>
+<span class="nc" id="L1689">            scaled[i] = (a[i] - minV) * scale;</span>
         }
         
-<span class="nc" id="L1718">        return scaled;</span>
+<span class="nc" id="L1692">        return scaled;</span>
     }
     
     /**
@@ -1729,39 +1703,39 @@ import java.util.Set;
     public static float[] rescale(float[] a, float minPossibleA, float maxPossibleA,
         int vi, int vf) {
         
-<span class="nc" id="L1732">        float range = maxPossibleA - minPossibleA;</span>
+<span class="nc" id="L1706">        float range = maxPossibleA - minPossibleA;</span>
         
-<span class="nc" id="L1734">        float scale = ((float)(vf - vi))/range;</span>
+<span class="nc" id="L1708">        float scale = ((float)(vf - vi))/range;</span>
          
-<span class="nc" id="L1736">        float[] scaled = new float[a.length];</span>
+<span class="nc" id="L1710">        float[] scaled = new float[a.length];</span>
         
-<span class="nc bnc" id="L1738" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L1712" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
                         
-<span class="nc" id="L1740">            scaled[i] = (a[i] - minPossibleA) * scale;</span>
+<span class="nc" id="L1714">            scaled[i] = (a[i] - minPossibleA) * scale;</span>
         }
         
-<span class="nc" id="L1743">        return scaled;</span>
+<span class="nc" id="L1717">        return scaled;</span>
     }
 
     public static int findYforX(HistogramHolder hist, float xSrch) {
         
         // looking for closest x to xSrch, then returning the y
-<span class="nc" id="L1749">        int idx = Arrays.binarySearch(hist.getXHist(), xSrch);</span>
+<span class="nc" id="L1723">        int idx = Arrays.binarySearch(hist.getXHist(), xSrch);</span>
                     
         // if it's negative, (-(insertion point) - 1)
-<span class="nc bnc" id="L1752" title="All 2 branches missed.">        if (idx &lt; 0) {</span>
+<span class="nc bnc" id="L1726" title="All 2 branches missed.">        if (idx &lt; 0) {</span>
             // idx = -*idx2 - 1
-<span class="nc" id="L1754">            idx = -1*(idx + 1);</span>
+<span class="nc" id="L1728">            idx = -1*(idx + 1);</span>
         }
-<span class="nc bnc" id="L1756" title="All 2 branches missed.">        if (idx &gt; (hist.getXHist().length - 1)) {</span>
-<span class="nc" id="L1757">            idx = hist.getXHist().length - 1;</span>
-        }
-        
-<span class="nc bnc" id="L1760" title="All 2 branches missed.">        if (idx &lt; 0) {</span>
-<span class="nc" id="L1761">            return -1;</span>
+<span class="nc bnc" id="L1730" title="All 2 branches missed.">        if (idx &gt; (hist.getXHist().length - 1)) {</span>
+<span class="nc" id="L1731">            idx = hist.getXHist().length - 1;</span>
         }
         
-<span class="nc" id="L1764">        return hist.getYHist()[idx];</span>
+<span class="nc bnc" id="L1734" title="All 2 branches missed.">        if (idx &lt; 0) {</span>
+<span class="nc" id="L1735">            return -1;</span>
+        }
+        
+<span class="nc" id="L1738">        return hist.getYHist()[idx];</span>
     }
 
     /**
@@ -1772,18 +1746,18 @@ import java.util.Set;
      */
     public static double findMedian(double[][] a) {
         
-<span class="fc" id="L1775">        double[] values = new double[a.length*a[0].length];</span>
-<span class="fc" id="L1776">        int count = 0;</span>
-<span class="fc bfc" id="L1777" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="fc bfc" id="L1778" title="All 2 branches covered.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
-<span class="fc" id="L1779">                values[count] = a[i][j];</span>
-<span class="fc" id="L1780">                count++;</span>
+<span class="fc" id="L1749">        double[] values = new double[a.length*a[0].length];</span>
+<span class="fc" id="L1750">        int count = 0;</span>
+<span class="fc bfc" id="L1751" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="fc bfc" id="L1752" title="All 2 branches covered.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
+<span class="fc" id="L1753">                values[count] = a[i][j];</span>
+<span class="fc" id="L1754">                count++;</span>
             }
         }
         
-<span class="fc" id="L1784">        Arrays.sort(values);</span>
+<span class="fc" id="L1758">        Arrays.sort(values);</span>
         
-<span class="fc" id="L1786">        return values[count/2];</span>
+<span class="fc" id="L1760">        return values[count/2];</span>
     }
     
     /**
@@ -1797,115 +1771,115 @@ import java.util.Set;
         
         // put in an array to sort.
         // if max value &lt; math.log(n)*n, will use counting sort
-<span class="fc" id="L1800">        int maxV = Integer.MIN_VALUE;</span>
-<span class="fc" id="L1801">        int[] values = new int[a.length*a[0].length];</span>
-<span class="fc" id="L1802">        int count = 0;</span>
-<span class="fc bfc" id="L1803" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="fc bfc" id="L1804" title="All 2 branches covered.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
-<span class="fc" id="L1805">                values[count] = a[i][j];</span>
-<span class="pc bpc" id="L1806" title="1 of 2 branches missed.">                if (values[count] &gt; maxV) {</span>
-<span class="fc" id="L1807">                    maxV = values[count];</span>
+<span class="fc" id="L1774">        int maxV = Integer.MIN_VALUE;</span>
+<span class="fc" id="L1775">        int[] values = new int[a.length*a[0].length];</span>
+<span class="fc" id="L1776">        int count = 0;</span>
+<span class="fc bfc" id="L1777" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="fc bfc" id="L1778" title="All 2 branches covered.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
+<span class="fc" id="L1779">                values[count] = a[i][j];</span>
+<span class="pc bpc" id="L1780" title="1 of 2 branches missed.">                if (values[count] &gt; maxV) {</span>
+<span class="fc" id="L1781">                    maxV = values[count];</span>
                 }
-<span class="fc" id="L1809">                count++;</span>
+<span class="fc" id="L1783">                count++;</span>
             }
         }
         
-<span class="pc bpc" id="L1813" title="1 of 2 branches missed.">        if (maxV &lt; (count * Math.log(count)/Math.log(2))) {</span>
-<span class="fc" id="L1814">            values = CountingSort.sort(values);</span>
+<span class="pc bpc" id="L1787" title="1 of 2 branches missed.">        if (maxV &lt; (count * Math.log(count)/Math.log(2))) {</span>
+<span class="fc" id="L1788">            values = CountingSort.sort(values);</span>
         } else {
-<span class="nc" id="L1816">            Arrays.sort(values);</span>
+<span class="nc" id="L1790">            Arrays.sort(values);</span>
         }
         
-<span class="fc" id="L1819">        return values[count/2];</span>
+<span class="fc" id="L1793">        return values[count/2];</span>
     }
     
     public static void applyRescale(double[][] a, double minScaled, double maxScaled) {
         
-<span class="fc" id="L1824">        double minV = Double.MAX_VALUE;</span>
-<span class="fc" id="L1825">        double maxV = Double.MIN_VALUE;</span>
+<span class="fc" id="L1798">        double minV = Double.MAX_VALUE;</span>
+<span class="fc" id="L1799">        double maxV = Double.MIN_VALUE;</span>
         
-<span class="fc bfc" id="L1827" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="fc bfc" id="L1828" title="All 2 branches covered.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
-<span class="fc" id="L1829">                double v = a[i][j];</span>
-<span class="fc bfc" id="L1830" title="All 2 branches covered.">                if (v &lt; minV) {</span>
-<span class="fc" id="L1831">                    minV = v;</span>
+<span class="fc bfc" id="L1801" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="fc bfc" id="L1802" title="All 2 branches covered.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
+<span class="fc" id="L1803">                double v = a[i][j];</span>
+<span class="fc bfc" id="L1804" title="All 2 branches covered.">                if (v &lt; minV) {</span>
+<span class="fc" id="L1805">                    minV = v;</span>
                 }
-<span class="fc bfc" id="L1833" title="All 2 branches covered.">                if (v &gt; maxV) {</span>
-<span class="fc" id="L1834">                    maxV = v;</span>
+<span class="fc bfc" id="L1807" title="All 2 branches covered.">                if (v &gt; maxV) {</span>
+<span class="fc" id="L1808">                    maxV = v;</span>
                 }
             }
         }
-<span class="fc" id="L1838">        double range = maxV - minV;</span>
+<span class="fc" id="L1812">        double range = maxV - minV;</span>
         
-<span class="fc" id="L1840">        double scale = (maxScaled - minScaled)/range;</span>
+<span class="fc" id="L1814">        double scale = (maxScaled - minScaled)/range;</span>
         
 //System.out.println(&quot;value 0 is rescaled to value=&quot; + (-minV*scale)
 //+ &quot; minV=&quot; + minV + &quot; scale=&quot; + scale);
         
-<span class="fc bfc" id="L1845" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="fc bfc" id="L1846" title="All 2 branches covered.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
-<span class="fc" id="L1847">                a[i][j] = (a[i][j] - minV) * scale;</span>
+<span class="fc bfc" id="L1819" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="fc bfc" id="L1820" title="All 2 branches covered.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
+<span class="fc" id="L1821">                a[i][j] = (a[i][j] - minV) * scale;</span>
             }
         }
-<span class="fc" id="L1850">    }</span>
+<span class="fc" id="L1824">    }</span>
 
     public static void applyRescale(int[][] a, int minScaled, int maxScaled) {
     
-<span class="nc" id="L1854">        int minV = Integer.MAX_VALUE;</span>
-<span class="nc" id="L1855">        int maxV = Integer.MIN_VALUE;</span>
+<span class="nc" id="L1828">        int minV = Integer.MAX_VALUE;</span>
+<span class="nc" id="L1829">        int maxV = Integer.MIN_VALUE;</span>
         
-<span class="nc bnc" id="L1857" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc bnc" id="L1858" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
-<span class="nc" id="L1859">                int v = a[i][j];</span>
-<span class="nc bnc" id="L1860" title="All 2 branches missed.">                if (v &lt; minV) {</span>
-<span class="nc" id="L1861">                    minV = v;</span>
+<span class="nc bnc" id="L1831" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L1832" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
+<span class="nc" id="L1833">                int v = a[i][j];</span>
+<span class="nc bnc" id="L1834" title="All 2 branches missed.">                if (v &lt; minV) {</span>
+<span class="nc" id="L1835">                    minV = v;</span>
                 }
-<span class="nc bnc" id="L1863" title="All 2 branches missed.">                if (v &gt; maxV) {</span>
-<span class="nc" id="L1864">                    maxV = v;</span>
+<span class="nc bnc" id="L1837" title="All 2 branches missed.">                if (v &gt; maxV) {</span>
+<span class="nc" id="L1838">                    maxV = v;</span>
                 }
             }
         }
-<span class="nc" id="L1868">        float range = maxV - minV;</span>
+<span class="nc" id="L1842">        float range = maxV - minV;</span>
         
-<span class="nc" id="L1870">        float scale = (maxScaled - minScaled)/range;</span>
+<span class="nc" id="L1844">        float scale = (maxScaled - minScaled)/range;</span>
         
-<span class="nc bnc" id="L1872" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc bnc" id="L1873" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
-<span class="nc" id="L1874">                a[i][j] = Math.round((a[i][j] - minV) * scale);</span>
+<span class="nc bnc" id="L1846" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L1847" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
+<span class="nc" id="L1848">                a[i][j] = Math.round((a[i][j] - minV) * scale);</span>
             }
         }
-<span class="nc" id="L1877">    }</span>
+<span class="nc" id="L1851">    }</span>
     
     public static void applyRescale(float[][] a, float minScaled, 
         float maxScaled) {
         
-<span class="nc" id="L1882">        float minV = Float.MAX_VALUE;</span>
-<span class="nc" id="L1883">        float maxV = Float.NEGATIVE_INFINITY;</span>
+<span class="nc" id="L1856">        float minV = Float.MAX_VALUE;</span>
+<span class="nc" id="L1857">        float maxV = Float.NEGATIVE_INFINITY;</span>
         
-<span class="nc bnc" id="L1885" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc bnc" id="L1886" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
-<span class="nc" id="L1887">                float v = a[i][j];</span>
-<span class="nc bnc" id="L1888" title="All 2 branches missed.">                if (v &lt; minV) {</span>
-<span class="nc" id="L1889">                    minV = v;</span>
+<span class="nc bnc" id="L1859" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L1860" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
+<span class="nc" id="L1861">                float v = a[i][j];</span>
+<span class="nc bnc" id="L1862" title="All 2 branches missed.">                if (v &lt; minV) {</span>
+<span class="nc" id="L1863">                    minV = v;</span>
                 }
-<span class="nc bnc" id="L1891" title="All 2 branches missed.">                if (v &gt; maxV) {</span>
-<span class="nc" id="L1892">                    maxV = v;</span>
+<span class="nc bnc" id="L1865" title="All 2 branches missed.">                if (v &gt; maxV) {</span>
+<span class="nc" id="L1866">                    maxV = v;</span>
                 }
             }
         }
-<span class="nc" id="L1896">        float range = maxV - minV;</span>
+<span class="nc" id="L1870">        float range = maxV - minV;</span>
         
-<span class="nc" id="L1898">        float scale = (maxScaled - minScaled)/range;</span>
+<span class="nc" id="L1872">        float scale = (maxScaled - minScaled)/range;</span>
         
 //System.out.println(&quot;value 0 is rescaled to value=&quot; + (-minV*scale)
 //+ &quot; minV=&quot; + minV + &quot; scale=&quot; + scale);
         
-<span class="nc bnc" id="L1903" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc bnc" id="L1904" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
-<span class="nc" id="L1905">                a[i][j] = (a[i][j] - minV) * scale;</span>
+<span class="nc bnc" id="L1877" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L1878" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
+<span class="nc" id="L1879">                a[i][j] = (a[i][j] - minV) * scale;</span>
             }
         }
-<span class="nc" id="L1908">    }</span>
+<span class="nc" id="L1882">    }</span>
    
     /**
      *rescale a to between 0 and 255 and write to output
@@ -1915,43 +1889,43 @@ import java.util.Set;
     public static GreyscaleImage rescaleAndCreateImage(float[] a,
         int imageWidth, int imageHeight) {
         
-<span class="nc" id="L1918">        int nPix = a.length;</span>
+<span class="nc" id="L1892">        int nPix = a.length;</span>
         
-<span class="nc bnc" id="L1920" title="All 2 branches missed.">        if (nPix != (imageWidth * imageHeight)) {</span>
-<span class="nc" id="L1921">            throw new IllegalArgumentException(&quot;a.length must be == to &quot;</span>
+<span class="nc bnc" id="L1894" title="All 2 branches missed.">        if (nPix != (imageWidth * imageHeight)) {</span>
+<span class="nc" id="L1895">            throw new IllegalArgumentException(&quot;a.length must be == to &quot;</span>
                 + &quot;imageWidth X imageHeight&quot;);
         }
         
-<span class="nc" id="L1925">        float minV = Float.MAX_VALUE;</span>
-<span class="nc" id="L1926">        float maxV = Float.NEGATIVE_INFINITY;</span>
+<span class="nc" id="L1899">        float minV = Float.MAX_VALUE;</span>
+<span class="nc" id="L1900">        float maxV = Float.NEGATIVE_INFINITY;</span>
         
-<span class="nc bnc" id="L1928" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc" id="L1929">            float v = a[i];</span>
-<span class="nc bnc" id="L1930" title="All 2 branches missed.">            if (v &lt; minV) {</span>
-<span class="nc" id="L1931">                minV = v;</span>
+<span class="nc bnc" id="L1902" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc" id="L1903">            float v = a[i];</span>
+<span class="nc bnc" id="L1904" title="All 2 branches missed.">            if (v &lt; minV) {</span>
+<span class="nc" id="L1905">                minV = v;</span>
             }
-<span class="nc bnc" id="L1933" title="All 2 branches missed.">            if (v &gt; maxV) {</span>
-<span class="nc" id="L1934">                maxV = v;</span>
+<span class="nc bnc" id="L1907" title="All 2 branches missed.">            if (v &gt; maxV) {</span>
+<span class="nc" id="L1908">                maxV = v;</span>
             }
         }
-<span class="nc" id="L1937">        float range = maxV - minV;</span>
+<span class="nc" id="L1911">        float range = maxV - minV;</span>
         
-<span class="nc" id="L1939">        float scale = 255.f/range;</span>
+<span class="nc" id="L1913">        float scale = 255.f/range;</span>
         
-<span class="nc" id="L1941">        GreyscaleImage out = new GreyscaleImage(imageWidth, imageHeight);</span>
+<span class="nc" id="L1915">        GreyscaleImage out = new GreyscaleImage(imageWidth, imageHeight);</span>
         
-<span class="nc bnc" id="L1943" title="All 2 branches missed.">        for (int i = 0; i &lt; imageWidth; ++i) {</span>
-<span class="nc bnc" id="L1944" title="All 2 branches missed.">            for (int j = 0; j &lt; imageHeight; ++j) {</span>
-<span class="nc" id="L1945">                int pixIdx = (j * imageWidth) + i;</span>
-<span class="nc" id="L1946">                int v = Math.round((a[pixIdx] - minV) * scale);</span>
-<span class="nc bnc" id="L1947" title="All 2 branches missed.">                if (v &gt; 255) {</span>
-<span class="nc" id="L1948">                    v = 255;</span>
+<span class="nc bnc" id="L1917" title="All 2 branches missed.">        for (int i = 0; i &lt; imageWidth; ++i) {</span>
+<span class="nc bnc" id="L1918" title="All 2 branches missed.">            for (int j = 0; j &lt; imageHeight; ++j) {</span>
+<span class="nc" id="L1919">                int pixIdx = (j * imageWidth) + i;</span>
+<span class="nc" id="L1920">                int v = Math.round((a[pixIdx] - minV) * scale);</span>
+<span class="nc bnc" id="L1921" title="All 2 branches missed.">                if (v &gt; 255) {</span>
+<span class="nc" id="L1922">                    v = 255;</span>
                 }
-<span class="nc" id="L1950">                out.setValue(pixIdx, v);</span>
+<span class="nc" id="L1924">                out.setValue(pixIdx, v);</span>
             }
         }
         
-<span class="nc" id="L1954">        return out;</span>
+<span class="nc" id="L1928">        return out;</span>
     }
     
     /**
@@ -1965,54 +1939,54 @@ import java.util.Set;
     public static void applyRescale2(float[][] a, float minScaled, 
         float maxScaled) {
         
-<span class="fc" id="L1968">        float minV = Float.MAX_VALUE;</span>
-<span class="fc" id="L1969">        float maxV = Float.NEGATIVE_INFINITY;</span>
+<span class="fc" id="L1942">        float minV = Float.MAX_VALUE;</span>
+<span class="fc" id="L1943">        float maxV = Float.NEGATIVE_INFINITY;</span>
         
-<span class="fc bfc" id="L1971" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="fc bfc" id="L1972" title="All 2 branches covered.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
-<span class="fc" id="L1973">                float v = a[i][j];</span>
-<span class="pc bpc" id="L1974" title="2 of 4 branches missed.">                if (v == Float.MAX_VALUE || v == Float.NEGATIVE_INFINITY) {</span>
-<span class="nc" id="L1975">                    continue;</span>
+<span class="fc bfc" id="L1945" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="fc bfc" id="L1946" title="All 2 branches covered.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
+<span class="fc" id="L1947">                float v = a[i][j];</span>
+<span class="pc bpc" id="L1948" title="2 of 4 branches missed.">                if (v == Float.MAX_VALUE || v == Float.NEGATIVE_INFINITY) {</span>
+<span class="nc" id="L1949">                    continue;</span>
                 }
-<span class="fc bfc" id="L1977" title="All 2 branches covered.">                if (v &lt; minV) {</span>
-<span class="fc" id="L1978">                    minV = v;</span>
+<span class="fc bfc" id="L1951" title="All 2 branches covered.">                if (v &lt; minV) {</span>
+<span class="fc" id="L1952">                    minV = v;</span>
                 }
-<span class="fc bfc" id="L1980" title="All 2 branches covered.">                if (v &gt; maxV) {</span>
-<span class="fc" id="L1981">                    maxV = v;</span>
+<span class="fc bfc" id="L1954" title="All 2 branches covered.">                if (v &gt; maxV) {</span>
+<span class="fc" id="L1955">                    maxV = v;</span>
                 }
             }
         }
-<span class="fc" id="L1985">        float range = maxV - minV;</span>
+<span class="fc" id="L1959">        float range = maxV - minV;</span>
         
-<span class="fc" id="L1987">        float scale = (maxScaled - minScaled)/range;</span>
+<span class="fc" id="L1961">        float scale = (maxScaled - minScaled)/range;</span>
         
 //System.out.println(&quot;value 0 is rescaled to value=&quot; + (-minV*scale)
 //+ &quot; minV=&quot; + minV + &quot; scale=&quot; + scale);
         
-<span class="fc bfc" id="L1992" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="fc bfc" id="L1993" title="All 2 branches covered.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
-<span class="fc" id="L1994">                float v = a[i][j];</span>
-<span class="pc bpc" id="L1995" title="1 of 2 branches missed.">                if (v == Float.MAX_VALUE) {</span>
-<span class="nc" id="L1996">                    a[i][j] = maxV;</span>
-<span class="pc bpc" id="L1997" title="1 of 2 branches missed.">                } else if (v == Float.NEGATIVE_INFINITY) {</span>
-<span class="nc" id="L1998">                    a[i][j] = minV;</span>
+<span class="fc bfc" id="L1966" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="fc bfc" id="L1967" title="All 2 branches covered.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
+<span class="fc" id="L1968">                float v = a[i][j];</span>
+<span class="pc bpc" id="L1969" title="1 of 2 branches missed.">                if (v == Float.MAX_VALUE) {</span>
+<span class="nc" id="L1970">                    a[i][j] = maxV;</span>
+<span class="pc bpc" id="L1971" title="1 of 2 branches missed.">                } else if (v == Float.NEGATIVE_INFINITY) {</span>
+<span class="nc" id="L1972">                    a[i][j] = minV;</span>
                 } else {
-<span class="fc" id="L2000">                    a[i][j] = (v - minV) * scale;</span>
+<span class="fc" id="L1974">                    a[i][j] = (v - minV) * scale;</span>
                 }
             }
         }
-<span class="fc" id="L2004">    }</span>
+<span class="fc" id="L1978">    }</span>
 
     public static void applyAbsoluteValue(float[][] a) {
 
-<span class="nc bnc" id="L2008" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc bnc" id="L2009" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
-<span class="nc bnc" id="L2010" title="All 2 branches missed.">                if (a[i][j] &lt; 0) {</span>
-<span class="nc" id="L2011">                    a[i][j] *= -1;</span>
+<span class="nc bnc" id="L1982" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L1983" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; ++j) {</span>
+<span class="nc bnc" id="L1984" title="All 2 branches missed.">                if (a[i][j] &lt; 0) {</span>
+<span class="nc" id="L1985">                    a[i][j] *= -1;</span>
                 }
             }
         }
-<span class="nc" id="L2015">    }</span>
+<span class="nc" id="L1989">    }</span>
 
     public static int calculateThetaAverage(GreyscaleImage img,
         int wrapAround, Set&lt;PairInt&gt; set) {
@@ -2026,38 +2000,38 @@ import java.util.Set;
         -- correct the value to fit between 0 and wrap around
         */
         
-<span class="nc" id="L2029">        float[] values = new float[set.size()];</span>
-<span class="nc" id="L2030">        int count = 0;</span>
-<span class="nc bnc" id="L2031" title="All 2 branches missed.">        for (PairInt p : set) {</span>
-<span class="nc" id="L2032">            values[count] = img.getValue(p);</span>
-<span class="nc" id="L2033">            count++;</span>
-<span class="nc" id="L2034">        }</span>
+<span class="nc" id="L2003">        float[] values = new float[set.size()];</span>
+<span class="nc" id="L2004">        int count = 0;</span>
+<span class="nc bnc" id="L2005" title="All 2 branches missed.">        for (PairInt p : set) {</span>
+<span class="nc" id="L2006">            values[count] = img.getValue(p);</span>
+<span class="nc" id="L2007">            count++;</span>
+<span class="nc" id="L2008">        }</span>
         
-<span class="nc" id="L2036">        HistogramHolder hist = Histogram.createSimpleHistogram(values, </span>
-<span class="nc" id="L2037">            Errors.populateYErrorsBySqrt(values));</span>
+<span class="nc" id="L2010">        HistogramHolder hist = Histogram.createSimpleHistogram(values, </span>
+<span class="nc" id="L2011">            Errors.populateYErrorsBySqrt(values));</span>
         
-<span class="nc" id="L2039">        int peakValueIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+<span class="nc" id="L2013">        int peakValueIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
         
-<span class="nc" id="L2041">        final float peakValue = hist.getXHist()[peakValueIdx];</span>
+<span class="nc" id="L2015">        final float peakValue = hist.getXHist()[peakValueIdx];</span>
         
-<span class="nc" id="L2043">        double sum = 0;</span>
-<span class="nc bnc" id="L2044" title="All 2 branches missed.">        for (int i = 0; i &lt; values.length; ++i) {</span>
-<span class="nc" id="L2045">            float v = values[i];</span>
-<span class="nc" id="L2046">            float v2 = v + wrapAround;</span>
-<span class="nc bnc" id="L2047" title="All 2 branches missed.">            if (Math.abs(v - peakValue) &lt;= Math.abs(v2 - peakValue)) {</span>
-<span class="nc" id="L2048">                sum += v;</span>
+<span class="nc" id="L2017">        double sum = 0;</span>
+<span class="nc bnc" id="L2018" title="All 2 branches missed.">        for (int i = 0; i &lt; values.length; ++i) {</span>
+<span class="nc" id="L2019">            float v = values[i];</span>
+<span class="nc" id="L2020">            float v2 = v + wrapAround;</span>
+<span class="nc bnc" id="L2021" title="All 2 branches missed.">            if (Math.abs(v - peakValue) &lt;= Math.abs(v2 - peakValue)) {</span>
+<span class="nc" id="L2022">                sum += v;</span>
             } else {
-<span class="nc" id="L2050">                sum += v2;</span>
+<span class="nc" id="L2024">                sum += v2;</span>
             }
         }
-<span class="nc" id="L2053">        sum /= (double)values.length;</span>
+<span class="nc" id="L2027">        sum /= (double)values.length;</span>
         
-<span class="nc" id="L2055">        int avg = (int)Math.round(sum);</span>
-<span class="nc bnc" id="L2056" title="All 2 branches missed.">        if (avg &gt; wrapAround) {</span>
-<span class="nc" id="L2057">            avg -= wrapAround;</span>
+<span class="nc" id="L2029">        int avg = (int)Math.round(sum);</span>
+<span class="nc bnc" id="L2030" title="All 2 branches missed.">        if (avg &gt; wrapAround) {</span>
+<span class="nc" id="L2031">            avg -= wrapAround;</span>
         }
         
-<span class="nc" id="L2060">        return avg;</span>
+<span class="nc" id="L2034">        return avg;</span>
     }
 
     /**
@@ -2069,50 +2043,50 @@ import java.util.Set;
      */
     public static float[] calcMeanAndStDev(float[] avgs, float[] stdvs) {
     
-<span class="nc" id="L2072">        float[] avgAndStdv = MiscMath.getAvgAndStDev(avgs);</span>
+<span class="nc" id="L2046">        float[] avgAndStdv = MiscMath.getAvgAndStDev(avgs);</span>
         
-<span class="nc" id="L2074">        double sum = 0;</span>
-<span class="nc bnc" id="L2075" title="All 2 branches missed.">        for (float stdv : stdvs) {</span>
-<span class="nc" id="L2076">            sum += (stdv * stdv);</span>
+<span class="nc" id="L2048">        double sum = 0;</span>
+<span class="nc bnc" id="L2049" title="All 2 branches missed.">        for (float stdv : stdvs) {</span>
+<span class="nc" id="L2050">            sum += (stdv * stdv);</span>
         }
-<span class="nc" id="L2078">        float sq = (float)Math.sqrt(sum/((float)stdvs.length - 1.0f));</span>
+<span class="nc" id="L2052">        float sq = (float)Math.sqrt(sum/((float)stdvs.length - 1.0f));</span>
         
-<span class="nc" id="L2080">        return new float[]{avgAndStdv[0], avgAndStdv[1], sq};</span>
+<span class="nc" id="L2054">        return new float[]{avgAndStdv[0], avgAndStdv[1], sq};</span>
     }
 
     public static float[] calcMeanAndStDevWithWrapAround(float[] a, 
         int wrapAroundValue, float[] stdvs) {
         
-<span class="nc" id="L2086">        HistogramHolder hist = Histogram.createSimpleHistogram(a, </span>
-<span class="nc" id="L2087">            Errors.populateYErrorsBySqrt(a));</span>
+<span class="nc" id="L2060">        HistogramHolder hist = Histogram.createSimpleHistogram(a, </span>
+<span class="nc" id="L2061">            Errors.populateYErrorsBySqrt(a));</span>
         
-<span class="nc" id="L2089">        int peakValueIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+<span class="nc" id="L2063">        int peakValueIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
         
-<span class="nc" id="L2091">        final float peakValue = hist.getXHist()[peakValueIdx];</span>
+<span class="nc" id="L2065">        final float peakValue = hist.getXHist()[peakValueIdx];</span>
         
-<span class="nc" id="L2093">        float[] a2 = new float[a.length];</span>
-<span class="nc bnc" id="L2094" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc" id="L2095">            float v = a[i];</span>
-<span class="nc" id="L2096">            float v2 = v + wrapAroundValue;</span>
-<span class="nc bnc" id="L2097" title="All 2 branches missed.">            if (Math.abs(v - peakValue) &lt;= Math.abs(v2 - peakValue)) {</span>
-<span class="nc" id="L2098">                a2[i] = v;</span>
+<span class="nc" id="L2067">        float[] a2 = new float[a.length];</span>
+<span class="nc bnc" id="L2068" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc" id="L2069">            float v = a[i];</span>
+<span class="nc" id="L2070">            float v2 = v + wrapAroundValue;</span>
+<span class="nc bnc" id="L2071" title="All 2 branches missed.">            if (Math.abs(v - peakValue) &lt;= Math.abs(v2 - peakValue)) {</span>
+<span class="nc" id="L2072">                a2[i] = v;</span>
             } else {
-<span class="nc" id="L2100">                a2[i] = v2;</span>
+<span class="nc" id="L2074">                a2[i] = v2;</span>
             }
         }
 
-<span class="nc" id="L2104">        float[] avgAndStdv = MiscMath.getAvgAndStDev(a2);</span>
-<span class="nc bnc" id="L2105" title="All 2 branches missed.">        if (avgAndStdv[0] &gt; wrapAroundValue) {</span>
-<span class="nc" id="L2106">            avgAndStdv[0] -= wrapAroundValue;</span>
+<span class="nc" id="L2078">        float[] avgAndStdv = MiscMath.getAvgAndStDev(a2);</span>
+<span class="nc bnc" id="L2079" title="All 2 branches missed.">        if (avgAndStdv[0] &gt; wrapAroundValue) {</span>
+<span class="nc" id="L2080">            avgAndStdv[0] -= wrapAroundValue;</span>
         }
         
-<span class="nc" id="L2109">        double sum = 0;</span>
-<span class="nc bnc" id="L2110" title="All 2 branches missed.">        for (float stdv : stdvs) {</span>
-<span class="nc" id="L2111">            sum += (stdv * stdv);</span>
+<span class="nc" id="L2083">        double sum = 0;</span>
+<span class="nc bnc" id="L2084" title="All 2 branches missed.">        for (float stdv : stdvs) {</span>
+<span class="nc" id="L2085">            sum += (stdv * stdv);</span>
         }
-<span class="nc" id="L2113">        float sq = (float)Math.sqrt(sum/((float)stdvs.length - 1.0f));</span>
+<span class="nc" id="L2087">        float sq = (float)Math.sqrt(sum/((float)stdvs.length - 1.0f));</span>
         
-<span class="nc" id="L2115">        return new float[]{avgAndStdv[0], avgAndStdv[1], sq};</span>
+<span class="nc" id="L2089">        return new float[]{avgAndStdv[0], avgAndStdv[1], sq};</span>
     }
     
     /**
@@ -2123,13 +2097,13 @@ import java.util.Set;
      */
     public static int calculateObjectSize(Set&lt;PairInt&gt; points) {
         // O(N*lg_2(N))
-<span class="fc" id="L2126">        FurthestPair furthestPair = new FurthestPair();</span>
-<span class="fc" id="L2127">        PairInt[] fp = furthestPair.find(points);</span>
-<span class="pc bpc" id="L2128" title="2 of 4 branches missed.">        if (fp == null || fp.length &lt; 2) {            </span>
-<span class="nc" id="L2129">            throw new IllegalArgumentException(&quot;did not find a furthest pair&quot; + &quot; in points&quot;);</span>
+<span class="fc" id="L2100">        FurthestPair furthestPair = new FurthestPair();</span>
+<span class="fc" id="L2101">        PairInt[] fp = furthestPair.find(points);</span>
+<span class="pc bpc" id="L2102" title="2 of 4 branches missed.">        if (fp == null || fp.length &lt; 2) {            </span>
+<span class="nc" id="L2103">            throw new IllegalArgumentException(&quot;did not find a furthest pair&quot; + &quot; in points&quot;);</span>
         }
-<span class="fc" id="L2131">        double dist = ORBMatcher.distance(fp[0], fp[1]);</span>
-<span class="fc" id="L2132">        return (int) Math.round(dist);</span>
+<span class="fc" id="L2105">        double dist = ORBMatcher.distance(fp[0], fp[1]);</span>
+<span class="fc" id="L2106">        return (int) Math.round(dist);</span>
     }
     
     /**
@@ -2139,7 +2113,7 @@ import java.util.Set;
      * @return 
      */
     public static int calculateObjectSize(PairIntArray points) {
-<span class="fc" id="L2142">        return calculateObjectSize(Misc.convert(points));</span>
+<span class="fc" id="L2116">        return calculateObjectSize(Misc.convert(points));</span>
     }
    
     // ---- 32 bit hash methods ---
@@ -2180,21 +2154,21 @@ import java.util.Set;
      */
     public static int getHashIndex(final int[] list, final int value, int[] hash) {
         
-<span class="nc" id="L2183">        int i, mark = 0;</span>
+<span class="nc" id="L2157">        int i, mark = 0;</span>
 
-<span class="nc" id="L2185">        i = hashToIndex(value, list.length);</span>
+<span class="nc" id="L2159">        i = hashToIndex(value, list.length);</span>
      
-<span class="nc bnc" id="L2187" title="All 2 branches missed.">        while (hash[i] != -1) {</span>
-<span class="nc bnc" id="L2188" title="All 2 branches missed.">            if (list[hash[i]] == value) {</span>
-<span class="nc" id="L2189">                return hash[i];</span>
+<span class="nc bnc" id="L2161" title="All 2 branches missed.">        while (hash[i] != -1) {</span>
+<span class="nc bnc" id="L2162" title="All 2 branches missed.">            if (list[hash[i]] == value) {</span>
+<span class="nc" id="L2163">                return hash[i];</span>
             }
-<span class="nc" id="L2191">            i++;</span>
-<span class="nc bnc" id="L2192" title="All 2 branches missed.">            if (i == list.length) {</span>
-<span class="nc" id="L2193">                i = 0;</span>
+<span class="nc" id="L2165">            i++;</span>
+<span class="nc bnc" id="L2166" title="All 2 branches missed.">            if (i == list.length) {</span>
+<span class="nc" id="L2167">                i = 0;</span>
             }
         }
 
-<span class="nc" id="L2197">        return -1;</span>
+<span class="nc" id="L2171">        return -1;</span>
     }
     
     /**
@@ -2238,29 +2212,29 @@ import java.util.Set;
      */
     public static boolean hashContains(final int[] list, final int value, int[] hash) {
         
-<span class="fc" id="L2241">        int i, mark = 0;</span>
+<span class="fc" id="L2215">        int i, mark = 0;</span>
 
-<span class="fc" id="L2243">        i = hashToIndex(value, list.length);</span>
+<span class="fc" id="L2217">        i = hashToIndex(value, list.length);</span>
         
         //hash[i] holds list idx;
 
-<span class="fc" id="L2247">        int nStart = i;</span>
+<span class="fc" id="L2221">        int nStart = i;</span>
         
         //TODO: this could be improved. worse case could be O(hash.length)
-<span class="fc bfc" id="L2250" title="All 2 branches covered.">        while (hash[i] != -1) {</span>
-<span class="fc bfc" id="L2251" title="All 2 branches covered.">            if (list[hash[i]] == value) {</span>
-<span class="fc" id="L2252">                return true;</span>
+<span class="fc bfc" id="L2224" title="All 2 branches covered.">        while (hash[i] != -1) {</span>
+<span class="fc bfc" id="L2225" title="All 2 branches covered.">            if (list[hash[i]] == value) {</span>
+<span class="fc" id="L2226">                return true;</span>
             }
-<span class="fc" id="L2254">            i++;</span>
-<span class="fc bfc" id="L2255" title="All 2 branches covered.">            if (i == list.length) {</span>
-<span class="fc" id="L2256">                i = 0;</span>
+<span class="fc" id="L2228">            i++;</span>
+<span class="fc bfc" id="L2229" title="All 2 branches covered.">            if (i == list.length) {</span>
+<span class="fc" id="L2230">                i = 0;</span>
             }
-<span class="pc bpc" id="L2258" title="1 of 2 branches missed.">            if (i == nStart) {</span>
-<span class="nc" id="L2259">                return false;</span>
+<span class="pc bpc" id="L2232" title="1 of 2 branches missed.">            if (i == nStart) {</span>
+<span class="nc" id="L2233">                return false;</span>
             }
         }
 
-<span class="fc" id="L2263">        return false;</span>
+<span class="fc" id="L2237">        return false;</span>
     }
     
     /**
@@ -2302,29 +2276,29 @@ import java.util.Set;
     public static int getNextHashIndex(final int value, final int listLength, 
         int[] hash) {
         
-<span class="fc" id="L2305">        int i, mark = 0;</span>
+<span class="fc" id="L2279">        int i, mark = 0;</span>
 
-<span class="fc" id="L2307">        i = hashToIndex(value, listLength);</span>
+<span class="fc" id="L2281">        i = hashToIndex(value, listLength);</span>
         
-<span class="fc bfc" id="L2309" title="All 2 branches covered.">        while (hash[i] != -1) {</span>
-<span class="fc" id="L2310">            i++;</span>
+<span class="fc bfc" id="L2283" title="All 2 branches covered.">        while (hash[i] != -1) {</span>
+<span class="fc" id="L2284">            i++;</span>
             // if i is &gt; last index
-<span class="fc bfc" id="L2312" title="All 2 branches covered.">            if (i == listLength) {</span>
-<span class="pc bpc" id="L2313" title="1 of 2 branches missed.">                if (mark == 0) {</span>
-<span class="fc" id="L2314">                    i = 0;</span>
-<span class="fc" id="L2315">                    mark = 1;</span>
+<span class="fc bfc" id="L2286" title="All 2 branches covered.">            if (i == listLength) {</span>
+<span class="pc bpc" id="L2287" title="1 of 2 branches missed.">                if (mark == 0) {</span>
+<span class="fc" id="L2288">                    i = 0;</span>
+<span class="fc" id="L2289">                    mark = 1;</span>
                 } else {
-<span class="nc" id="L2317">                    StackTraceElement[] st = Thread.currentThread().getStackTrace();</span>
-<span class="nc bnc" id="L2318" title="All 2 branches missed.">                    for (StackTraceElement s : st) {</span>
-<span class="nc" id="L2319">                        System.out.println(s);</span>
+<span class="nc" id="L2291">                    StackTraceElement[] st = Thread.currentThread().getStackTrace();</span>
+<span class="nc bnc" id="L2292" title="All 2 branches missed.">                    for (StackTraceElement s : st) {</span>
+<span class="nc" id="L2293">                        System.out.println(s);</span>
                     }
-<span class="nc" id="L2321">                    throw new IllegalStateException(&quot;hash is full.  i=&quot; + i + </span>
+<span class="nc" id="L2295">                    throw new IllegalStateException(&quot;hash is full.  i=&quot; + i + </span>
                          &quot; hash.lrngth=&quot; + listLength);
                 }
             }
         }
         
-<span class="fc" id="L2327">        return i;</span>
+<span class="fc" id="L2301">        return i;</span>
     }
     
     /**
@@ -2364,11 +2338,11 @@ import java.util.Set;
      */
     public static int setHashValue(final int[] list, final int idx, int[] hash) {
         
-<span class="fc" id="L2367">        int i = getNextHashIndex(list[idx], list.length, hash);</span>
+<span class="fc" id="L2341">        int i = getNextHashIndex(list[idx], list.length, hash);</span>
         
-<span class="fc" id="L2369">        hash[i] = idx;     </span>
+<span class="fc" id="L2343">        hash[i] = idx;     </span>
 
-<span class="fc" id="L2371">        return i;</span>
+<span class="fc" id="L2345">        return i;</span>
     }
     
     /**
@@ -2380,7 +2354,7 @@ import java.util.Set;
      */
     protected static int hashToIndex(int value, int length) {
        
-<span class="fc" id="L2383">        return fnvRetry(value, length);</span>
+<span class="fc" id="L2357">        return fnvRetry(value, length);</span>
     }
     
     /**
@@ -2393,31 +2367,31 @@ import java.util.Set;
      */
     protected static int fnvRetry(int value, int length) {
 
-<span class="pc bpc" id="L2396" title="1 of 2 branches missed.">        if (length == 0) {</span>
-<span class="nc" id="L2397">            throw new IllegalArgumentException(&quot;length must be &gt;0&quot;);</span>
+<span class="pc bpc" id="L2370" title="1 of 2 branches missed.">        if (length == 0) {</span>
+<span class="nc" id="L2371">            throw new IllegalArgumentException(&quot;length must be &gt;0&quot;);</span>
         }        
         
         //#define TRUE_HASH_SIZE ((u_int32_t)50000) /* range top plus 1
-<span class="fc" id="L2401">        int FNV_32_PRIME = 16777619;</span>
+<span class="fc" id="L2375">        int FNV_32_PRIME = 16777619;</span>
         //int FNV1_32_INIT = 2166136261;
-<span class="fc" id="L2403">        int FNV1_32_INIT = 1083068130; // which is 2166136261 &gt;&gt; 1</span>
+<span class="fc" id="L2377">        int FNV1_32_INIT = 1083068130; // which is 2166136261 &gt;&gt; 1</span>
         //#define MAX_32BIT ((u_int32_t)0xffffffff) /* largest 32 bit unsigned value
         //#define RETRY_LEVEL ((MAX_32BIT / TRUE_HASH_SIZE) * TRUE_HASH_SIZE)
-<span class="fc" id="L2406">        int RETRY_LEVEL = (Integer.MAX_VALUE/length) * length;</span>
+<span class="fc" id="L2380">        int RETRY_LEVEL = (Integer.MAX_VALUE/length) * length;</span>
         
-<span class="fc" id="L2408">        int hash = fnv_31(value, FNV1_32_INIT);</span>
+<span class="fc" id="L2382">        int hash = fnv_31(value, FNV1_32_INIT);</span>
         //System.out.println(&quot;hash=&quot; + hash);
-<span class="pc bpc" id="L2410" title="1 of 2 branches missed.">        while (hash &gt;= RETRY_LEVEL) {</span>
-<span class="nc" id="L2411">            hash = (hash * FNV_32_PRIME) + FNV1_32_INIT;</span>
+<span class="pc bpc" id="L2384" title="1 of 2 branches missed.">        while (hash &gt;= RETRY_LEVEL) {</span>
+<span class="nc" id="L2385">            hash = (hash * FNV_32_PRIME) + FNV1_32_INIT;</span>
             //System.out.println(&quot;  hash=&quot; + hash);
         }
         
         //NOTE: forcing positive for use case
-<span class="fc" id="L2416">        hash = (hash ^ (hash &gt;&gt; 31)) + (hash &gt;&gt;&gt; 31);</span>
+<span class="fc" id="L2390">        hash = (hash ^ (hash &gt;&gt; 31)) + (hash &gt;&gt;&gt; 31);</span>
         
-<span class="fc" id="L2418">        hash %= length;</span>
+<span class="fc" id="L2392">        hash %= length;</span>
         
-<span class="fc" id="L2420">        return hash;</span>
+<span class="fc" id="L2394">        return hash;</span>
     }
 
     /**
@@ -2429,18 +2403,18 @@ import java.util.Set;
      */
     private static int fnv_31(int value, int FNV1_31_INIT) {
        
-<span class="fc" id="L2432">        int hval = FNV1_31_INIT;</span>
+<span class="fc" id="L2406">        int hval = FNV1_31_INIT;</span>
         
         //multiply by the 32 bit FNV magic prime mod 2^32
         //if no opt: hval *= 0x01000193;//FNV_32_PRIME;
         //else:
-<span class="fc" id="L2437">        hval += (hval&lt;&lt;1) + (hval&lt;&lt;4) + (hval&lt;&lt;7) </span>
+<span class="fc" id="L2411">        hval += (hval&lt;&lt;1) + (hval&lt;&lt;4) + (hval&lt;&lt;7) </span>
             + (hval&lt;&lt;8) + (hval&lt;&lt;24);
 
 	    // xor the bottom with the current octet
-<span class="fc" id="L2441">	    hval ^= value;</span>
+<span class="fc" id="L2415">	    hval ^= value;</span>
   
-<span class="fc" id="L2443">        return hval;</span>
+<span class="fc" id="L2417">        return hval;</span>
     }
     
     /**
@@ -2453,68 +2427,68 @@ import java.util.Set;
     public static int[] permuteTheSetBits(int setBits) {
         
         int i;
-<span class="fc" id="L2456">        int nBits = MiscMath.numberOfBits(setBits);</span>
-<span class="fc" id="L2457">        int nSetBits = 0;</span>
-<span class="fc" id="L2458">        int unsetBits = 0;        </span>
+<span class="fc" id="L2430">        int nBits = MiscMath.numberOfBits(setBits);</span>
+<span class="fc" id="L2431">        int nSetBits = 0;</span>
+<span class="fc" id="L2432">        int unsetBits = 0;        </span>
         
-<span class="fc bfc" id="L2460" title="All 2 branches covered.">        for (i = 0; i &lt; nBits; ++i) {</span>
-<span class="fc bfc" id="L2461" title="All 2 branches covered.">            if ((setBits &amp; (1 &lt;&lt; i)) != 0) {</span>
-<span class="fc" id="L2462">                nSetBits++;</span>
+<span class="fc bfc" id="L2434" title="All 2 branches covered.">        for (i = 0; i &lt; nBits; ++i) {</span>
+<span class="fc bfc" id="L2435" title="All 2 branches covered.">            if ((setBits &amp; (1 &lt;&lt; i)) != 0) {</span>
+<span class="fc" id="L2436">                nSetBits++;</span>
             } else {
-<span class="fc" id="L2464">                unsetBits |= (1 &lt;&lt; i);</span>
+<span class="fc" id="L2438">                unsetBits |= (1 &lt;&lt; i);</span>
             }
         }
         
-<span class="fc" id="L2468">        int listLen = (int)Math.pow(2, nSetBits);</span>
-<span class="fc" id="L2469">        int[] outputList = new int[listLen];</span>
+<span class="fc" id="L2442">        int listLen = (int)Math.pow(2, nSetBits);</span>
+<span class="fc" id="L2443">        int[] outputList = new int[listLen];</span>
        
-<span class="fc" id="L2471">        int[] hash = new int[outputList.length];</span>
-<span class="fc bfc" id="L2472" title="All 2 branches covered.">        for (i = 0; i &lt; hash.length; ++i) {</span>
-<span class="fc" id="L2473">            hash[i] = -1;</span>
+<span class="fc" id="L2445">        int[] hash = new int[outputList.length];</span>
+<span class="fc bfc" id="L2446" title="All 2 branches covered.">        for (i = 0; i &lt; hash.length; ++i) {</span>
+<span class="fc" id="L2447">            hash[i] = -1;</span>
         }
                  
-<span class="fc" id="L2476">        int[] lastIdx = new int[]{-1};</span>
+<span class="fc" id="L2450">        int[] lastIdx = new int[]{-1};</span>
         
-<span class="fc" id="L2478">        int number = setBits;</span>
+<span class="fc" id="L2452">        int number = setBits;</span>
                 
-<span class="fc" id="L2480">        permuteTheSetBits(outputList, hash, lastIdx, number, nSetBits, unsetBits);</span>
+<span class="fc" id="L2454">        permuteTheSetBits(outputList, hash, lastIdx, number, nSetBits, unsetBits);</span>
             
-<span class="fc" id="L2482">        return outputList;</span>
+<span class="fc" id="L2456">        return outputList;</span>
     }
 
     private static void permuteTheSetBits(int[] list, int[] hash, int[] lastIdx, int number, 
         int hiIdx, int unsetBits) {
     
-<span class="fc" id="L2488">        storeIfUnique(list, hash, lastIdx, number);</span>
+<span class="fc" id="L2462">        storeIfUnique(list, hash, lastIdx, number);</span>
         
-<span class="fc bfc" id="L2490" title="All 4 branches covered.">        while ((hiIdx &gt; -1) &amp;&amp; ((unsetBits &amp; (1 &lt;&lt; hiIdx)) != 0)) {</span>
-<span class="fc" id="L2491">            hiIdx--;</span>
+<span class="fc bfc" id="L2464" title="All 4 branches covered.">        while ((hiIdx &gt; -1) &amp;&amp; ((unsetBits &amp; (1 &lt;&lt; hiIdx)) != 0)) {</span>
+<span class="fc" id="L2465">            hiIdx--;</span>
         }
-<span class="fc bfc" id="L2493" title="All 2 branches covered.">        if (hiIdx &lt; 0) {</span>
-<span class="fc" id="L2494">            return;</span>
+<span class="fc bfc" id="L2467" title="All 2 branches covered.">        if (hiIdx &lt; 0) {</span>
+<span class="fc" id="L2468">            return;</span>
         }
         
         // recurse the 2 permutations of bit hiIdx
         
-<span class="fc" id="L2499">        permuteTheSetBits(list, hash, lastIdx, number, hiIdx - 1, unsetBits);</span>
+<span class="fc" id="L2473">        permuteTheSetBits(list, hash, lastIdx, number, hiIdx - 1, unsetBits);</span>
         
         // unset bit hiIdx
-<span class="fc" id="L2502">        number &amp;= ~(1 &lt;&lt; hiIdx);</span>
-<span class="fc" id="L2503">        permuteTheSetBits(list, hash, lastIdx, number, hiIdx - 1, unsetBits);</span>
+<span class="fc" id="L2476">        number &amp;= ~(1 &lt;&lt; hiIdx);</span>
+<span class="fc" id="L2477">        permuteTheSetBits(list, hash, lastIdx, number, hiIdx - 1, unsetBits);</span>
         
-<span class="fc" id="L2505">    }</span>
+<span class="fc" id="L2479">    }</span>
 
     private static void storeIfUnique(int[] list, int[] hash, int[] lastIdx, int value) {
         
-<span class="fc bfc" id="L2509" title="All 2 branches covered.">        if (!MiscMath.hashContains(list, value, hash)) {</span>
-<span class="fc" id="L2510">            lastIdx[0]++;</span>
-<span class="pc bpc" id="L2511" title="1 of 2 branches missed.">            if (lastIdx[0] &gt; (list.length - 1)) {</span>
-<span class="nc" id="L2512">                throw new IllegalStateException(&quot;index out of bounds&quot;);</span>
+<span class="fc bfc" id="L2483" title="All 2 branches covered.">        if (!MiscMath.hashContains(list, value, hash)) {</span>
+<span class="fc" id="L2484">            lastIdx[0]++;</span>
+<span class="pc bpc" id="L2485" title="1 of 2 branches missed.">            if (lastIdx[0] &gt; (list.length - 1)) {</span>
+<span class="nc" id="L2486">                throw new IllegalStateException(&quot;index out of bounds&quot;);</span>
             }
-<span class="fc" id="L2514">            list[lastIdx[0]] = value;</span>
-<span class="fc" id="L2515">            MiscMath.setHashValue(list, lastIdx[0], hash);</span>
+<span class="fc" id="L2488">            list[lastIdx[0]] = value;</span>
+<span class="fc" id="L2489">            MiscMath.setHashValue(list, lastIdx[0], hash);</span>
         }
-<span class="fc" id="L2517">    }</span>
+<span class="fc" id="L2491">    }</span>
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

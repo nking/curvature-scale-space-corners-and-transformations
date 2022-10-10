@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EpipolarNormalizationHelper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.transform</a> &gt; <span class="el_source">EpipolarNormalizationHelper.java</span></div><h1>EpipolarNormalizationHelper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.transform;
+
+import algorithms.matrix.MatrixUtil;
+import no.uib.cipr.matrix.NotConvergedException;
+
+<span class="nc" id="L6">public class EpipolarNormalizationHelper {</span>
+
+    /*
+    MASKS eqn (6.79)
+    x1n = x coords that have been normalized to a mean of 0 and standard deviation of 1.
+    x2n = y coords normalized similarly.
+    let H1 and H2 be their respective normalization transformation matrices.
+
+    x1n = H1 * x1
+    x2n = H2 * x2
+
+    x2^T * F * x1 = x2nT * H2^(-T) * F * H1^(-1) * x1n = 0
+
+    when calculating the fundamental matrix using normalized coordinates,
+    one is actually calculation Fn = H2^(-T) * F * H1^(-1)
+
+    so to de-normalize F, we have F = H2^T * Fn * H1
+
+    x2^T = x2n^T * H2^-T
+    x1 = H1^-1 * x1n
+     */
+
+    /*
+    &lt;pre&gt;
+        Revisiting Hartley’s Normalized Eight-Point Algorithm
+        Chojnacki et al. 2003
+
+        inverse changes the order of operations,
+        inverse translation matrix: inverse changes the signs of the translation elements,
+                but not the diagonal.
+        inverse rotation matrix: inverse is the transpose of rotation matrix.
+        inverse scaling matrix: inverse is performed on each element, that is, the reciprocal.
+
+        denormalized x2^T = transpose(normalized x2) * transpose(T2^1)
+        denormalized x1 = (T1^-1) * (normalized x1)
+        denormalized FM = transpose(T2) * FM_normalized * T1
+         */
+
+    /**
+     * given data points x, perform unit standard normalization to modify
+     * x to have mean = 0 and standard deviation = 1.
+     * the transformation matrix is returned.
+     * &lt;pre&gt;
+     *     the transformation matrix
+     *     double[][] t = new double[3][];
+     *         t[0] = new double[]{1./scale,       0,     -centroidX/scale};
+     *         t[1] = new double[]{0,           1./scale, -centroidY/scale};
+     *         t[2] = new double[]{0,           0,           1};
+     *
+     *     to denormalize the points and the fundamental matrix:
+     *
+     *     denormalized x2^T = transpose(normalized x2) * transpose(T2^1)
+     *     denormalized x1 = (T1^-1) * (normalized x1)
+     *     denormalized FM = transpose(T2) * FM_normalized * T1
+     *
+     *     where T1 is the transformation matrix from points x1
+     *     and T2 is the transformation matrix from points x2.
+     *
+     * &lt;/pre&gt;
+     * @param x matrix of data in format [3 X nPoints] where row 0 are the
+     *          'x-axis' coordinates, row 1 are the 'y-axis' coordinates,
+     *          and row 3 are the 'z-axis' coordinates which are expected
+     *          to be all '1' (= homogenous coordinates).
+     *
+     * @return transformation matrix used to normalize x.
+     &lt;pre&gt;
+    t[0] = new double[]{1./scale,       0,     -centroidX/scale};
+    t[1] = new double[]{0,           1./scale, -centroidY/scale};
+    t[2] = new double[]{0,           0,           1};
+    &lt;/pre&gt;
+     */
+    public static double[][] unitStandardNormalize(double[][] x) {
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">        if (x.length != 3) {</span>
+<span class="nc" id="L79">            throw new IllegalArgumentException(&quot;x.length must be 3&quot;);</span>
+        }
+<span class="fc" id="L81">        int n = x[0].length;</span>
+
+<span class="fc" id="L83">        double[] mS = new double[4];</span>
+
+        int i;
+        int j;
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        for (i = 0; i &lt; n; ++i) {</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">            for (j = 0; j &lt; 2; ++j) {</span>
+<span class="fc" id="L89">                mS[j] += x[j][i];</span>
+            }
+        }
+
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        for (j = 0; j &lt; 2; ++j) {</span>
+<span class="fc" id="L94">            mS[j] /= n;</span>
+        }
+
+        double d;
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        for (i = 0; i &lt; n; ++i) {</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">            for (j = 0; j &lt; 2; ++j) {</span>
+<span class="fc" id="L100">                d = (x[j][i] - mS[j]);</span>
+<span class="fc" id="L101">                mS[j + 2] += (d * d);</span>
+            }
+        }
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        for (j = 2; j &lt; 4; ++j) {</span>
+<span class="fc" id="L105">            mS[j] = Math.sqrt(mS[j]/(n - 1.0));</span>
+        }
+
+<span class="fc" id="L108">        double[][] t = new double[3][];</span>
+<span class="fc" id="L109">        t[0] = new double[]{1./mS[2],       0,     -mS[0]/mS[2]};</span>
+<span class="fc" id="L110">        t[1] = new double[]{0,           1./mS[3], -mS[1]/mS[3]};</span>
+<span class="fc" id="L111">        t[2] = new double[]{0,           0,           1};</span>
+
+<span class="fc" id="L113">        double[][] xyN = MatrixUtil.multiply(t, x);</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L115">            System.arraycopy(xyN[i], 0, x[i], 0, xyN[i].length);</span>
+        }
+<span class="fc" id="L117">        return t;</span>
+    }
+
+    /**
+     * denormalized x2^T = transpose(normalized x2) * transpose(T2^1)
+     * denormalized x1 = (T1^-1) * (normalized x1)
+     *
+     * @param x1 a.k.a. xLeft are data that have been normalized using the given
+     *      transformation matrix t1.
+     *      x1 format is [3 X nPoints] where row 0 are the
+     *      'x-axis' coordinates, row 1 are the 'y-axis' coordinates,
+     *      and row 3 are the 'z-axis' coordinates which are expected
+     *      to be all '1' (= homogenous coordinates).
+     * @param x2 a.k.a. xRight are data that have been normalized using the given
+     *     transformation matrix t1.
+     *     x1 format is [3 X nPoints] where row 0 are the
+     *     'x-axis' coordinates, row 1 are the 'y-axis' coordinates,
+     *     and row 3 are the 'z-axis' coordinates which are expected
+     *     to be all '1' (= homogenous coordinates).
+     * @param t1 transformation matrix for x1. dimensions are [3 x 3]
+     * @param t2 transformation matrix for x2. dimensions are [3 x 3]
+     */
+    public static void denormalize(double[][] x1, double[][] x2, double[][] t1,
+                                   double[][] t2) {
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">        if (x1.length != 3) {</span>
+<span class="nc" id="L142">            throw new IllegalArgumentException(&quot;x1.length must be 3&quot;);</span>
+        }
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">        if (x2.length != 3) {</span>
+<span class="nc" id="L145">            throw new IllegalArgumentException(&quot;x2.length must be 3&quot;);</span>
+        }
+<span class="fc" id="L147">        int n = x1[0].length;</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">        if (x2[0].length != n) {</span>
+<span class="nc" id="L149">            throw new IllegalArgumentException(&quot;x2.length must be the same as x1.length&quot;);</span>
+        }
+<span class="pc bpc" id="L151" title="2 of 4 branches missed.">        if (t1.length != 3 || t1[0].length != 3) {</span>
+<span class="nc" id="L152">            throw new IllegalArgumentException(&quot;t1 must be [3 X 3]&quot;);</span>
+        }
+<span class="pc bpc" id="L154" title="2 of 4 branches missed.">        if (t2.length != 3 || t2[0].length != 3) {</span>
+<span class="nc" id="L155">            throw new IllegalArgumentException(&quot;t2 must be [3 X 3]&quot;);</span>
+        }
+
+        /*
+        denormalized x2^T = transpose(normalized x2) * transpose(T2^-1)
+        denormalized x1 = (T1^-1) * (normalized x1)
+        denormalized FM = transpose(T2) * FM_normalized * T1
+         */
+
+<span class="fc" id="L164">        double[][] tInv2T = transposeInverseT(t2);</span>
+<span class="fc" id="L165">        double[][] tInv1 = inverseT(t1);</span>
+
+        // [NX3]*[3X3]=[NX3]
+<span class="fc" id="L168">        double[][] x2D = MatrixUtil.multiply(MatrixUtil.transpose(x2), tInv2T);</span>
+<span class="fc" id="L169">        x2D = MatrixUtil.transpose(x2D);</span>
+<span class="fc" id="L170">        double[][] x1D = MatrixUtil.multiply(tInv1, x1);</span>
+
+        int i;
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L174">            System.arraycopy(x1D[i], 0, x1[i], 0, x1D[i].length);</span>
+        }
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L177">            System.arraycopy(x2D[i], 0, x2[i], 0, x2D[i].length);</span>
+        }
+<span class="fc" id="L179">    }</span>
+
+    /**
+     * denormalized FM = transpose(T2) * FM_normalized * T1
+     * @param fm the fundamental matrix calculated using normalized x1 and x2 data
+     *           points, where t1 and t2 are the transformation matrices used
+     *           to normalize x1 and x2, respectively.
+     * @param t1 transformation matrix for x1. dimensions are [3 x 3]
+     * @param t2 transformation matrix for x2. dimensions are [3 x 3]
+     */
+    public static void denormalizeFM(double[][] fm, double[][] t1, double[][] t2) {
+
+<span class="pc bpc" id="L191" title="2 of 4 branches missed.">        if (fm.length != 3 || fm[0].length != 3) {</span>
+<span class="nc" id="L192">            throw new IllegalArgumentException(&quot;fm must be [3 X 3]&quot;);</span>
+        }
+<span class="pc bpc" id="L194" title="2 of 4 branches missed.">        if (t1.length != 3 || t1[0].length != 3) {</span>
+<span class="nc" id="L195">            throw new IllegalArgumentException(&quot;t1 must be [3 X 3]&quot;);</span>
+        }
+<span class="pc bpc" id="L197" title="2 of 4 branches missed.">        if (t2.length != 3 || t2[0].length != 3) {</span>
+<span class="nc" id="L198">            throw new IllegalArgumentException(&quot;t2 must be [3 X 3]&quot;);</span>
+        }
+<span class="fc" id="L200">        int n = fm[0].length;</span>
+
+        //denormalized FM = transpose(T2) * FM_normalized * T1
+<span class="fc" id="L203">        double[][] fmD = MatrixUtil.multiply(fm, t1);</span>
+<span class="fc" id="L204">        fmD = MatrixUtil.multiply(MatrixUtil.transpose(t2), fmD);</span>
+
+<span class="fc bfc" id="L206" title="All 2 branches covered.">        for (int i = 0; i &lt; fmD.length; ++i) {</span>
+<span class="fc" id="L207">            System.arraycopy(fmD[i], 0, fm[i], 0, fmD[i].length);</span>
+        }
+<span class="fc" id="L209">    }</span>
+
+    private static double[][] transposeInverseT(double[][] t) {
+
+<span class="fc" id="L213">        double[][] tinv = MatrixUtil.zeros(3, 3);</span>
+<span class="fc" id="L214">        tinv[0][0] = 1. / t[0][0];</span>
+<span class="fc" id="L215">        tinv[1][1] = 1. / t[1][1];</span>
+<span class="fc" id="L216">        tinv[2][2] = 1;</span>
+<span class="fc" id="L217">        tinv[2][0] = -1. * t[0][2]/t[0][0];</span>
+<span class="fc" id="L218">        tinv[2][1] = -1. * t[1][2]/t[1][1];</span>
+
+<span class="fc" id="L220">        return tinv;</span>
+    }
+
+    private static double[][] inverseT(double[][] t) {
+
+<span class="fc" id="L225">        double[][] inv = MatrixUtil.zeros(3,3);</span>
+<span class="fc" id="L226">        inv[0][0] = 1./t[0][0];</span>
+<span class="fc" id="L227">        inv[1][1] = 1./t[1][1];</span>
+<span class="fc" id="L228">        inv[2][2] = 1;</span>
+<span class="fc" id="L229">        inv[0][2] = -1.*t[0][2]/t[0][0];</span>
+<span class="fc" id="L230">        inv[1][2] = -1.*t[1][2]/t[1][1];</span>
+
+        /* from camera calibration inverse
+           | 1/fx   0           -xc/fx  |
+         = | 0       1/fy        -yc/fy  |
+           | 0       0           1       |
+        */
+
+<span class="fc" id="L238">        return inv;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

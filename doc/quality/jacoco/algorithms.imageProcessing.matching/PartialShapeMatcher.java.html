@@ -328,7 +328,7 @@ based upon algorithm in paper
 <span class="nc" id="L328">            storeQDp = dp;</span>
         }
         
-<span class="fc bfc" id="L331" title="All 2 branches covered.">        if (rSub.getTransformationParameters() != null) {</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">        if (rSub.getTransformationParameters() != null) {</span>
        
             /*
             transX = xt0 -
@@ -344,11 +344,11 @@ based upon algorithm in paper
             // rotation shouldn't change
             // scale changes by factor dp
             
-<span class="fc" id="L347">            TransformationParameters params = rSub.getTransformationParameters().copy();</span>
-<span class="fc" id="L348">            params.setScale(params.getScale());</span>
-<span class="fc" id="L349">            params.setTranslationX(params.getTranslationX());</span>
-<span class="fc" id="L350">            params.setTranslationY(params.getTranslationY());</span>
-<span class="fc" id="L351">            r.setTransformationParameters(params);</span>
+<span class="nc" id="L347">            TransformationParameters params = rSub.getTransformationParameters().copy();</span>
+<span class="nc" id="L348">            params.setScale(params.getScale());</span>
+<span class="nc" id="L349">            params.setTranslationX(params.getTranslationX());</span>
+<span class="nc" id="L350">            params.setTranslationY(params.getTranslationY());</span>
+<span class="nc" id="L351">            r.setTransformationParameters(params);</span>
             
         }
         

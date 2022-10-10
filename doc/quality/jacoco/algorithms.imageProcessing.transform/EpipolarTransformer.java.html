@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EpipolarTransformer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.transform</a> &gt; <span class="el_source">EpipolarTransformer.java</span></div><h1>EpipolarTransformer.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.transform;
 
 import algorithms.SubsetChooser;
+import algorithms.misc.PolynomialRootSolver;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.misc.MiscMath0;
+import algorithms.statistics.Standardization;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import no.uib.cipr.matrix.DenseMatrix;
@@ -44,8 +48,8 @@ import algorithms.util.FormatArray;
  * Some definitions:
     vectors are treated as columns unless noted otherwise.
     vector as a row uses notation u^T.
-    u^T*v represents the inner product.
-    u*v^T is a matrix.
+    u^T*v represents the inner product (= dot product).  result is a scalar.
+    u*v^T represents the outer product. result is a matrix.
     u_1 is the (x,y) points from image 1 and u_2 are the matched (x,y) points
         from image 2.
 
@@ -83,7 +87,7 @@ import algorithms.util.FormatArray;
  
     To avoid the trivial scale, ||f|| = 1 where f is the norm of f
 
-    the rank of f is then 8.
+    the rank of A is 8, but noise and other errors make it 9.
     if A is longer than 8, the system is over-determined (over specified) and
     so must be solved using least squares.  the set may be over determined
     and not have a zero solution.
@@ -94,7 +98,7 @@ import algorithms.util.FormatArray;
     the solution is the unit eigenvector corresponding to the smallest
     eigenvalue of A^T*A.
 
-    Since A^T*A is semi-definite and symmetric, all of its eigenvectors
+    Since A^T*A is positive semi-definite and symmetric, all of its eigenvectors
     are real and positive or zero.
     This eigenvector is what he calls the least eigenvector of A^T*A and
     it is found via the Jacobi algorithm or Singular Value Decomposition.
@@ -184,7 +188,7 @@ fundamental matrix. International Journal of Computer Vision&quot;, 24(3):271–
 
   note:
     because translation is not a linear transformation (see Strang Chap 7)
-       one has to keep it as a separate tranformation matrix when
+       one has to keep it as a separate transformation matrix when
        performing operations on a sequence of matrices such as inverse
        and transpose operations.
 
@@ -202,7 +206,7 @@ fundamental matrix. International Journal of Computer Vision&quot;, 24(3):271–
         A^(-1) =  ------ C^(T)  where C_ij = cofactor of a_ij
                    det A
 
-  NOTE: the normalization suggested by Hartely is explored further in 
+  NOTE: the normalization suggested by Hartley is explored further in
   Chojnacki et al. 2003,  &quot;Revisiting Hartley’s Normalized Eight-Point Algorithm&quot;
   
   Some excerpts:
@@ -310,47 +314,298 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
  * for the case where arguments are the camera intrinsic parameters and the correspondence.
  * @author nichole
  */
-<span class="fc" id="L313">public class EpipolarTransformer {</span>
+<span class="fc" id="L317">public class EpipolarTransformer {</span>
 
-<span class="fc" id="L315">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L319">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
     
-<span class="fc" id="L317">    private static double eps = 1e-12;</span>
-    
+<span class="fc" id="L321">    private static double eps = 1e-12;</span>
+
     /**
-     * calculate the epipolar projection for a set of 8 or more matched points.
-     * NOTE that for best results, the method should be given unit standard
-     * normalized coordinates.
-     * @param leftXY left image correspondence in format of
-     * double array with x points on row 0, y points on row 1, 
-     *     and 1's on row 2.  the number of columns is the number of data points.
-     * @param rightXY right image correspondence in format of 
-     * double array with x points on row 0, y points on row 1, 
-     *     and 1's on row 2.  the number of columns is the number of data points.
-     * @param calibrated if true, solves for the Essential Matrix, else solves for the
-     * Fundamental matrix.  The difference is only in the diagonal used for
-     * dimension reduction.
-     * @return
+     * calculate the epipolar projection.  all normalizations and de-normalizations are handled internally.
+     * if the camera calibration is known, the essential matrix is returned.
+     * @param leftXY the left image coordinates of the feature correspondences
+     * @param rightXY the right image coordinates of the feature correspondences
+     * @param calibrated whether or not the camera calibration is known.  if true, the essential matrix is returned.
+     * @return the fundamental matrix (or essential matrix) of the epipolar projection, else null if SVD failed.
      */
+    public double[][] calculateEpipolarProjection2(double[][] leftXY, double[][] rightXY,
+                                                   boolean calibrated) throws IOException {
+
+<span class="pc bpc" id="L334" title="1 of 2 branches missed.">        if (leftXY.length != 3) {</span>
+<span class="nc" id="L335">            throw new IllegalArgumentException(&quot;leftXY.length must be 3&quot;);</span>
+        }
+<span class="pc bpc" id="L337" title="1 of 2 branches missed.">        if (rightXY.length != 3) {</span>
+<span class="nc" id="L338">            throw new IllegalArgumentException(&quot;rightXY.length must be 3&quot;);</span>
+        }
+<span class="fc" id="L340">        int n = leftXY[0].length;</span>
+<span class="pc bpc" id="L341" title="1 of 2 branches missed.">        if (rightXY[0].length != n) {</span>
+<span class="nc" id="L342">            throw new IllegalArgumentException(&quot;leftXY and rightXY must have same dimensions&quot;);</span>
+        }
+<span class="pc bpc" id="L344" title="1 of 2 branches missed.">        if (n &lt; 7) {</span>
+<span class="nc" id="L345">            throw new IllegalArgumentException(&quot;not enough points.  currently, this method only calculates the epipolar projection&quot; +</span>
+                    &quot;matrix for 7 or more points&quot;);
+        }
+
+<span class="pc bpc" id="L349" title="1 of 2 branches missed.">        if (n == 7) {</span>
+<span class="nc" id="L350">            return calculateEpipolarProjectionUsing7Points(leftXY, rightXY);</span>
+        }
+
+        //leftXY = MatrixUtil.copy(leftXY);
+        //rightXY = MatrixUtil.copy(rightXY);
+
+<span class="fc" id="L356">        double[][] a = createFundamentalMatrix(leftXY, rightXY);</span>
+
+<span class="fc" id="L358">        SVDProducts svd0 = null;</span>
+        try {
+            // we only need V in first SVD operation, so can let the method use a or a^T*a
+<span class="fc" id="L361">            svd0 = MatrixUtil.performSVD(a);</span>
+<span class="nc" id="L362">        } catch (NotConvergedException ex) {</span>
+            //Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+<span class="nc" id="L364">            return null;</span>
+<span class="fc" id="L365">        }</span>
+<span class="fc" id="L366">        int ns = 9;</span>
+<span class="fc" id="L367">        double[][] vT = svd0.vT;</span>
+<span class="pc bnc" id="L368" title="All 2 branches missed.">        assert(vT[0].length == ns);</span>
+<span class="fc" id="L369">        double[][] ff = new double[3][3];</span>
+        int i;
+<span class="fc bfc" id="L371" title="All 2 branches covered.">        for (i = 0; i &lt; 3; i++) {</span>
+<span class="fc" id="L372">            ff[i] = new double[3];</span>
+<span class="fc" id="L373">            ff[i][0] = vT[ns - 1][(i * 3) + 0];</span>
+<span class="fc" id="L374">            ff[i][1] = vT[ns - 1][(i * 3) + 1];</span>
+<span class="fc" id="L375">            ff[i][2] = vT[ns - 1][(i * 3) + 2];</span>
+        }
+
+        // enforce rank=2
+<span class="fc" id="L379">        SVD svd = null;</span>
+        try {
+            // we need to use &quot;U&quot; and &quot;V&quot; below
+<span class="fc" id="L382">            svd = SVD.factorize(new DenseMatrix(ff));</span>
+<span class="nc" id="L383">        } catch (NotConvergedException e) {</span>
+<span class="nc" id="L384">            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L385">            return null;</span>
+<span class="fc" id="L386">        }</span>
+        // keep the largest 2 values in sDiag to make the diagonal rank 2
+<span class="fc" id="L388">        double[][] d = MatrixUtil.zeros(3,3);</span>
+<span class="fc bfc" id="L389" title="All 2 branches covered.">        if (calibrated) {</span>
+            //from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
+            // refers to Ma, Soatto, Kosecka, and Sastry 2003
+            // &quot;An Invitation to 3D Vision From Images to Geometric Models&quot;, p. 114
+            // if this is solving the Essential matrix instead of the Fundamental
+            //    Matrix, the diagonal is
+            // d = [lambda, lambda, 0] where lambda = (svd.s[0] + svd.s[1])/2.
+            // MASKS Theorem 5.9
+<span class="fc" id="L397">            double sig = (svd.getS()[0] + svd.getS()[1])/2.;</span>
+<span class="fc" id="L398">            d[0][0] = sig;</span>
+<span class="fc" id="L399">            d[1][1] = sig;</span>
+            //NOTE: to normalize E, one can use sig = 1 here. see p. 122 of MASKS chapt 5.
+<span class="fc" id="L401">        } else {</span>
+<span class="fc" id="L402">            d[0][0] = svd.getS()[0];</span>
+<span class="fc" id="L403">            d[1][1] = svd.getS()[1];</span>
+        }
+
+        /*
+        multiply the terms:
+             F = dot(U, dot(diag(D),V^T))
+        */
+<span class="fc" id="L410">        vT = MatrixUtil.convertToRowMajor(svd.getVt());</span>
+<span class="fc" id="L411">        double[][] dDotV = MatrixUtil.multiply(d, vT);</span>
+
+        // 3x3 with rank 2
+<span class="fc" id="L414">        double[][] fm = MatrixUtil.multiply(MatrixUtil.convertToRowMajor(svd.getU()), dDotV);</span>
+
+<span class="fc" id="L416">        return fm;</span>
+    }
+
+    /**
+     * calculate the epipolar projection given 7 pairs of points.  all normalizations and de-normalizations are handled internally.
+     * if the camera calibration is known, the essential matrix is returned.
+     * @param leftXY the left image coordinates of the feature correspondences
+     * @param rightXY the right image coordinates of the feature correspondences
+     * @return the fundamental matrix (or essential matrix) of the epipolar projection.
+     */
+    public double[][] calculateEpipolarProjectionUsing7Points(double[][] leftXY, double[][] rightXY)
+    throws IOException {
+
+<span class="nc bnc" id="L429" title="All 2 branches missed.">        if (leftXY.length != 3) {</span>
+<span class="nc" id="L430">            throw new IllegalArgumentException(&quot;leftXY.length must be 3&quot;);</span>
+        }
+<span class="nc bnc" id="L432" title="All 2 branches missed.">        if (rightXY.length != 3) {</span>
+<span class="nc" id="L433">            throw new IllegalArgumentException(&quot;rightXY.length must be 3&quot;);</span>
+        }
+<span class="nc" id="L435">        int n = 7;</span>
+<span class="nc bnc" id="L436" title="All 4 branches missed.">        if (rightXY[0].length != n || leftXY[0].length != n) {</span>
+<span class="nc" id="L437">            throw new IllegalArgumentException(&quot;leftXY and rightXY must have 7 points&quot;);</span>
+        }
+
+<span class="nc" id="L440">        double[][] a = createFundamentalMatrix(leftXY, rightXY);</span>
+
+<span class="nc" id="L442">        SVDProducts svd = null;</span>
+        try {
+<span class="nc" id="L444">            svd = MatrixUtil.performSVD(a);</span>
+<span class="nc" id="L445">        } catch (NotConvergedException ex) {</span>
+<span class="nc" id="L446">            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L447">            return null;</span>
+<span class="nc" id="L448">        }</span>
+<span class="nc" id="L449">        int ns = 9;</span>
+<span class="nc bnc" id="L450" title="All 2 branches missed.">        assert(svd.vT[0].length == ns);</span>
+        // dimensions of V are nxn and n=9.  smallest eigenvector is last row of v^T and A
+<span class="nc" id="L452">        double[][] ff1 = new double[3][3];</span>
+<span class="nc" id="L453">        double[][] ff2 = new double[3][3];</span>
+        int i;
+<span class="nc bnc" id="L455" title="All 2 branches missed.">        for (i = 0; i &lt; 3; i++) {</span>
+<span class="nc" id="L456">            ff1[i] = new double[3];</span>
+<span class="nc" id="L457">            ff2[i] = new double[3];</span>
+
+<span class="nc" id="L459">            ff1[i][0] = svd.vT[ns - 2][(i * 3) + 0];</span>
+<span class="nc" id="L460">            ff1[i][1] = svd.vT[ns - 2][(i * 3) + 1];</span>
+<span class="nc" id="L461">            ff1[i][2] = svd.vT[ns - 2][(i * 3) + 2];</span>
+
+<span class="nc" id="L463">            ff2[i][0] = svd.vT[ns - 1][(i * 3) + 0];</span>
+<span class="nc" id="L464">            ff2[i][1] = svd.vT[ns - 1][(i * 3) + 1];</span>
+<span class="nc" id="L465">            ff2[i][2] = svd.vT[ns - 1][(i * 3) + 2];</span>
+        }
+
+        //det A = 0 ==&gt; det(α*F1 + (1 − α)*F2) = 0
+
+        /*
+        to solve for 'a' as the roots of a polynomial, write out the multiplication
+        including that in the determinant in detail, then group by the powers of a to
+        calculate the polynomial coefficients.
+        see docs/miscNotes/fundamental_cube_roots.txt
+         */
+
+<span class="nc" id="L477">        double[] coeffs = calcOrderCoeffs(ff1, ff2);</span>
+
+        //double[] coeffs3 = calculateCubicRootCoefficientsHartley(ff1, ff2);
+        //System.out.printf(&quot;Hartley's coeffs:\n%s\n&quot;, FormatArray.toString(coeffs3, &quot;%.3e&quot;));
+        //System.out.printf(&quot;coeffs current:\n%s\n&quot;, FormatArray.toString(coeffs, &quot;%.3e&quot;));
+
+<span class="nc" id="L483">        double eps = 1E-4;</span>
+        double[] roots;
+<span class="nc bnc" id="L485" title="All 2 branches missed.">        if (Math.abs(coeffs[3]) &lt; 1E-7) {</span>
+<span class="nc" id="L486">            roots = MiscMath.solveCubicRoots(coeffs[0], coeffs[1], coeffs[2], coeffs[3]);</span>
+        } else {
+            try {
+<span class="nc" id="L489">                roots = PolynomialRootSolver.solveForRealUsingMPSolve(coeffs, eps);</span>
+<span class="nc" id="L490">            } catch (IOException e) {</span>
+<span class="nc" id="L491">                log.severe(&quot;PolynomialRootSolver error: &quot; + e.getMessage());</span>
+<span class="nc" id="L492">                roots = MiscMath.solveCubicRoots(coeffs[0], coeffs[1], coeffs[2], coeffs[3]);</span>
+<span class="nc" id="L493">            }</span>
+        }
+
+        // MASKS Appendix 6.A: usually only one of the solved 'a's is consistent with det(F1 + a*F2) = 0
+
+<span class="nc" id="L498">        return filterForZeroDeterminant(ff1, ff2, roots, eps);</span>
+    }
+
+    private double[] calculateCubicRootCoefficientsHartley(double[][] ff1, double[][] ff2) {
+
+        // follow Hartley's vgg_singF_from_FF.m to calc the coeffs:
+        // which is rewritten by imkaywu.github.io for opencv
+        //TODO: fill in those 2 references here
+<span class="nc" id="L506">        double[][][] d = new double[2][2][2];</span>
+<span class="nc" id="L507">        double[][] dTmp = MatrixUtil.zeros(3, 3);</span>
+<span class="nc bnc" id="L508" title="All 2 branches missed.">        for (int i1 = 0; i1 &lt; 2; ++i1) {</span>
+<span class="nc" id="L509">            d[i1] = new double[2][2];</span>
+<span class="nc bnc" id="L510" title="All 2 branches missed.">            for (int i2 = 0; i2 &lt; 2; ++i2) {</span>
+<span class="nc" id="L511">                d[i1][i2] = new double[2];</span>
+<span class="nc bnc" id="L512" title="All 2 branches missed.">                for (int i3 = 0; i3 &lt; 2; ++i3) {</span>
+<span class="nc bnc" id="L513" title="All 2 branches missed.">                    if (i1 == 0) {</span>
+<span class="nc" id="L514">                        dTmp[0] = MatrixUtil.extractColumn(ff1, 0) ;</span>
+                    } else {
+<span class="nc" id="L516">                        dTmp[0] = MatrixUtil.extractColumn(ff2, 0) ;</span>
+                    }
+<span class="nc bnc" id="L518" title="All 2 branches missed.">                    if (i2 == 0) {</span>
+<span class="nc" id="L519">                        dTmp[1] = MatrixUtil.extractColumn(ff1, 1) ;</span>
+                    } else {
+<span class="nc" id="L521">                        dTmp[1] = MatrixUtil.extractColumn(ff2, 1) ;</span>
+                    }
+<span class="nc bnc" id="L523" title="All 2 branches missed.">                    if (i3 == 0) {</span>
+<span class="nc" id="L524">                        dTmp[2] = MatrixUtil.extractColumn(ff1, 2) ;</span>
+                    } else {
+<span class="nc" id="L526">                        dTmp[2] = MatrixUtil.extractColumn(ff2, 2) ;</span>
+                    }
+<span class="nc" id="L528">                    dTmp = MatrixUtil.transpose(dTmp);</span>
+<span class="nc" id="L529">                    d[i1][i2][i3] = MatrixUtil.determinant(dTmp);</span>
+                }
+            }
+        }
+
+<span class="nc" id="L534">        double c3 = -d[1][0][0]+d[0][1][1]+d[0][0][0]+d[1][1][0]+d[1][0][1]-d[0][1][0]-d[0][0][1]-d[1][1][1];</span>
+<span class="nc" id="L535">        double c2 = d[0][0][1]-2*d[0][1][1]-2*d[1][0][1]+d[1][0][0]-2*d[1][1][0]+d[0][1][0]+3*d[1][1][1];</span>
+<span class="nc" id="L536">        double c1 = d[1][1][0]+d[0][1][1]+d[1][0][1]-3*d[1][1][1];</span>
+<span class="nc" id="L537">        double c0 = d[1][1][1];</span>
+
+<span class="nc" id="L539">        return new double[]{c3, c2, c1, c0};</span>
+    }
+
+    // det(α*F1 + (1 − α)*F2) = 0
+    private double[][] filterForZeroDeterminant(double[][] f1, double[][] f2, double[] roots, double eps) {
+        int i;
+        int j;
+<span class="nc" id="L546">        int c = 0;</span>
+        double[][] f;
+        double[][] t1;
+        double[][] t2;
+        double detF;
+<span class="nc" id="L551">        double[][] solns = MatrixUtil.zeros(3*roots.length, 3);</span>
+<span class="nc bnc" id="L552" title="All 2 branches missed.">        for (i = 0; i &lt; roots.length; ++i) {</span>
+<span class="nc" id="L553">            t1 = MatrixUtil.copy(f1);</span>
+<span class="nc" id="L554">            t2 = MatrixUtil.copy(f2);</span>
+<span class="nc" id="L555">            MatrixUtil.multiply(t1, roots[i]);</span>
+<span class="nc" id="L556">            MatrixUtil.multiply(t2, 1. - roots[i]);</span>
+<span class="nc" id="L557">            f = MatrixUtil.pointwiseAdd(t1, t2);</span>
+<span class="nc" id="L558">            detF = MatrixUtil.determinant(f);</span>
+<span class="nc bnc" id="L559" title="All 2 branches missed.">            if (Math.abs(detF) &lt; eps) {</span>
+<span class="nc bnc" id="L560" title="All 2 branches missed.">                for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L561">                    solns[c * 3 + j] = f[j];</span>
+<span class="nc" id="L562">                    System.arraycopy(f[j], 0, solns[c * 3 + j], 0, f[j].length);</span>
+                }
+<span class="nc" id="L564">                ++c;</span>
+            }
+        }
+        // number of solutions is c
+<span class="nc bnc" id="L568" title="All 2 branches missed.">        if (c &lt; roots.length) {</span>
+<span class="nc" id="L569">            solns = MatrixUtil.copySubMatrix(solns, 0, 3*c - 1, 0, 2);</span>
+        }
+<span class="nc" id="L571">        return solns;</span>
+    }
+
+        /**
+         * calculate the epipolar projection for a set of 8 or more matched points.
+         * NOTE that for best results, the method should be given unit standard
+         * normalized coordinates.
+         * @param leftXY left image correspondence in format of
+         * double array with x points on row 0, y points on row 1,
+         *     and 1's on row 2.  the number of columns is the number of data points.
+         * @param rightXY right image correspondence in format of
+         * double array with x points on row 0, y points on row 1,
+         *     and 1's on row 2.  the number of columns is the number of data points.
+         * @param calibrated if true, solves for the Essential Matrix, else solves for the
+         * Fundamental matrix.  The difference is only in the diagonal used for
+         * dimension reduction.
+         * @return
+         */
     public DenseMatrix calculateEpipolarProjection(
         DenseMatrix leftXY, DenseMatrix rightXY, boolean calibrated) {
 
-<span class="pc bpc" id="L337" title="2 of 4 branches missed.">        if (leftXY.numColumns() != rightXY.numColumns() || leftXY.numRows() != rightXY.numRows()) {</span>
-<span class="nc" id="L338">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L592" title="2 of 4 branches missed.">        if (leftXY.numColumns() != rightXY.numColumns() || leftXY.numRows() != rightXY.numRows()) {</span>
+<span class="nc" id="L593">            throw new IllegalArgumentException(</span>
                 &quot;leftXY and rightXY must be same size&quot;);
         }
 
-<span class="pc bpc" id="L342" title="1 of 2 branches missed.">        if (leftXY.numColumns() == 7) {</span>
-<span class="nc" id="L343">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L597" title="1 of 2 branches missed.">        if (leftXY.numColumns() == 7) {</span>
+<span class="nc" id="L598">            throw new IllegalArgumentException(</span>
                 &quot;for 7 points, use calculateEpipolarProjectionFor7Points&quot;);
         }
 
-<span class="pc bpc" id="L347" title="1 of 2 branches missed.">        if (leftXY.numColumns() &lt; 8) {</span>
+<span class="pc bpc" id="L602" title="1 of 2 branches missed.">        if (leftXY.numColumns() &lt; 8) {</span>
             // cannot use this algorithm.
-<span class="nc" id="L349">            throw new IllegalArgumentException(</span>
+<span class="nc" id="L604">            throw new IllegalArgumentException(</span>
                 &quot;the algorithms requires 8 or more points.&quot;);
         }
         
-<span class="fc" id="L353">        double[][] m = createFundamentalMatrix(leftXY, rightXY);</span>
+<span class="fc" id="L608">        double[][] m = createFundamentalMatrix(leftXY, rightXY);</span>
         
         /*
         compute linear least square solution:
@@ -359,26 +614,31 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
 
         calculate [U,D,V] from svd(A):
         */
-<span class="fc" id="L362">        DenseMatrix aMatrix = new DenseMatrix(m);</span>
-        
+<span class="fc" id="L617">        double[][] aTa = MatrixUtil.createATransposedTimesA(m);</span>
+        //DenseMatrix aMatrix = new DenseMatrix(m);
+<span class="fc" id="L619">        DenseMatrix aTaMatrix = new DenseMatrix(aTa);</span>
+
         //System.out.printf(&quot;matrix A dimensions = %d x %d\n&quot;, m.length, m[0].length);
         
         //aMatrix is m x n  (== nData X 9)
         // U   is  m X m = nData X nData the left singular vectors, **column-wise**
         // S   is  min(m, n) the singular values (stored in descending order)
         // V^T is  n X n = 9x9    the right singular vectors, **row-wise**
-<span class="fc" id="L370">        SVDProducts svd = null;</span>
+
+        //A^T * A is 9x9
+
+<span class="fc" id="L630">        SVDProducts svd = null;</span>
         try {
-<span class="fc" id="L372">            svd = MatrixUtil.performSVD(aMatrix);</span>
-<span class="nc" id="L373">        } catch (NotConvergedException e) {            </span>
-<span class="nc" id="L374">            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);</span>
-<span class="nc" id="L375">            return null;</span>
-<span class="fc" id="L376">        }</span>
-        
-        //when condition numbr is large, the 2 smallest eigenvalues are close to on another
-        //and that makes their eigenvectors sensitive to small pertubations.
-<span class="fc" id="L380">        double conditionNumber = svd.s[0]/svd.s[svd.s.length-2];</span>
-<span class="fc" id="L381">        log.fine(&quot;conditionNumber=&quot; + conditionNumber);</span>
+<span class="fc" id="L632">            svd = MatrixUtil.performSVD(aTaMatrix);</span>
+<span class="nc" id="L633">        } catch (NotConvergedException e) {            </span>
+<span class="nc" id="L634">            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L635">            return null;</span>
+<span class="fc" id="L636">        }</span>
+
+        //when condition number is large, the 2 smallest eigenvalues are close to on another
+        //and that makes their eigenvectors sensitive to small perturbations.
+<span class="fc" id="L640">        double conditionNumber = svd.s[0]/svd.s[svd.s.length-2];</span>
+<span class="fc" id="L641">        log.fine(&quot;conditionNumber=&quot; + conditionNumber);</span>
         
         /*        
         set f to be the eigenvector associated with the smallest eigenvalue
@@ -386,20 +646,20 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
          the smallest eigenvalue determines the plane of closest fit.
          */
       
-<span class="fc" id="L389">        int n = svd.vT.length;</span>
-<span class="pc bnc" id="L390" title="All 2 branches missed.">        assert(n == 9);</span>
-<span class="pc bnc" id="L391" title="All 2 branches missed.">        assert(svd.vT[0].length == 9);</span>
+<span class="fc" id="L649">        int n = svd.vT.length;</span>
+<span class="pc bnc" id="L650" title="All 2 branches missed.">        assert(n == 9);</span>
+<span class="pc bnc" id="L651" title="All 2 branches missed.">        assert(svd.vT[0].length == 9);</span>
 
         // dimensions of V are nxn and n=9.  smallest eigenvector is last row of v^T and A
-<span class="fc" id="L394">        double[][] ff = new double[3][3];</span>
-<span class="fc bfc" id="L395" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; i++) {</span>
-<span class="fc" id="L396">            ff[i] = new double[3];</span>
+<span class="fc" id="L654">        double[][] ff = new double[3][3];</span>
+<span class="fc bfc" id="L655" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; i++) {</span>
+<span class="fc" id="L656">            ff[i] = new double[3];</span>
           
-<span class="fc" id="L398">            ff[i][0] = svd.vT[n - 1][(i * 3) + 0];</span>
-<span class="fc" id="L399">            ff[i][1] = svd.vT[n - 1][(i * 3) + 1];</span>
-<span class="fc" id="L400">            ff[i][2] = svd.vT[n - 1][(i * 3) + 2];</span>
+<span class="fc" id="L658">            ff[i][0] = svd.vT[n - 1][(i * 3) + 0];</span>
+<span class="fc" id="L659">            ff[i][1] = svd.vT[n - 1][(i * 3) + 1];</span>
+<span class="fc" id="L660">            ff[i][2] = svd.vT[n - 1][(i * 3) + 2];</span>
         }
-<span class="fc" id="L402">        DenseMatrix fMatrix = new DenseMatrix(ff);</span>
+<span class="fc" id="L662">        DenseMatrix fMatrix = new DenseMatrix(ff);</span>
 
         /* make the fundamental matrix have a rank of 2
         by performing svd and reconstruction with the two largest
@@ -414,13 +674,13 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
             F = U * diag([D(1,1) D(2,2) 0]) * V^T, where V^T is V transposed.
         */
         
-<span class="fc" id="L417">        svd = null;</span>
+<span class="fc" id="L677">        SVD svd2 = null;</span>
         try {
-<span class="fc" id="L419">            svd = MatrixUtil.performSVD(fMatrix);</span>
-<span class="nc" id="L420">        } catch (NotConvergedException e) {            </span>
-<span class="nc" id="L421">            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);</span>
-<span class="nc" id="L422">            return null;</span>
-<span class="fc" id="L423">        }</span>
+<span class="fc" id="L679">            svd2 = SVD.factorize(fMatrix);</span>
+<span class="nc" id="L680">        } catch (NotConvergedException e) {            </span>
+<span class="nc" id="L681">            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L682">            return null;</span>
+<span class="fc" id="L683">        }</span>
        
         // creates U as 3 x 3 matrix
         //         D as length 3 array
@@ -429,24 +689,26 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
         //F = U * diag([D(1,1) D(2,2) 0]) * V^T, where V^T is V transposed.
 
         // keep the largest 2 values in sDiag to make the diagonal rank 2
-<span class="fc" id="L432">        DenseMatrix d = new DenseMatrix(3, 3);</span>
-<span class="fc" id="L433">        d = (DenseMatrix)d.zero();</span>
-<span class="fc bfc" id="L434" title="All 2 branches covered.">        if (calibrated) {</span>
+<span class="fc" id="L692">        DenseMatrix d = new DenseMatrix(3, 3);</span>
+<span class="fc" id="L693">        d = (DenseMatrix)d.zero();</span>
+<span class="fc bfc" id="L694" title="All 2 branches covered.">        if (calibrated) {</span>
             //from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
             // refers to Ma, Soatto, Kosecka, and Sastry 2003
             // &quot;An Invitation to 3D Vision From Images to Geometric Models&quot;, p. 114
             // if this is solving the Essential matrix instead of the Fundamental 
             //    Matrix, the diagonal is 
             // d = [lambda, lambda, 0] where lambda = (svd.s[0] + svd.s[1])/2.
-<span class="fc" id="L441">            double sig = (svd.s[0] + svd.s[1])/2.;</span>
-<span class="fc" id="L442">            d.set(0, 0, sig);</span>
-<span class="fc" id="L443">            d.set(1, 1, sig);</span>
-<span class="fc" id="L444">        } else {</span>
-<span class="pc bpc" id="L445" title="1 of 2 branches missed.">            if (svd.s.length &gt; 0) {</span>
-<span class="fc" id="L446">                d.set(0, 0, svd.s[0]);</span>
+            // MASKS Theorem 5.9
+<span class="fc" id="L702">            double sig = (svd2.getS()[0] + svd2.getS()[1])/2.;</span>
+<span class="fc" id="L703">            d.set(0, 0, sig);</span>
+<span class="fc" id="L704">            d.set(1, 1, sig);</span>
+            //NOTE: to normalize E, one can use sig = 1 here. see p. 122 of MASKS chapt 5.
+<span class="fc" id="L706">        } else {</span>
+<span class="pc bpc" id="L707" title="1 of 2 branches missed.">            if (svd2.getS().length &gt; 0) {</span>
+<span class="fc" id="L708">                d.set(0, 0, svd2.getS()[0]);</span>
             }
-<span class="pc bpc" id="L448" title="1 of 2 branches missed.">            if (svd.s.length &gt; 1) {</span>
-<span class="fc" id="L449">                d.set(1, 1, svd.s[1]);</span>
+<span class="pc bpc" id="L710" title="1 of 2 branches missed.">            if (svd2.getS().length &gt; 1) {</span>
+<span class="fc" id="L711">                d.set(1, 1, svd2.getS()[1]);</span>
             }
         }        
         
@@ -459,12 +721,12 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
         multiply the terms:
              F = dot(U, dot(diag(D),V^T))
         */
-<span class="fc" id="L462">        DenseMatrix dDotV = MatrixUtil.multiply(d, new DenseMatrix(svd.vT));</span>
+<span class="fc" id="L724">        DenseMatrix dDotV = MatrixUtil.multiply(d, svd2.getVt());</span>
 
         // 3x3 with rank 2
-<span class="fc" id="L465">        DenseMatrix fm = MatrixUtil.multiply(new DenseMatrix(svd.u), dDotV);</span>
+<span class="fc" id="L727">        DenseMatrix fm = MatrixUtil.multiply(svd2.getU(), dDotV);</span>
  
-<span class="fc" id="L467">        return fm;</span>
+<span class="fc" id="L729">        return fm;</span>
     }
 
     /*
@@ -526,6 +788,7 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
     */
 
     /**
+     * NOT READY FOR USE YET
      * calculate the epipolar projection for 7 correspondences and filter
      * with a chirality check.  returns a list of the filtered solutions.
      * NOTE that for best results, the method should be given unit standard
@@ -548,102 +811,80 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
     public List&lt;DenseMatrix&gt; calculateEpipolarProjectionFor7Points(
         DenseMatrix leftXY, DenseMatrix rightXY) {
 
-<span class="fc" id="L551">        final int nSet = 7;</span>
+<span class="fc" id="L814">        final int nSet = 7;</span>
         
-<span class="pc bpc" id="L553" title="2 of 4 branches missed.">        if (leftXY.numRows() != rightXY.numRows() || leftXY.numColumns() != rightXY.numColumns()) {</span>
-<span class="nc" id="L554">            throw new IllegalArgumentException(&quot;leftXY and rightXY must have same dimensions&quot;);</span>
+<span class="pc bpc" id="L816" title="2 of 4 branches missed.">        if (leftXY.numRows() != rightXY.numRows() || leftXY.numColumns() != rightXY.numColumns()) {</span>
+<span class="nc" id="L817">            throw new IllegalArgumentException(&quot;leftXY and rightXY must have same dimensions&quot;);</span>
         }
-<span class="pc bpc" id="L556" title="1 of 2 branches missed.">        if (leftXY.numColumns() != nSet) {</span>
-<span class="nc" id="L557">            throw new IllegalArgumentException(&quot;leftXY.numColumns must be at least 7&quot;);</span>
+<span class="pc bpc" id="L819" title="1 of 2 branches missed.">        if (leftXY.numColumns() != nSet) {</span>
+<span class="nc" id="L820">            throw new IllegalArgumentException(&quot;leftXY.numColumns must be at least 7&quot;);</span>
         }
-<span class="pc bpc" id="L559" title="1 of 2 branches missed.">        if (leftXY.numRows() != 3) {</span>
-<span class="nc" id="L560">            throw new IllegalArgumentException(&quot;leftXY.numRows must be 3&quot;);</span>
+<span class="pc bpc" id="L822" title="1 of 2 branches missed.">        if (leftXY.numRows() != 3) {</span>
+<span class="nc" id="L823">            throw new IllegalArgumentException(&quot;leftXY.numRows must be 3&quot;);</span>
         }
-        
-<span class="fc" id="L563">        double[][] m = createFundamentalMatrix(leftXY, rightXY);</span>
 
-<span class="fc" id="L565">        DenseMatrix aMatrix = new DenseMatrix(m);</span>
-<span class="fc" id="L566">        SVD svd = null;</span>
-<span class="fc" id="L567">        DenseMatrix vT = null;</span>
-<span class="fc" id="L568">        double[] s = null;</span>
+        // m is [nData X 9]
+<span class="fc" id="L827">        double[][] m = createFundamentalMatrix(leftXY, rightXY);</span>
+
+        // [9X9]
+<span class="fc" id="L830">        double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(m), m);</span>
+
+        // S   is  min(m, n) the singular values (stored in descending order)
+        // V^T is  n X n = 9x9    the right singular vectors, **row-wise**
+
+<span class="fc" id="L835">        SVDProducts svd = null;</span>
         try {
-<span class="fc" id="L570">            svd = SVD.factorize(aMatrix);</span>
-<span class="fc" id="L571">            vT = svd.getVt();</span>
-<span class="fc" id="L572">            s = svd.getS();</span>
-<span class="nc" id="L573">        } catch (NotConvergedException e) {</span>
-<span class="nc" id="L574">            double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(m), m);</span>
-            //SVD(A).U == SVD(A^T).V == SVD(AA^T).U == SVD(AA^T).V
-            //SVD(A).V == SVD(A^T).U == SVD(A^TA).V == SVD(A^TA).U
-            //SVD(A) eigenvalues are the same as sqrt( SVD(AA^T) eigenvalues )
-            //    and sqrt( SVD(A^TA) eigenvalues )
-            try { 
-<span class="nc" id="L580">                svd = SVD.factorize(new DenseMatrix(aTa));</span>
-<span class="nc" id="L581">                vT = svd.getVt();</span>
-<span class="nc" id="L582">                s = svd.getS();</span>
-<span class="nc bnc" id="L583" title="All 2 branches missed.">                for (int i = 0; i &lt; s.length; ++i) {</span>
-<span class="nc bnc" id="L584" title="All 2 branches missed.">                    if (s[i] &gt; 0) {</span>
-<span class="nc" id="L585">                        s[i] = Math.sqrt(s[i]);</span>
-                    }
-                }
-<span class="nc" id="L588">            } catch (NotConvergedException ex) {</span>
-<span class="nc" id="L589">                Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);</span>
-<span class="nc" id="L590">                return null;</span>
-<span class="nc" id="L591">            }</span>
-<span class="fc" id="L592">        }</span>
+<span class="fc" id="L837">            svd = MatrixUtil.performSVD(aTa);</span>
+<span class="nc" id="L838">        } catch (NotConvergedException e) {</span>
+<span class="nc" id="L839">            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L840">            return null;</span>
+<span class="fc" id="L841">        }</span>
 
-        // U   is 7x7
-        // V^T is 9X9
-        // A*V = U*s
-        
+        //when condition number is large, the 2 smallest eigenvalues are close to on another
+        //and that makes their eigenvectors sensitive to small perturbations.
+<span class="fc" id="L845">        double conditionNumber = svd.s[0]/svd.s[svd.s.length-2];</span>
+<span class="fc" id="L846">        log.fine(&quot;conditionNumber=&quot; + conditionNumber);</span>
+
         //for i &lt;=r:
         //    A*v_i = σ*u_i
         //for i &gt;r:
         //    A*v_i = 0 and A^T*u_i = 0
 
-        //when condition numbr is large, the 2 smallest eigenvalues are close to on another
-        //and that makes their eigenvectors sensitive to small pertubations.
-<span class="fc" id="L605">        double conditionNumber = s[0]/s[s.length-2];</span>
-<span class="fc" id="L606">        log.fine(&quot;conditionNumber=&quot; + conditionNumber);</span>
-        
-<span class="fc" id="L608">        int n = vT.numRows();</span>
-<span class="pc bnc" id="L609" title="All 2 branches missed.">        assert(n == 9);</span>
-<span class="pc bnc" id="L610" title="All 2 branches missed.">        assert(svd.getU().numRows() == nSet);</span>
-                
-<span class="fc" id="L612">        double[][] ff1 = new double[3][3];</span>
-<span class="fc" id="L613">        double[][] ff2 = new double[3][3];</span>
-<span class="fc bfc" id="L614" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; i++) {</span>
+<span class="fc" id="L853">        int n = svd.vT.length;</span>
+<span class="pc bnc" id="L854" title="All 2 branches missed.">        assert(n == 9);</span>
 
-<span class="fc" id="L616">            ff1[i] = new double[3];</span>
-<span class="fc" id="L617">            ff2[i] = new double[3];</span>
+        // last singular value being 0, the last column of V is a solution to the nullspace, that is A*x=0
+
+<span class="fc" id="L858">        double[][] ff1 = new double[3][3];</span>
+<span class="fc" id="L859">        double[][] ff2 = new double[3][3];</span>
+<span class="fc bfc" id="L860" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; i++) {</span>
+
+<span class="fc" id="L862">            ff1[i] = new double[3];</span>
+<span class="fc" id="L863">            ff2[i] = new double[3];</span>
             
-<span class="fc" id="L619">            ff1[i][0] = vT.get(n - 1, (i * 3) + 0);</span>
-<span class="fc" id="L620">            ff1[i][1] = vT.get(n - 1, (i * 3) + 1);</span>
-<span class="fc" id="L621">            ff1[i][2] = vT.get(n - 1, (i * 3) + 2);</span>
+<span class="fc" id="L865">            ff1[i][0] = svd.vT[n - 2][(i * 3) + 0];</span>
+<span class="fc" id="L866">            ff1[i][1] = svd.vT[n - 2][(i * 3) + 1];</span>
+<span class="fc" id="L867">            ff1[i][2] = svd.vT[n - 2][(i * 3) + 2];</span>
             
-<span class="fc" id="L623">            ff2[i][0] = vT.get(n - 2, (i * 3) + 0);</span>
-<span class="fc" id="L624">            ff2[i][1] = vT.get(n - 2, (i * 3) + 1);</span>
-<span class="fc" id="L625">            ff2[i][2] = vT.get(n - 2, (i * 3) + 2);</span>
+<span class="fc" id="L869">            ff2[i][0] = svd.vT[n - 1][(i * 3) + 0];</span>
+<span class="fc" id="L870">            ff2[i][1] = svd.vT[n - 1][(i * 3) + 1];</span>
+<span class="fc" id="L871">            ff2[i][2] = svd.vT[n - 1][(i * 3) + 2];</span>
         }
         
-<span class="fc" id="L628">        DenseMatrix[] solutions = solveFor7Point(ff1, ff2);</span>
-                
-<span class="fc" id="L630">        List&lt;DenseMatrix&gt; validatedFM = new ArrayList&lt;DenseMatrix&gt;();</span>
-        
-<span class="fc bfc" id="L632" title="All 2 branches covered.">        for (DenseMatrix solution : solutions) {</span>
+<span class="fc" id="L874">        DenseMatrix[] solutions = solveFor7Point(ff1, ff2);</span>
 
-            //System.out.printf(&quot;validating FM=\n%s\n&quot;, FormatArray.toString(solution, &quot;%.3e&quot;));  
- 
+<span class="fc" id="L876">        List&lt;DenseMatrix&gt; validatedFM = new ArrayList&lt;DenseMatrix&gt;();</span>
+<span class="fc bfc" id="L877" title="All 2 branches covered.">        for (DenseMatrix solution : solutions) {</span>
+            //System.out.printf(&quot;validating FM=\n%s\n&quot;, FormatArray.toString(solution, &quot;%.3e&quot;));
             // chirality (cheirality) check
-<span class="fc" id="L637">            DenseMatrix validated = validateSolution(solution, leftXY, rightXY);</span>
-            
-<span class="fc bfc" id="L639" title="All 2 branches covered.">            if (validated == null) {</span>
-<span class="fc" id="L640">                continue;</span>
+<span class="fc" id="L880">            DenseMatrix validated = validateSolution(solution, leftXY, rightXY);</span>
+<span class="fc bfc" id="L881" title="All 2 branches covered.">            if (validated == null) {</span>
+<span class="fc" id="L882">                continue;</span>
             }
-            
-<span class="fc" id="L643">            validatedFM.add(solution);</span>
+<span class="fc" id="L884">            validatedFM.add(solution);</span>
         }
-        
-<span class="fc" id="L646">        return validatedFM;</span>
+
+<span class="fc" id="L887">        return validatedFM;</span>
     }
    
     /**
@@ -761,66 +1002,66 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
                 
         // row 0 = e1 = right camera center projected into left image reference frame
         // row 1 = e2 = left camera center projected into right image reference frame
-<span class="fc" id="L764">        double[][] leftRightEpipoles = calculateEpipoles(solution);</span>
+<span class="fc" id="L1005">        double[][] leftRightEpipoles = calculateEpipoles(solution);</span>
         
         // 3 columns (x,y,1):
-<span class="fc" id="L767">        double[] testE1 = leftRightEpipoles[0];  // NOTE: this is normalized</span>
+<span class="fc" id="L1008">        double[] testE1 = leftRightEpipoles[0];  // NOTE: this is normalized</span>
         //vgg_contreps of a 3X1 vector e1 is
         //    Y = [0      e1(3)  -e1(2)
         //        -e1(3)  0      e1(1)
         //         e1(2) -e1(1)  0];
         //  [x y ] [x0 x1 x2 x3 x4 x5 x6]
         //         [y0 y1 y2 y3 y4 y5 y6]
-<span class="fc" id="L774">        double[][] contrepsE1 = new double[3][3];</span>
-<span class="fc" id="L775">        contrepsE1[0] = new double[]{0, testE1[2], -testE1[1]};</span>
-<span class="fc" id="L776">        contrepsE1[1] = new double[]{-testE1[2], 0, testE1[0]};</span>
-<span class="fc" id="L777">        contrepsE1[2] = new double[]{testE1[1], -testE1[0], 0};</span>
+<span class="fc" id="L1015">        double[][] contrepsE1 = new double[3][3];</span>
+<span class="fc" id="L1016">        contrepsE1[0] = new double[]{0, testE1[2], -testE1[1]};</span>
+<span class="fc" id="L1017">        contrepsE1[1] = new double[]{-testE1[2], 0, testE1[0]};</span>
+<span class="fc" id="L1018">        contrepsE1[2] = new double[]{testE1[1], -testE1[0], 0};</span>
         
         //l1 = e1contreps*x1;
         
         // 3 X 7
-<span class="fc" id="L782">        double[][] l1 = MatrixUtil.multiply(contrepsE1, MatrixUtil.convertToRowMajor(leftXY));</span>
+<span class="fc" id="L1023">        double[][] l1 = MatrixUtil.multiply(contrepsE1, MatrixUtil.convertToRowMajor(leftXY));</span>
 
         // s = sum( (F*x2) .* l1 );
         
         // 3X3 * 3X7 
         //  3 X 7
-<span class="fc" id="L788">        DenseMatrix fX2 = MatrixUtil.multiply(solution, rightXY);</span>
+<span class="fc" id="L1029">        DenseMatrix fX2 = MatrixUtil.multiply(solution, rightXY);</span>
         
         // 3 x 7
-<span class="fc" id="L791">        double[][] fX2l1 = MatrixUtil.elementwiseMultiplication(</span>
-<span class="fc" id="L792">            MatrixUtil.convertToRowMajor(fX2), l1);</span>
+<span class="fc" id="L1032">        double[][] fX2l1 = MatrixUtil.pointwiseMultiplication(</span>
+<span class="fc" id="L1033">            MatrixUtil.convertToRowMajor(fX2), l1);</span>
         
         // matlab sum function:
         //    If A is a matrix, then sum(A) returns a row vector containing 
         //    the sum of each column.
-<span class="fc" id="L797">        double[] sum = new double[fX2l1[0].length];</span>
-<span class="fc bfc" id="L798" title="All 2 branches covered.">        for (int row = 0; row &lt; fX2l1.length; ++row){</span>
-<span class="fc bfc" id="L799" title="All 2 branches covered.">            for (int col = 0; col &lt; fX2l1[0].length; ++col) {</span>
-<span class="fc" id="L800">                sum[col] += fX2l1[row][col];</span>
+<span class="fc" id="L1038">        double[] sum = new double[fX2l1[0].length];</span>
+<span class="fc bfc" id="L1039" title="All 2 branches covered.">        for (int row = 0; row &lt; fX2l1.length; ++row){</span>
+<span class="fc bfc" id="L1040" title="All 2 branches covered.">            for (int col = 0; col &lt; fX2l1[0].length; ++col) {</span>
+<span class="fc" id="L1041">                sum[col] += fX2l1[row][col];</span>
             }
         }
 
         //'all' is a function that returns '1' is all items are non-zero, else
         //    returns 0
-<span class="fc" id="L806">        int nGTZ = 0;</span>
-<span class="fc" id="L807">        int nLTZ = 0;</span>
-<span class="fc bfc" id="L808" title="All 2 branches covered.">        for (int i = 0; i &lt; sum.length; ++i) {</span>
-<span class="pc bpc" id="L809" title="1 of 2 branches missed.">            if (sum[i] == 0) {</span>
-<span class="nc" id="L810">                return null;</span>
-<span class="fc bfc" id="L811" title="All 2 branches covered.">            } else if (sum[i] &gt; 0) {</span>
-<span class="fc" id="L812">                nGTZ++;</span>
+<span class="fc" id="L1047">        int nGTZ = 0;</span>
+<span class="fc" id="L1048">        int nLTZ = 0;</span>
+<span class="fc bfc" id="L1049" title="All 2 branches covered.">        for (int i = 0; i &lt; sum.length; ++i) {</span>
+<span class="pc bpc" id="L1050" title="1 of 2 branches missed.">            if (sum[i] == 0) {</span>
+<span class="nc" id="L1051">                return null;</span>
+<span class="fc bfc" id="L1052" title="All 2 branches covered.">            } else if (sum[i] &gt; 0) {</span>
+<span class="fc" id="L1053">                nGTZ++;</span>
             } else {
-<span class="fc" id="L814">                nLTZ++;</span>
+<span class="fc" id="L1055">                nLTZ++;</span>
             }
         }
 
-<span class="pc bpc" id="L818" title="1 of 8 branches missed.">        if ((nGTZ &gt; 0 &amp;&amp; nLTZ == 0) || (nLTZ &gt; 0 &amp;&amp; nGTZ == 0)) {</span>
-<span class="fc" id="L819">            return solution;</span>
+<span class="pc bpc" id="L1059" title="1 of 8 branches missed.">        if ((nGTZ &gt; 0 &amp;&amp; nLTZ == 0) || (nLTZ &gt; 0 &amp;&amp; nGTZ == 0)) {</span>
+<span class="fc" id="L1060">            return solution;</span>
         }
-<span class="fc" id="L821">        return null;</span>
+<span class="fc" id="L1062">        return null;</span>
     }
-    
+
     /**
      * Determine the camera matrices of an image pair up to a scene 
      * homography, given their fundamental matrix using algorithm
@@ -894,233 +1135,279 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
         P = [-vgg_contreps(e)*F e];
         return
         */
-<span class="nc" id="L897">        EpipolarTransformer tr = new EpipolarTransformer();</span>
+<span class="nc" id="L1138">        EpipolarTransformer tr = new EpipolarTransformer();</span>
         
-<span class="nc" id="L899">        SVDProducts svdE = null;</span>
+<span class="nc" id="L1140">        SVDProducts svdE = null;</span>
         try {
-<span class="nc" id="L901">            svdE = MatrixUtil.performSVD(f);</span>
-<span class="nc" id="L902">        } catch (NotConvergedException ex) {</span>
-<span class="nc" id="L903">            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);</span>
-<span class="nc" id="L904">            return null;</span>
-<span class="nc" id="L905">        }</span>
+<span class="nc" id="L1142">            svdE = MatrixUtil.performSVD(f);</span>
+<span class="nc" id="L1143">        } catch (NotConvergedException ex) {</span>
+<span class="nc" id="L1144">            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L1145">            return null;</span>
+<span class="nc" id="L1146">        }</span>
         
-<span class="nc bnc" id="L907" title="All 2 branches missed.">        assert(svdE.u[0].length == 3);</span>
-<span class="nc bnc" id="L908" title="All 2 branches missed.">        assert(svdE.u.length == 3);</span>
-<span class="nc bnc" id="L909" title="All 2 branches missed.">        assert(svdE.vT[0].length == 3);</span>
-<span class="nc bnc" id="L910" title="All 2 branches missed.">        assert(svdE.vT.length == 3);</span>
+<span class="nc bnc" id="L1148" title="All 2 branches missed.">        assert(svdE.u[0].length == 3);</span>
+<span class="nc bnc" id="L1149" title="All 2 branches missed.">        assert(svdE.u.length == 3);</span>
+<span class="nc bnc" id="L1150" title="All 2 branches missed.">        assert(svdE.vT[0].length == 3);</span>
+<span class="nc bnc" id="L1151" title="All 2 branches missed.">        assert(svdE.vT.length == 3);</span>
         // e2 = last column of U but not normalized by the last item of that column
-<span class="nc" id="L912">        double[] e2 = new double[svdE.u.length];</span>
-<span class="nc bnc" id="L913" title="All 2 branches missed.">        for (int i = 0; i &lt; e2.length; i++) {</span>
-<span class="nc" id="L914">            e2[i] = svdE.u[i][2];</span>
+<span class="nc" id="L1153">        double[] e2 = new double[svdE.u.length];</span>
+<span class="nc bnc" id="L1154" title="All 2 branches missed.">        for (int i = 0; i &lt; e2.length; i++) {</span>
+<span class="nc" id="L1155">            e2[i] = svdE.u[i][2];</span>
         }
         
         //-1* vgg_contreps of a 3X1 vector e is the skewSymmetric
         //    Y = [0      e(3)  -e(2)
         //        -e(3)  0      e(1)
         //         e(2) -e(1)  0];
-<span class="nc" id="L921">        double[][] contrepsE2 = new double[3][3];</span>
-<span class="nc" id="L922">        contrepsE2[0] = new double[]{0, -e2[2], e2[1]};</span>
-<span class="nc" id="L923">        contrepsE2[1] = new double[]{e2[2], 0, -e2[0]};</span>
-<span class="nc" id="L924">        contrepsE2[2] = new double[]{-e2[1], e2[0], 0};</span>
+<span class="nc" id="L1162">        double[][] contrepsE2 = new double[3][3];</span>
+<span class="nc" id="L1163">        contrepsE2[0] = new double[]{0, -e2[2], e2[1]};</span>
+<span class="nc" id="L1164">        contrepsE2[1] = new double[]{e2[2], 0, -e2[0]};</span>
+<span class="nc" id="L1165">        contrepsE2[2] = new double[]{-e2[1], e2[0], 0};</span>
         
         // 3X3
-<span class="nc" id="L927">        double[][] P = MatrixUtil.copy(contrepsE2);</span>
-<span class="nc" id="L928">        P = MatrixUtil.multiply(P, MatrixUtil.convertToRowMajor(f));</span>
+<span class="nc" id="L1168">        double[][] P = MatrixUtil.copy(contrepsE2);</span>
+<span class="nc" id="L1169">        P = MatrixUtil.multiply(P, MatrixUtil.convertToRowMajor(f));</span>
         
         // append e onto last column of P
-<span class="nc" id="L931">        double[][] out = new double[P.length][P[0].length + 1];</span>
-<span class="nc bnc" id="L932" title="All 2 branches missed.">        for (int row = 0; row &lt; P.length; ++row){</span>
-<span class="nc" id="L933">            out[row] = new double[P[0].length + 1];</span>
-<span class="nc" id="L934">            System.arraycopy(P[row], 0, out[row], 0, P[0].length);</span>
-<span class="nc" id="L935">            out[row][P[0].length] = e2[row];</span>
+<span class="nc" id="L1172">        double[][] out = new double[P.length][P[0].length + 1];</span>
+<span class="nc bnc" id="L1173" title="All 2 branches missed.">        for (int row = 0; row &lt; P.length; ++row){</span>
+<span class="nc" id="L1174">            out[row] = new double[P[0].length + 1];</span>
+<span class="nc" id="L1175">            System.arraycopy(P[row], 0, out[row], 0, P[0].length);</span>
+<span class="nc" id="L1176">            out[row][P[0].length] = e2[row];</span>
         }
 
-<span class="nc" id="L938">        return new DenseMatrix(out);</span>
+<span class="nc" id="L1179">        return new DenseMatrix(out);</span>
     }
 
     DenseMatrix[] solveFor7Point(double[][] ff1, double[][] ff2) {
 
         //solve for the roots of equation a0 * x^3 + a1 * x^2 + a2 * x + a3 = 0;
-        
-<span class="fc" id="L945">        double a0 = calculateCubicRoot3rdOrderCoefficientFor7Point(ff1, ff2);</span>
-<span class="fc" id="L946">        double a1 = calculateCubicRoot2ndOrderCoefficientFor7Point(ff1, ff2);</span>
-<span class="fc" id="L947">        double a2 = calculateCubicRoot1stOrderCoefficientFor7Point(ff1, ff2);</span>
-<span class="fc" id="L948">        double a3 = calculateCubicRoot0thOrderCoefficientFor7Point(ff1, ff2);</span>
 
-<span class="fc" id="L950">        double[] roots = MiscMath.solveCubicRoots(a0, a1, a2, a3);</span>
-
-<span class="fc" id="L952">        double[][] m = new double[3][];</span>
-<span class="fc bfc" id="L953" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; i++) {</span>
-<span class="fc" id="L954">            m[i] = new double[3];</span>
+<span class="fc" id="L1186">        double[] coeffs = calcOrderCoeffs(ff1, ff2);</span>
+<span class="fc" id="L1187">        double[] roots = null;//MiscMath.solveCubicRoots(coeffs[0], coeffs[1], coeffs[2], coeffs[3]);</span>
+<span class="fc bfc" id="L1188" title="All 2 branches covered.">        if (Math.abs(coeffs[3]) &lt; 1E-7) {</span>
+<span class="fc" id="L1189">            roots = MiscMath.solveCubicRoots(coeffs[0], coeffs[1], coeffs[2], coeffs[3]);</span>
+        } else {
+            try {
+<span class="fc" id="L1192">                roots = PolynomialRootSolver.solveForRealUsingMPSolve(coeffs, eps);</span>
+<span class="nc" id="L1193">            } catch (IOException e) {</span>
+<span class="nc" id="L1194">                log.severe(&quot;PolynomialRootSolver error: &quot; + e.getMessage());</span>
+<span class="nc" id="L1195">                roots = MiscMath.solveCubicRoots(coeffs[0], coeffs[1], coeffs[2], coeffs[3]);</span>
+<span class="fc" id="L1196">            }</span>
         }
 
-<span class="fc" id="L957">        DenseMatrix[] solutions = new DenseMatrix[roots.length];</span>
+<span class="fc" id="L1199">        double[][] m = new double[3][];</span>
+<span class="fc bfc" id="L1200" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; i++) {</span>
+<span class="fc" id="L1201">            m[i] = new double[3];</span>
+        }
 
-<span class="fc bfc" id="L959" title="All 2 branches covered.">        for (int i = 0; i &lt; roots.length; i++) {</span>
+<span class="fc" id="L1204">        DenseMatrix[] solutions = new DenseMatrix[roots.length];</span>
 
+        double detF;
+<span class="fc" id="L1207">        int c = 0;</span>
+<span class="fc bfc" id="L1208" title="All 2 branches covered.">        for (int i = 0; i &lt; roots.length; i++) {</span>
             //Fi = a(i)*FF{1} + (1-a(i))*FF{2};
-
-<span class="fc" id="L963">            double a = roots[i];</span>
-
-<span class="fc bfc" id="L965" title="All 2 branches covered.">            for (int row = 0; row &lt; 3; row++) {</span>
-<span class="fc bfc" id="L966" title="All 2 branches covered.">                for (int col = 0; col &lt; 3; col++) {</span>
-<span class="fc" id="L967">                    m[row][col] = a*ff1[row][col] + (1. - a)*ff2[row][col];</span>
+<span class="fc" id="L1210">            double a = roots[i];</span>
+<span class="fc bfc" id="L1211" title="All 2 branches covered.">            for (int row = 0; row &lt; 3; row++) {</span>
+<span class="fc bfc" id="L1212" title="All 2 branches covered.">                for (int col = 0; col &lt; 3; col++) {</span>
+<span class="fc" id="L1213">                    m[row][col] = a*ff1[row][col] + (1. - a)*ff2[row][col];</span>
                 }
             }
-
-<span class="fc" id="L971">            solutions[i] = new DenseMatrix(m);</span>
+            // MASKS Appendix 6.A: usually only one of the solved 'a's is consistent with det(F1 + a*F2) = 0
+<span class="fc" id="L1217">            detF = MatrixUtil.determinant(m);</span>
+<span class="fc bfc" id="L1218" title="All 2 branches covered.">            if (Math.abs(detF) &lt; eps) {</span>
+<span class="fc" id="L1219">                solutions[c] = new DenseMatrix(m);</span>
+<span class="fc" id="L1220">                ++c;</span>
+            }
+        }
+<span class="fc" id="L1223">        double eps = 1E-4;</span>
+<span class="fc bfc" id="L1224" title="All 2 branches covered.">        if (c &lt; roots.length) {</span>
+<span class="fc" id="L1225">            solutions = Arrays.copyOfRange(solutions,0, c);</span>
         }
 
-<span class="fc" id="L974">        return solutions;</span>
+<span class="fc" id="L1228">        return solutions;</span>
     }
 
-    private double calculateCubicRoot3rdOrderCoefficientFor7Point(
-        double[][] ff1, double[][] ff2) {
+    // see docs/miscNotes/fundamental_cube_roots.txt
+    private double[] calcOrderCoeffs( double[][] ff1, double[][] ff2) {
 
-<span class="fc" id="L980">        double b = ff1[0][0];</span>
-<span class="fc" id="L981">        double e = ff1[1][0];</span>
-<span class="fc" id="L982">        double h = ff1[2][0];</span>
-<span class="fc" id="L983">        double c = ff1[0][1];</span>
-<span class="fc" id="L984">        double f = ff1[1][1];</span>
-<span class="fc" id="L985">        double i = ff1[2][1];</span>
-<span class="fc" id="L986">        double d = ff1[0][2];</span>
-<span class="fc" id="L987">        double g = ff1[1][2];</span>
-<span class="fc" id="L988">        double j = ff1[2][2];</span>
+<span class="fc" id="L1234">        double f100 = ff1[0][0];</span>
+<span class="fc" id="L1235">        double f110 = ff1[1][0];</span>
+<span class="fc" id="L1236">        double f120 = ff1[2][0];</span>
+<span class="fc" id="L1237">        double f101 = ff1[0][1];</span>
+<span class="fc" id="L1238">        double f111 = ff1[1][1];</span>
+<span class="fc" id="L1239">        double f121 = ff1[2][1];</span>
+<span class="fc" id="L1240">        double f102 = ff1[0][2];</span>
+<span class="fc" id="L1241">        double f112 = ff1[1][2];</span>
+<span class="fc" id="L1242">        double f122 = ff1[2][2];</span>
 
-<span class="fc" id="L990">        double k = ff2[0][0];</span>
-<span class="fc" id="L991">        double n = ff2[1][0];</span>
-<span class="fc" id="L992">        double q = ff2[2][0];</span>
-<span class="fc" id="L993">        double l = ff2[0][1];</span>
-<span class="fc" id="L994">        double o = ff2[1][1];</span>
-<span class="fc" id="L995">        double r = ff2[2][1];</span>
-<span class="fc" id="L996">        double m = ff2[0][2];</span>
-<span class="fc" id="L997">        double p = ff2[1][2];</span>
-<span class="fc" id="L998">        double s = ff2[2][2];</span>
+<span class="fc" id="L1244">        double f200 = ff2[0][0];</span>
+<span class="fc" id="L1245">        double f210 = ff2[1][0];</span>
+<span class="fc" id="L1246">        double f220 = ff2[2][0];</span>
+<span class="fc" id="L1247">        double f201 = ff2[0][1];</span>
+<span class="fc" id="L1248">        double f211 = ff2[1][1];</span>
+<span class="fc" id="L1249">        double f221 = ff2[2][1];</span>
+<span class="fc" id="L1250">        double f202 = ff2[0][2];</span>
+<span class="fc" id="L1251">        double f212 = ff2[1][2];</span>
+<span class="fc" id="L1252">        double f222 = ff2[2][2];</span>
 
-<span class="fc" id="L1000">        double sum = h*g*c + h*o*d + h*o*m + h*p*l + i*e*d + i*g*k</span>
-            + i*n*m + i*p*b + j*e*l + j*k*o + j*n*c + q*f*d
-            + q*f*m + q*g*l + q*p*c + r*e*m + r*g*b + r*n*d
-            + r*p*k + s*b*o + s*e*c + s*k*f + s*n*l + b*j*f
-            - h*f*d - h*f*m - h*g*l - h*p*c - i*e*m - i*g*b
-            - i*n*d - i*p*k - j*b*o - j*e*c - j*k*f - j*n*l
-            - q*g*c - q*o*d - q*o*m - q*p*l - r*e*d - r*g*k
-            - r*n*m - r*p*b - s*b*f - s*e*l - s*k*o - s*n*c;
+<span class="fc" id="L1254">        double c3 = f100*f111*f122</span>
+                - f100*f111*f222
+                - f100*f112*f121
+                + f100*f112*f221
+                + f100*f121*f212
+                - f100*f122*f211
+                + f100*f211*f222
+                - f100*f212*f221
+                - f101*f110*f122
+                + f101*f110*f222
+                + f101*f112*f120
+                - f101*f112*f220
+                - f101*f120*f212
+                + f101*f122*f210
+                - f101*f210*f222
+                + f101*f212*f220
 
-<span class="fc" id="L1009">        return sum;</span>
-    }
+                + f102*f110*f121
+                - f102*f111*f120
+                + f102*f111*f220
+                + f102*f120*f211
+                - f102*f121*f210
+                + f102*f210*f221
+                - f102*f211*f220
 
-    private double calculateCubicRoot2ndOrderCoefficientFor7Point(double[][] ff1,
-        double[][] ff2) {
+                - f110*f102*f221
+                + f110*f122*f201
+                - f110*f202*f121
+                + f110*f202*f221
+                - f110*f222*f201
 
-<span class="fc" id="L1015">        double b = ff1[0][0];</span>
-<span class="fc" id="L1016">        double e = ff1[1][0];</span>
-<span class="fc" id="L1017">        double h = ff1[2][0];</span>
-<span class="fc" id="L1018">        double c = ff1[0][1];</span>
-<span class="fc" id="L1019">        double f = ff1[1][1];</span>
-<span class="fc" id="L1020">        double i = ff1[2][1];</span>
-<span class="fc" id="L1021">        double d = ff1[0][2];</span>
-<span class="fc" id="L1022">        double g = ff1[1][2];</span>
-<span class="fc" id="L1023">        double j = ff1[2][2];</span>
+                + f111*f120*f202
+                + f111*f200*f222
+                - f111*f200*f122
+                - f111*f202*f220
 
-<span class="fc" id="L1025">        double k = ff2[0][0];</span>
-<span class="fc" id="L1026">        double n = ff2[1][0];</span>
-<span class="fc" id="L1027">        double q = ff2[2][0];</span>
-<span class="fc" id="L1028">        double l = ff2[0][1];</span>
-<span class="fc" id="L1029">        double o = ff2[1][1];</span>
-<span class="fc" id="L1030">        double r = ff2[2][1];</span>
-<span class="fc" id="L1031">        double m = ff2[0][2];</span>
-<span class="fc" id="L1032">        double p = ff2[1][2];</span>
-<span class="fc" id="L1033">        double s = ff2[2][2];</span>
+                - f112*f120*f201
+                + f112*f121*f200
+                - f112*f221*f200
+                + f112*f201*f220
 
-<span class="fc" id="L1035">        double sum = h*f*m + h*g*l + h*p*c + i*e*m + i*n*d + i*p*k</span>
-            + i*p*k + j*b*o + j*k*f + j*n*l + j*n*l + q*g*c
-            + q*o*d + q*o*d + q*o*m + q*o*m + q*o*m + q*p*l
-            + q*p*l + q*p*l + r*e*d + r*g*k + r*g*k + r*n*m
-            + r*n*m + r*n*m + r*p*b + r*p*b + s*o*k + s*b*f
-            + s*e*l + s*e*l + s*k*o + s*k*o + s*n*c + s*n*c
-            - h*o*d - h*o*m - h*o*m - h*p*l - h*p*l - i*g*k
-            - i*n*m - i*n*m - i*p*b - j*e*l - j*k*o - j*n*c
-            - j*o*k - q*f*d - q*f*m - q*f*m - q*g*l - q*g*l
-            - q*p*c - q*p*c - r*e*m - r*e*m - r*g*b - r*n*d
-            - r*n*d - r*p*k - r*p*k - r*p*k - s*b*o - s*b*o
-            - s*e*c - s*k*f - s*k*f - s*n*l - s*n*l - s*n*l;
+                + f120*f201*f212
+                - f120*f202*f211
 
-<span class="fc" id="L1048">        return sum;</span>
-    }
+                + f121*f202*f210
+                - f121*f212*f200
 
-    private double calculateCubicRoot1stOrderCoefficientFor7Point(double[][] ff1,
-        double[][] ff2) {
+                - f122*f201*f210
+                + f122*f211*f200
 
-        /*
-        f1 =
-         b c d
-         e f g
-         h i j
-        f2 =
-         k l m
-         n o p
-         q r s
-        */
+                - f200*f211*f222
+                + f200*f212*f221
 
-<span class="fc" id="L1065">        double b = ff1[0][0];</span>
-<span class="fc" id="L1066">        double e = ff1[1][0];</span>
-<span class="fc" id="L1067">        double h = ff1[2][0];</span>
-<span class="fc" id="L1068">        double c = ff1[0][1];</span>
-<span class="fc" id="L1069">        double f = ff1[1][1];</span>
-<span class="fc" id="L1070">        double i = ff1[2][1];</span>
-<span class="fc" id="L1071">        double d = ff1[0][2];</span>
-<span class="fc" id="L1072">        double g = ff1[1][2];</span>
-<span class="fc" id="L1073">        double j = ff1[2][2];</span>
+                + f201*f210*f222
+                - f201*f212*f220
 
-<span class="fc" id="L1075">        double k = ff2[0][0];</span>
-<span class="fc" id="L1076">        double n = ff2[1][0];</span>
-<span class="fc" id="L1077">        double q = ff2[2][0];</span>
-<span class="fc" id="L1078">        double l = ff2[0][1];</span>
-<span class="fc" id="L1079">        double o = ff2[1][1];</span>
-<span class="fc" id="L1080">        double r = ff2[2][1];</span>
-<span class="fc" id="L1081">        double m = ff2[0][2];</span>
-<span class="fc" id="L1082">        double p = ff2[1][2];</span>
-<span class="fc" id="L1083">        double s = ff2[2][2];</span>
+                - f202*f210*f221
+                + f202*f211*f220;
 
-<span class="fc" id="L1085">        double sum = h*o*m + h*p*l + i*n*m + j*o*k + q*f*m + q*g*l + q*p*c</span>
-            + r*e*m + r*n*d + r*p*k + r*p*k + r*p*k + s*b*o + s*k*f
-            + s*n*l + s*n*l + s*n*l
-            - i*p*k - j*n*l - q*o*d - q*o*m - q*o*m - q*o*m
-            - q*p*l - q*p*l - q*p*l - r*g*k - r*n*m - r*n*m
-            - r*n*m - r*p*b - s*e*l - s*k*o - s*n*c - s*o*k
-            - s*o*k;
+<span class="fc" id="L1313">        double c2 = f100*f111*f222</span>
+                - f100*f112*f221
+                - f100*f121*f212
+                + f100*f122*f211
+                - 2 * f100*f211*f222
+                + 2 * f100*f212*f221
 
-<span class="fc" id="L1093">        return sum;</span>
-    }
+                - f101*f110*f222
+                + f101*f112*f220
+                + f101*f120*f212
+                - f101*f122*f210
+                + 2 * f101*f210*f222
+                - 2 * f101*f212*f220
 
-    private double calculateCubicRoot0thOrderCoefficientFor7Point(
-        double[][] ff1, double[][] ff2) {
+                + f102*f110*f221
+                - f102*f111*f220
+                + f102*f121*f210
+                - f102*f120*f211
+                - 2 * f102*f210*f221
+                + 2 * f102*f211*f220
 
-        /*
-        f1 =
-         b c d
-         e f g
-         h i j
-        f2 =
-         k l m
-         n o p
-         q r s
-        */
+                + f110*f121*f202
+                - f110*f122*f201
+                + 2 * f110*f201*f222
+                - 2 * f110*f202*f221
 
-<span class="fc" id="L1110">        double k = ff2[0][0];</span>
-<span class="fc" id="L1111">        double n = ff2[1][0];</span>
-<span class="fc" id="L1112">        double q = ff2[2][0];</span>
-<span class="fc" id="L1113">        double l = ff2[0][1];</span>
-<span class="fc" id="L1114">        double o = ff2[1][1];</span>
-<span class="fc" id="L1115">        double r = ff2[2][1];</span>
-<span class="fc" id="L1116">        double m = ff2[0][2];</span>
-<span class="fc" id="L1117">        double p = ff2[1][2];</span>
-<span class="fc" id="L1118">        double s = ff2[2][2];</span>
+                - f111*f120*f202
+                + f111*f122*f200
+                - 2 * f111*f200*f222
+                + 2 * f111*f202*f220
 
-<span class="fc" id="L1120">        double sum = q * o * m + q * p * l + r * n * m + s * o * k - r*p*k</span>
-            - s*n*l;
+                + f112*f120*f201
+                - f112*f121*f200
+                + 2 * f112*f200*f221
+                - 2 * f112*f201*f220
 
-<span class="fc" id="L1123">        return sum;</span>
+                - 2 * f120*f201*f212
+                + 2 * f120*f202*f211
+
+                - 2 * f122*f200*f211
+                + 2 * f121*f200*f212
+                - 2 * f121*f202*f210
+
+                + 2 * f122*f201*f210
+
+                + 3 * f200*f211*f222
+                - 3 * f200*f212*f221
+
+                - 3 * f201*f210*f222
+                + 3 * f201*f212*f220
+
+                + 3 * f202*f210*f221
+                - 3 * f202*f211*f220;
+
+<span class="fc" id="L1367">        double c1 = f100*f211*f222</span>
+                - f100*f221*f212
+
+                - f101*f210*f222
+                + f101*f212*f220
+
+                + f102*f210*f221
+                - f102*f211*f220
+
+                + f200*f111*f222
+                - f200*f112*f221
+                - f200*f121*f212
+                + f200*f211*f122
+
+                - 3 * f200*f211*f222
+
+                + 3 * f200*f221*f212
+
+                - f201*f110*f222
+                + f201*f112*f220
+                + f201*f120*f212
+                - f201*f210*f122
+
+                + 3 * f201*f210*f222
+
+                - 3 * f201*f212*f220
+                + f202*f110*f221
+                - f202*f120*f211
+
+                - f202*f111*f220
+                + f202*f121*f210
+
+                - 3 * f202*f210*f221
+
+                + 3 * f202*f211*f220;
+
+<span class="fc" id="L1403">        double c0 = f202*f210*f221</span>
+                - f201*f210*f222
+                - f202*f211*f220
+                + f200*f211*f222
+                - f200*f212*f221
+                + f201*f212*f220;
+
+<span class="fc" id="L1410">        return new double[]{c3, c2, c1, c0};</span>
     }
 
     @SuppressWarnings({&quot;unchecked&quot;})
@@ -1128,9 +1415,9 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
         DenseMatrix normalizedFundamentalMatrix,
         NormalizedXY normalizedLeftXY, NormalizedXY normalizedRightXY) {
 
-<span class="nc" id="L1131">        return denormalizeTheFundamentalMatrix(normalizedFundamentalMatrix, </span>
-<span class="nc" id="L1132">            normalizedLeftXY.getNormalizationMatrices(), </span>
-<span class="nc" id="L1133">            normalizedRightXY.getNormalizationMatrices());</span>
+<span class="nc" id="L1418">        return denormalizeTheFundamentalMatrix(normalizedFundamentalMatrix, </span>
+<span class="nc" id="L1419">            normalizedLeftXY.getNormalizationMatrices(), </span>
+<span class="nc" id="L1420">            normalizedRightXY.getNormalizationMatrices());</span>
        
     }
 
@@ -1162,41 +1449,41 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
         c) the transformation is applied to each of the 2 images separately.
         */
 
-<span class="fc" id="L1165">        int n = xy.numColumns();</span>
+<span class="fc" id="L1452">        int n = xy.numColumns();</span>
 
         //x is xy[0], y is xy[1], xy[2] is all 1's
-<span class="fc" id="L1168">        double cen0 = 0;</span>
-<span class="fc" id="L1169">        double cen1 = 0;</span>
-<span class="fc bfc" id="L1170" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L1171">            cen0 += xy.get(0, i);</span>
-<span class="fc" id="L1172">            cen1 += xy.get(1, i);</span>
+<span class="fc" id="L1455">        double cen0 = 0;</span>
+<span class="fc" id="L1456">        double cen1 = 0;</span>
+<span class="fc bfc" id="L1457" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L1458">            cen0 += xy.get(0, i);</span>
+<span class="fc" id="L1459">            cen1 += xy.get(1, i);</span>
         }
-<span class="fc" id="L1174">        cen0 /= (double)n;</span>
-<span class="fc" id="L1175">        cen1 /= (double)n;</span>
+<span class="fc" id="L1461">        cen0 /= (double)n;</span>
+<span class="fc" id="L1462">        cen1 /= (double)n;</span>
 
-<span class="fc" id="L1177">        double scale = 0;</span>
+<span class="fc" id="L1464">        double scale = 0;</span>
         double diffX, diffY;
-<span class="fc bfc" id="L1179" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L1180">            diffX = xy.get(0, i) - cen0;</span>
-<span class="fc" id="L1181">            diffY = xy.get(1, i) - cen1;</span>
-<span class="fc" id="L1182">            scale += (diffX*diffX + diffY*diffY);</span>
+<span class="fc bfc" id="L1466" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L1467">            diffX = xy.get(0, i) - cen0;</span>
+<span class="fc" id="L1468">            diffY = xy.get(1, i) - cen1;</span>
+<span class="fc" id="L1469">            scale += (diffX*diffX + diffY*diffY);</span>
         }
         //scale: root mean square distance of (x,y) to origin is sqrt(2)
-<span class="fc" id="L1185">        scale = Math.sqrt(scale/(2.*(n-1)));</span>
+<span class="fc" id="L1472">        scale = Math.sqrt(scale/(2.*(n-1)));</span>
         
-<span class="fc" id="L1187">        NormalizationTransformations tMatrices = createScaleTranslationMatrices(</span>
+<span class="fc" id="L1474">        NormalizationTransformations tMatrices = createScaleTranslationMatrices(</span>
             scale, cen0, cen1);
        
-<span class="fc" id="L1190">        DenseMatrix normXY = MatrixUtil.multiply(new DenseMatrix(tMatrices.t), xy);</span>
+<span class="fc" id="L1477">        DenseMatrix normXY = MatrixUtil.multiply(new DenseMatrix(tMatrices.t), xy);</span>
         
-<span class="fc" id="L1192">        NormalizedXY normalizedXY = new NormalizedXY();</span>
-<span class="fc" id="L1193">        normalizedXY.setNormMatrices(tMatrices);</span>
-<span class="fc" id="L1194">        normalizedXY.setXy(normXY);</span>
+<span class="fc" id="L1479">        NormalizedXY normalizedXY = new NormalizedXY();</span>
+<span class="fc" id="L1480">        normalizedXY.setNormMatrices(tMatrices);</span>
+<span class="fc" id="L1481">        normalizedXY.setXy(normXY);</span>
 
-<span class="fc" id="L1196">        return normalizedXY;</span>
+<span class="fc" id="L1483">        return normalizedXY;</span>
     }
     
-       /**
+   /**
      normalize the x,y coordinates as recommended by Hartley 1997 and return
      the matrix and coordinates.
      does not modify the state of this transformer instance.
@@ -1221,37 +1508,91 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
         c) the transformation is applied to each of the 2 images separately.
         */
 
-<span class="fc" id="L1224">        int n = xy.numColumns();</span>
+<span class="fc" id="L1511">        int n = xy.numColumns();</span>
 
         //x is xy[0], y is xy[1], xy[2] is all 1's
-<span class="fc" id="L1227">        double cen0 = 0;</span>
-<span class="fc" id="L1228">        double cen1 = 0;</span>
-<span class="fc bfc" id="L1229" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L1230">            cen0 += xy.get(0, i);</span>
-<span class="fc" id="L1231">            cen1 += xy.get(1, i);</span>
+<span class="fc" id="L1514">        double cen0 = 0;</span>
+<span class="fc" id="L1515">        double cen1 = 0;</span>
+<span class="fc bfc" id="L1516" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L1517">            cen0 += xy.get(0, i);</span>
+<span class="fc" id="L1518">            cen1 += xy.get(1, i);</span>
         }
-<span class="fc" id="L1233">        cen0 /= (double)n;</span>
-<span class="fc" id="L1234">        cen1 /= (double)n;</span>
+<span class="fc" id="L1520">        cen0 /= (double)n;</span>
+<span class="fc" id="L1521">        cen1 /= (double)n;</span>
 
-<span class="fc" id="L1236">        double scale = 0;</span>
+<span class="fc" id="L1523">        double scale = 0;</span>
         double diffX, diffY;
-<span class="fc bfc" id="L1238" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L1239">            diffX = xy.get(0, i) - cen0;</span>
-<span class="fc" id="L1240">            diffY = xy.get(1, i) - cen1;</span>
-<span class="fc" id="L1241">            scale += (diffX*diffX + diffY*diffY);</span>
+<span class="fc bfc" id="L1525" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L1526">            diffX = xy.get(0, i) - cen0;</span>
+<span class="fc" id="L1527">            diffY = xy.get(1, i) - cen1;</span>
+<span class="fc" id="L1528">            scale += (diffX*diffX + diffY*diffY);</span>
         }
-<span class="fc" id="L1243">        scale = Math.sqrt(scale/(n-1.));</span>
+<span class="fc" id="L1530">        scale = Math.sqrt(scale/(n-1.));</span>
         
-<span class="fc" id="L1245">        NormalizationTransformations tMatrices = createScaleTranslationMatrices(</span>
+<span class="fc" id="L1532">        NormalizationTransformations tMatrices = createScaleTranslationMatrices(</span>
             scale, cen0, cen1);
        
-<span class="fc" id="L1248">        DenseMatrix normXY = MatrixUtil.multiply(new DenseMatrix(tMatrices.t), xy);</span>
+<span class="fc" id="L1535">        DenseMatrix normXY = MatrixUtil.multiply(new DenseMatrix(tMatrices.t), xy);</span>
         
-<span class="fc" id="L1250">        NormalizedXY normalizedXY = new NormalizedXY();</span>
-<span class="fc" id="L1251">        normalizedXY.setNormMatrices(tMatrices);</span>
-<span class="fc" id="L1252">        normalizedXY.setXy(normXY);</span>
+<span class="fc" id="L1537">        NormalizedXY normalizedXY = new NormalizedXY();</span>
+<span class="fc" id="L1538">        normalizedXY.setNormMatrices(tMatrices);</span>
+<span class="fc" id="L1539">        normalizedXY.setXy(normXY);</span>
 
-<span class="fc" id="L1254">        return normalizedXY;</span>
+<span class="fc" id="L1541">        return normalizedXY;</span>
+    }
+
+    /**
+     perform unit standard normalization of the points xy to result in a mean of 0 for xy and a standard deviation of 1,
+     and return the mean of x, mean of y, st. dev of x and st dev of y.  note that no normalization is performed on the z coordinates.
+     note that the normalization alters the input.
+     * @param xy data points in format [3 X n].  e.g. xy[0][0] is x, xy[1][0] is y, xy[2][0] is z for point 0.
+     * @return mean of x, mean of y, st. dev of x and st dev of y
+     */
+    @SuppressWarnings({&quot;unchecked&quot;})
+    public static double[] normalizeUsingUnitStandard(double[][] xy) {
+
+<span class="pc bpc" id="L1554" title="1 of 2 branches missed.">        if (xy.length != 3) {</span>
+<span class="nc" id="L1555">            throw new IllegalArgumentException(&quot;xy.length must be 3&quot;);</span>
+        }
+<span class="fc" id="L1557">        int n = xy[0].length;</span>
+
+<span class="fc" id="L1559">        double[] mS = new double[4];</span>
+
+        int i;
+        int j;
+<span class="fc bfc" id="L1563" title="All 2 branches covered.">        for (i = 0; i &lt; n; ++i) {</span>
+<span class="fc bfc" id="L1564" title="All 2 branches covered.">            for (j = 0; j &lt; 2; ++j) {</span>
+<span class="fc" id="L1565">                mS[j] += xy[j][i];</span>
+            }
+        }
+
+<span class="fc bfc" id="L1569" title="All 2 branches covered.">        for (j = 0; j &lt; 2; ++j) {</span>
+<span class="fc" id="L1570">            mS[j] /= n;</span>
+        }
+
+        double d;
+<span class="fc bfc" id="L1574" title="All 2 branches covered.">        for (i = 0; i &lt; n; ++i) {</span>
+<span class="fc bfc" id="L1575" title="All 2 branches covered.">            for (j = 0; j &lt; 2; ++j) {</span>
+<span class="fc" id="L1576">                d = (xy[j][i] - mS[j]);</span>
+<span class="fc" id="L1577">                mS[j + 2] += (d * d);</span>
+            }
+        }
+<span class="fc bfc" id="L1580" title="All 2 branches covered.">        for (j = 2; j &lt; 4; ++j) {</span>
+<span class="fc" id="L1581">            mS[j] = Math.sqrt(mS[j]/(n - 1.0));</span>
+        }
+
+<span class="fc" id="L1584">        double[][] t = new double[3][];</span>
+<span class="fc" id="L1585">        t[0] = new double[]{1./mS[2],       0,     -mS[0]/mS[2]};</span>
+<span class="fc" id="L1586">        t[1] = new double[]{0,           1./mS[3], -mS[1]/mS[3]};</span>
+<span class="fc" id="L1587">        t[2] = new double[]{0,           0,           1};</span>
+
+<span class="fc" id="L1589">        double[] chk = MatrixUtil.multiplyMatrixByColumnVector(t, MatrixUtil.extractColumn(xy, 0));</span>
+
+<span class="fc" id="L1591">        double[][] xyN = MatrixUtil.multiply(t, xy);</span>
+<span class="fc bfc" id="L1592" title="All 2 branches covered.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L1593">            System.arraycopy(xyN[i], 0, xy[i], 0, xyN[i].length);</span>
+        }
+<span class="fc" id="L1595">        return mS;</span>
     }
 
     /**
@@ -1294,21 +1635,35 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
         y[0]  y[1]  y[2]  y[3]
         1      1      1     1
 
-        t * xy = tranformed xy
-                
+        t * xy = transformed xy
+
         to reverse the operation, that is de-normalize, need division by scale, 
         then addition of centroid    
         
         Revisiting Hartley’s Normalized Eight-Point Algorithm
         Chojnacki et al. 2003
-        
+
+        inverse changes the order of operations,
+        inverse translation matrix: inverse changes the signs of the translation elements,
+                but not the diagonal.
+        inverse rotation matrix: inverse is the transpose of rotation matrix.
+        inverse scaling matrix: inverse is performed on each element, that is, the reciprocal.
+
+        denormalized x2 = transpose(normalized x2) * transpose(T2^1)
+        denormalized x1 = (T1^-1) * (normalized x1)
+        denormalized FM = transpose(T2) * FM_normalized * T1
+
                 | 1/s   0  0 |   | 1  0  -xc |
             T = |  0  1/s  0 | * | 0  1  -yc |
                 |  0    0  1 |   | 0  0   1  |
 
-                   | 1  0  xc |   | s  0   0 |
-            T^-1 = | 0  1  yc | * | 0  s   0 |
-                   | 0  0   1 |   | 0  0   1 |
+                   | 1  0  xc |   | s  0   0 | = | s  0  xc |
+            T^-1 = | 0  1  yc | * | 0  s   0 |   | 0  s  yc |
+                   | 0  0   1 |   | 0  0   1 |   | 0  0  1  |
+
+            transposed(T^-1) = | s   0    0 |
+                               | 0   s    0 |
+                               | xc  yc   1 |
 
                           | 1  0  xc |   | s^2  0    0 |   | 1  0  0 |
             T^-1 * T^-T = | 0  1  yc | * | 0   s^2   0 | * | 0  1  0 |
@@ -1319,21 +1674,21 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
                           | xc           yc          1  |
         */
         
-<span class="fc" id="L1322">        double[][] t = new double[3][];</span>
-<span class="fc" id="L1323">        t[0] = new double[]{1./scale,       0,     -centroidX/scale};</span>
-<span class="fc" id="L1324">        t[1] = new double[]{0,           1./scale, -centroidY/scale};</span>
-<span class="fc" id="L1325">        t[2] = new double[]{0,           0,           1};</span>
+<span class="fc" id="L1677">        double[][] t = new double[3][];</span>
+<span class="fc" id="L1678">        t[0] = new double[]{1./scale,       0,     -centroidX/scale};</span>
+<span class="fc" id="L1679">        t[1] = new double[]{0,           1./scale, -centroidY/scale};</span>
+<span class="fc" id="L1680">        t[2] = new double[]{0,           0,           1};</span>
 
-<span class="fc" id="L1327">        double[][] d = new double[3][];</span>
-<span class="fc" id="L1328">        d[0] = new double[]{scale,       0,     centroidX};</span>
-<span class="fc" id="L1329">        d[1] = new double[]{0,           scale, centroidY};</span>
-<span class="fc" id="L1330">        d[2] = new double[]{0,           0,           1};</span>
+<span class="fc" id="L1682">        double[][] d = new double[3][];</span>
+<span class="fc" id="L1683">        d[0] = new double[]{scale,       0,     centroidX};</span>
+<span class="fc" id="L1684">        d[1] = new double[]{0,           scale, centroidY};</span>
+<span class="fc" id="L1685">        d[2] = new double[]{0,           0,           1};</span>
         
-<span class="fc" id="L1332">        NormalizationTransformations nt = new NormalizationTransformations();</span>
-<span class="fc" id="L1333">        nt.t = t;</span>
-<span class="fc" id="L1334">        nt.tDenorm = d;</span>
+<span class="fc" id="L1687">        NormalizationTransformations nt = new NormalizationTransformations();</span>
+<span class="fc" id="L1688">        nt.t = t;</span>
+<span class="fc" id="L1689">        nt.tDenorm = d;</span>
         
-<span class="fc" id="L1336">        return nt;</span>
+<span class="fc" id="L1691">        return nt;</span>
     }
     
     /**
@@ -1355,66 +1710,117 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
         //      denormalized x1 = (T1^-1) * (normalized x1)
         //      denormalized FM = transpose(T2) * FM_normalized * T1
         
-<span class="fc" id="L1358">        DenseMatrix t2T = new DenseMatrix(MatrixUtil.transpose(rightNT.t));</span>
+<span class="fc" id="L1713">        DenseMatrix t2T = new DenseMatrix(MatrixUtil.transpose(rightNT.t));</span>
 
-<span class="fc" id="L1360">        DenseMatrix t1 = new DenseMatrix(leftNT.t);</span>
+<span class="fc" id="L1715">        DenseMatrix t1 = new DenseMatrix(leftNT.t);</span>
 
-<span class="fc" id="L1362">        DenseMatrix denormFundamentalMatrix =</span>
-<span class="fc" id="L1363">            MatrixUtil.multiply(t2T, MatrixUtil.multiply(normalizedFundamentalMatrix, t1));</span>
+<span class="fc" id="L1717">        DenseMatrix denormFundamentalMatrix =</span>
+<span class="fc" id="L1718">            MatrixUtil.multiply(t2T,</span>
+<span class="fc" id="L1719">                    MatrixUtil.multiply(normalizedFundamentalMatrix, t1));</span>
         
-<span class="fc" id="L1365">        double factor = 1./(denormFundamentalMatrix.get(2, 2) + eps);</span>
-<span class="fc" id="L1366">        MatrixUtil.multiply(denormFundamentalMatrix, factor);</span>
+<span class="fc" id="L1721">        double factor = 1./(denormFundamentalMatrix.get(2, 2) + eps);</span>
+<span class="fc" id="L1722">        MatrixUtil.multiply(denormFundamentalMatrix, factor);</span>
 
-<span class="fc" id="L1368">        return denormFundamentalMatrix;</span>
+<span class="fc" id="L1724">        return denormFundamentalMatrix;</span>
     }
 
     /**
+     * a = xLeft ⊗ xRight
      * @param normXY1 a matrix of size 3 x nPoints, where 1st row is x,
      * second is y.
      * @param normXY2 a matrix of size 3 x nPoints, where 1st row is x,
      * second is y.
-     * @return
+     * @return fundamental matrix of size [nPoints x 9]
      */
     double[][] createFundamentalMatrix(DenseMatrix normXY1,
         DenseMatrix normXY2) {
 
-<span class="pc bpc" id="L1381" title="1 of 2 branches missed.">        if (normXY1 == null) {</span>
-<span class="nc" id="L1382">            throw new IllegalArgumentException(&quot;normXY1 cannot be null&quot;);</span>
+<span class="pc bpc" id="L1738" title="1 of 2 branches missed.">        if (normXY1 == null) {</span>
+<span class="nc" id="L1739">            throw new IllegalArgumentException(&quot;normXY1 cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L1384" title="1 of 2 branches missed.">        if (normXY2 == null) {</span>
-<span class="nc" id="L1385">            throw new IllegalArgumentException(&quot;normXY2 cannot be null&quot;);</span>
+<span class="pc bpc" id="L1741" title="1 of 2 branches missed.">        if (normXY2 == null) {</span>
+<span class="nc" id="L1742">            throw new IllegalArgumentException(&quot;normXY2 cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L1387" title="1 of 2 branches missed.">        if (normXY1.numColumns() != normXY2.numColumns()) {</span>
-<span class="nc" id="L1388">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L1744" title="1 of 2 branches missed.">        if (normXY1.numColumns() != normXY2.numColumns()) {</span>
+<span class="nc" id="L1745">            throw new IllegalArgumentException(</span>
             &quot;the number of columns in normXY1 != number of cols in normXY2&quot;);
         }
 
-<span class="fc" id="L1392">        int nXY1 = normXY1.numColumns();</span>
+<span class="fc" id="L1749">        int nXY1 = normXY1.numColumns();</span>
 
         /*
         (2) each row in matrix A:
             x_1*x_2,  x_1*y_2,  x_1,  y_1*x_2,  y_1*y_2,  y_1,  x_2,  y_2,  1
         */
         double x1, x2, y1, y2;
-<span class="fc" id="L1399">        double[][] a = new double[nXY1][9];</span>
-<span class="fc bfc" id="L1400" title="All 2 branches covered.">        for (int i = 0; i &lt; nXY1; i++) {</span>
-<span class="fc" id="L1401">            a[i] = new double[9];</span>
-<span class="fc" id="L1402">            x1 = normXY1.get(0, i);</span>
-<span class="fc" id="L1403">            x2 = normXY2.get(0, i);</span>
-<span class="fc" id="L1404">            y1 = normXY1.get(1, i);</span>
-<span class="fc" id="L1405">            y2 = normXY2.get(1, i);</span>
-<span class="fc" id="L1406">            a[i][0] = x1 * x2;</span>
-<span class="fc" id="L1407">            a[i][1] = x1 * y2;</span>
-<span class="fc" id="L1408">            a[i][2] = x1;</span>
-<span class="fc" id="L1409">            a[i][3] = y1 * x2;</span>
-<span class="fc" id="L1410">            a[i][4] = y1 * y2;</span>
-<span class="fc" id="L1411">            a[i][5] = y1;</span>
-<span class="fc" id="L1412">            a[i][6] = x2;</span>
-<span class="fc" id="L1413">            a[i][7] = y2;</span>
-<span class="fc" id="L1414">            a[i][8] = 1;</span>
+<span class="fc" id="L1756">        double[][] a = new double[nXY1][9];</span>
+<span class="fc bfc" id="L1757" title="All 2 branches covered.">        for (int i = 0; i &lt; nXY1; i++) {</span>
+<span class="fc" id="L1758">            a[i] = new double[9];</span>
+<span class="fc" id="L1759">            x1 = normXY1.get(0, i);</span>
+<span class="fc" id="L1760">            x2 = normXY2.get(0, i);</span>
+<span class="fc" id="L1761">            y1 = normXY1.get(1, i);</span>
+<span class="fc" id="L1762">            y2 = normXY2.get(1, i);</span>
+<span class="fc" id="L1763">            a[i][0] = x1 * x2;</span>
+<span class="fc" id="L1764">            a[i][1] = x1 * y2;</span>
+<span class="fc" id="L1765">            a[i][2] = x1;</span>
+<span class="fc" id="L1766">            a[i][3] = y1 * x2;</span>
+<span class="fc" id="L1767">            a[i][4] = y1 * y2;</span>
+<span class="fc" id="L1768">            a[i][5] = y1;</span>
+<span class="fc" id="L1769">            a[i][6] = x2;</span>
+<span class="fc" id="L1770">            a[i][7] = y2;</span>
+<span class="fc" id="L1771">            a[i][8] = 1;</span>
         }
 
-<span class="fc" id="L1417">        return a;</span>
+<span class="fc" id="L1774">        return a;</span>
+    }
+
+    /**
+     * a = xLeft ⊗ xRight
+     * @param normXY1 a matrix of size 3 x nPoints, where 1st row is x,
+     * second is y.
+     * @param normXY2 a matrix of size 3 x nPoints, where 1st row is x,
+     * second is y.
+     * @return fundamental matrix of size [nPoints x 9]
+     */
+    double[][] createFundamentalMatrix(double[][] normXY1,
+                                       double[][] normXY2) {
+
+<span class="pc bpc" id="L1788" title="1 of 2 branches missed.">        if (normXY1 == null) {</span>
+<span class="nc" id="L1789">            throw new IllegalArgumentException(&quot;normXY1 cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L1791" title="1 of 2 branches missed.">        if (normXY2 == null) {</span>
+<span class="nc" id="L1792">            throw new IllegalArgumentException(&quot;normXY2 cannot be null&quot;);</span>
+        }
+<span class="fc" id="L1794">        int nXY1 = normXY1[0].length;</span>
+<span class="pc bpc" id="L1795" title="1 of 2 branches missed.">        if (nXY1 != normXY2[0].length) {</span>
+<span class="nc" id="L1796">            throw new IllegalArgumentException(</span>
+                    &quot;the number of columns in normXY1 != number of cols in normXY2&quot;);
+        }
+
+        /*
+        (2) each row in matrix A:
+            x_1*x_2,  x_1*y_2,  x_1,  y_1*x_2,  y_1*y_2,  y_1,  x_2,  y_2,  1
+        */
+        double x1, x2, y1, y2;
+<span class="fc" id="L1805">        double[][] a = new double[nXY1][9];</span>
+<span class="fc bfc" id="L1806" title="All 2 branches covered.">        for (int i = 0; i &lt; nXY1; i++) {</span>
+<span class="fc" id="L1807">            a[i] = new double[9];</span>
+<span class="fc" id="L1808">            x1 = normXY1[0][i];</span>
+<span class="fc" id="L1809">            x2 = normXY2[0][i];</span>
+<span class="fc" id="L1810">            y1 = normXY1[1][i];</span>
+<span class="fc" id="L1811">            y2 = normXY2[1][i];</span>
+<span class="fc" id="L1812">            a[i][0] = x1 * x2;</span>
+<span class="fc" id="L1813">            a[i][1] = x1 * y2;</span>
+<span class="fc" id="L1814">            a[i][2] = x1;</span>
+<span class="fc" id="L1815">            a[i][3] = y1 * x2;</span>
+<span class="fc" id="L1816">            a[i][4] = y1 * y2;</span>
+<span class="fc" id="L1817">            a[i][5] = y1;</span>
+<span class="fc" id="L1818">            a[i][6] = x2;</span>
+<span class="fc" id="L1819">            a[i][7] = y2;</span>
+<span class="fc" id="L1820">            a[i][8] = 1;</span>
+        }
+
+<span class="fc" id="L1823">        return a;</span>
     }
 
     /**
@@ -1471,38 +1877,38 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
                it is the location of the right camera center.
         */
              
-<span class="fc" id="L1474">        SVDProducts svdE = null;</span>
+<span class="fc" id="L1880">        SVDProducts svdE = null;</span>
         try {
-<span class="fc" id="L1476">            svdE = MatrixUtil.performSVD(fundamentalMatrix);</span>
-<span class="nc" id="L1477">        } catch (NotConvergedException e) {            </span>
-<span class="nc" id="L1478">            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);</span>
-<span class="nc" id="L1479">            return null;</span>
-<span class="fc" id="L1480">        }</span>
+<span class="fc" id="L1882">            svdE = MatrixUtil.performSVD(fundamentalMatrix);</span>
+<span class="nc" id="L1883">        } catch (NotConvergedException e) {            </span>
+<span class="nc" id="L1884">            Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, e);</span>
+<span class="nc" id="L1885">            return null;</span>
+<span class="fc" id="L1886">        }</span>
         
-<span class="pc bnc" id="L1482" title="All 2 branches missed.">        assert(svdE.u[0].length == 3);</span>
-<span class="pc bnc" id="L1483" title="All 2 branches missed.">        assert(svdE.u.length == 3);</span>
-<span class="pc bnc" id="L1484" title="All 2 branches missed.">        assert(svdE.vT[0].length == 3);</span>
-<span class="pc bnc" id="L1485" title="All 2 branches missed.">        assert(svdE.vT.length == 3);</span>
+<span class="pc bnc" id="L1888" title="All 2 branches missed.">        assert(svdE.u[0].length == 3);</span>
+<span class="pc bnc" id="L1889" title="All 2 branches missed.">        assert(svdE.u.length == 3);</span>
+<span class="pc bnc" id="L1890" title="All 2 branches missed.">        assert(svdE.vT[0].length == 3);</span>
+<span class="pc bnc" id="L1891" title="All 2 branches missed.">        assert(svdE.vT.length == 3);</span>
         
         // e2 = last column of U / last item of that column
         // e1 = last row of V / last item of that row
-<span class="fc" id="L1489">        double[] e2 = new double[svdE.u.length];</span>
-<span class="fc" id="L1490">        double e2Div = svdE.u[2][2];</span>
-<span class="fc bfc" id="L1491" title="All 2 branches covered.">        for (int i = 0; i &lt; e2.length; i++) {</span>
-<span class="fc" id="L1492">            e2[i] = svdE.u[i][2]/e2Div;</span>
+<span class="fc" id="L1895">        double[] e2 = new double[svdE.u.length];</span>
+<span class="fc" id="L1896">        double e2Div = svdE.u[2][2];</span>
+<span class="fc bfc" id="L1897" title="All 2 branches covered.">        for (int i = 0; i &lt; e2.length; i++) {</span>
+<span class="fc" id="L1898">            e2[i] = svdE.u[i][2]/e2Div;</span>
         }
         
-<span class="fc" id="L1495">        double[] e1 = new double[svdE.vT[0].length];</span>
-<span class="fc" id="L1496">        double e1Div = svdE.vT[2][2];</span>
-<span class="fc bfc" id="L1497" title="All 2 branches covered.">        for (int i = 0; i &lt; e1.length; i++) {</span>
-<span class="fc" id="L1498">            e1[i] = svdE.vT[2][i]/e1Div;</span>
+<span class="fc" id="L1901">        double[] e1 = new double[svdE.vT[0].length];</span>
+<span class="fc" id="L1902">        double e1Div = svdE.vT[2][2];</span>
+<span class="fc bfc" id="L1903" title="All 2 branches covered.">        for (int i = 0; i &lt; e1.length; i++) {</span>
+<span class="fc" id="L1904">            e1[i] = svdE.vT[2][i]/e1Div;</span>
         }
 
-<span class="fc" id="L1501">        double[][] e = new double[2][];</span>
-<span class="fc" id="L1502">        e[0] = e1;</span>
-<span class="fc" id="L1503">        e[1] = e2;</span>
+<span class="fc" id="L1907">        double[][] e = new double[2][];</span>
+<span class="fc" id="L1908">        e[0] = e1;</span>
+<span class="fc" id="L1909">        e[1] = e2;</span>
 
-<span class="fc" id="L1505">        return e;</span>
+<span class="fc" id="L1911">        return e;</span>
     }
     
     /**
@@ -1522,22 +1928,22 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
         //   E = U * [1 0 0] * V^T
         //           [0 1 0]
         //           [0 0 0]
-<span class="nc" id="L1525">        double[][] k2T = MatrixUtil.transpose(k2);</span>
+<span class="nc" id="L1931">        double[][] k2T = MatrixUtil.transpose(k2);</span>
         
-<span class="nc" id="L1527">        double[][] em = MatrixUtil.multiply(k2T, fm);</span>
-<span class="nc" id="L1528">        em = MatrixUtil.multiply(em, k1);</span>
+<span class="nc" id="L1933">        double[][] em = MatrixUtil.multiply(k2T, fm);</span>
+<span class="nc" id="L1934">        em = MatrixUtil.multiply(em, k1);</span>
         
-<span class="nc" id="L1530">        System.out.printf(&quot;E before:\n%s\n&quot;, FormatArray.toString(em, &quot;%.3e&quot;));</span>
+<span class="nc" id="L1936">        System.out.printf(&quot;E before:\n%s\n&quot;, FormatArray.toString(em, &quot;%.3e&quot;));</span>
         
-<span class="nc" id="L1532">        SVDProducts svd = MatrixUtil.performSVD(new DenseMatrix(em));</span>
-<span class="nc" id="L1533">        double[][] d = MatrixUtil.createIdentityMatrix(3);</span>
-<span class="nc" id="L1534">        d[2][2] = 0;</span>
-<span class="nc" id="L1535">        em = MatrixUtil.multiply(svd.u, d);</span>
-<span class="nc" id="L1536">        em = MatrixUtil.multiply(em, svd.vT);</span>
+<span class="nc" id="L1938">        SVDProducts svd = MatrixUtil.performSVD(new DenseMatrix(em));</span>
+<span class="nc" id="L1939">        double[][] d = MatrixUtil.createIdentityMatrix(3);</span>
+<span class="nc" id="L1940">        d[2][2] = 0;</span>
+<span class="nc" id="L1941">        em = MatrixUtil.multiply(svd.u, d);</span>
+<span class="nc" id="L1942">        em = MatrixUtil.multiply(em, svd.vT);</span>
         
-<span class="nc" id="L1538">        System.out.printf(&quot;E:\n%s\n&quot;, FormatArray.toString(em, &quot;%.3e&quot;));</span>
+<span class="nc" id="L1944">        System.out.printf(&quot;E:\n%s\n&quot;, FormatArray.toString(em, &quot;%.3e&quot;));</span>
         
-<span class="nc" id="L1540">        return em;</span>
+<span class="nc" id="L1946">        return em;</span>
     }
     
     /**
@@ -1553,14 +1959,14 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
         double[][] k1, double[][] k2, double[][] em) {
         
         // F= K2^-T * E * K1^-1
-<span class="nc" id="L1556">        double[][] k1Inv = Camera.createIntrinsicCameraMatrixInverse(k1);</span>
-<span class="nc" id="L1557">        double[][] k2Inv = Camera.createIntrinsicCameraMatrixInverse(k2);</span>
-<span class="nc" id="L1558">        double[][] k2InvT = MatrixUtil.transpose(k2Inv);</span>
+<span class="nc" id="L1962">        double[][] k1Inv = Camera.createIntrinsicCameraMatrixInverse(k1);</span>
+<span class="nc" id="L1963">        double[][] k2Inv = Camera.createIntrinsicCameraMatrixInverse(k2);</span>
+<span class="nc" id="L1964">        double[][] k2InvT = MatrixUtil.transpose(k2Inv);</span>
         
-<span class="nc" id="L1560">        double[][] fm = MatrixUtil.multiply(k2InvT, em);</span>
-<span class="nc" id="L1561">        fm = MatrixUtil.multiply(fm, k1Inv);</span>
+<span class="nc" id="L1966">        double[][] fm = MatrixUtil.multiply(k2InvT, em);</span>
+<span class="nc" id="L1967">        fm = MatrixUtil.multiply(fm, k1Inv);</span>
         
-<span class="nc" id="L1563">        return fm;</span>
+<span class="nc" id="L1969">        return fm;</span>
     }
     
     public static class NormalizationTransformations {
@@ -1622,44 +2028,58 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
     public PairIntArray getEpipolarLine(DenseMatrix epipolarLines, int imgWidth,
         int imgHeight, int pointNumber) {
 
-<span class="fc" id="L1625">        int n = imgWidth/10;</span>
+<span class="fc" id="L2031">        int n = imgWidth/10;</span>
 
-<span class="fc" id="L1627">        PairIntArray line = new PairIntArray(n);</span>
+<span class="fc" id="L2033">        PairIntArray line = new PairIntArray(n);</span>
 
-<span class="fc" id="L1629">        double a = epipolarLines.get(0, pointNumber);</span>
-<span class="fc" id="L1630">        double b = epipolarLines.get(1, pointNumber);</span>
-<span class="fc" id="L1631">        double c = epipolarLines.get(2, pointNumber);</span>
-<span class="fc bfc" id="L1632" title="All 2 branches covered.">        boolean isHoriz = (Math.abs(a/b) &lt;= 1.0);</span>
-<span class="fc bfc" id="L1633" title="All 2 branches covered.">        if (isHoriz) {</span>
-<span class="fc bfc" id="L1634" title="All 2 branches covered.">            for (int x = 0; x &lt; imgWidth; x++) {</span>
+<span class="fc" id="L2035">        double a = epipolarLines.get(0, pointNumber);</span>
+<span class="fc" id="L2036">        double b = epipolarLines.get(1, pointNumber);</span>
+<span class="fc" id="L2037">        double c = epipolarLines.get(2, pointNumber);</span>
+<span class="fc bfc" id="L2038" title="All 2 branches covered.">        boolean isHoriz = (Math.abs(a/b) &lt;= 1.0);</span>
+<span class="fc bfc" id="L2039" title="All 2 branches covered.">        if (isHoriz) {</span>
+<span class="fc bfc" id="L2040" title="All 2 branches covered.">            for (int x = 0; x &lt; imgWidth; x++) {</span>
                 //y = - (a/b) * x - (c/b)
-<span class="fc" id="L1636">                double y = (c + (a * (double)x)) / (-b);</span>
-<span class="fc" id="L1637">                line.add(x, (int) Math.round(y));</span>
+<span class="fc" id="L2042">                double y = (c + (a * (double)x)) / (-b);</span>
+<span class="fc" id="L2043">                line.add(x, (int) Math.round(y));</span>
             }
         } else {
-<span class="fc bfc" id="L1640" title="All 2 branches covered.">            for (int y = 0; y &lt; imgHeight; y++) {</span>
+<span class="fc bfc" id="L2046" title="All 2 branches covered.">            for (int y = 0; y &lt; imgHeight; y++) {</span>
                 //y = - (a/b) * x - (c/b)
                 //y+(c/b) = - (a/b) * x
                 // ==&gt; x = (-b/a) * (y+(c/b)) = y*(-b/a) - (c/a)
-<span class="fc" id="L1644">                double x = -(c + (b * (double)y))/a;</span>
-<span class="fc" id="L1645">                line.add((int) Math.round(x), y);</span>
+<span class="fc" id="L2050">                double x = -(c + (b * (double)y))/a;</span>
+<span class="fc" id="L2051">                line.add((int) Math.round(x), y);</span>
             }
         }
 
-<span class="fc" id="L1649">        return line;</span>
+<span class="fc" id="L2055">        return line;</span>
     }
     
     public static DenseMatrix extractIndices(DenseMatrix m, List&lt;Integer&gt; inlierIndexes) {
-<span class="fc" id="L1653">        DenseMatrix out = new DenseMatrix(m.numRows(), inlierIndexes.size());</span>
-<span class="fc" id="L1654">        int r = 0;</span>
-<span class="fc bfc" id="L1655" title="All 2 branches covered.">        for (int i = 0; i &lt; inlierIndexes.size(); ++i) {</span>
-<span class="fc" id="L1656">            int idx = inlierIndexes.get(i);</span>
-<span class="fc bfc" id="L1657" title="All 2 branches covered.">            for (int j = 0; j &lt; m.numRows(); ++j) {</span>
-<span class="fc" id="L1658">                out.add(j, r, m.get(j, idx));</span>
+<span class="fc" id="L2059">        DenseMatrix out = new DenseMatrix(m.numRows(), inlierIndexes.size());</span>
+<span class="fc" id="L2060">        int r = 0;</span>
+<span class="fc bfc" id="L2061" title="All 2 branches covered.">        for (int i = 0; i &lt; inlierIndexes.size(); ++i) {</span>
+<span class="fc" id="L2062">            int idx = inlierIndexes.get(i);</span>
+<span class="fc bfc" id="L2063" title="All 2 branches covered.">            for (int j = 0; j &lt; m.numRows(); ++j) {</span>
+<span class="fc" id="L2064">                out.set(j, r, m.get(j, idx));</span>
             }
-<span class="fc" id="L1660">            r++;</span>
+<span class="fc" id="L2066">            r++;</span>
         }
-<span class="fc" id="L1662">        return out;</span>
+<span class="fc" id="L2068">        return out;</span>
+    }
+
+    public static double[][] extractIndices(double[][] m, List&lt;Integer&gt; inlierIndexes) {
+<span class="nc" id="L2072">        double[][] out = MatrixUtil.zeros(m.length, inlierIndexes.size());</span>
+<span class="nc" id="L2073">        int r = 0;</span>
+        int i, j;
+<span class="nc bnc" id="L2075" title="All 2 branches missed.">        for (i = 0; i &lt; inlierIndexes.size(); ++i) {</span>
+<span class="nc" id="L2076">            int idx = inlierIndexes.get(i);</span>
+<span class="nc bnc" id="L2077" title="All 2 branches missed.">            for (j = 0; j &lt; m.length; ++j) {</span>
+<span class="nc" id="L2078">                out[j][r] = m[j][idx];</span>
+            }
+<span class="nc" id="L2080">            r++;</span>
+        }
+<span class="nc" id="L2082">        return out;</span>
     }
 
     /**
@@ -1669,8 +2089,8 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
      * @return 
      */
     public static double estimateToleranceForDOF1(double standardDeviation) {
-<span class="nc" id="L1672">        double d = Math.sqrt(3.84*standardDeviation*standardDeviation);</span>
-<span class="nc" id="L1673">        return d;</span>
+<span class="nc" id="L2092">        double d = Math.sqrt(3.84*standardDeviation*standardDeviation);</span>
+<span class="nc" id="L2093">        return d;</span>
     }
     
     /**
@@ -1680,8 +2100,8 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
      * @return 
      */
     public static double estimateToleranceForDOF2(double standardDeviation) {
-<span class="nc" id="L1683">        double d = Math.sqrt(5.99*standardDeviation*standardDeviation);</span>
-<span class="nc" id="L1684">        return d;</span>
+<span class="nc" id="L2103">        double d = Math.sqrt(5.99*standardDeviation*standardDeviation);</span>
+<span class="nc" id="L2104">        return d;</span>
     }
     /**
      * if assume gaussian errors and chi-squared statistics, for 2 degree of freedom (i.e. fitting
@@ -1690,140 +2110,22 @@ For &quot;7-point&quot; correspondences, consider implementing MLESAC.
      * @return 
      */
     public static double estimateToleranceForDOF3(double standardDeviation) {
-<span class="nc" id="L1693">        double d = Math.sqrt(7.82*standardDeviation*standardDeviation);</span>
-<span class="nc" id="L1694">        return d;</span>
-    }
-
-    /**
-     * iterating over each set of 4 pairs of points within the x1.numColumns() 
-     * number of points to check
-     * whether any 3 points in x1 set of 4 
-     * or 3 points in x2 set of 4 is colinear (which leads to a degeneracy in
-     * the homography calculation).  returns true is a set is found, else
-     * iterates over all subsets and returns false if none are found.
-     * NOTE: if the number of data points in x1 and x2 are 7, the number of subsets
-     * is 35 from 7!/(4!*(7-4)!).
-     * &lt;pre&gt;
-     * code is adapted from the website of http://www.robots.ox.ac.uk/~vgg/hzbook/code/
-     * which is available under the MIT Licesne.
-     * Acknowledgements: These functions are written by: David Capel, 
-     * Andrew Fitzgibbon, Peter Kovesi, Tomas Werner, Yoni Wexler, and Andrew Zisserman.
-     * 
-     * The code is part of the supplementary material for their book 
-     * &quot;Multiple View Geometry in Computer Vision Second Edition&quot;
-
-       This method is adapted from the function is degenetae within
-       ransacfithomography_vgg.m 
-     * &lt;/pre&gt;
-     * @param x1 a 3-dimensional matrix of correspondence points
-     * @param x2 a 3-dimensional matrix of correspondence points
-     * @return true if a degenerate combination of points were found, else false.
-     */
-    public static boolean isDegenerate(DenseMatrix x1, DenseMatrix x2) {
-<span class="fc" id="L1723">        int m = x1.numRows();</span>
-<span class="fc" id="L1724">        int n = x1.numColumns();</span>
-<span class="pc bpc" id="L1725" title="2 of 4 branches missed.">        if (m != 3 || x2.numRows() != 3) {</span>
-<span class="nc" id="L1726">            throw new IllegalArgumentException(&quot;x1 and x2 need to have 3 rows, for x, y, z coordinates respectively&quot;);</span>
-        }
-<span class="pc bpc" id="L1728" title="1 of 2 branches missed.">        if (n != x2.numColumns()) {</span>
-<span class="nc" id="L1729">            throw new IllegalArgumentException(&quot;x1 and x2 must have same number of columns&quot;);</span>
-        }
-<span class="pc bpc" id="L1731" title="1 of 2 branches missed.">        if (n &lt; 4) {</span>
-<span class="nc" id="L1732">            throw new IllegalArgumentException(&quot;x1 and x2 must have at least 4 columns&quot;);</span>
-        }
-        
-<span class="fc" id="L1735">        int subsetSize = 4;</span>
-                
-<span class="fc" id="L1737">        int np = (int) MiscMath0.computeNDivKTimesNMinusK(n, subsetSize);</span>
-                        
-<span class="fc" id="L1739">        SubsetChooser chooser = new SubsetChooser(n, subsetSize);</span>
-        
-<span class="fc" id="L1741">        int[] selectedIndexes = new int[subsetSize];</span>
-        
-        double[] x1p0, x1p1, x1p2, x1p3;
-        double[] x2p0, x2p1, x2p2, x2p3;
-        
-<span class="fc" id="L1746">        double eps = 1.e-6;</span>
-        
-<span class="fc" id="L1748">        int c = 0;</span>
-<span class="fc" id="L1749">        int j = 0;</span>
-<span class="fc" id="L1750">        boolean r = false;</span>
-<span class="fc bfc" id="L1751" title="All 2 branches covered.">        while (chooser.getNextSubset(selectedIndexes) != -1) {</span>
-            
-            // test for 3 points out of the 4 in x1 and x2 for co-planarity
-            
-<span class="fc" id="L1755">            x1p0 = Matrices.getColumn(x1, selectedIndexes[0]).getData();</span>
-<span class="fc" id="L1756">            x1p1 = Matrices.getColumn(x1, selectedIndexes[1]).getData();</span>
-<span class="fc" id="L1757">            x1p2 = Matrices.getColumn(x1, selectedIndexes[2]).getData();</span>
-<span class="fc" id="L1758">            x1p3 = Matrices.getColumn(x1, selectedIndexes[3]).getData();</span>
-            
-<span class="fc" id="L1760">            x2p0 = Matrices.getColumn(x2, selectedIndexes[0]).getData();</span>
-<span class="fc" id="L1761">            x2p1 = Matrices.getColumn(x2, selectedIndexes[1]).getData();</span>
-<span class="fc" id="L1762">            x2p2 = Matrices.getColumn(x2, selectedIndexes[2]).getData();</span>
-<span class="fc" id="L1763">            x2p3 = Matrices.getColumn(x2, selectedIndexes[3]).getData();</span>
-            
-            /*
-            r = ...
-            iscolinear(x1(:,1),x1(:,2),x1(:,3)) | ...
-            iscolinear(x1(:,1),x1(:,2),x1(:,4)) | ...
-            iscolinear(x1(:,1),x1(:,3),x1(:,4)) | ...
-            iscolinear(x1(:,2),x1(:,3),x1(:,4)) | ...
-            iscolinear(x2(:,1),x2(:,2),x2(:,3)) | ...
-            iscolinear(x2(:,1),x2(:,2),x2(:,4)) | ...
-            iscolinear(x2(:,1),x2(:,3),x2(:,4)) | ...
-            iscolinear(x2(:,2),x2(:,3),x2(:,4));
-            */
-            
-            // upon first true, can return true
-<span class="fc bfc" id="L1778" title="All 2 branches covered.">            for (j = 0; j &lt; 7; ++j) {</span>
-<span class="pc bpc" id="L1779" title="1 of 8 branches missed.">                switch (j) {</span>
-                    case 0:
-<span class="fc" id="L1781">                        r = MatrixUtil.areColinear(x1p0, x1p1, x1p2, eps);</span>
-<span class="fc" id="L1782">                        break;</span>
-                    case 1:
-<span class="fc" id="L1784">                        r = MatrixUtil.areColinear(x1p0, x1p1, x1p3, eps);</span>
-<span class="fc" id="L1785">                        break;</span>
-                    case 2:
-<span class="fc" id="L1787">                        r = MatrixUtil.areColinear(x1p0, x1p2, x1p3, eps);</span>
-<span class="fc" id="L1788">                        break;</span>
-                    case 3:
-<span class="fc" id="L1790">                        r = MatrixUtil.areColinear(x1p1, x1p2, x1p3, eps);</span>
-<span class="fc" id="L1791">                        break;</span>
-                    case 4:
-<span class="fc" id="L1793">                        r = MatrixUtil.areColinear(x2p0, x2p1, x2p2, eps);</span>
-<span class="fc" id="L1794">                        break;</span>
-                    case 5:
-<span class="fc" id="L1796">                        r = MatrixUtil.areColinear(x2p0, x2p1, x2p3, eps);</span>
-<span class="fc" id="L1797">                        break;</span>
-                    case 6:
-<span class="fc" id="L1799">                        r = MatrixUtil.areColinear(x2p0, x2p2, x2p3, eps);</span>
-<span class="fc" id="L1800">                        break;</span>
-                    default:
-<span class="nc" id="L1802">                        r = MatrixUtil.areColinear(x2p1, x2p2, x2p3, eps);</span>
-                        break;
-                }
-<span class="fc bfc" id="L1805" title="All 2 branches covered.">                if (r) {</span>
-<span class="fc" id="L1806">                    return true;</span>
-                }
-            }
-<span class="fc" id="L1809">            c++;</span>
-        }
-        
-<span class="fc" id="L1812">        return false;</span>
+<span class="nc" id="L2113">        double d = Math.sqrt(7.82*standardDeviation*standardDeviation);</span>
+<span class="nc" id="L2114">        return d;</span>
     }
     
     private String _toString(DenseMatrix a, String decimalFormat) {
-<span class="nc" id="L1816">        StringBuilder sb = new StringBuilder();</span>
-<span class="nc bnc" id="L1817" title="All 2 branches missed.">        for (int i = 0; i &lt; a.numRows(); ++i) {</span>
-<span class="nc bnc" id="L1818" title="All 2 branches missed.">            for (int j = 0; j &lt; a.numColumns(); ++j) {</span>
-<span class="nc" id="L1819">                sb.append(String.format(decimalFormat, a.get(i, j)));</span>
-<span class="nc bnc" id="L1820" title="All 2 branches missed.">                if (j &lt; (a.numColumns() - 1)) {</span>
-<span class="nc" id="L1821">                    sb.append(&quot;, &quot;);</span>
+<span class="nc" id="L2118">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L2119" title="All 2 branches missed.">        for (int i = 0; i &lt; a.numRows(); ++i) {</span>
+<span class="nc bnc" id="L2120" title="All 2 branches missed.">            for (int j = 0; j &lt; a.numColumns(); ++j) {</span>
+<span class="nc" id="L2121">                sb.append(String.format(decimalFormat, a.get(i, j)));</span>
+<span class="nc bnc" id="L2122" title="All 2 branches missed.">                if (j &lt; (a.numColumns() - 1)) {</span>
+<span class="nc" id="L2123">                    sb.append(&quot;, &quot;);</span>
                 }
             }
-<span class="nc" id="L1824">            sb.append(&quot;\n&quot;);</span>
+<span class="nc" id="L2126">            sb.append(&quot;\n&quot;);</span>
         }
-<span class="nc" id="L1826">        return sb.toString();</span>
+<span class="nc" id="L2128">        return sb.toString();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -423,6 +423,42 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
 <span class="nc" id="L423">        out[2][2] = 1;</span>
         
 <span class="nc" id="L425">    }</span>
+
+    /**
+     * calculate the rotation needed to tranform direction v1 to direction v2 using
+     * a quaternion.
+     * @param v1
+     * @param v2
+     * @return
+     */
+    public static double[][] rotationBetweenTwoDirections0(double[] v1, double[] v2) {
+<span class="nc" id="L435">        double[] n1 = MatrixUtil.normalizeL2(v1);</span>
+<span class="nc" id="L436">        double[] n2 = MatrixUtil.normalizeL2(v2);</span>
+<span class="nc" id="L437">        double angle = -Math.acos(n1[0]*n2[0] + n1[1]*n2[1] + n1[2]*n2[2]);</span>
+<span class="nc" id="L438">        double[] axis = MatrixUtil.crossProduct(n1, n2);</span>
+        //TODO: check the method createUnitLengthQuaternionBarfoot with results for quatB here
+<span class="nc" id="L440">        double[] quatH = Rotation.createHamiltonQuaternionZYX(angle, axis);</span>
+<span class="nc" id="L441">        double[] quatB = Rotation.convertHamiltonToBarfootQuaternion(quatH);</span>
+<span class="nc" id="L442">        double[][] r = Rotation.createRotationMatrixFromQuaternion4(quatB);</span>
+<span class="nc" id="L443">        r = MatrixUtil.copySubMatrix(r, 0, 2, 0, 2);</span>
+<span class="nc" id="L444">        return r;</span>
+    }
+
+    /**
+     * calculate the rotation needed to tranform direction v1 to direction v2 using
+     * Rodrigues formula.
+     * @param v1
+     * @param v2
+     * @return
+     */
+    public static double[][] rotationBetweenTwoDirections1(double[] v1, double[] v2) {
+<span class="nc" id="L455">        double[] n1 = MatrixUtil.normalizeL2(v1);</span>
+<span class="nc" id="L456">        double[] n2 = MatrixUtil.normalizeL2(v2);</span>
+<span class="nc" id="L457">        double angle = -Math.acos(n1[0]*n2[0] + n1[1]*n2[1] + n1[2]*n2[2]);</span>
+<span class="nc" id="L458">        double[] axis = MatrixUtil.crossProduct(n1, n2);</span>
+<span class="nc" id="L459">        double[][] r = Rotation.createRodriguesFormulaRotationMatrix(axis);</span>
+<span class="nc" id="L460">        return r;</span>
+    }
     
     /**
      * given axis as an array of rotations about x, y, and z, calculate the 
@@ -447,8 +483,8 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @return rotation matrix [3X3]
      */
     public static double[][] createRodriguesFormulaRotationMatrix(double[] axis) {
-<span class="pc bpc" id="L450" title="1 of 2 branches missed.">        if (axis.length != 3) {</span>
-<span class="nc" id="L451">            throw new IllegalArgumentException(&quot;axis length must be 3&quot;);</span>
+<span class="pc bpc" id="L486" title="1 of 2 branches missed.">        if (axis.length != 3) {</span>
+<span class="nc" id="L487">            throw new IllegalArgumentException(&quot;axis length must be 3&quot;);</span>
         }
         
         /*
@@ -505,51 +541,51 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
             return mat(R)        
         */
         
-<span class="fc" id="L508">        double theta = MatrixUtil.lPSum(axis, 2);</span>
+<span class="fc" id="L544">        double theta = MatrixUtil.lPSum(axis, 2);</span>
         
         double[][] tmp1, tmp2;
         
-<span class="pc bpc" id="L512" title="1 of 2 branches missed.">        if (theta &gt; 1e-30) {</span>
+<span class="pc bpc" id="L548" title="1 of 2 branches missed.">        if (theta &gt; 1e-30) {</span>
             
-<span class="fc" id="L514">            double[] n = Arrays.copyOf(axis, axis.length);</span>
-<span class="fc" id="L515">            MatrixUtil.multiply(n, 1./theta);</span>
+<span class="fc" id="L550">            double[] n = Arrays.copyOf(axis, axis.length);</span>
+<span class="fc" id="L551">            MatrixUtil.multiply(n, 1./theta);</span>
             // [3X3]
-<span class="fc" id="L517">            double[][] sn = MatrixUtil.skewSymmetric(n);</span>
+<span class="fc" id="L553">            double[][] sn = MatrixUtil.skewSymmetric(n);</span>
             
             //R = eye(3) + sin(theta)*Sn + (1-cos(theta))*dot(Sn,Sn)
-<span class="fc" id="L520">            tmp1 = MatrixUtil.copy(sn);</span>
+<span class="fc" id="L556">            tmp1 = MatrixUtil.copy(sn);</span>
             //[3X3]
-<span class="fc" id="L522">            MatrixUtil.multiply(tmp1, Math.sin(theta));</span>
+<span class="fc" id="L558">            MatrixUtil.multiply(tmp1, Math.sin(theta));</span>
             
             //[3X3]
-<span class="fc" id="L525">            tmp2 = MatrixUtil.multiply(sn, sn);</span>
-<span class="fc" id="L526">            MatrixUtil.multiply(tmp2, 1. - Math.cos(theta));</span>
+<span class="fc" id="L561">            tmp2 = MatrixUtil.multiply(sn, sn);</span>
+<span class="fc" id="L562">            MatrixUtil.multiply(tmp2, 1. - Math.cos(theta));</span>
             
             
-<span class="fc" id="L529">        } else {</span>
+<span class="fc" id="L565">        } else {</span>
             
-<span class="nc" id="L531">            double[][] sr = MatrixUtil.skewSymmetric(axis);</span>
-<span class="nc" id="L532">            double theta2 = theta*theta;</span>
+<span class="nc" id="L567">            double[][] sr = MatrixUtil.skewSymmetric(axis);</span>
+<span class="nc" id="L568">            double theta2 = theta*theta;</span>
             
             //R = eye(3) + (1-theta2/6.)*Sr + (.5-theta2/24.)*dot(Sr,Sr)
-<span class="nc" id="L535">            tmp1 = MatrixUtil.copy(sr);</span>
-<span class="nc" id="L536">            MatrixUtil.multiply(tmp1, (1. - theta2)/6.);</span>
+<span class="nc" id="L571">            tmp1 = MatrixUtil.copy(sr);</span>
+<span class="nc" id="L572">            MatrixUtil.multiply(tmp1, (1. - theta2)/6.);</span>
           
-<span class="nc" id="L538">            tmp2 = MatrixUtil.multiply(sr, sr);</span>
-<span class="nc" id="L539">            MatrixUtil.multiply(tmp2, 0.5 - theta2/24.);</span>
+<span class="nc" id="L574">            tmp2 = MatrixUtil.multiply(sr, sr);</span>
+<span class="nc" id="L575">            MatrixUtil.multiply(tmp2, 0.5 - theta2/24.);</span>
             
         }
         
-<span class="fc" id="L543">        double[][] r = MatrixUtil.createIdentityMatrix(3);</span>
+<span class="fc" id="L579">        double[][] r = MatrixUtil.createIdentityMatrix(3);</span>
         
         int j;
-<span class="fc bfc" id="L546" title="All 2 branches covered.">        for (int i = 0; i &lt; tmp1.length; ++i) {</span>
-<span class="fc bfc" id="L547" title="All 2 branches covered.">            for (j = 0; j &lt; tmp1[i].length; ++j) {</span>
-<span class="fc" id="L548">                r[i][j] += (tmp1[i][j] + tmp2[i][j]);</span>
+<span class="fc bfc" id="L582" title="All 2 branches covered.">        for (int i = 0; i &lt; tmp1.length; ++i) {</span>
+<span class="fc bfc" id="L583" title="All 2 branches covered.">            for (j = 0; j &lt; tmp1[i].length; ++j) {</span>
+<span class="fc" id="L584">                r[i][j] += (tmp1[i][j] + tmp2[i][j]);</span>
             }
         }
         
-<span class="fc" id="L552">        return r;</span>
+<span class="fc" id="L588">        return r;</span>
     }
 
     /**
@@ -575,8 +611,8 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @return rotation matrix [3X3]
      */
     public static double[][] createRodriguesFormulaRotationMatrixTranspose(double[] v) {
-<span class="nc bnc" id="L578" title="All 2 branches missed.">        if (v.length != 3) {</span>
-<span class="nc" id="L579">            throw new IllegalArgumentException(&quot;v length must be 3&quot;);</span>
+<span class="nc bnc" id="L614" title="All 2 branches missed.">        if (v.length != 3) {</span>
+<span class="nc" id="L615">            throw new IllegalArgumentException(&quot;v length must be 3&quot;);</span>
         }
         
         /*
@@ -633,51 +669,51 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
             return mat(R)        
         */
         
-<span class="nc" id="L636">        double theta = MatrixUtil.lPSum(v, 2);</span>
+<span class="nc" id="L672">        double theta = MatrixUtil.lPSum(v, 2);</span>
         
         double[][] tmp1, tmp2;
         
-<span class="nc bnc" id="L640" title="All 2 branches missed.">        if (theta &gt; 1e-30) {</span>
+<span class="nc bnc" id="L676" title="All 2 branches missed.">        if (theta &gt; 1e-30) {</span>
             
-<span class="nc" id="L642">            double[] n = Arrays.copyOf(v, v.length);</span>
-<span class="nc" id="L643">            MatrixUtil.multiply(n, 1./theta);</span>
+<span class="nc" id="L678">            double[] n = Arrays.copyOf(v, v.length);</span>
+<span class="nc" id="L679">            MatrixUtil.multiply(n, 1./theta);</span>
             // [3X3]
-<span class="nc" id="L645">            double[][] sn = MatrixUtil.skewSymmetric(n);</span>
+<span class="nc" id="L681">            double[][] sn = MatrixUtil.skewSymmetric(n);</span>
             
             //R = eye(3) + sin(theta)*Sn + (1-cos(theta))*dot(Sn,Sn)
-<span class="nc" id="L648">            tmp1 = MatrixUtil.copy(sn);</span>
+<span class="nc" id="L684">            tmp1 = MatrixUtil.copy(sn);</span>
             //[3X3]
-<span class="nc" id="L650">            MatrixUtil.multiply(tmp1, Math.sin(theta));</span>
+<span class="nc" id="L686">            MatrixUtil.multiply(tmp1, Math.sin(theta));</span>
             
             //[3X3]
-<span class="nc" id="L653">            tmp2 = MatrixUtil.multiply(sn, sn);</span>
-<span class="nc" id="L654">            MatrixUtil.multiply(tmp2, 1. - Math.cos(theta));</span>
+<span class="nc" id="L689">            tmp2 = MatrixUtil.multiply(sn, sn);</span>
+<span class="nc" id="L690">            MatrixUtil.multiply(tmp2, 1. - Math.cos(theta));</span>
             
             
-<span class="nc" id="L657">        } else {</span>
+<span class="nc" id="L693">        } else {</span>
             
-<span class="nc" id="L659">            double[][] sr = MatrixUtil.skewSymmetric(v);</span>
-<span class="nc" id="L660">            double theta2 = theta*theta;</span>
+<span class="nc" id="L695">            double[][] sr = MatrixUtil.skewSymmetric(v);</span>
+<span class="nc" id="L696">            double theta2 = theta*theta;</span>
             
             //R = eye(3) + (1-theta2/6.)*Sr + (.5-theta2/24.)*dot(Sr,Sr)
-<span class="nc" id="L663">            tmp1 = MatrixUtil.copy(sr);</span>
-<span class="nc" id="L664">            MatrixUtil.multiply(tmp1, (1. - theta2)/6.);</span>
+<span class="nc" id="L699">            tmp1 = MatrixUtil.copy(sr);</span>
+<span class="nc" id="L700">            MatrixUtil.multiply(tmp1, (1. - theta2)/6.);</span>
           
-<span class="nc" id="L666">            tmp2 = MatrixUtil.multiply(sr, sr);</span>
-<span class="nc" id="L667">            MatrixUtil.multiply(tmp2, 0.5 - theta2/24.);</span>
+<span class="nc" id="L702">            tmp2 = MatrixUtil.multiply(sr, sr);</span>
+<span class="nc" id="L703">            MatrixUtil.multiply(tmp2, 0.5 - theta2/24.);</span>
             
         }
         
-<span class="nc" id="L671">        double[][] r = MatrixUtil.createIdentityMatrix(3);</span>
+<span class="nc" id="L707">        double[][] r = MatrixUtil.createIdentityMatrix(3);</span>
         
         int j;
-<span class="nc bnc" id="L674" title="All 2 branches missed.">        for (int i = 0; i &lt; tmp1.length; ++i) {</span>
-<span class="nc bnc" id="L675" title="All 2 branches missed.">            for (j = 0; j &lt; tmp1[i].length; ++j) {</span>
-<span class="nc" id="L676">                r[i][j] += (-tmp1[i][j] + tmp2[i][j]);</span>
+<span class="nc bnc" id="L710" title="All 2 branches missed.">        for (int i = 0; i &lt; tmp1.length; ++i) {</span>
+<span class="nc bnc" id="L711" title="All 2 branches missed.">            for (j = 0; j &lt; tmp1[i].length; ++j) {</span>
+<span class="nc" id="L712">                r[i][j] += (-tmp1[i][j] + tmp2[i][j]);</span>
             }
         }
         
-<span class="nc" id="L680">        return r;</span>
+<span class="nc" id="L716">        return r;</span>
     }
     
     /**
@@ -697,17 +733,17 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
     */
     public static double[][] procrustesAlgorithmForRotation(double[][] x1, double[][] x2) 
         throws NotConvergedException {
-<span class="fc" id="L700">        int m = x1.length;</span>
-<span class="fc" id="L701">        int p = x1[0].length;</span>
-<span class="pc bpc" id="L702" title="2 of 4 branches missed.">        if (x2.length != m || x2[0].length != p) {</span>
-<span class="nc" id="L703">            throw new IllegalArgumentException(&quot;x1 and x2 must have same sizes&quot;);</span>
+<span class="fc" id="L736">        int m = x1.length;</span>
+<span class="fc" id="L737">        int p = x1[0].length;</span>
+<span class="pc bpc" id="L738" title="2 of 4 branches missed.">        if (x2.length != m || x2[0].length != p) {</span>
+<span class="nc" id="L739">            throw new IllegalArgumentException(&quot;x1 and x2 must have same sizes&quot;);</span>
         }
         // minimize || x1 - x2*Q ||_F
         //    subject to Q^T * Q = I_P
-<span class="fc" id="L707">        double[][] c = MatrixUtil.multiply(MatrixUtil.transpose(x2), x1);</span>
-<span class="fc" id="L708">        MatrixUtil.SVDProducts svdC = MatrixUtil.performSVD(c);</span>
-<span class="fc" id="L709">        double[][] q = MatrixUtil.multiply(svdC.u, svdC.vT);</span>
-<span class="fc" id="L710">        return q;</span>
+<span class="fc" id="L743">        double[][] c = MatrixUtil.multiply(MatrixUtil.transpose(x2), x1);</span>
+<span class="fc" id="L744">        MatrixUtil.SVDProducts svdC = MatrixUtil.performSVD(c);</span>
+<span class="fc" id="L745">        double[][] q = MatrixUtil.multiply(svdC.u, svdC.vT);</span>
+<span class="fc" id="L746">        return q;</span>
     }
     
     /**
@@ -730,13 +766,13 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * which, respectively have ranges [0, 2*pi], [0, pi], and [0, 2*pi]
      */
     public static double[] extractRotationAxisFromZXY(double[][] r) {
-<span class="pc bpc" id="L733" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
-<span class="nc" id="L734">            throw new IllegalArgumentException(&quot;r must be 3x3&quot;);</span>
+<span class="pc bpc" id="L769" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
+<span class="nc" id="L770">            throw new IllegalArgumentException(&quot;r must be 3x3&quot;);</span>
         }
-<span class="fc" id="L736">        double thetaX = Math.asin(r[2][1]);</span>
-<span class="fc" id="L737">        double thetaY = Math.atan2(-r[2][0], r[2][2]);</span>
-<span class="fc" id="L738">        double thetaZ = Math.atan2(-r[0][1], r[1][1]);</span>
-<span class="fc" id="L739">        return new double[]{thetaX, thetaY, thetaZ};</span>
+<span class="fc" id="L772">        double thetaX = Math.asin(r[2][1]);</span>
+<span class="fc" id="L773">        double thetaY = Math.atan2(-r[2][0], r[2][2]);</span>
+<span class="fc" id="L774">        double thetaZ = Math.atan2(-r[0][1], r[1][1]);</span>
+<span class="fc" id="L775">        return new double[]{thetaX, thetaY, thetaZ};</span>
     }
     
     /**
@@ -747,12 +783,12 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * which, respectively have ranges [0, 2*pi], [0, pi], and [0, 2*pi]
      */
     public static double[] extractThetaFromZYX(double[][] r) {
-<span class="pc bpc" id="L750" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
-<span class="nc" id="L751">            throw new IllegalArgumentException(&quot;r must be 3x3&quot;);</span>
+<span class="pc bpc" id="L786" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
+<span class="nc" id="L787">            throw new IllegalArgumentException(&quot;r must be 3x3&quot;);</span>
         }
-<span class="fc" id="L753">        double[] out = new double[3];</span>
-<span class="fc" id="L754">        extractThetaFromZYX(r, out);</span>
-<span class="fc" id="L755">        return out;</span>
+<span class="fc" id="L789">        double[] out = new double[3];</span>
+<span class="fc" id="L790">        extractThetaFromZYX(r, out);</span>
+<span class="fc" id="L791">        return out;</span>
     }
     
     /**
@@ -763,8 +799,8 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * which, respectively have ranges [0, 2*pi], [0, pi], and [0, 2*pi]
      */
     public static void extractThetaFromZYX(double[][] r, double[] out) {
-<span class="pc bpc" id="L766" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
-<span class="nc" id="L767">            throw new IllegalArgumentException(&quot;r must be 3x3&quot;);</span>
+<span class="pc bpc" id="L802" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
+<span class="nc" id="L803">            throw new IllegalArgumentException(&quot;r must be 3x3&quot;);</span>
         }
         /*
         using euler angles
@@ -790,35 +826,35 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
         double thetaX, thetaY, thetaZ;
         
         //ψ
-<span class="fc" id="L793">        double d = r[2][1]*r[2][1] + r[2][2]*r[2][2];</span>
-<span class="pc bpc" id="L794" title="1 of 2 branches missed.">        if (d == 0) {</span>
-<span class="nc" id="L795">            thetaY = -Math.asin(r[2][0]);</span>
+<span class="fc" id="L829">        double d = r[2][1]*r[2][1] + r[2][2]*r[2][2];</span>
+<span class="pc bpc" id="L830" title="1 of 2 branches missed.">        if (d == 0) {</span>
+<span class="nc" id="L831">            thetaY = -Math.asin(r[2][0]);</span>
         } else {
             // Y = atan( -r[2][0] / sqrt(r[2][1]*r[2][1] + r[2][2]*r[2][2]) )
             //         (  +sin Y  / sqrt( (cosY)^2 * (sinX)^2 + (cosY)^2 * (cosX)^2 )
             //         (  +sin Y  / sqrt( (cosY)^2 * 1 )
-<span class="fc" id="L800">            thetaY = Math.atan2(-r[2][0], Math.sqrt(d));</span>
+<span class="fc" id="L836">            thetaY = Math.atan2(-r[2][0], Math.sqrt(d));</span>
         }
         
         //θ
-<span class="fc" id="L804">        thetaZ = Double.NEGATIVE_INFINITY;</span>
-<span class="pc bpc" id="L805" title="1 of 2 branches missed.">        if (r[2][2] != 0) {</span>
-<span class="fc" id="L806">            thetaX = Math.atan2(r[2][1], r[2][2]);</span>
+<span class="fc" id="L840">        thetaZ = Double.NEGATIVE_INFINITY;</span>
+<span class="pc bpc" id="L841" title="1 of 2 branches missed.">        if (r[2][2] != 0) {</span>
+<span class="fc" id="L842">            thetaX = Math.atan2(r[2][1], r[2][2]);</span>
         } else {
             // cos ψ==0 or/and cos θ==0
-<span class="nc bnc" id="L809" title="All 2 branches missed.">            if (r[2][1] != 0) {</span>
+<span class="nc bnc" id="L845" title="All 2 branches missed.">            if (r[2][1] != 0) {</span>
                 // then cos ψ != 0  and cos θ==0
-<span class="nc" id="L811">                thetaX = Math.asin(r[2][1]/Math.cos(thetaY));</span>
+<span class="nc" id="L847">                thetaX = Math.asin(r[2][1]/Math.cos(thetaY));</span>
             } else {
                 // else cos ψ == 0 and possibly cos θ==0
                 // need thetaZ solved
-<span class="nc bnc" id="L815" title="All 2 branches missed.">                if (r[0][0] != 0) {</span>
-<span class="nc" id="L816">                    thetaZ = Math.atan2(r[1][0], r[0][0]);</span>
+<span class="nc bnc" id="L851" title="All 2 branches missed.">                if (r[0][0] != 0) {</span>
+<span class="nc" id="L852">                    thetaZ = Math.atan2(r[1][0], r[0][0]);</span>
                     //CALC θ(thetaX), knowing φ(thetaZ) and ψ(thetaY)
-<span class="nc" id="L818">                    double cPsi = Math.cos(thetaY);</span>
-<span class="nc bnc" id="L819" title="All 2 branches missed.">                    if (cPsi != 0) {</span>
+<span class="nc" id="L854">                    double cPsi = Math.cos(thetaY);</span>
+<span class="nc bnc" id="L855" title="All 2 branches missed.">                    if (cPsi != 0) {</span>
                         // can use r[2][1] or r[2][2] for simplest:
-<span class="nc" id="L821">                        thetaX = Math.asin(r[2][1]/cPsi);</span>
+<span class="nc" id="L857">                        thetaX = Math.asin(r[2][1]/cPsi);</span>
                     } else {
                         // can use r[0][1], r[0][2], r[1][1], or r[1][2] or combination
                         /*r[0][1] = (-sφ * cos θ + cφ * sψ * sin θ)
@@ -860,12 +896,12 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
                                      - a0^2*sin(2θ) + a1^2*sin(2θ) + 2*a0*a1*cos(2θ)
                                   = a0^2 + a1^2 - sin(2θ)*( a0^2 - a1^2 ) + cos(2θ) * ( 2*a0*a1 )
                         */
-<span class="nc" id="L863">                        throw new UnsupportedOperationException(&quot;There are &quot;</span>
+<span class="nc" id="L899">                        throw new UnsupportedOperationException(&quot;There are &quot;</span>
                                 + &quot;0's in the rotation matrix, so factoring of &quot;
                                 + &quot;more than one exponential variable is needed.&quot;
                                 + &quot;This case is not yet implemented.&quot;);
                     }
-<span class="nc" id="L868">                } else {</span>
+<span class="nc" id="L904">                } else {</span>
                     /*
                     need φ, missing θ, knowing ψ
                     r[0][1] : (-sin φ * cos θ + cos φ * sψ * sin θ)
@@ -873,7 +909,7 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
                     r[1][2] : (-cos φ * sin θ + sin φ * sψ * cos θ)
                     ==&gt; 2 unknowns and 3 equations.
                     */
-<span class="nc" id="L876">                    throw new UnsupportedOperationException(&quot;There are &quot;</span>
+<span class="nc" id="L912">                    throw new UnsupportedOperationException(&quot;There are &quot;</span>
                                 + &quot;0's in the rotation matrix, so factoring of &quot;
                                 + &quot;more than one exponential variable is needed.&quot;
                                 + &quot;This case is not yet implemented.&quot;);
@@ -882,9 +918,9 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
         }
         
         //φ
-<span class="pc bpc" id="L885" title="1 of 2 branches missed.">        if (thetaZ == Double.NEGATIVE_INFINITY) {</span>
-<span class="pc bpc" id="L886" title="1 of 2 branches missed.">            if (r[0][0] != 0) {</span>
-<span class="fc" id="L887">                thetaZ = Math.atan2(r[1][0], r[0][0]);</span>
+<span class="pc bpc" id="L921" title="1 of 2 branches missed.">        if (thetaZ == Double.NEGATIVE_INFINITY) {</span>
+<span class="pc bpc" id="L922" title="1 of 2 branches missed.">            if (r[0][0] != 0) {</span>
+<span class="fc" id="L923">                thetaZ = Math.atan2(r[1][0], r[0][0]);</span>
             } else {
                 /* if r[0][0]==0, then so are r[1][0], r[2][1], r[2][2].
                  have θ and ψ
@@ -893,17 +929,17 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
                 r[1][2] : (-cos φ * sθ + sin φ * sψ * cθ)
                 ==&gt; 1 unknown and 3 equations
                 */
-<span class="nc" id="L896">                throw new UnsupportedOperationException(&quot;There are &quot;</span>
+<span class="nc" id="L932">                throw new UnsupportedOperationException(&quot;There are &quot;</span>
                                 + &quot;0's in the rotation matrix, so factoring of &quot;
                                 + &quot;more than one exponential variable is needed.&quot;
                                 + &quot;This case is not yet implemented.&quot;);
             }
         }
         
-<span class="fc" id="L903">        out[0] = thetaX;</span>
-<span class="fc" id="L904">        out[1] = thetaY;</span>
-<span class="fc" id="L905">        out[2] = thetaZ;                        </span>
-<span class="fc" id="L906">    }</span>
+<span class="fc" id="L939">        out[0] = thetaX;</span>
+<span class="fc" id="L940">        out[1] = thetaY;</span>
+<span class="fc" id="L941">        out[2] = thetaZ;                        </span>
+<span class="fc" id="L942">    }</span>
     
     /**
      * extract euler rotation angles from a rotation matrix which has been built following
@@ -915,12 +951,12 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * theta_x, theta_y, and theta_z, respectively have ranges [0, 2*pi], [0, pi], and [0, 2*pi]
      */
     public static double[] extractThetaFromXYZ(double[][] r) {
-<span class="pc bpc" id="L918" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
-<span class="nc" id="L919">            throw new IllegalArgumentException(&quot;r must be 3x3&quot;);</span>
+<span class="pc bpc" id="L954" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
+<span class="nc" id="L955">            throw new IllegalArgumentException(&quot;r must be 3x3&quot;);</span>
         }
-<span class="fc" id="L921">        double[] out = new double[3];</span>
-<span class="fc" id="L922">        extractThetaFromXYZ(r, out);</span>
-<span class="fc" id="L923">        return out;</span>
+<span class="fc" id="L957">        double[] out = new double[3];</span>
+<span class="fc" id="L958">        extractThetaFromXYZ(r, out);</span>
+<span class="fc" id="L959">        return out;</span>
     }
     
     /**
@@ -933,8 +969,8 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * R_X(theta_X) * R_Y(theta_Y) * R_Z(theta_Z).
      */
     public static void extractThetaFromXYZ(double[][] r, double[] out) {
-<span class="pc bpc" id="L936" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
-<span class="nc" id="L937">            throw new IllegalArgumentException(&quot;r must be 3x3&quot;);</span>
+<span class="pc bpc" id="L972" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
+<span class="nc" id="L973">            throw new IllegalArgumentException(&quot;r must be 3x3&quot;);</span>
         }
         /*        
         using euler angles
@@ -964,39 +1000,39 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
         //        θ      ψ       φ
         double thetaX, thetaY, thetaZ;
         
-<span class="pc bpc" id="L967" title="1 of 2 branches missed.">        if (r[2][2] != 0) {</span>
-<span class="fc" id="L968">            thetaX = Math.atan2(-r[1][2], r[2][2]);</span>
+<span class="pc bpc" id="L1003" title="1 of 2 branches missed.">        if (r[2][2] != 0) {</span>
+<span class="fc" id="L1004">            thetaX = Math.atan2(-r[1][2], r[2][2]);</span>
         } else {
-<span class="nc" id="L970">            throw new UnsupportedOperationException(&quot;There are &quot;</span>
+<span class="nc" id="L1006">            throw new UnsupportedOperationException(&quot;There are &quot;</span>
                                 + &quot;0's in the rotation matrix, so factoring of &quot;
                                 + &quot;more than one exponential variable is needed.&quot;
                                 + &quot;This case is not yet implemented.&quot;);
         }
         
-<span class="fc" id="L976">        double d = 1. - r[0][2]*r[0][2];</span>
-<span class="pc bpc" id="L977" title="1 of 2 branches missed.">        if (d != 0) {</span>
-<span class="fc" id="L978">            thetaY = Math.atan2( r[0][2], Math.sqrt(1. - r[0][2]*r[0][2]) );</span>
+<span class="fc" id="L1012">        double d = 1. - r[0][2]*r[0][2];</span>
+<span class="pc bpc" id="L1013" title="1 of 2 branches missed.">        if (d != 0) {</span>
+<span class="fc" id="L1014">            thetaY = Math.atan2( r[0][2], Math.sqrt(1. - r[0][2]*r[0][2]) );</span>
         } else {
-<span class="nc" id="L980">            throw new UnsupportedOperationException(&quot;There are &quot;</span>
+<span class="nc" id="L1016">            throw new UnsupportedOperationException(&quot;There are &quot;</span>
                                 + &quot;0's in the rotation matrix, so factoring of &quot;
                                 + &quot;more than one exponential variable is needed.&quot;
                                 + &quot;This case is not yet implemented.&quot;);
         }
     
-<span class="pc bpc" id="L986" title="1 of 2 branches missed.">        if (r[0][0] != 0) {</span>
-<span class="fc" id="L987">            thetaZ = Math.atan2(-r[0][1], r[0][0]);</span>
+<span class="pc bpc" id="L1022" title="1 of 2 branches missed.">        if (r[0][0] != 0) {</span>
+<span class="fc" id="L1023">            thetaZ = Math.atan2(-r[0][1], r[0][0]);</span>
         } else {
-<span class="nc" id="L989">            throw new UnsupportedOperationException(&quot;There are &quot;</span>
+<span class="nc" id="L1025">            throw new UnsupportedOperationException(&quot;There are &quot;</span>
                                 + &quot;0's in the rotation matrix, so factoring of &quot;
                                 + &quot;more than one exponential variable is needed.&quot;
                                 + &quot;This case is not yet implemented.&quot;);
         }
     
-<span class="fc" id="L995">        out[0] = thetaX;</span>
-<span class="fc" id="L996">        out[1] = thetaY;</span>
-<span class="fc" id="L997">        out[2] = thetaZ;</span>
+<span class="fc" id="L1031">        out[0] = thetaX;</span>
+<span class="fc" id="L1032">        out[1] = thetaY;</span>
+<span class="fc" id="L1033">        out[2] = thetaZ;</span>
         
-<span class="fc" id="L999">    }</span>
+<span class="fc" id="L1035">    }</span>
             
     /**
      * another method to extract the Rodrigues vector (angle and axis)
@@ -1015,8 +1051,8 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * where r_vec is the rodrigues vector.
      */
     public static double[] extractRodriguesRotationVector(double[][] r) {
-<span class="pc bpc" id="L1018" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
-<span class="nc" id="L1019">            throw new IllegalArgumentException(&quot;r must be 3x3&quot;);</span>
+<span class="pc bpc" id="L1054" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
+<span class="nc" id="L1055">            throw new IllegalArgumentException(&quot;r must be 3x3&quot;);</span>
         }
         /*
         https://github.com/robEllenberg/comps-plugins/blob/master/python/rodrigues.py
@@ -1037,14 +1073,14 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
             return mat(R)
         */
         
-<span class="fc" id="L1040">        double tol = 1.e-7;</span>
+<span class="fc" id="L1076">        double tol = 1.e-7;</span>
         
-<span class="fc" id="L1042">        double traceR = MatrixUtil.trace(r);</span>
-<span class="fc" id="L1043">        System.out.printf(&quot;trace(R)=%.3e\n&quot;, traceR);</span>
+<span class="fc" id="L1078">        double traceR = MatrixUtil.trace(r);</span>
+<span class="fc" id="L1079">        System.out.printf(&quot;trace(R)=%.3e\n&quot;, traceR);</span>
         
         int i;
         
-<span class="pc bpc" id="L1047" title="1 of 2 branches missed.">        if ((traceR + 1) &lt; tol ) {</span>
+<span class="pc bpc" id="L1083" title="1 of 2 branches missed.">        if ((traceR + 1) &lt; tol ) {</span>
             // trace(R) == -1, and theta = Math.PI
             /*
             http://www2.ece.ohio-state.edu/~zhang/RoboticsClass/docs/LN3_RotationalMotion.pdf
@@ -1056,12 +1092,12 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
             or  (1./Math.sqrt(2.*(1.+r[1][1]))) * [r[0][1], 1 + r[1][1], r[2][1]]
             or  (1./Math.sqrt(2.*(1.+r[0][0]))) * [1 + r[0][0], r[1][0], r[2][0]]
             */
-<span class="nc" id="L1059">            double t1 = (1./Math.sqrt(2.*(1.+r[2][2])));</span>
-<span class="nc" id="L1060">            double[] w = new double[3];</span>
-<span class="nc" id="L1061">            w[0] = t1 * r[0][2];</span>
-<span class="nc" id="L1062">            w[1] = t1 * r[1][2];</span>
-<span class="nc" id="L1063">            w[2] = t1 * (1. + r[2][2]);</span>
-<span class="nc" id="L1064">            return w;</span>
+<span class="nc" id="L1095">            double t1 = (1./Math.sqrt(2.*(1.+r[2][2])));</span>
+<span class="nc" id="L1096">            double[] w = new double[3];</span>
+<span class="nc" id="L1097">            w[0] = t1 * r[0][2];</span>
+<span class="nc" id="L1098">            w[1] = t1 * r[1][2];</span>
+<span class="nc" id="L1099">            w[2] = t1 * (1. + r[2][2]);</span>
+<span class="nc" id="L1100">            return w;</span>
         }
         
         /*
@@ -1073,17 +1109,17 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
         */
         
         // theta in range [0, Math.PI)
-<span class="fc" id="L1076">        double theta = Math.acos(0.5*(traceR - 1.));</span>
+<span class="fc" id="L1112">        double theta = Math.acos(0.5*(traceR - 1.));</span>
         
         // but // http://www2.ece.ohio-state.edu/~zhang/RoboticsClass/docs/LN3_RotationalMotion.pdf
         // use t1 without theta factor: 
-<span class="fc" id="L1080">        double t1 = 0.5*theta/Math.sin(theta);</span>
-<span class="fc" id="L1081">        double[] w = new double[3];</span>
-<span class="fc" id="L1082">        w[0] = t1*(r[2][1] - r[1][2]);</span>
-<span class="fc" id="L1083">        w[1] = t1*(r[0][2] - r[2][0]);</span>
-<span class="fc" id="L1084">        w[2] = t1*(r[1][0] - r[0][1]);</span>
+<span class="fc" id="L1116">        double t1 = 0.5*theta/Math.sin(theta);</span>
+<span class="fc" id="L1117">        double[] w = new double[3];</span>
+<span class="fc" id="L1118">        w[0] = t1*(r[2][1] - r[1][2]);</span>
+<span class="fc" id="L1119">        w[1] = t1*(r[0][2] - r[2][0]);</span>
+<span class="fc" id="L1120">        w[2] = t1*(r[1][0] - r[0][1]);</span>
         
-<span class="fc" id="L1086">        return w;</span>
+<span class="fc" id="L1122">        return w;</span>
     }
     
     /**
@@ -1097,15 +1133,15 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * where r_vec is the rodrigues vector.
      */
     public static double[] convertEulerAnglesToRodriguesVectorForZYX(double[] eulerAngles) {
-<span class="pc bpc" id="L1100" title="1 of 2 branches missed.">        if (eulerAngles.length != 3) {</span>
-<span class="nc" id="L1101">            throw new IllegalArgumentException(&quot;eulerAngles.length must be 3&quot;);</span>
+<span class="pc bpc" id="L1136" title="1 of 2 branches missed.">        if (eulerAngles.length != 3) {</span>
+<span class="nc" id="L1137">            throw new IllegalArgumentException(&quot;eulerAngles.length must be 3&quot;);</span>
         }
         
-<span class="fc" id="L1104">        double[][] r = createRotationZYX(eulerAngles);</span>
+<span class="fc" id="L1140">        double[][] r = createRotationZYX(eulerAngles);</span>
         
-<span class="fc" id="L1106">        double[] w = extractRodriguesRotationVector(r);</span>
+<span class="fc" id="L1142">        double[] w = extractRodriguesRotationVector(r);</span>
         
-<span class="fc" id="L1108">        return w;</span>
+<span class="fc" id="L1144">        return w;</span>
     }
     
     /**
@@ -1120,9 +1156,9 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * values will be [0,π/2] (radians).
      */
     public static double distanceBetweenQuaternions(double[] q1, double[] q2) {
-<span class="fc" id="L1123">        double p = Math.abs(MatrixUtil.innerProduct(q1, q2));</span>
-<span class="fc" id="L1124">        double d = Math.acos(p);</span>
-<span class="fc" id="L1125">        return d;</span>
+<span class="fc" id="L1159">        double p = Math.abs(MatrixUtil.innerProduct(q1, q2));</span>
+<span class="fc" id="L1160">        double d = Math.acos(p);</span>
+<span class="fc" id="L1161">        return d;</span>
     }
     
     /*
@@ -1167,34 +1203,34 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @return 
      */
     public static double[][] quaternionLefthandCompoundOperator(double[] quaternion) {
-<span class="pc bpc" id="L1170" title="1 of 2 branches missed.">        if (quaternion.length != 4) {</span>
-<span class="nc" id="L1171">            throw new IllegalArgumentException(&quot;quaternion must be length 4&quot;);</span>
+<span class="pc bpc" id="L1206" title="1 of 2 branches missed.">        if (quaternion.length != 4) {</span>
+<span class="nc" id="L1207">            throw new IllegalArgumentException(&quot;quaternion must be length 4&quot;);</span>
         }
-<span class="fc" id="L1173">        double[] eps = Arrays.copyOfRange(quaternion, 0, 3);</span>
-<span class="pc bnc" id="L1174" title="All 2 branches missed.">        assert(eps.length == 3);</span>
-<span class="fc" id="L1175">        double eta = quaternion[3];</span>
+<span class="fc" id="L1209">        double[] eps = Arrays.copyOfRange(quaternion, 0, 3);</span>
+<span class="pc bnc" id="L1210" title="All 2 branches missed.">        assert(eps.length == 3);</span>
+<span class="fc" id="L1211">        double eta = quaternion[3];</span>
         
-<span class="fc" id="L1177">        double[][] minusSkewEps = MatrixUtil.skewSymmetric(eps);</span>
-<span class="fc" id="L1178">        MatrixUtil.multiply(minusSkewEps, -1);</span>
+<span class="fc" id="L1213">        double[][] minusSkewEps = MatrixUtil.skewSymmetric(eps);</span>
+<span class="fc" id="L1214">        MatrixUtil.multiply(minusSkewEps, -1);</span>
         
-<span class="fc" id="L1180">        double[][] i3Eta = MatrixUtil.createIdentityMatrix(3);</span>
-<span class="fc" id="L1181">        MatrixUtil.multiply(i3Eta, eta);</span>
+<span class="fc" id="L1216">        double[][] i3Eta = MatrixUtil.createIdentityMatrix(3);</span>
+<span class="fc" id="L1217">        MatrixUtil.multiply(i3Eta, eta);</span>
         
         // 3X3
-<span class="fc" id="L1184">        double[][] block00 = MatrixUtil.elementwiseAdd(i3Eta, minusSkewEps);</span>
+<span class="fc" id="L1220">        double[][] block00 = MatrixUtil.pointwiseAdd(i3Eta, minusSkewEps);</span>
         
-<span class="fc" id="L1186">        double[][] lhc = MatrixUtil.zeros(4, 4);</span>
+<span class="fc" id="L1222">        double[][] lhc = MatrixUtil.zeros(4, 4);</span>
         int i;
-<span class="fc bfc" id="L1188" title="All 2 branches covered.">        for (i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L1189">            System.arraycopy(block00[i], 0, lhc[i], 0, 3);</span>
-<span class="fc" id="L1190">            lhc[i][3] = eps[i];</span>
+<span class="fc bfc" id="L1224" title="All 2 branches covered.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L1225">            System.arraycopy(block00[i], 0, lhc[i], 0, 3);</span>
+<span class="fc" id="L1226">            lhc[i][3] = eps[i];</span>
         }
-<span class="fc bfc" id="L1192" title="All 2 branches covered.">        for (i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L1193">            lhc[3][i] = -eps[i];</span>
+<span class="fc bfc" id="L1228" title="All 2 branches covered.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L1229">            lhc[3][i] = -eps[i];</span>
         }
-<span class="fc" id="L1195">        lhc[3][3] = eta;</span>
+<span class="fc" id="L1231">        lhc[3][3] = eta;</span>
         
-<span class="fc" id="L1197">        return lhc;</span>
+<span class="fc" id="L1233">        return lhc;</span>
     }
     
     /**
@@ -1222,33 +1258,33 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @return [4X4]
      */
     public static double[][] quaternionRighthandCompoundOperator(double[] quaternion) {
-<span class="pc bpc" id="L1225" title="1 of 2 branches missed.">        if (quaternion.length != 4) {</span>
-<span class="nc" id="L1226">            throw new IllegalArgumentException(&quot;quaternion must be length 4&quot;);</span>
+<span class="pc bpc" id="L1261" title="1 of 2 branches missed.">        if (quaternion.length != 4) {</span>
+<span class="nc" id="L1262">            throw new IllegalArgumentException(&quot;quaternion must be length 4&quot;);</span>
         }
-<span class="fc" id="L1228">        double[] eps = Arrays.copyOfRange(quaternion, 0, 3);</span>
-<span class="pc bnc" id="L1229" title="All 2 branches missed.">        assert(eps.length == 3);</span>
-<span class="fc" id="L1230">        double eta = quaternion[3];</span>
+<span class="fc" id="L1264">        double[] eps = Arrays.copyOfRange(quaternion, 0, 3);</span>
+<span class="pc bnc" id="L1265" title="All 2 branches missed.">        assert(eps.length == 3);</span>
+<span class="fc" id="L1266">        double eta = quaternion[3];</span>
         
-<span class="fc" id="L1232">        double[][] skewEps = MatrixUtil.skewSymmetric(eps);</span>
+<span class="fc" id="L1268">        double[][] skewEps = MatrixUtil.skewSymmetric(eps);</span>
         
-<span class="fc" id="L1234">        double[][] i3Eta = MatrixUtil.createIdentityMatrix(3);</span>
-<span class="fc" id="L1235">        MatrixUtil.multiply(i3Eta, eta);</span>
+<span class="fc" id="L1270">        double[][] i3Eta = MatrixUtil.createIdentityMatrix(3);</span>
+<span class="fc" id="L1271">        MatrixUtil.multiply(i3Eta, eta);</span>
         
         // 3X3
-<span class="fc" id="L1238">        double[][] block00 = MatrixUtil.elementwiseAdd(i3Eta, skewEps);</span>
+<span class="fc" id="L1274">        double[][] block00 = MatrixUtil.pointwiseAdd(i3Eta, skewEps);</span>
         
-<span class="fc" id="L1240">        double[][] lhc = MatrixUtil.zeros(4, 4);</span>
+<span class="fc" id="L1276">        double[][] lhc = MatrixUtil.zeros(4, 4);</span>
         int i;
-<span class="fc bfc" id="L1242" title="All 2 branches covered.">        for (i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L1243">            System.arraycopy(block00[i], 0, lhc[i], 0, 3);</span>
-<span class="fc" id="L1244">            lhc[i][3] = eps[i];</span>
+<span class="fc bfc" id="L1278" title="All 2 branches covered.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L1279">            System.arraycopy(block00[i], 0, lhc[i], 0, 3);</span>
+<span class="fc" id="L1280">            lhc[i][3] = eps[i];</span>
         }
-<span class="fc bfc" id="L1246" title="All 2 branches covered.">        for (i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L1247">            lhc[3][i] = -eps[i];</span>
+<span class="fc bfc" id="L1282" title="All 2 branches covered.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L1283">            lhc[3][i] = -eps[i];</span>
         }
-<span class="fc" id="L1249">        lhc[3][3] = eta;</span>
+<span class="fc" id="L1285">        lhc[3][3] = eta;</span>
         
-<span class="fc" id="L1251">        return lhc;</span>
+<span class="fc" id="L1287">        return lhc;</span>
     }
     
     /**
@@ -1272,17 +1308,17 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @return 
      */
     public static double[] quaternionConjugateOperator(double[] quaternion) {
-<span class="nc bnc" id="L1275" title="All 2 branches missed.">        if (quaternion.length != 4) {</span>
-<span class="nc" id="L1276">            throw new IllegalArgumentException(&quot;quaternion must be length 4&quot;);</span>
+<span class="nc bnc" id="L1311" title="All 2 branches missed.">        if (quaternion.length != 4) {</span>
+<span class="nc" id="L1312">            throw new IllegalArgumentException(&quot;quaternion must be length 4&quot;);</span>
         }
-<span class="nc" id="L1278">        double[] inv = Arrays.copyOf(quaternion, 4);</span>
+<span class="nc" id="L1314">        double[] inv = Arrays.copyOf(quaternion, 4);</span>
         
         int i;
-<span class="nc bnc" id="L1281" title="All 2 branches missed.">        for (i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L1282">            inv[i] *= -1;</span>
+<span class="nc bnc" id="L1317" title="All 2 branches missed.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L1318">            inv[i] *= -1;</span>
         }
         
-<span class="nc" id="L1285">        return inv;</span>
+<span class="nc" id="L1321">        return inv;</span>
     }
     
     /**
@@ -1300,10 +1336,10 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      */
     public static double[] createIdentityQuaternion() {
         
-<span class="nc" id="L1303">        double[] i4 = new double[4];</span>
-<span class="nc" id="L1304">        i4[3] = 1;</span>
+<span class="nc" id="L1339">        double[] i4 = new double[4];</span>
+<span class="nc" id="L1340">        i4[3] = 1;</span>
         
-<span class="nc" id="L1306">        return i4;</span>
+<span class="nc" id="L1342">        return i4;</span>
     }
     
      /**
@@ -1331,15 +1367,15 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @return a 4x4 rotation matrix whose 3X3 block at [0:2, 0:2] is the rotation matrix.
      */
     public static double[][] createRotationMatrixFromQuaternion4(double[] quaternion) {
-<span class="pc bpc" id="L1334" title="1 of 2 branches missed.">        if (quaternion.length != 4) {</span>
-<span class="nc" id="L1335">            throw new IllegalArgumentException(&quot;quaternion must be length 4&quot;);</span>
+<span class="pc bpc" id="L1370" title="1 of 2 branches missed.">        if (quaternion.length != 4) {</span>
+<span class="nc" id="L1371">            throw new IllegalArgumentException(&quot;quaternion must be length 4&quot;);</span>
         }        
-<span class="fc" id="L1337">        double[][] lhc = quaternionLefthandCompoundOperator(quaternion);</span>
-<span class="fc" id="L1338">        double[][] rhcT = quaternionRighthandCompoundOperator(quaternion);</span>
-<span class="fc" id="L1339">        rhcT = MatrixUtil.transpose(rhcT);</span>
-<span class="fc" id="L1340">        double[][] r = MatrixUtil.multiply(rhcT, lhc);</span>
+<span class="fc" id="L1373">        double[][] lhc = quaternionLefthandCompoundOperator(quaternion);</span>
+<span class="fc" id="L1374">        double[][] rhcT = quaternionRighthandCompoundOperator(quaternion);</span>
+<span class="fc" id="L1375">        rhcT = MatrixUtil.transpose(rhcT);</span>
+<span class="fc" id="L1376">        double[][] r = MatrixUtil.multiply(rhcT, lhc);</span>
                 
-<span class="fc" id="L1342">        return r;</span>
+<span class="fc" id="L1378">        return r;</span>
     }
     
      /**
@@ -1362,15 +1398,15 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @return 
      */
     public static double[] rotateAPointByQuaternion(double[] quaternion, double[] v3) {
-<span class="nc bnc" id="L1365" title="All 2 branches missed.">        if (quaternion.length != 4) {</span>
-<span class="nc" id="L1366">            throw new IllegalArgumentException(&quot;quaternion must be length 4&quot;);</span>
+<span class="nc bnc" id="L1401" title="All 2 branches missed.">        if (quaternion.length != 4) {</span>
+<span class="nc" id="L1402">            throw new IllegalArgumentException(&quot;quaternion must be length 4&quot;);</span>
         }
-<span class="nc bnc" id="L1368" title="All 2 branches missed.">        if (v3.length != 3) {</span>
-<span class="nc" id="L1369">            throw new IllegalArgumentException(&quot;v3 must be length 3&quot;);</span>
+<span class="nc bnc" id="L1404" title="All 2 branches missed.">        if (v3.length != 3) {</span>
+<span class="nc" id="L1405">            throw new IllegalArgumentException(&quot;v3 must be length 3&quot;);</span>
         }
-<span class="nc" id="L1371">        double[] v = Arrays.copyOf(v3, 4);</span>
+<span class="nc" id="L1407">        double[] v = Arrays.copyOf(v3, 4);</span>
         
-<span class="nc" id="L1373">        return rotateVectorByQuaternion4(quaternion, v);</span>
+<span class="nc" id="L1409">        return rotateVectorByQuaternion4(quaternion, v);</span>
     }
     
      /**
@@ -1392,17 +1428,17 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @return 
      */
     public static double[] rotateVectorByQuaternion4(double[] quaternion, double[] p) {
-<span class="pc bpc" id="L1395" title="1 of 2 branches missed.">        if (quaternion.length != 4) {</span>
-<span class="nc" id="L1396">            throw new IllegalArgumentException(&quot;quaternion must be length 4&quot;);</span>
+<span class="pc bpc" id="L1431" title="1 of 2 branches missed.">        if (quaternion.length != 4) {</span>
+<span class="nc" id="L1432">            throw new IllegalArgumentException(&quot;quaternion must be length 4&quot;);</span>
         }
-<span class="pc bpc" id="L1398" title="1 of 2 branches missed.">        if (p.length != 4) {</span>
-<span class="nc" id="L1399">            throw new IllegalArgumentException(&quot;p must be length 4&quot;);</span>
+<span class="pc bpc" id="L1434" title="1 of 2 branches missed.">        if (p.length != 4) {</span>
+<span class="nc" id="L1435">            throw new IllegalArgumentException(&quot;p must be length 4&quot;);</span>
         }
-<span class="fc" id="L1401">        double[][] r = createRotationMatrixFromQuaternion4(quaternion);</span>
+<span class="fc" id="L1437">        double[][] r = createRotationMatrixFromQuaternion4(quaternion);</span>
         
-<span class="fc" id="L1403">        double[] result = MatrixUtil.multiplyMatrixByColumnVector(r, p);</span>
+<span class="fc" id="L1439">        double[] result = MatrixUtil.multiplyMatrixByColumnVector(r, p);</span>
         
-<span class="fc" id="L1405">        return result;</span>
+<span class="fc" id="L1441">        return result;</span>
     }
     
      /**
@@ -1427,31 +1463,31 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @return resulting perturbed rotation matrix
      */
     public static double[][] applySingularitySafeRotationPerturbationZYX(double[] theta, double[] dTheta) {
-<span class="pc bpc" id="L1430" title="1 of 2 branches missed.">        if (theta.length != 3) {</span>
-<span class="nc" id="L1431">            throw new IllegalArgumentException(&quot;theta must be length 3&quot;);</span>
+<span class="pc bpc" id="L1466" title="1 of 2 branches missed.">        if (theta.length != 3) {</span>
+<span class="nc" id="L1467">            throw new IllegalArgumentException(&quot;theta must be length 3&quot;);</span>
         }
-<span class="pc bpc" id="L1433" title="1 of 2 branches missed.">        if (dTheta.length != 3) {</span>
-<span class="nc" id="L1434">            throw new IllegalArgumentException(&quot;dTheta must be length 3&quot;);</span>
+<span class="pc bpc" id="L1469" title="1 of 2 branches missed.">        if (dTheta.length != 3) {</span>
+<span class="nc" id="L1470">            throw new IllegalArgumentException(&quot;dTheta must be length 3&quot;);</span>
         }
         
         // ==== eqn (30c) ======
         //3X3        
         //   dPhi is very similar, that is approx equal to dTheta
-<span class="fc" id="L1440">        double[] dPhi = createRotationVector(theta, dTheta);</span>
+<span class="fc" id="L1476">        double[] dPhi = createRotationVector(theta, dTheta);</span>
         
-<span class="fc" id="L1442">        double[][] skew = MatrixUtil.skewSymmetric(dPhi);</span>
+<span class="fc" id="L1478">        double[][] skew = MatrixUtil.skewSymmetric(dPhi);</span>
         
         int i;
-<span class="fc bfc" id="L1445" title="All 2 branches covered.">        for (i = 0; i &lt; skew.length; ++i) {</span>
-<span class="fc" id="L1446">            skew[i][i] = 1. - skew[i][i];</span>
+<span class="fc bfc" id="L1481" title="All 2 branches covered.">        for (i = 0; i &lt; skew.length; ++i) {</span>
+<span class="fc" id="L1482">            skew[i][i] = 1. - skew[i][i];</span>
         }
         
-<span class="fc" id="L1449">        double[][] r = createRotationZYX(theta);</span>
+<span class="fc" id="L1485">        double[][] r = createRotationZYX(theta);</span>
         
         // ==== eqn (31) =======
-<span class="fc" id="L1452">        double[][] result = MatrixUtil.multiply(skew, r);</span>
+<span class="fc" id="L1488">        double[][] result = MatrixUtil.multiply(skew, r);</span>
         
-<span class="fc" id="L1454">        return result;</span>
+<span class="fc" id="L1490">        return result;</span>
     }  
     
      /**
@@ -1476,30 +1512,30 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @return resulting updated rotation matrix, perturbed by dTheta
      */
     public static double[][] applySingularitySafeRotationPerturbationXYZ(double[] theta, double[] dTheta) {
-<span class="pc bpc" id="L1479" title="1 of 2 branches missed.">        if (theta.length != 3) {</span>
-<span class="nc" id="L1480">            throw new IllegalArgumentException(&quot;theta must be length 3&quot;);</span>
+<span class="pc bpc" id="L1515" title="1 of 2 branches missed.">        if (theta.length != 3) {</span>
+<span class="nc" id="L1516">            throw new IllegalArgumentException(&quot;theta must be length 3&quot;);</span>
         }
-<span class="pc bpc" id="L1482" title="1 of 2 branches missed.">        if (dTheta.length != 3) {</span>
-<span class="nc" id="L1483">            throw new IllegalArgumentException(&quot;dTheta must be length 3&quot;);</span>
+<span class="pc bpc" id="L1518" title="1 of 2 branches missed.">        if (dTheta.length != 3) {</span>
+<span class="nc" id="L1519">            throw new IllegalArgumentException(&quot;dTheta must be length 3&quot;);</span>
         }
         
         // ==== eqn (30c) ======
         //3X3        
-<span class="fc" id="L1488">        double[] dPhi = createRotationVector(theta, dTheta);</span>
+<span class="fc" id="L1524">        double[] dPhi = createRotationVector(theta, dTheta);</span>
         
-<span class="fc" id="L1490">        double[][] skew = MatrixUtil.skewSymmetric(dPhi);</span>
+<span class="fc" id="L1526">        double[][] skew = MatrixUtil.skewSymmetric(dPhi);</span>
         
         int i;
-<span class="fc bfc" id="L1493" title="All 2 branches covered.">        for (i = 0; i &lt; skew.length; ++i) {</span>
-<span class="fc" id="L1494">            skew[i][i] = 1. - skew[i][i];</span>
+<span class="fc bfc" id="L1529" title="All 2 branches covered.">        for (i = 0; i &lt; skew.length; ++i) {</span>
+<span class="fc" id="L1530">            skew[i][i] = 1. - skew[i][i];</span>
         }
         
-<span class="fc" id="L1497">        double[][] r = createRotationXYZ(theta);</span>
+<span class="fc" id="L1533">        double[][] r = createRotationXYZ(theta);</span>
         
         // ==== eqn (31) =======
-<span class="fc" id="L1500">        double[][] result = MatrixUtil.multiply(skew, r);</span>
+<span class="fc" id="L1536">        double[][] result = MatrixUtil.multiply(skew, r);</span>
         
-<span class="fc" id="L1502">        return result;</span>
+<span class="fc" id="L1538">        return result;</span>
     }
     
     /**
@@ -1520,20 +1556,20 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      */
     public static double[][] applySingularitySafeRotationPerturbationRVecXYZ(
         double[] dPhiRotationVector, double[] theta) {
-<span class="nc bnc" id="L1523" title="All 2 branches missed.">        if (dPhiRotationVector.length != 3) {</span>
-<span class="nc" id="L1524">            throw new IllegalArgumentException(&quot;dPhiRotationVector length must be 3&quot;);</span>
+<span class="nc bnc" id="L1559" title="All 2 branches missed.">        if (dPhiRotationVector.length != 3) {</span>
+<span class="nc" id="L1560">            throw new IllegalArgumentException(&quot;dPhiRotationVector length must be 3&quot;);</span>
         }
-<span class="nc bnc" id="L1526" title="All 2 branches missed.">        if (theta.length != 3) {</span>
-<span class="nc" id="L1527">            throw new IllegalArgumentException(&quot;theta must be length 3&quot;);</span>
+<span class="nc bnc" id="L1562" title="All 2 branches missed.">        if (theta.length != 3) {</span>
+<span class="nc" id="L1563">            throw new IllegalArgumentException(&quot;theta must be length 3&quot;);</span>
         }
                
-<span class="nc" id="L1530">        double[][] r1 = Rotation.createRotationZYX(dPhiRotationVector);</span>
+<span class="nc" id="L1566">        double[][] r1 = Rotation.createRotationZYX(dPhiRotationVector);</span>
         
-<span class="nc" id="L1532">        double[][] r = createRotationXYZ(theta);</span>
+<span class="nc" id="L1568">        double[][] r = createRotationXYZ(theta);</span>
         
-<span class="nc" id="L1534">        double[][] result = MatrixUtil.multiply(r1, r);</span>
+<span class="nc" id="L1570">        double[][] result = MatrixUtil.multiply(r1, r);</span>
         
-<span class="nc" id="L1536">        return result;</span>
+<span class="nc" id="L1572">        return result;</span>
     }
     
     /**
@@ -1556,20 +1592,20 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      */
     public static double[][] applySingularitySafeRotationPerturbationRVecZYX(
         double[] dPhiRotationVector, double[] theta) {
-<span class="nc bnc" id="L1559" title="All 2 branches missed.">        if (dPhiRotationVector.length != 3) {</span>
-<span class="nc" id="L1560">            throw new IllegalArgumentException(&quot;dPhiRotationVector length must be 3&quot;);</span>
+<span class="nc bnc" id="L1595" title="All 2 branches missed.">        if (dPhiRotationVector.length != 3) {</span>
+<span class="nc" id="L1596">            throw new IllegalArgumentException(&quot;dPhiRotationVector length must be 3&quot;);</span>
         }
-<span class="nc bnc" id="L1562" title="All 2 branches missed.">        if (theta.length != 3) {</span>
-<span class="nc" id="L1563">            throw new IllegalArgumentException(&quot;theta must be length 3&quot;);</span>
+<span class="nc bnc" id="L1598" title="All 2 branches missed.">        if (theta.length != 3) {</span>
+<span class="nc" id="L1599">            throw new IllegalArgumentException(&quot;theta must be length 3&quot;);</span>
         }
                
-<span class="nc" id="L1566">        double[][] r1 = Rotation.createRotationZYX(dPhiRotationVector);</span>
+<span class="nc" id="L1602">        double[][] r1 = Rotation.createRotationZYX(dPhiRotationVector);</span>
         
-<span class="nc" id="L1568">        double[][] r = createRotationZYX(theta);</span>
+<span class="nc" id="L1604">        double[][] r = createRotationZYX(theta);</span>
         
-<span class="nc" id="L1570">        double[][] result = MatrixUtil.multiply(r1, r);</span>
+<span class="nc" id="L1606">        double[][] result = MatrixUtil.multiply(r1, r);</span>
         
-<span class="nc" id="L1572">        return result;</span>
+<span class="nc" id="L1608">        return result;</span>
     }
     
     /**
@@ -1608,13 +1644,13 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @return [3X3]
      */
     public static double[][] sTheta(double[] theta) {
-<span class="pc bpc" id="L1611" title="1 of 2 branches missed.">        if (theta.length != 3) {</span>
-<span class="nc" id="L1612">            throw new IllegalArgumentException(&quot;theta length must be 3&quot;);</span>
+<span class="pc bpc" id="L1647" title="1 of 2 branches missed.">        if (theta.length != 3) {</span>
+<span class="nc" id="L1648">            throw new IllegalArgumentException(&quot;theta length must be 3&quot;);</span>
         }
-<span class="fc" id="L1614">        double[][] sTheta = MatrixUtil.zeros(3, 3);</span>
-<span class="fc" id="L1615">        sTheta(theta, sTheta);</span>
+<span class="fc" id="L1650">        double[][] sTheta = MatrixUtil.zeros(3, 3);</span>
+<span class="fc" id="L1651">        sTheta(theta, sTheta);</span>
         
-<span class="fc" id="L1617">        return sTheta;</span>
+<span class="fc" id="L1653">        return sTheta;</span>
     }
     
     /**
@@ -1653,8 +1689,8 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @param output 
      */
     public static void sTheta(double[] theta, double[][] output) {
-<span class="pc bpc" id="L1656" title="1 of 2 branches missed.">        if (theta.length != 3) {</span>
-<span class="nc" id="L1657">            throw new IllegalArgumentException(&quot;theta length must be 3&quot;);</span>
+<span class="pc bpc" id="L1692" title="1 of 2 branches missed.">        if (theta.length != 3) {</span>
+<span class="nc" id="L1693">            throw new IllegalArgumentException(&quot;theta length must be 3&quot;);</span>
         }
         
         /*
@@ -1671,25 +1707,25 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
           | -sin t1         |
         */
         
-<span class="fc" id="L1674">        double[] i0 = new double[]{1, 0, 0};</span>
-<span class="fc" id="L1675">        double[] i1 = new double[]{0, 1, 0};</span>
-<span class="fc" id="L1676">        double[] i2 = new double[]{0, 0, 1};</span>
-<span class="fc" id="L1677">        double[][] cBeta = Rotation.createPitchRotationMatrix(theta[1]);</span>
-<span class="fc" id="L1678">        double[][] cGamma = Rotation.createYawRotationMatrix(theta[2]);</span>
+<span class="fc" id="L1710">        double[] i0 = new double[]{1, 0, 0};</span>
+<span class="fc" id="L1711">        double[] i1 = new double[]{0, 1, 0};</span>
+<span class="fc" id="L1712">        double[] i2 = new double[]{0, 0, 1};</span>
+<span class="fc" id="L1713">        double[][] cBeta = Rotation.createPitchRotationMatrix(theta[1]);</span>
+<span class="fc" id="L1714">        double[][] cGamma = Rotation.createYawRotationMatrix(theta[2]);</span>
         
-<span class="fc" id="L1680">        double[] col0 = MatrixUtil.multiplyMatrixByColumnVector(</span>
-<span class="fc" id="L1681">            MatrixUtil.multiply(cGamma, cBeta), i0);</span>
-<span class="fc" id="L1682">        double[] col1 = MatrixUtil.multiplyMatrixByColumnVector(</span>
+<span class="fc" id="L1716">        double[] col0 = MatrixUtil.multiplyMatrixByColumnVector(</span>
+<span class="fc" id="L1717">            MatrixUtil.multiply(cGamma, cBeta), i0);</span>
+<span class="fc" id="L1718">        double[] col1 = MatrixUtil.multiplyMatrixByColumnVector(</span>
             cGamma, i1);
-<span class="fc" id="L1684">        double[] col2 = i2;</span>
+<span class="fc" id="L1720">        double[] col2 = i2;</span>
         
         int i;
-<span class="fc bfc" id="L1687" title="All 2 branches covered.">        for (i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L1688">            output[0][i] = col0[i];</span>
-<span class="fc" id="L1689">            output[1][i] = col1[i];</span>
-<span class="fc" id="L1690">            output[2][i] = col2[i];</span>
+<span class="fc bfc" id="L1723" title="All 2 branches covered.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L1724">            output[0][i] = col0[i];</span>
+<span class="fc" id="L1725">            output[1][i] = col1[i];</span>
+<span class="fc" id="L1726">            output[2][i] = col2[i];</span>
         }        
-<span class="fc" id="L1692">    }</span>
+<span class="fc" id="L1728">    }</span>
     
     /**
      * calculate  R_xyz = R_z(theta_z)*R_y(theta_y)*R_z(theta_z)
@@ -1727,19 +1763,19 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @return 
      */
     public static double[][] createRotationZYX(double[] thetas) {
-<span class="pc bpc" id="L1730" title="1 of 2 branches missed.">        if (thetas.length != 3) {</span>
-<span class="nc" id="L1731">            throw new IllegalArgumentException(&quot;thetas must be length 3&quot;);</span>
+<span class="pc bpc" id="L1766" title="1 of 2 branches missed.">        if (thetas.length != 3) {</span>
+<span class="nc" id="L1767">            throw new IllegalArgumentException(&quot;thetas must be length 3&quot;);</span>
         }
         
-<span class="fc" id="L1734">        double[][] rZ = Rotation.createYawRotationMatrix(thetas[2]);</span>
+<span class="fc" id="L1770">        double[][] rZ = Rotation.createYawRotationMatrix(thetas[2]);</span>
         
-<span class="fc" id="L1736">        double[][] rX = Rotation.createRollRotationMatrix(thetas[0]);</span>
+<span class="fc" id="L1772">        double[][] rX = Rotation.createRollRotationMatrix(thetas[0]);</span>
         
-<span class="fc" id="L1738">        double[][] rY = Rotation.createPitchRotationMatrix(thetas[1]);</span>
+<span class="fc" id="L1774">        double[][] rY = Rotation.createPitchRotationMatrix(thetas[1]);</span>
         
-<span class="fc" id="L1740">        double[][] r = MatrixUtil.multiply(rZ, MatrixUtil.multiply(rY, rX));</span>
+<span class="fc" id="L1776">        double[][] r = MatrixUtil.multiply(rZ, MatrixUtil.multiply(rY, rX));</span>
         
-<span class="fc" id="L1742">        return r;</span>
+<span class="fc" id="L1778">        return r;</span>
     }
     
     /**
@@ -1763,23 +1799,23 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @param out the output rotation matrix values.
      */
     public static void createRotationZYX(double[] thetas, AuxiliaryArrays aa, double[][] out) {
-<span class="nc bnc" id="L1766" title="All 2 branches missed.">        if (thetas.length != 3) {</span>
-<span class="nc" id="L1767">            throw new IllegalArgumentException(&quot;thetas must be length 3&quot;);</span>
+<span class="nc bnc" id="L1802" title="All 2 branches missed.">        if (thetas.length != 3) {</span>
+<span class="nc" id="L1803">            throw new IllegalArgumentException(&quot;thetas must be length 3&quot;);</span>
         }
         
-<span class="nc" id="L1770">        double[][] rZ = aa.a3X3;</span>
-<span class="nc" id="L1771">        Rotation.createYawRotationMatrix(thetas[2], rZ);</span>
+<span class="nc" id="L1806">        double[][] rZ = aa.a3X3;</span>
+<span class="nc" id="L1807">        Rotation.createYawRotationMatrix(thetas[2], rZ);</span>
         
-<span class="nc" id="L1773">        double[][] rY = aa.b3X3;</span>
-<span class="nc" id="L1774">        Rotation.createPitchRotationMatrix(thetas[1], rY);</span>
+<span class="nc" id="L1809">        double[][] rY = aa.b3X3;</span>
+<span class="nc" id="L1810">        Rotation.createPitchRotationMatrix(thetas[1], rY);</span>
         
-<span class="nc" id="L1776">        double[][] rX = aa.c3X3;</span>
-<span class="nc" id="L1777">        Rotation.createRollRotationMatrix(thetas[0], rX);</span>
+<span class="nc" id="L1812">        double[][] rX = aa.c3X3;</span>
+<span class="nc" id="L1813">        Rotation.createRollRotationMatrix(thetas[0], rX);</span>
         
-<span class="nc" id="L1779">        double[][] rZY = aa.d3X3;</span>
-<span class="nc" id="L1780">        MatrixUtil.multiply(rZ, rY, rZY);</span>
-<span class="nc" id="L1781">        MatrixUtil.multiply(rZY, rX, out);        </span>
-<span class="nc" id="L1782">    }</span>
+<span class="nc" id="L1815">        double[][] rZY = aa.d3X3;</span>
+<span class="nc" id="L1816">        MatrixUtil.multiply(rZ, rY, rZY);</span>
+<span class="nc" id="L1817">        MatrixUtil.multiply(rZY, rX, out);        </span>
+<span class="nc" id="L1818">    }</span>
     
     /**
      * calculate  the Hamilton quaternion which would be extracted from the
@@ -1826,20 +1862,20 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @return 
      */
     public static double[] createHamiltonQuaternionZYX(double[] thetas) {
-<span class="pc bpc" id="L1829" title="1 of 2 branches missed.">        if (thetas.length != 3) {</span>
-<span class="nc" id="L1830">            throw new IllegalArgumentException(&quot;thetas must be length 3&quot;);</span>
+<span class="pc bpc" id="L1865" title="1 of 2 branches missed.">        if (thetas.length != 3) {</span>
+<span class="nc" id="L1866">            throw new IllegalArgumentException(&quot;thetas must be length 3&quot;);</span>
         }
-<span class="fc" id="L1832">        double x2 = thetas[0]/2;</span>
-<span class="fc" id="L1833">        double y2 = thetas[1]/2;</span>
-<span class="fc" id="L1834">        double z2 = thetas[2]/2;</span>
+<span class="fc" id="L1868">        double x2 = thetas[0]/2;</span>
+<span class="fc" id="L1869">        double y2 = thetas[1]/2;</span>
+<span class="fc" id="L1870">        double z2 = thetas[2]/2;</span>
         
-<span class="fc" id="L1836">        double q1 =  Math.sin(z2)*Math.sin(y2)*Math.sin(x2) + </span>
-<span class="fc" id="L1837">            Math.cos(z2)*Math.cos(y2)*Math.cos(x2);</span>
-<span class="fc" id="L1838">        double q2 = -Math.sin(z2)*Math.sin(y2)*Math.cos(x2) + Math.sin(x2)*Math.cos(z2)*Math.cos(y2);</span>
-<span class="fc" id="L1839">        double q3 =  Math.sin(z2)*Math.sin(x2)*Math.cos(y2) + Math.sin(y2)*Math.cos(z2)*Math.cos(x2);</span>
-<span class="fc" id="L1840">        double q4 =  Math.sin(z2)*Math.cos(y2)*Math.cos(x2) - Math.sin(y2)*Math.sin(x2)*Math.cos(z2);</span>
+<span class="fc" id="L1872">        double q1 =  Math.sin(z2)*Math.sin(y2)*Math.sin(x2) + </span>
+<span class="fc" id="L1873">            Math.cos(z2)*Math.cos(y2)*Math.cos(x2);</span>
+<span class="fc" id="L1874">        double q2 = -Math.sin(z2)*Math.sin(y2)*Math.cos(x2) + Math.sin(x2)*Math.cos(z2)*Math.cos(y2);</span>
+<span class="fc" id="L1875">        double q3 =  Math.sin(z2)*Math.sin(x2)*Math.cos(y2) + Math.sin(y2)*Math.cos(z2)*Math.cos(x2);</span>
+<span class="fc" id="L1876">        double q4 =  Math.sin(z2)*Math.cos(y2)*Math.cos(x2) - Math.sin(y2)*Math.sin(x2)*Math.cos(z2);</span>
         
-<span class="fc" id="L1842">        return new double[]{q1, q2, q3, q4};</span>
+<span class="fc" id="L1878">        return new double[]{q1, q2, q3, q4};</span>
     }
     
     /**
@@ -1881,26 +1917,28 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
          q2 = -sin(z/2)*sin(y/2)*cos(x/2) + sin(x/2)*cos(z/2)*cos(y/2)
          q3 =  sin(z/2)*sin(x/2)*cos(y/2) + sin(y/2)*cos(z/2)*cos(x/2)
          q4 =  sin(z/2)*cos(y/2)*cos(x/2) - sin(y/2)*sin(x/2)*cos(z/2)
-     
+
+     This is what is used in eqn (2.40) of &quot;An Invitation to 3-D Vision&quot;,
+     Ma, Soatto, Kosecka, and Sastry (MASKS).
      * &lt;/pre&gt;
      * @param angle
      * @param axis
      * @return 
      */
     public static double[] createHamiltonQuaternionZYX(double angle, double[] axis) {
-<span class="nc bnc" id="L1891" title="All 2 branches missed.">        if (axis.length != 3) {</span>
-<span class="nc" id="L1892">            throw new IllegalArgumentException(&quot;axis must be length 3&quot;);</span>
+<span class="pc bpc" id="L1929" title="1 of 2 branches missed.">        if (axis.length != 3) {</span>
+<span class="nc" id="L1930">            throw new IllegalArgumentException(&quot;axis must be length 3&quot;);</span>
         }
-<span class="nc" id="L1894">        double d = MatrixUtil.lPSum(axis, 2);</span>
-<span class="nc" id="L1895">        double nx = axis[0]/d;</span>
-<span class="nc" id="L1896">        double ny = axis[1]/d;</span>
-<span class="nc" id="L1897">        double nz = axis[2]/d;</span>
-<span class="nc" id="L1898">        double ca = Math.cos(angle/2);</span>
-<span class="nc" id="L1899">        double sa = Math.sin(angle/2);</span>
+<span class="fc" id="L1932">        double d = MatrixUtil.lPSum(axis, 2);</span>
+<span class="fc" id="L1933">        double nx = axis[0]/d;</span>
+<span class="fc" id="L1934">        double ny = axis[1]/d;</span>
+<span class="fc" id="L1935">        double nz = axis[2]/d;</span>
+<span class="fc" id="L1936">        double ca = Math.cos(angle/2);</span>
+<span class="fc" id="L1937">        double sa = Math.sin(angle/2);</span>
         
-<span class="nc" id="L1901">        double[] q = new double[]{ca, nx*sa, ny*sa, nz*sa};</span>
+<span class="fc" id="L1939">        double[] q = new double[]{ca, nx*sa, ny*sa, nz*sa};</span>
         
-<span class="nc" id="L1903">        return q;</span>
+<span class="fc" id="L1941">        return q;</span>
     }
     
     /**
@@ -1908,16 +1946,16 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @param qHamilton quaternion of format [scalar  vector]
      */
     public static void convertHamiltonToBarfootQuaternionInPlace(double[] qHamilton) {
-<span class="nc bnc" id="L1911" title="All 2 branches missed.">        if (qHamilton.length != 4) {</span>
-<span class="nc" id="L1912">            throw new IllegalArgumentException(&quot;qHamilton length must be 4&quot;);</span>
+<span class="nc bnc" id="L1949" title="All 2 branches missed.">        if (qHamilton.length != 4) {</span>
+<span class="nc" id="L1950">            throw new IllegalArgumentException(&quot;qHamilton length must be 4&quot;);</span>
         }
        
-<span class="nc" id="L1915">        double swap = qHamilton[0];</span>
-<span class="nc bnc" id="L1916" title="All 2 branches missed.">        for (int i = 1; i &lt; 4; ++i) {</span>
-<span class="nc" id="L1917">            qHamilton[i-1] = qHamilton[i];</span>
+<span class="nc" id="L1953">        double swap = qHamilton[0];</span>
+<span class="nc bnc" id="L1954" title="All 2 branches missed.">        for (int i = 1; i &lt; 4; ++i) {</span>
+<span class="nc" id="L1955">            qHamilton[i-1] = qHamilton[i];</span>
         }
-<span class="nc" id="L1919">        qHamilton[3] = swap;</span>
-<span class="nc" id="L1920">    }</span>
+<span class="nc" id="L1957">        qHamilton[3] = swap;</span>
+<span class="nc" id="L1958">    }</span>
     
     /**
      * convert the quaternion from [scalar vector] to [vector scalar].
@@ -1925,16 +1963,16 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @return convert the quaternion from [scalar vector] to [vector scalar]
      */
     public static double[] convertHamiltonToBarfootQuaternion(double[] qHamilton) {
-<span class="pc bpc" id="L1928" title="1 of 2 branches missed.">        if (qHamilton.length != 4) {</span>
-<span class="nc" id="L1929">            throw new IllegalArgumentException(&quot;qHamilton length must be 4&quot;);</span>
+<span class="pc bpc" id="L1966" title="1 of 2 branches missed.">        if (qHamilton.length != 4) {</span>
+<span class="nc" id="L1967">            throw new IllegalArgumentException(&quot;qHamilton length must be 4&quot;);</span>
         }
-<span class="fc" id="L1931">        double[] out = new double[4];</span>
-<span class="fc" id="L1932">        double swap = qHamilton[0];</span>
-<span class="fc bfc" id="L1933" title="All 2 branches covered.">        for (int i = 1; i &lt; 4; ++i) {</span>
-<span class="fc" id="L1934">            out[i-1] = qHamilton[i];</span>
+<span class="fc" id="L1969">        double[] out = new double[4];</span>
+<span class="fc" id="L1970">        double swap = qHamilton[0];</span>
+<span class="fc bfc" id="L1971" title="All 2 branches covered.">        for (int i = 1; i &lt; 4; ++i) {</span>
+<span class="fc" id="L1972">            out[i-1] = qHamilton[i];</span>
         }
-<span class="fc" id="L1936">        out[3] = swap;</span>
-<span class="fc" id="L1937">        return out;</span>
+<span class="fc" id="L1974">        out[3] = swap;</span>
+<span class="fc" id="L1975">        return out;</span>
     }
         
     /**
@@ -1967,19 +2005,19 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      @return 
     */
     public static double[][] createRotationXYZ(double[] thetas) {
-<span class="pc bpc" id="L1970" title="1 of 2 branches missed.">        if (thetas.length != 3) {</span>
-<span class="nc" id="L1971">            throw new IllegalArgumentException(&quot;thetas must be length 3&quot;);</span>
+<span class="pc bpc" id="L2008" title="1 of 2 branches missed.">        if (thetas.length != 3) {</span>
+<span class="nc" id="L2009">            throw new IllegalArgumentException(&quot;thetas must be length 3&quot;);</span>
         }
         
-<span class="fc" id="L1974">        double[][] rZ = Rotation.createYawRotationMatrix(thetas[2]);</span>
+<span class="fc" id="L2012">        double[][] rZ = Rotation.createYawRotationMatrix(thetas[2]);</span>
         
-<span class="fc" id="L1976">        double[][] rX = Rotation.createRollRotationMatrix(thetas[0]);</span>
+<span class="fc" id="L2014">        double[][] rX = Rotation.createRollRotationMatrix(thetas[0]);</span>
         
-<span class="fc" id="L1978">        double[][] rY = Rotation.createPitchRotationMatrix(thetas[1]);</span>
+<span class="fc" id="L2016">        double[][] rY = Rotation.createPitchRotationMatrix(thetas[1]);</span>
         
-<span class="fc" id="L1980">        double[][] r = MatrixUtil.multiply(rX, MatrixUtil.multiply(rY, rZ));</span>
+<span class="fc" id="L2018">        double[][] r = MatrixUtil.multiply(rX, MatrixUtil.multiply(rY, rZ));</span>
         
-<span class="fc" id="L1982">        return r;</span>
+<span class="fc" id="L2020">        return r;</span>
     }
     
     /*
@@ -1999,16 +2037,16 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
     @param angle angle of rotation to apply
     */
     public static double[] createUnitLengthQuaternionBarfoot(double[] unitLengthAxis, double angle) {
-<span class="pc bpc" id="L2002" title="1 of 2 branches missed.">        if (unitLengthAxis.length != 3) {</span>
-<span class="nc" id="L2003">            throw new IllegalArgumentException(&quot;unitLengthAxis.length must be 3&quot;);</span>
+<span class="pc bpc" id="L2040" title="1 of 2 branches missed.">        if (unitLengthAxis.length != 3) {</span>
+<span class="nc" id="L2041">            throw new IllegalArgumentException(&quot;unitLengthAxis.length must be 3&quot;);</span>
         }
-<span class="fc" id="L2005">        double cPhi2 = Math.cos(angle)/2.;</span>
-<span class="fc" id="L2006">        double sPhi2 = Math.sin(angle)/2.;</span>
-<span class="fc" id="L2007">        double[] out = new double[]{</span>
+<span class="fc" id="L2043">        double cPhi2 = Math.cos(angle)/2.;</span>
+<span class="fc" id="L2044">        double sPhi2 = Math.sin(angle)/2.;</span>
+<span class="fc" id="L2045">        double[] out = new double[]{</span>
             unitLengthAxis[0]*sPhi2, unitLengthAxis[1]*sPhi2, 
             unitLengthAxis[2]*sPhi2, cPhi2
         };
-<span class="fc" id="L2011">        return out;</span>
+<span class="fc" id="L2049">        return out;</span>
     }
     
     /*
@@ -2025,16 +2063,16 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
     @param angle angle of rotation to apply
     */
     public static double[] createUnitLengthQuaternionHamilton(double[] unitLengthAxis, double angle) {
-<span class="nc bnc" id="L2028" title="All 2 branches missed.">        if (unitLengthAxis.length != 3) {</span>
-<span class="nc" id="L2029">            throw new IllegalArgumentException(&quot;unitLengthAxis.length must be 3&quot;);</span>
+<span class="nc bnc" id="L2066" title="All 2 branches missed.">        if (unitLengthAxis.length != 3) {</span>
+<span class="nc" id="L2067">            throw new IllegalArgumentException(&quot;unitLengthAxis.length must be 3&quot;);</span>
         }
-<span class="nc" id="L2031">        double cPhi2 = Math.cos(angle)/2.;</span>
-<span class="nc" id="L2032">        double sPhi2 = Math.sin(angle)/2.;</span>
-<span class="nc" id="L2033">        double[] out = new double[]{</span>
+<span class="nc" id="L2069">        double cPhi2 = Math.cos(angle)/2.;</span>
+<span class="nc" id="L2070">        double sPhi2 = Math.sin(angle)/2.;</span>
+<span class="nc" id="L2071">        double[] out = new double[]{</span>
             unitLengthAxis[0]*sPhi2, unitLengthAxis[1]*sPhi2, 
             unitLengthAxis[2]*sPhi2, cPhi2
         };
-<span class="nc" id="L2037">        return out;</span>
+<span class="nc" id="L2075">        return out;</span>
     }
     
     /**
@@ -2055,22 +2093,22 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
     */
     public static double[][] createRotationFromUnitLengthAngleAxis(double[] unitLengthAxis, double angle) {
         
-<span class="nc" id="L2058">        double ca = Math.cos(angle);</span>
-<span class="nc" id="L2059">        double oneMinusCa = 1. - ca;</span>
-<span class="nc" id="L2060">        double sa = Math.sin(angle);</span>
-<span class="nc" id="L2061">        double[][] eye = MatrixUtil.createIdentityMatrix(3);</span>
-<span class="nc" id="L2062">        double[][] skewA = MatrixUtil.skewSymmetric(unitLengthAxis);</span>
-<span class="nc" id="L2063">        double[][] aaT = MatrixUtil.outerProduct(unitLengthAxis, unitLengthAxis);</span>
+<span class="nc" id="L2096">        double ca = Math.cos(angle);</span>
+<span class="nc" id="L2097">        double oneMinusCa = 1. - ca;</span>
+<span class="nc" id="L2098">        double sa = Math.sin(angle);</span>
+<span class="nc" id="L2099">        double[][] eye = MatrixUtil.createIdentityMatrix(3);</span>
+<span class="nc" id="L2100">        double[][] skewA = MatrixUtil.skewSymmetric(unitLengthAxis);</span>
+<span class="nc" id="L2101">        double[][] aaT = MatrixUtil.outerProduct(unitLengthAxis, unitLengthAxis);</span>
         
-<span class="nc" id="L2065">        double[][] c = MatrixUtil.zeros(3, 3);</span>
+<span class="nc" id="L2103">        double[][] c = MatrixUtil.zeros(3, 3);</span>
         
         int i, j;
-<span class="nc bnc" id="L2068" title="All 2 branches missed.">        for (i = 0; i &lt; 3; ++i) {</span>
-<span class="nc bnc" id="L2069" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
-<span class="nc" id="L2070">                c[i][j] = ca*eye[i][j] + oneMinusCa*aaT[i][j] - sa*skewA[i][j];</span>
+<span class="nc bnc" id="L2106" title="All 2 branches missed.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc bnc" id="L2107" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L2108">                c[i][j] = ca*eye[i][j] + oneMinusCa*aaT[i][j] - sa*skewA[i][j];</span>
             }
         }
-<span class="nc" id="L2073">        return c;</span>
+<span class="nc" id="L2111">        return c;</span>
     }
     
     /**
@@ -2091,22 +2129,22 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
     public static double[] applyRotationPerturbationToQuaternion(
         double[] theta, double[] dTheta) {
     
-<span class="nc bnc" id="L2094" title="All 2 branches missed.">        if (theta.length != 3) {</span>
-<span class="nc" id="L2095">            throw new IllegalArgumentException(&quot;theta must be length 3&quot;);</span>
+<span class="nc bnc" id="L2132" title="All 2 branches missed.">        if (theta.length != 3) {</span>
+<span class="nc" id="L2133">            throw new IllegalArgumentException(&quot;theta must be length 3&quot;);</span>
         }
-<span class="nc bnc" id="L2097" title="All 2 branches missed.">        if (dTheta.length != 3) {</span>
-<span class="nc" id="L2098">            throw new IllegalArgumentException(&quot;dTheta must be length 3&quot;);</span>
+<span class="nc bnc" id="L2135" title="All 2 branches missed.">        if (dTheta.length != 3) {</span>
+<span class="nc" id="L2136">            throw new IllegalArgumentException(&quot;dTheta must be length 3&quot;);</span>
         }
                  
         //[4X4]
-<span class="nc" id="L2102">        double[][] deltaQ = createDeltaQ(theta, dTheta);</span>
+<span class="nc" id="L2140">        double[][] deltaQ = createDeltaQ(theta, dTheta);</span>
         
         // this is eqn (37) of Barfoot et al.  [$X1]
-<span class="nc" id="L2105">        double[] q = createQuaternionZYXFromEuler(theta);</span>
+<span class="nc" id="L2143">        double[] q = createQuaternionZYXFromEuler(theta);</span>
         
-<span class="nc" id="L2107">        double[] q2 = MatrixUtil.multiplyMatrixByColumnVector(deltaQ, q);</span>
+<span class="nc" id="L2145">        double[] q2 = MatrixUtil.multiplyMatrixByColumnVector(deltaQ, q);</span>
         
-<span class="nc" id="L2109">        return q2;</span>
+<span class="nc" id="L2147">        return q2;</span>
     }
     
     /*
@@ -2121,16 +2159,16 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
     (rotation about x is roll, y is pitch, and z is yaw).
     */
     public static double[] quaternionPrincipalAxisRotation(double angle, int principalAxis) {
-<span class="pc bpc" id="L2124" title="2 of 4 branches missed.">        if (principalAxis &lt; 0 || principalAxis &gt; 2) {</span>
-<span class="nc" id="L2125">            throw new IllegalArgumentException(&quot;principalAxis must be 0, 1, or 2&quot;);</span>
+<span class="pc bpc" id="L2162" title="2 of 4 branches missed.">        if (principalAxis &lt; 0 || principalAxis &gt; 2) {</span>
+<span class="nc" id="L2163">            throw new IllegalArgumentException(&quot;principalAxis must be 0, 1, or 2&quot;);</span>
         }
-<span class="fc" id="L2127">        double sa = Math.sin(angle);</span>
-<span class="fc" id="L2128">        double ca = Math.cos(angle);</span>
-<span class="fc" id="L2129">        double[] q = new double[4];</span>
+<span class="fc" id="L2165">        double sa = Math.sin(angle);</span>
+<span class="fc" id="L2166">        double ca = Math.cos(angle);</span>
+<span class="fc" id="L2167">        double[] q = new double[4];</span>
         // two 0's and a 1 for principal axis:
-<span class="fc" id="L2131">        q[principalAxis] = sa;</span>
-<span class="fc" id="L2132">        q[3] = ca;</span>
-<span class="fc" id="L2133">        return q;</span>
+<span class="fc" id="L2169">        q[principalAxis] = sa;</span>
+<span class="fc" id="L2170">        q[3] = ca;</span>
+<span class="fc" id="L2171">        return q;</span>
     }
     
     /**
@@ -2150,25 +2188,25 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @return [4X1] quaternion rotation vector.
      */
     public static double[] createQuaternionZYXFromEuler(double[] eulerXYZ) {
-<span class="pc bpc" id="L2153" title="1 of 2 branches missed.">        if (eulerXYZ.length != 3) {</span>
-<span class="nc" id="L2154">            throw new IllegalArgumentException(&quot;eulerXYZ.length must be 3&quot;);</span>
+<span class="pc bpc" id="L2191" title="1 of 2 branches missed.">        if (eulerXYZ.length != 3) {</span>
+<span class="nc" id="L2192">            throw new IllegalArgumentException(&quot;eulerXYZ.length must be 3&quot;);</span>
         }
         // length is 4
-<span class="fc" id="L2157">        double[] q0 = quaternionPrincipalAxisRotation(eulerXYZ[0], 0);</span>
-<span class="fc" id="L2158">        double[] q1 = quaternionPrincipalAxisRotation(eulerXYZ[1], 1);</span>
-<span class="fc" id="L2159">        double[] q2 = quaternionPrincipalAxisRotation(eulerXYZ[2], 2);</span>
+<span class="fc" id="L2195">        double[] q0 = quaternionPrincipalAxisRotation(eulerXYZ[0], 0);</span>
+<span class="fc" id="L2196">        double[] q1 = quaternionPrincipalAxisRotation(eulerXYZ[1], 1);</span>
+<span class="fc" id="L2197">        double[] q2 = quaternionPrincipalAxisRotation(eulerXYZ[2], 2);</span>
         
         // [4X4]
-<span class="fc" id="L2162">        double[][] q1m = quaternionRighthandCompoundOperator(q1);</span>
-<span class="fc" id="L2163">        double[][] q2m = quaternionRighthandCompoundOperator(q2);</span>
+<span class="fc" id="L2200">        double[][] q1m = quaternionRighthandCompoundOperator(q1);</span>
+<span class="fc" id="L2201">        double[][] q2m = quaternionRighthandCompoundOperator(q2);</span>
         
         // q2m times q1m times q0 = [4X1]
         // [4X4]
-<span class="fc" id="L2167">        double[][] t1 = MatrixUtil.multiply(q2m, q1m);</span>
+<span class="fc" id="L2205">        double[][] t1 = MatrixUtil.multiply(q2m, q1m);</span>
         // 4X1
-<span class="fc" id="L2169">        double[] q = MatrixUtil.multiplyMatrixByColumnVector(t1, q0);</span>
+<span class="fc" id="L2207">        double[] q = MatrixUtil.multiplyMatrixByColumnVector(t1, q0);</span>
         
-<span class="fc" id="L2171">        return q;</span>
+<span class="fc" id="L2209">        return q;</span>
     }
  
     /**
@@ -2185,23 +2223,23 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      * @return rotation matrix [3X3].
      */
     public static double[][] createRotationFromQuaternion(double[] theta) {
-<span class="nc bnc" id="L2188" title="All 2 branches missed.">        if (theta.length != 3) {</span>
-<span class="nc" id="L2189">            throw new IllegalArgumentException(&quot;theta.length must be 3&quot;);</span>
+<span class="nc bnc" id="L2226" title="All 2 branches missed.">        if (theta.length != 3) {</span>
+<span class="nc" id="L2227">            throw new IllegalArgumentException(&quot;theta.length must be 3&quot;);</span>
         }
         
-<span class="nc" id="L2192">        double[] q0 = quaternionPrincipalAxisRotation(theta[0], 0);</span>
-<span class="nc" id="L2193">        double[] q1 = quaternionPrincipalAxisRotation(theta[1], 1);</span>
-<span class="nc" id="L2194">        double[] q2 = quaternionPrincipalAxisRotation(theta[2], 2);</span>
+<span class="nc" id="L2230">        double[] q0 = quaternionPrincipalAxisRotation(theta[0], 0);</span>
+<span class="nc" id="L2231">        double[] q1 = quaternionPrincipalAxisRotation(theta[1], 1);</span>
+<span class="nc" id="L2232">        double[] q2 = quaternionPrincipalAxisRotation(theta[2], 2);</span>
        
-<span class="nc" id="L2196">        double[][] q0m = quaternionRighthandCompoundOperator(q0);</span>
-<span class="nc" id="L2197">        double[][] q1m = quaternionRighthandCompoundOperator(q1);</span>
-<span class="nc" id="L2198">        double[][] q2m = quaternionRighthandCompoundOperator(q2);</span>
+<span class="nc" id="L2234">        double[][] q0m = quaternionRighthandCompoundOperator(q0);</span>
+<span class="nc" id="L2235">        double[][] q1m = quaternionRighthandCompoundOperator(q1);</span>
+<span class="nc" id="L2236">        double[][] q2m = quaternionRighthandCompoundOperator(q2);</span>
         
-<span class="nc" id="L2200">        double[][] q = MatrixUtil.zeros(3, 3);</span>
-<span class="nc" id="L2201">        MatrixUtil.multiply(q2m, q1m, q);</span>
-<span class="nc" id="L2202">        MatrixUtil.multiply(q, q0m, q);</span>
+<span class="nc" id="L2238">        double[][] q = MatrixUtil.zeros(3, 3);</span>
+<span class="nc" id="L2239">        MatrixUtil.multiply(q2m, q1m, q);</span>
+<span class="nc" id="L2240">        MatrixUtil.multiply(q, q0m, q);</span>
         
-<span class="nc" id="L2204">        return q;</span>
+<span class="nc" id="L2242">        return q;</span>
     }
     
     /**
@@ -2220,12 +2258,12 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      */
     public static double[] createRotationVector(double[] theta, double[] dTheta) {
         
-<span class="fc" id="L2223">        double[][] sTheta = sTheta(dTheta);</span>
+<span class="fc" id="L2261">        double[][] sTheta = sTheta(dTheta);</span>
         
         // length 3
-<span class="fc" id="L2226">        double[] dPhi = MatrixUtil.multiplyMatrixByColumnVector(sTheta, dTheta);</span>
+<span class="fc" id="L2264">        double[] dPhi = MatrixUtil.multiplyMatrixByColumnVector(sTheta, dTheta);</span>
         
-<span class="fc" id="L2228">        return dPhi;</span>
+<span class="fc" id="L2266">        return dPhi;</span>
     }
     
     /**
@@ -2246,25 +2284,25 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
     */
     public static double[][] createDeltaQ(double[] theta, double[] dTheta) {
         
-<span class="nc bnc" id="L2249" title="All 2 branches missed.">        if (theta.length != 3) {</span>
-<span class="nc" id="L2250">            throw new IllegalArgumentException(&quot;theta must be length 3&quot;);</span>
+<span class="nc bnc" id="L2287" title="All 2 branches missed.">        if (theta.length != 3) {</span>
+<span class="nc" id="L2288">            throw new IllegalArgumentException(&quot;theta must be length 3&quot;);</span>
         }
-<span class="nc bnc" id="L2252" title="All 2 branches missed.">        if (dTheta.length != 3) {</span>
-<span class="nc" id="L2253">            throw new IllegalArgumentException(&quot;dTheta must be length 3&quot;);</span>
+<span class="nc bnc" id="L2290" title="All 2 branches missed.">        if (dTheta.length != 3) {</span>
+<span class="nc" id="L2291">            throw new IllegalArgumentException(&quot;dTheta must be length 3&quot;);</span>
         }
                         
-<span class="nc" id="L2256">        double[] dPhi = createRotationVector(theta, dTheta);</span>
+<span class="nc" id="L2294">        double[] dPhi = createRotationVector(theta, dTheta);</span>
         
-<span class="nc" id="L2258">        double[] dPhiQ = new double[4];</span>
+<span class="nc" id="L2296">        double[] dPhiQ = new double[4];</span>
         
-<span class="nc bnc" id="L2260" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L2261">            dPhiQ[i] = dPhi[i]/2.;</span>
+<span class="nc bnc" id="L2298" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L2299">            dPhiQ[i] = dPhi[i]/2.;</span>
         }
-<span class="nc" id="L2263">        dPhiQ[3] = 1;</span>
+<span class="nc" id="L2301">        dPhiQ[3] = 1;</span>
         
-<span class="nc" id="L2265">        double[][] dQ = quaternionRighthandCompoundOperator(dPhiQ);</span>
+<span class="nc" id="L2303">        double[][] dQ = quaternionRighthandCompoundOperator(dPhiQ);</span>
         
-<span class="nc" id="L2267">        return dQ;</span>
+<span class="nc" id="L2305">        return dQ;</span>
     }
     
     /**
@@ -2292,29 +2330,29 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      */
     public static double[] applySingularitySafeRotationPerturbationQuaternion(
         double[] theta, double[] dTheta) {
-<span class="pc bpc" id="L2295" title="1 of 2 branches missed.">        if (theta.length != 3) {</span>
-<span class="nc" id="L2296">            throw new IllegalArgumentException(&quot;theta length must be 3&quot;);</span>
+<span class="pc bpc" id="L2333" title="1 of 2 branches missed.">        if (theta.length != 3) {</span>
+<span class="nc" id="L2334">            throw new IllegalArgumentException(&quot;theta length must be 3&quot;);</span>
         }
-<span class="pc bpc" id="L2298" title="1 of 2 branches missed.">        if (dTheta.length != 3) {</span>
-<span class="nc" id="L2299">            throw new IllegalArgumentException(&quot;theta must be length 3&quot;);</span>
+<span class="pc bpc" id="L2336" title="1 of 2 branches missed.">        if (dTheta.length != 3) {</span>
+<span class="nc" id="L2337">            throw new IllegalArgumentException(&quot;theta must be length 3&quot;);</span>
         }
            
-<span class="fc" id="L2302">        double[] dPhi = createRotationVector(theta, dTheta);</span>
-<span class="fc" id="L2303">        double[] qDPhi = createHamiltonQuaternionZYX(dPhi);</span>
+<span class="fc" id="L2340">        double[] dPhi = createRotationVector(theta, dTheta);</span>
+<span class="fc" id="L2341">        double[] qDPhi = createHamiltonQuaternionZYX(dPhi);</span>
         
-<span class="fc" id="L2305">        double[] qDPhiBarfoot = convertHamiltonToBarfootQuaternion(qDPhi);</span>
+<span class="fc" id="L2343">        double[] qDPhiBarfoot = convertHamiltonToBarfootQuaternion(qDPhi);</span>
                 
         // ====== eqn (49) =====
-<span class="fc" id="L2308">        double[][] qLH = quaternionLefthandCompoundOperator(</span>
+<span class="fc" id="L2346">        double[][] qLH = quaternionLefthandCompoundOperator(</span>
             qDPhiBarfoot);
         
-<span class="fc" id="L2311">        double[] q = createHamiltonQuaternionZYX(theta);</span>
-<span class="fc" id="L2312">        double[] qBarfoot = convertHamiltonToBarfootQuaternion(q);</span>
+<span class="fc" id="L2349">        double[] q = createHamiltonQuaternionZYX(theta);</span>
+<span class="fc" id="L2350">        double[] qBarfoot = convertHamiltonToBarfootQuaternion(q);</span>
         
-<span class="fc" id="L2314">        double[] result = MatrixUtil.multiplyMatrixByColumnVector(</span>
+<span class="fc" id="L2352">        double[] result = MatrixUtil.multiplyMatrixByColumnVector(</span>
               qLH, qBarfoot);
         
-<span class="fc" id="L2317">        return result;</span>
+<span class="fc" id="L2355">        return result;</span>
     }
         
     public static class AuxiliaryArrays {

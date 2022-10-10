@@ -191,7 +191,7 @@ import no.uib.cipr.matrix.NotConvergedException;
 <span class="pc bpc" id="L191" title="1 of 2 branches missed.">        if (t.length != 3) {</span>
 <span class="nc" id="L192">            throw new IllegalArgumentException(&quot;t must be length 3&quot;);</span>
         }
-        
+
         /*
             4x4     
         [ R  -R*t ]
@@ -375,7 +375,7 @@ import no.uib.cipr.matrix.NotConvergedException;
     
      /** converts pixel coordinates to normalized camera coordinates by transforming them to camera 
     reference frame then applying Lp2-normalization.
-     * @param x points in the camera centered reference frame. 
+     * @param x points in the image reference frame.
      * format is 3XN for N points in row-major format. 
      * @param intrinsic 
      * @return pixels transformed to camera coordinate reerence frame then 
@@ -604,7 +604,7 @@ import no.uib.cipr.matrix.NotConvergedException;
        
 <span class="fc" id="L605">        double[][] cameraIntrInv = Camera.createIntrinsicCameraMatrixInverse(</span>
             intr);
-        
+
         // put x into camera coordinates reference frame:
 <span class="fc" id="L609">        double[][] pix = MatrixUtil.multiply(cameraIntrInv, x);</span>
         
@@ -643,7 +643,7 @@ import no.uib.cipr.matrix.NotConvergedException;
 <span class="nc bnc" id="L643" title="All 2 branches missed.">        for (j = 0; j &lt; norm.length; ++j) {</span>
 <span class="nc" id="L644">            sum = 0;</span>
 <span class="nc bnc" id="L645" title="All 2 branches missed.">            for (i = 0; i &lt; norm.length; ++i) {</span>
-<span class="nc" id="L646">                sum += (norm[i][j]*norm[i][j]);</span>
+<span class="nc" id="L646">                sum += (norm[i][j] *norm[i][j]);</span>
             }
 <span class="nc" id="L648">            sum = Math.sqrt(sum);</span>
 <span class="nc bnc" id="L649" title="All 2 branches missed.">            for (i = 0; i &lt; norm.length; ++i) {</span>

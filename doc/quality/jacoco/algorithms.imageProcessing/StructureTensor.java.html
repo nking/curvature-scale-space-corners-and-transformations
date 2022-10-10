@@ -45,7 +45,7 @@ import algorithms.matrix.MatrixUtil;
     IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
    -- end scikit-image copyright -- 
-   
+
  * @author nichole
  */
 public class StructureTensor {
@@ -74,28 +74,28 @@ public class StructureTensor {
      * If create2ndDerivs is true, the second derivatives needed for curvature
      * are calculated too.
      * 
-     * @param image
+     * @param image 2 dimensional image in row-major format
      * @param sigma
      * @param create2ndDerivs 
      */
 <span class="fc" id="L81">    public StructureTensor(float[][] image, float sigma, boolean create2ndDerivs) {</span>
-        
+
 <span class="fc" id="L83">        this.sigma = sigma;</span>
         
         // --- create Sobel derivatives (gaussian 1st deriv sqrt(2)/2 = 0.707)----
 <span class="fc" id="L86">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
-        // switch X and Y sobel operations to match scipy
+        // switch X and Y sobel operations to match scipy (column major to row major or vice versa)
 
         // NOTE: may need to revisit this
 <span class="fc" id="L91">        float norm = 4.f;//(0.707f * (float)Math.sqrt(2. * Math.PI));</span>
         
 <span class="fc" id="L93">        float[][] gX = imageProcessor.copy(image);</span>
-<span class="fc" id="L94">        imageProcessor.applySobelY(gX);</span>
+<span class="fc" id="L94">        imageProcessor.applySobelX(gX);</span>
 <span class="fc" id="L95">        MatrixUtil.multiply(gX, norm);</span>
 
 <span class="fc" id="L97">        float[][] gY = imageProcessor.copy(image);</span>
-<span class="fc" id="L98">        imageProcessor.applySobelX(gY);</span>
+<span class="fc" id="L98">        imageProcessor.applySobelY(gY);</span>
 <span class="fc" id="L99">        MatrixUtil.multiply(gY, norm);</span>
         
         // --- create structure tensors ----
@@ -134,8 +134,8 @@ public class StructureTensor {
         
             //TODO: revisit this in detail:
             // row major, so need to use y operations for x and vice versa
-<span class="fc" id="L137">            imageProcessor.applyKernel1D(d2X, kernel, false);</span>
-<span class="fc" id="L138">            imageProcessor.applyKernel1D(d2Y, kernel, true);</span>
+<span class="fc" id="L137">            imageProcessor.applyKernel1D(d2X, kernel, true);</span>
+<span class="fc" id="L138">            imageProcessor.applyKernel1D(d2Y, kernel, false);</span>
         
         } else {
 <span class="fc" id="L141">            dX = null;</span>

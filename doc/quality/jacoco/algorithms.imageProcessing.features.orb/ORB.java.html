@@ -1,26 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ORB.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features.orb</a> &gt; <span class="el_source">ORB.java</span></div><h1>ORB.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features.orb;
 
 import algorithms.QuickSort;
-import algorithms.imageProcessing.ATrousWaveletTransform;
-import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.SIGMA;
-import algorithms.imageProcessing.StructureTensor;
+import algorithms.imageProcessing.*;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.TwoDFloatArray;
 import algorithms.VeryLongBitString;
-import algorithms.sort.MiscSorter;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TDoubleArrayList;
 import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TFloatIntMap;
-import gnu.trove.map.hash.TFloatIntHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import java.util.ArrayList;
@@ -83,7 +75,7 @@ import java.util.logging.Logger;
  *     assumes that a corner’s intensity is offset from its center, and this vector 
  *     may be used to impute an orientation. Rosin defines the moments of a patch as:
  * 
- *    m_p_q = moments = summation_over_x_and_y( (x^p) * (y^q) * I(x,y) 
+ *    m_p_q = moments = summation_over_x_and_y( (x^p) * (y^q) * I(x,y) )
  *       where I(x,y) is the pixel intensity.
  * 
  *    C = the centroid = ( m_1_0/m_0_0, m_0_1/m_0_0)
@@ -140,11 +132,11 @@ replaced with existing functions in this project in this implementation below.
 Have also edited alot of the ordering of logic, but the core content is still adapted
 from the scipy code.
  
-Note: to include color information, consider combining the results of the
+Note: to include color information, consider combining the results of
 a greyscale ORB with the results of a &quot;C&quot; from LCH colorspace and/or another
 * color transformation that uses a chromaticity transformation 
 * to distinguish colors.  
-* For the later, would need to make a separate ORB because the
+* For the latter, would need to make a separate ORB because the
 * differences in the &quot;H&quot;, that is polar theta, would need
 * to use a threshold of 20 degrees or so and a result of binary
 * difference, and would need a correction for wrap around the
@@ -178,174 +170,167 @@ Still testing the class, there may be bugs present.
     
  * &lt;/pre&gt;
  */
-public class ORB {
+<span class="fc" id="L173">public class ORB {</span>
    
-<span class="fc" id="L183">    protected boolean useSingleScale = false;</span>
+<span class="fc" id="L175">    protected boolean useSingleScale = false;</span>
 
     // these could be made static across all instances, but needs guards for synchronous initialization
-<span class="fc" id="L186">    protected int[][] OFAST_MASK = null;</span>
-<span class="fc" id="L187">    protected int[] OFAST_UMAX = null;</span>
-<span class="fc" id="L188">    protected int[][] POS0 = null;</span>
-<span class="fc" id="L189">    protected int[][] POS1 = null;</span>
+<span class="fc" id="L178">    protected int[][] OFAST_MASK = null;</span>
+<span class="fc" id="L179">    protected int[] OFAST_UMAX = null;</span>
+<span class="fc" id="L180">    protected int[][] POS0 = null;</span>
+<span class="fc" id="L181">    protected int[][] POS1 = null;</span>
 
-<span class="fc" id="L191">    protected int fastN = 9;</span>
+<span class="fc" id="L183">    protected int fastN = 9;</span>
     // fastThreshold should probably be &lt;= 0.01 for low res images
-<span class="fc" id="L193">    protected float fastThreshold = 0.08f;</span>
-<span class="fc" id="L194">    protected final float harrisK = 0.04f;</span>
+<span class="fc" id="L185">    protected float fastThreshold = 0.08f;</span>
+<span class="fc" id="L186">    protected final float harrisK = 0.04f;</span>
     protected final int nKeypoints;
 
     /**
     the first dimension of the pyramids is scale
     and the value is the image as a 2 dimensional row major format float array.
     */
-<span class="fc" id="L201">    protected TwoDFloatArray[] pyramidImages = null;</span>
-<span class="fc" id="L202">    protected float[] scales = null;</span>
-<span class="fc" id="L203">    protected StructureTensor[] tensorComponents = null;</span>
-<span class="fc" id="L204">    protected TwoDFloatArray[] harrisResponseImages = null;</span>
+<span class="fc" id="L193">    protected TwoDFloatArray[] pyramidImages = null;</span>
+<span class="fc" id="L194">    protected float[] scales = null;</span>
+<span class="fc" id="L195">    protected StructureTensor[] tensorComponents = null;</span>
+<span class="fc" id="L196">    protected TwoDFloatArray[] harrisResponseImages = null;</span>
 
     /**
      * although there may be multiple color images in the pyramid, there is
      * only one set of coordinates derived for each scale.
      */
-<span class="fc" id="L210">    protected List&lt;TIntList&gt; keypoints0List = null;</span>
-<span class="fc" id="L211">    protected List&lt;TIntList&gt; keypoints1List = null;</span>
+<span class="fc" id="L202">    protected List&lt;TIntList&gt; keypoints0List = null;</span>
+<span class="fc" id="L203">    protected List&lt;TIntList&gt; keypoints1List = null;</span>
     
-<span class="fc" id="L213">    protected List&lt;TDoubleList&gt; orientationsList = null;</span>
-<span class="fc" id="L214">    protected List&lt;TFloatList&gt; harrisResponses = null;</span>
+<span class="fc" id="L205">    protected List&lt;TDoubleList&gt; orientationsList = null;</span>
+<span class="fc" id="L206">    protected List&lt;TFloatList&gt; harrisResponses = null;</span>
     
     //`True`` or ``False`` representing
     //the outcome of the intensity comparison for i-th keypoint on j-th
     //decision pixel-pair. It is ``Q == np.sum(mask)``.
-<span class="fc" id="L219">    private List&lt;Descriptors&gt; descriptorsList = null;</span>
+<span class="fc" id="L211">    private List&lt;Descriptors&gt; descriptorsList = null;</span>
     
-<span class="fc" id="L221">    private List&lt;PairInt&gt; combinedKeypointList = null;</span>
-<span class="fc" id="L222">    private TDoubleList combinedOrientationList = null;</span>
-<span class="fc" id="L223">    private TFloatList combinedHarrisResponseList = null;</span>
-<span class="fc" id="L224">    private Descriptors combinedDescriptors = null;</span>
-    
-<span class="fc" id="L226">    protected static double twoPI = 2. * Math.PI;</span>
+<span class="fc" id="L213">    private List&lt;PairInt&gt; combinedKeypointList = null;</span>
+<span class="fc" id="L214">    private TDoubleList combinedOrientationList = null;</span>
+<span class="fc" id="L215">    private TFloatList combinedHarrisResponseList = null;</span>
+<span class="fc" id="L216">    private Descriptors combinedDescriptors = null;</span>
 
-<span class="fc" id="L228">    protected float curvatureThresh = 0.05f;</span>
+<span class="fc" id="L218">    protected float curvatureThresh = 0.05f;</span>
 
-<span class="fc" id="L230">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
-    
-    /**
-     * a map holding the scale factor of a pyramid image as key
-     * and the octave number of pyramid images.
-     * it's meant to be useful for delayed creating of hsv pyramid
-     * to read the scalesList and remove an hsv pyramid image if not present in
-     * scales.
-     */
-<span class="fc" id="L239">    private TFloatIntMap octaveScaleMap = new TFloatIntHashMap();</span>
+<span class="fc" id="L220">    private final Logger log = Logger.getLogger(this.getClass().getName());</span>
 
     // pyramid images will be no smaller than this
     private final static int defaultDecimationLimit = 32;
-<span class="fc" id="L243">    protected final int decimationLimit = defaultDecimationLimit;</span>
+<span class="fc" id="L224">    protected final int decimationLimit = defaultDecimationLimit;</span>
 
-    public static enum DescriptorChoice {
+    public enum DescriptorChoice {
         NONE, GREYSCALE
     }
-<span class="fc" id="L248">    private DescriptorChoice descrChoice = DescriptorChoice.GREYSCALE;</span>
+<span class="fc" id="L229">    private DescriptorChoice descrChoice = DescriptorChoice.GREYSCALE;</span>
 
-<span class="fc" id="L250">    protected boolean doCreate1stDerivKeypoints = false;</span>
+<span class="fc" id="L231">    protected boolean doCreate1stDerivKeypoints = false;</span>
 
-<span class="fc" id="L252">    protected boolean doCreateCurvatureKeyPoints = false;</span>
+<span class="fc" id="L233">    protected boolean doCreateCurvatureKeyPoints = false;</span>
 
-<span class="fc" id="L254">    protected int nPyramidB = 3;</span>
+<span class="fc" id="L235">    protected int nPyramidB = 3;</span>
 
-<span class="fc" id="L256">    protected boolean doCreate1stATrousKeypoints = true;</span>
-    
+<span class="fc" id="L237">    protected boolean doCreate1stATrousKeypoints = true;</span>
+
     protected final GreyscaleImage img;
-    
+
     /**
      * Still testing the class, there may be bugs present.
-     * @param image
-     * @param nKeypoints
+     * @param image image to calculate keypoints and descriptors for.
+     * @param nKeypoints the limit to the number of keypoints per
+     *                   pyramidal octave scale, and the limit to the
+     *                   total combined keypoint list of all octave scales.
+     *
      */
-<span class="fc" id="L265">    public ORB(GreyscaleImage image, int nKeypoints) {</span>
+<span class="fc" id="L249">    public ORB(GreyscaleImage image, int nKeypoints) {</span>
 
-<span class="fc" id="L267">        initMasks();</span>
+<span class="fc" id="L251">        initMasks();</span>
 
-<span class="fc" id="L269">        this.img = image;</span>
+<span class="fc" id="L253">        this.img = image;</span>
                 
-<span class="fc" id="L271">        this.nKeypoints = nKeypoints;</span>
-<span class="fc" id="L272">    }</span>
+<span class="fc" id="L255">        this.nKeypoints = nKeypoints;</span>
+<span class="fc" id="L256">    }</span>
    
     /**
      * @param descrChoice the descrChoice to set
      */
     public void setDescrChoice(DescriptorChoice descrChoice) {
-<span class="nc" id="L278">        this.descrChoice = descrChoice;</span>
-<span class="nc" id="L279">    }</span>
+<span class="nc" id="L262">        this.descrChoice = descrChoice;</span>
+<span class="nc" id="L263">    }</span>
     
     public void overrideToUseSingleScale() {
-<span class="nc" id="L282">        useSingleScale = true;</span>
-<span class="nc" id="L283">    }</span>
+<span class="nc" id="L266">        useSingleScale = true;</span>
+<span class="nc" id="L267">    }</span>
 
     protected void overrideFastN(int nFast) {
-<span class="nc" id="L286">        this.fastN = nFast;</span>
-<span class="nc" id="L287">    }</span>
+<span class="nc" id="L270">        this.fastN = nFast;</span>
+<span class="nc" id="L271">    }</span>
     /**
      * default is 0.08f.
      * For a low resolution image, may want to use 0.01f.
-     * @param threshold 
+     * @param threshold
      */
     public void overrideFastThreshold(float threshold) {
-<span class="nc" id="L294">        this.fastThreshold = threshold;</span>
-<span class="nc" id="L295">    }</span>
+<span class="nc" id="L278">        this.fastThreshold = threshold;</span>
+<span class="nc" id="L279">    }</span>
 
     /**
      * override the number of divisions of scale to add in
      * between the powers of 2 scalings.  The default number
-     * is 3;
+     * is 3.
      * @param n
      */
     public void overridePyamidalExtraN(int n) {
         
-<span class="nc bnc" id="L305" title="All 2 branches missed.">        if (useSingleScale) {</span>
-<span class="nc" id="L306">            throw new IllegalArgumentException(&quot;useSingleScale=true so cannot &quot;</span>
+<span class="nc bnc" id="L289" title="All 2 branches missed.">        if (useSingleScale) {</span>
+<span class="nc" id="L290">            throw new IllegalArgumentException(&quot;useSingleScale=true so cannot &quot;</span>
                 + &quot; set this parameter&quot;);
         }
         
-<span class="nc" id="L310">        this.nPyramidB = n;</span>
-<span class="nc" id="L311">    }</span>
+<span class="nc" id="L294">        this.nPyramidB = n;</span>
+<span class="nc" id="L295">    }</span>
 
     /**
      * set option to not create descriptors.
      */
     public void overrideToNotCreateDescriptors() {
-<span class="fc" id="L317">        descrChoice = DescriptorChoice.NONE;</span>
-<span class="fc" id="L318">    }</span>
+<span class="fc" id="L301">        descrChoice = DescriptorChoice.NONE;</span>
+<span class="fc" id="L302">    }</span>
     
     public void overrideToAlsoCreate1stDerivKeypoints() {
-<span class="fc" id="L321">        doCreate1stDerivKeypoints = true;</span>
-<span class="fc" id="L322">    }</span>
+<span class="fc" id="L305">        doCreate1stDerivKeypoints = true;</span>
+<span class="fc" id="L306">    }</span>
     
     public void overrideToNotCreateATrousKeypoints() {
-<span class="fc" id="L325">        doCreate1stATrousKeypoints = false;</span>
-<span class="fc" id="L326">    }</span>
+<span class="fc" id="L309">        doCreate1stATrousKeypoints = false;</span>
+<span class="fc" id="L310">    }</span>
 
     public void overrideToCreateCurvaturePoints() {
-<span class="nc" id="L329">        doCreateCurvatureKeyPoints = true;</span>
-<span class="nc" id="L330">    }</span>
+<span class="nc" id="L313">        doCreateCurvatureKeyPoints = true;</span>
+<span class="nc" id="L314">    }</span>
 
     private void initMasks() {
 
-<span class="fc" id="L334">        OFAST_MASK = new int[31][31];</span>
-<span class="fc bfc" id="L335" title="All 2 branches covered.">        for (int i = 0; i &lt; 31; ++i) {</span>
-<span class="fc" id="L336">            OFAST_MASK[i] = new int[31];</span>
+<span class="fc" id="L318">        OFAST_MASK = new int[31][31];</span>
+        int i;
+<span class="fc bfc" id="L320" title="All 2 branches covered.">        for (i = 0; i &lt; 31; ++i) {</span>
+<span class="fc" id="L321">            OFAST_MASK[i] = new int[31];</span>
         }
 
-<span class="fc" id="L339">        OFAST_UMAX = new int[]{15, 15, 15, 15, 14, 14, 14, 13, 13, 12, 11, 10,</span>
+<span class="fc" id="L324">        OFAST_UMAX = new int[]{15, 15, 15, 15, 14, 14, 14, 13, 13, 12, 11, 10,</span>
             9, 8, 6, 3};
 
-<span class="fc bfc" id="L342" title="All 2 branches covered.">        for (int i = -15; i &lt; 16; ++i) {</span>
-<span class="fc" id="L343">            int absI = Math.abs(i);</span>
-<span class="fc bfc" id="L344" title="All 2 branches covered.">            for (int j = -OFAST_UMAX[absI]; j &lt; (OFAST_UMAX[absI] + 1); ++j) {</span>
-<span class="fc" id="L345">                OFAST_MASK[15 + j][15 + i] = 1;</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">        for (i = -15; i &lt; 16; ++i) {</span>
+<span class="fc" id="L328">            int absI = Math.abs(i);</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">            for (int j = -OFAST_UMAX[absI]; j &lt; (OFAST_UMAX[absI] + 1); ++j) {</span>
+<span class="fc" id="L330">                OFAST_MASK[15 + j][15 + i] = 1;</span>
             }
         }
-<span class="fc" id="L348">    }</span>
+<span class="fc" id="L333">    }</span>
 
     /**
       NOTE: still testing, there may be bugs.
@@ -361,56 +346,48 @@ public class ORB {
      */
     public void detectAndExtract() {
 
-<span class="fc" id="L364">        buildPyramid();</span>
+<span class="fc" id="L349">        buildPyramid();</span>
         
-<span class="fc" id="L366">        buildTensors();</span>
+<span class="fc" id="L351">        buildTensors();</span>
         
-<span class="fc" id="L368">        buildHarrisImages();</span>
+<span class="fc" id="L353">        buildHarrisImages();</span>
         
         // NOTE that the keypoints are all in the coord frame of the largest image
-<span class="fc" id="L371">        extractKeypoints();</span>
+        // which is scales[0], that is, octave = 0.
+<span class="fc" id="L357">        extractKeypoints();</span>
 
-<span class="fc" id="L373">        extractDescriptors();</span>
+<span class="fc" id="L359">        extractDescriptors();</span>
 
-<span class="fc" id="L375">        combineAndFilterTotal();</span>
+<span class="fc" id="L361">        combineAndFilterTotal();</span>
 
-<span class="fc" id="L377">        int nKeyPointsTotal = countKeypoints();</span>
+        //int nKeyPointsTotal = countKeypoints();
 
         //log.info(&quot;nKeypointsTotal=&quot; + nKeyPointsTotal +
         //    &quot; number of allowed Keypoints=&quot; + this.nKeypoints);                
-<span class="fc" id="L381">    }</span>
+<span class="fc" id="L367">    }</span>
   
     private void buildPyramid() {
        
-<span class="fc" id="L385">        List&lt;TwoDFloatArray&gt; pyr = buildPyramid(img);</span>
+<span class="fc" id="L371">        List&lt;TwoDFloatArray&gt; pyr = buildPyramid(img);</span>
 
-<span class="fc" id="L387">        int nScales = pyr.size();</span>
+<span class="fc" id="L373">        int nScales = pyr.size();</span>
 
-<span class="fc" id="L389">        pyramidImages = new TwoDFloatArray[nScales];</span>
+<span class="fc" id="L375">        pyramidImages = new TwoDFloatArray[nScales];</span>
+<span class="fc" id="L376">        scales = new float[nScales];</span>
         
-<span class="fc" id="L391">        scales = new float[nScales];</span>
-        
-<span class="fc" id="L393">        float prevScl = 1.f;</span>
-<span class="fc" id="L394">        scales[0] = prevScl;</span>
-        
-<span class="fc bfc" id="L396" title="All 2 branches covered.">        for (int i = 0; i &lt; nScales; ++i) {</span>
-            
-<span class="fc" id="L398">            pyramidImages[i] = pyr.get(i);</span>
-            
-<span class="fc" id="L400">            float scale = prevScl;</span>
-            
-<span class="fc bfc" id="L402" title="All 2 branches covered.">            if (i &gt; 0) {</span>
-<span class="fc" id="L403">                float x0 = (float)pyramidImages[i - 1].a.length/</span>
-                    (float)pyramidImages[i].a.length;
-<span class="fc" id="L405">                float y0 = (float)pyramidImages[i - 1].a[0].length/</span>
-                    (float)pyramidImages[i].a[0].length;
-<span class="fc" id="L407">                scale = prevScl * (x0 + y0)/2.f;</span>
-<span class="fc" id="L408">                prevScl = scale;</span>
-         
-<span class="fc" id="L410">                scales[i] = scale;</span>
-            }
+<span class="fc" id="L378">        scales[0] = 1.f;</span>
+<span class="fc" id="L379">        pyramidImages[0] = pyr.get(0);</span>
+
+        float x0, y0;
+<span class="fc bfc" id="L382" title="All 2 branches covered.">        for (int i = 1; i &lt; nScales; ++i) {</span>
+<span class="fc" id="L383">            pyramidImages[i] = pyr.get(i);</span>
+<span class="fc" id="L384">            x0 = (float)pyramidImages[i - 1].a.length/</span>
+                (float)pyramidImages[i].a.length;
+<span class="fc" id="L386">            y0 = (float)pyramidImages[i - 1].a[0].length/</span>
+                (float)pyramidImages[i].a[0].length;
+<span class="fc" id="L388">            scales[i] = scales[i-1] * (x0 + y0)/2.f;</span>
         }
-<span class="fc" id="L413">    }</span>
+<span class="fc" id="L390">    }</span>
   
     /**
      * @param img in col major format
@@ -423,122 +400,131 @@ public class ORB {
         // of use the ATrous b3 method and down-sampling
         //   see the upsampling code in image processing to reverse...
 
-<span class="fc" id="L426">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L403">        ImageProcessor imageProcessor = new ImageProcessor();</span>
         
-<span class="pc bpc" id="L428" title="1 of 2 branches missed.">        int dl = useSingleScale ?</span>
-<span class="nc" id="L429">            Math.min(img.getWidth(), img.getHeight()) - 1 :</span>
-<span class="fc" id="L430">            decimationLimit;</span>
+<span class="pc bpc" id="L405" title="1 of 2 branches missed.">        int dl = useSingleScale ?</span>
+<span class="nc" id="L406">            Math.min(img.getWidth(), img.getHeight()) - 1 :</span>
+<span class="fc" id="L407">            decimationLimit;</span>
         
-<span class="fc" id="L432">        List&lt;GreyscaleImage&gt; output = imageProcessor.buildPyramid2(img, dl);</span>
+<span class="fc" id="L409">        List&lt;GreyscaleImage&gt; output = imageProcessor.buildPyramid2(img, dl);</span>
 
-<span class="fc" id="L434">        List&lt;TwoDFloatArray&gt; output2 = new ArrayList&lt;TwoDFloatArray&gt;();</span>
+<span class="fc" id="L411">        List&lt;TwoDFloatArray&gt; output2 = new ArrayList&lt;TwoDFloatArray&gt;();</span>
         float[][] rowMajorImg;
         TwoDFloatArray f;
         
-<span class="fc bfc" id="L438" title="All 2 branches covered.">        for (int i = 0; i &lt; output.size(); ++i) {</span>
-<span class="fc" id="L439">            rowMajorImg = imageProcessor.copyToRowMajor(output.get(i));</span>
-<span class="fc" id="L440">            MatrixUtil.multiply(rowMajorImg, 1.f/255.f);</span>
-<span class="fc" id="L441">            f = new TwoDFloatArray(rowMajorImg);</span>
-<span class="fc" id="L442">            output2.add(f);</span>
-        }
+<span class="fc bfc" id="L415" title="All 2 branches covered.">        for (GreyscaleImage im : output) {</span>
+<span class="fc" id="L416">            rowMajorImg = imageProcessor.copyToRowMajor(im);</span>
+<span class="fc" id="L417">            MatrixUtil.multiply(rowMajorImg, 1.f/255.f);</span>
+<span class="fc" id="L418">            f = new TwoDFloatArray(rowMajorImg);</span>
+<span class="fc" id="L419">            output2.add(f);</span>
+<span class="fc" id="L420">        }</span>
 
-<span class="fc" id="L445">        return output2;</span>
+<span class="fc" id="L422">        return output2;</span>
     }
     
     protected void buildTensors() {
     
         // Standard deviation used for the Gaussian kernel, which is used as
         // weighting function for the auto-correlation matrix.
-<span class="fc" id="L452">        float sigma = SIGMA.getValue(SIGMA.ZEROPOINTFIVE);</span>
+<span class="fc" id="L429">        float sigma = SIGMA.getValue(SIGMA.ZEROPOINTFIVE);</span>
         
-<span class="fc" id="L454">        tensorComponents = new StructureTensor[scales.length];</span>
-        
-<span class="fc bfc" id="L456" title="All 2 branches covered.">        for (int i = 0; i &lt; scales.length; ++i) {</span>
+<span class="fc" id="L431">        tensorComponents = new StructureTensor[scales.length];</span>
+
+        TwoDFloatArray octaveImage;
+
+<span class="fc bfc" id="L435" title="All 2 branches covered.">        for (int i = 0; i &lt; scales.length; ++i) {</span>
             
-<span class="fc" id="L458">            TwoDFloatArray octaveImage = pyramidImages[i];</span>
-            
-<span class="fc" id="L460">            tensorComponents[i] = new StructureTensor(octaveImage.a,</span>
+<span class="fc" id="L437">            octaveImage = pyramidImages[i];</span>
+
+            // octaveImage.a is in row-major format
+<span class="fc" id="L440">            tensorComponents[i] = new StructureTensor(octaveImage.a,</span>
                 sigma, doCreateCurvatureKeyPoints);
         }
         
-<span class="fc" id="L464">    }</span>
+<span class="fc" id="L444">    }</span>
 
     private void buildHarrisImages() {
         
-<span class="fc" id="L468">        harrisResponseImages = new TwoDFloatArray[scales.length];</span>
-        
-<span class="fc bfc" id="L470" title="All 2 branches covered.">        for (int i = 0; i &lt; scales.length; ++i) {</span>
-            
-<span class="fc" id="L472">            TwoDFloatArray octaveImage = pyramidImages[i];</span>
-            
-<span class="fc" id="L474">            StructureTensor tensors = tensorComponents[i];</span>
-            
-<span class="fc" id="L476">            float[][] detA = tensors.getDeterminant();</span>
+<span class="fc" id="L448">        harrisResponseImages = new TwoDFloatArray[scales.length];</span>
 
-<span class="fc" id="L478">            float[][] traceA = tensors.getTrace();</span>
+        TwoDFloatArray octaveImage;
+        StructureTensor tensors;
+        float[][] detA;
+        float[][] traceA;
+        float[][] harrisResponse;
+
+<span class="fc bfc" id="L456" title="All 2 branches covered.">        for (int i = 0; i &lt; scales.length; ++i) {</span>
+            
+<span class="fc" id="L458">            octaveImage = pyramidImages[i];</span>
+            
+<span class="fc" id="L460">            tensors = tensorComponents[i];</span>
+            
+<span class="fc" id="L462">            detA = tensors.getDeterminant();</span>
+
+<span class="fc" id="L464">            traceA = tensors.getTrace();</span>
 
             // size is same a octaveImage
-<span class="fc" id="L481">            float[][] harrisResponse = cornerHarris(octaveImage.a, detA, traceA);</span>
+<span class="fc" id="L467">            harrisResponse = cornerHarris(octaveImage.a, detA, traceA);</span>
 
-<span class="fc" id="L483">            harrisResponseImages[i] = new TwoDFloatArray(harrisResponse);</span>
+<span class="fc" id="L469">            harrisResponseImages[i] = new TwoDFloatArray(harrisResponse);</span>
         }
-<span class="fc" id="L485">    }</span>
+<span class="fc" id="L471">    }</span>
     
     protected void debugPrint(String label, float[][] a) {
 
-<span class="nc" id="L489">        String str = MiscDebug.getPrintRowMajor(a, label);</span>
+<span class="nc" id="L475">        String str = MiscDebug.getPrintRowMajor(a, label);</span>
         
-<span class="nc" id="L491">        log.info(str);</span>
-<span class="nc" id="L492">    }</span>
+<span class="nc" id="L477">        log.info(str);</span>
+<span class="nc" id="L478">    }</span>
 
     private void debugPrint(String label, int[][] a) {
 
-<span class="nc" id="L496">        StringBuilder sb = new StringBuilder(label);</span>
-<span class="nc" id="L497">        sb.append(&quot;\n&quot;);</span>
-<span class="nc bnc" id="L498" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc" id="L499">            sb.append(Arrays.toString(a[i])).append(&quot;\n&quot;);</span>
+<span class="nc" id="L482">        StringBuilder sb = new StringBuilder(label);</span>
+<span class="nc" id="L483">        sb.append(&quot;\n&quot;);</span>
+<span class="nc bnc" id="L484" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc" id="L485">            sb.append(Arrays.toString(a[i])).append(&quot;\n&quot;);</span>
         }
 
-<span class="nc" id="L502">        log.info(sb.toString());</span>
-<span class="nc" id="L503">    }</span>
+<span class="nc" id="L488">        log.info(sb.toString());</span>
+<span class="nc" id="L489">    }</span>
 
     protected float[][] multiply(float[][] a, float[][] b) {
 
-<span class="nc" id="L507">        float[][] c = copy(a);</span>
+<span class="nc" id="L493">        float[][] c = copy(a);</span>
 
-<span class="nc bnc" id="L509" title="All 2 branches missed.">        for (int i = 0; i &lt; c.length; ++i) {</span>
-<span class="nc bnc" id="L510" title="All 2 branches missed.">            for (int j = 0; j &lt; c[0].length; ++j) {</span>
-<span class="nc" id="L511">                c[i][j] *= b[i][j];</span>
+<span class="nc bnc" id="L495" title="All 2 branches missed.">        for (int i = 0; i &lt; c.length; ++i) {</span>
+<span class="nc bnc" id="L496" title="All 2 branches missed.">            for (int j = 0; j &lt; c[0].length; ++j) {</span>
+<span class="nc" id="L497">                c[i][j] *= b[i][j];</span>
             }
         }
 
-<span class="nc" id="L515">        return c;</span>
+<span class="nc" id="L501">        return c;</span>
     }
 
     protected float[][] add(float[][] a, float[][] b) {
 
-<span class="nc" id="L520">        float[][] c = copy(a);</span>
+<span class="nc" id="L506">        float[][] c = copy(a);</span>
 
-<span class="nc bnc" id="L522" title="All 2 branches missed.">        for (int i = 0; i &lt; c.length; ++i) {</span>
-<span class="nc bnc" id="L523" title="All 2 branches missed.">            for (int j = 0; j &lt; c[0].length; ++j) {</span>
-<span class="nc" id="L524">                c[i][j] += b[i][j];</span>
+<span class="nc bnc" id="L508" title="All 2 branches missed.">        for (int i = 0; i &lt; c.length; ++i) {</span>
+<span class="nc bnc" id="L509" title="All 2 branches missed.">            for (int j = 0; j &lt; c[0].length; ++j) {</span>
+<span class="nc" id="L510">                c[i][j] += b[i][j];</span>
             }
         }
 
-<span class="nc" id="L528">        return c;</span>
+<span class="nc" id="L514">        return c;</span>
     }
 
     protected float[][] subtract(float[][] a, float[][] b) {
 
-<span class="nc" id="L533">        float[][] c = copy(a);</span>
+<span class="nc" id="L519">        float[][] c = copy(a);</span>
 
-<span class="nc bnc" id="L535" title="All 2 branches missed.">        for (int i = 0; i &lt; c.length; ++i) {</span>
-<span class="nc bnc" id="L536" title="All 2 branches missed.">            for (int j = 0; j &lt; c[0].length; ++j) {</span>
-<span class="nc" id="L537">                c[i][j] -= b[i][j];</span>
+<span class="nc bnc" id="L521" title="All 2 branches missed.">        for (int i = 0; i &lt; c.length; ++i) {</span>
+<span class="nc bnc" id="L522" title="All 2 branches missed.">            for (int j = 0; j &lt; c[0].length; ++j) {</span>
+<span class="nc" id="L523">                c[i][j] -= b[i][j];</span>
             }
         }
 
-<span class="nc" id="L541">        return c;</span>
+<span class="nc" id="L527">        return c;</span>
     }
 
     /**
@@ -550,16 +536,16 @@ public class ORB {
     */
     private void extractKeypoints() {
 
-<span class="fc" id="L553">        keypoints0List = new ArrayList&lt;TIntList&gt;();</span>
-<span class="fc" id="L554">        keypoints1List = new ArrayList&lt;TIntList&gt;();</span>
-<span class="fc" id="L555">        orientationsList = new ArrayList&lt;TDoubleList&gt;();</span>
-<span class="fc" id="L556">        harrisResponses = new ArrayList&lt;TFloatList&gt;();</span>
+<span class="fc" id="L539">        keypoints0List = new ArrayList&lt;TIntList&gt;();</span>
+<span class="fc" id="L540">        keypoints1List = new ArrayList&lt;TIntList&gt;();</span>
+<span class="fc" id="L541">        orientationsList = new ArrayList&lt;TDoubleList&gt;();</span>
+<span class="fc" id="L542">        harrisResponses = new ArrayList&lt;TFloatList&gt;();</span>
      
         // atrous keypoints if any
-<span class="fc" id="L559">        TIntList atk0 = new TIntArrayList();</span>
-<span class="fc" id="L560">        TIntList atk1 = new TIntArrayList();</span>
-<span class="fc bfc" id="L561" title="All 2 branches covered.">        if (doCreate1stATrousKeypoints) {</span>
-<span class="fc" id="L562">            extractATrousKeypoints(atk0, atk1);</span>
+<span class="fc" id="L545">        TIntList atk0 = new TIntArrayList();</span>
+<span class="fc" id="L546">        TIntList atk1 = new TIntArrayList();</span>
+<span class="fc bfc" id="L547" title="All 2 branches covered.">        if (doCreate1stATrousKeypoints) {</span>
+<span class="fc" id="L548">            extractATrousKeypoints(atk0, atk1);</span>
         }
                 
         Resp r;
@@ -573,8 +559,8 @@ public class ORB {
         float scale;
         
         // largest pyramid harris response image and tensor image size
-<span class="fc" id="L576">        int rH = harrisResponseImages[0].a.length;</span>
-<span class="fc" id="L577">        int cH = harrisResponseImages[0].a[0].length;</span>
+<span class="fc" id="L562">        int rH = harrisResponseImages[0].a.length;</span>
+<span class="fc" id="L563">        int cH = harrisResponseImages[0].a[0].length;</span>
         
         Set&lt;PairInt&gt; set;
         TIntList kp0s;
@@ -582,314 +568,321 @@ public class ORB {
         float[][] octaveImage;
         TDoubleList orientations;
         TFloatList responses;
-<span class="fc" id="L585">        int rmi = this.nKeypoints;</span>
         int len;
             
-<span class="fc bfc" id="L588" title="All 2 branches covered.">        for (int octave = 0; octave &lt; scales.length; ++octave) {</span>
+<span class="fc bfc" id="L573" title="All 2 branches covered.">        for (int octave = 0; octave &lt; scales.length; ++octave) {</span>
             // order by response and filter
             
-<span class="fc" id="L591">            scale = scales[octave];</span>
+<span class="fc" id="L576">            scale = scales[octave];</span>
             
-<span class="fc" id="L593">            r = extractKeypoints(octave);</span>
+<span class="fc" id="L578">            r = extractKeypoints(octave);</span>
 
-<span class="fc bfc" id="L595" title="All 2 branches covered.">            if (!atk0.isEmpty()) {</span>
-<span class="fc bfc" id="L596" title="All 2 branches covered.">                for (i = 0; i &lt; atk0.size(); ++i) {</span>
+<span class="fc bfc" id="L580" title="All 2 branches covered.">            if (!atk0.isEmpty()) {</span>
+<span class="fc bfc" id="L581" title="All 2 branches covered.">                for (i = 0; i &lt; atk0.size(); ++i) {</span>
                     // shrink the atrous keypoints for this octave scale
-<span class="fc" id="L598">                    c0 = Math.round((float)atk0.get(i)/scale);</span>
-<span class="fc" id="L599">                    c1 = Math.round((float)atk1.get(i)/scale);</span>
-<span class="fc" id="L600">                    r.keypoints0.add(c0);</span>
-<span class="fc" id="L601">                    r.keypoints1.add(c1);</span>
+<span class="fc" id="L583">                    c0 = Math.round((float)atk0.get(i)/scale);</span>
+<span class="fc" id="L584">                    c1 = Math.round((float)atk1.get(i)/scale);</span>
+<span class="fc" id="L585">                    r.keypoints0.add(c0);</span>
+<span class="fc" id="L586">                    r.keypoints1.add(c1);</span>
                 }
             }
 
             //mask of length orientations.size() containing a 1 or 0
             // indicating if pixels are within the image (``True``) or in the
             // border region of the image (``False``).
-<span class="fc" id="L608">            mask = filterNearBorder(pyramidImages[octave].a, r.keypoints0, r.keypoints1);</span>
+<span class="fc" id="L593">            mask = filterNearBorder(pyramidImages[octave].a, r.keypoints0, r.keypoints1);</span>
         
-<span class="fc" id="L610">            harrisResponse = harrisResponseImages[octave].a;</span>
+<span class="fc" id="L595">            harrisResponse = harrisResponseImages[octave].a;</span>
 
-<span class="fc" id="L612">            n = r.keypoints0.size();</span>
+<span class="fc" id="L597">            n = r.keypoints0.size();</span>
                         
-<span class="pc bnc" id="L614" title="All 2 branches missed.">            assert(harrisResponse.length == pyramidImages[octave].a.length);</span>
-<span class="pc bnc" id="L615" title="All 2 branches missed.">            assert(harrisResponse.length == tensorComponents[octave].getDXSquared().length);</span>
-<span class="pc bnc" id="L616" title="All 2 branches missed.">            assert(harrisResponse[0].length == pyramidImages[octave].a[0].length);</span>
-<span class="pc bnc" id="L617" title="All 2 branches missed.">            assert(harrisResponse[0].length == tensorComponents[octave].getDXSquared()[0].length);</span>
+<span class="pc bnc" id="L599" title="All 2 branches missed.">            assert(harrisResponse.length == pyramidImages[octave].a.length);</span>
+<span class="pc bnc" id="L600" title="All 2 branches missed.">            assert(harrisResponse.length == tensorComponents[octave].getDXSquared().length);</span>
+<span class="pc bnc" id="L601" title="All 2 branches missed.">            assert(harrisResponse[0].length == pyramidImages[octave].a[0].length);</span>
+<span class="pc bnc" id="L602" title="All 2 branches missed.">            assert(harrisResponse[0].length == tensorComponents[octave].getDXSquared()[0].length);</span>
             
-<span class="fc" id="L619">            scores = new float[n];</span>
-<span class="fc" id="L620">            points = new PairInt[n];</span>
-<span class="fc" id="L621">            count = 0;</span>
-<span class="fc bfc" id="L622" title="All 2 branches covered.">            for (i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L604">            scores = new float[n];</span>
+<span class="fc" id="L605">            points = new PairInt[n];</span>
+<span class="fc" id="L606">            count = 0;</span>
+<span class="fc bfc" id="L607" title="All 2 branches covered.">            for (i = 0; i &lt; n; ++i) {</span>
                 // these are in octave reference frame
-<span class="fc" id="L624">                x = r.keypoints1.get(i);</span>
-<span class="fc" id="L625">                y = r.keypoints0.get(i);</span>
-<span class="fc" id="L626">                points[count] = new PairInt(x, y);</span>
-<span class="fc" id="L627">                scores[count] = harrisResponse[y][x];</span>
-<span class="fc" id="L628">                count++;</span>
+<span class="fc" id="L609">                x = r.keypoints1.get(i);</span>
+<span class="fc" id="L610">                y = r.keypoints0.get(i);</span>
+<span class="fc" id="L611">                points[count] = new PairInt(x, y);</span>
+<span class="fc" id="L612">                scores[count] = harrisResponse[y][x];</span>
+<span class="fc" id="L613">                count++;</span>
             }
      
-<span class="fc bfc" id="L631" title="All 2 branches covered.">            if (n &gt; 0) {</span>
+<span class="pc bpc" id="L616" title="1 of 2 branches missed.">            if (n &gt; 0) {</span>
                 // the harris points are negative values.
                 //    strongest response is the smallest value (i.e. -2 is stronger than 0)
-<span class="fc" id="L634">                QuickSort.sortBy1stArg(scores, points);</span>
+<span class="fc" id="L619">                QuickSort.sortBy1stArg(scores, points);</span>
             }
         
-<span class="fc" id="L637">            kpc0s = new TIntArrayList(this.nKeypoints);</span>
-<span class="fc" id="L638">            kpc1s = new TIntArrayList(this.nKeypoints);</span>
+<span class="fc" id="L622">            kpc0s = new TIntArrayList(this.nKeypoints);</span>
+<span class="fc" id="L623">            kpc1s = new TIntArrayList(this.nKeypoints);</span>
 
-<span class="fc bfc" id="L640" title="All 2 branches covered.">            for (i = 0; i &lt; points.length; i++) {</span>
-<span class="fc" id="L641">                PairInt p = points[i];</span>
-<span class="fc" id="L642">                x = p.getX();</span>
-<span class="fc" id="L643">                y = p.getY();</span>
-<span class="fc" id="L644">                kpc1s.add(x);</span>
-<span class="fc" id="L645">                kpc0s.add(y);</span>
+<span class="fc bfc" id="L625" title="All 2 branches covered.">            for (i = 0; i &lt; points.length; i++) {</span>
+<span class="fc" id="L626">                PairInt p = points[i];</span>
+<span class="fc" id="L627">                x = p.getX();</span>
+<span class="fc" id="L628">                y = p.getY();</span>
+<span class="fc" id="L629">                kpc1s.add(x);</span>
+<span class="fc" id="L630">                kpc0s.add(y);</span>
             }
 
             // then filter
-<span class="fc" id="L649">            maskCoordinates(kpc0s, kpc1s, harrisResponse.length,</span>
+<span class="fc" id="L634">            maskCoordinates(kpc0s, kpc1s, harrisResponse.length,</span>
                 harrisResponse[0].length, 4);//8);
         
             // filter to remove redundant points when rescaled
-<span class="fc" id="L653">            set = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L654">            kp0s = new TIntArrayList(set.size());</span>
-<span class="fc" id="L655">            kp1s = new TIntArrayList(set.size());</span>
-<span class="fc bfc" id="L656" title="All 2 branches covered.">            for (i = 0; i &lt; kpc0s.size(); ++i) {</span>
+<span class="fc" id="L638">            set = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L639">            kp0s = new TIntArrayList(kpc0s.size());</span>
+<span class="fc" id="L640">            kp1s = new TIntArrayList(kpc0s.size());</span>
+<span class="fc bfc" id="L641" title="All 2 branches covered.">            for (i = 0; i &lt; kpc0s.size(); ++i) {</span>
                 // coords are in octave reference frame so expand to largest pyramid frame
                 //    for redundancy and boundary check
-<span class="fc" id="L659">                y = kpc0s.get(i);</span>
-<span class="fc" id="L660">                x = kpc1s.get(i);</span>
-<span class="fc" id="L661">                c0 = Math.round((float)y*scale);</span>
-<span class="fc" id="L662">                c1 = Math.round((float)x*scale);</span>
+<span class="fc" id="L644">                y = kpc0s.get(i);</span>
+<span class="fc" id="L645">                x = kpc1s.get(i);</span>
+<span class="fc" id="L646">                c0 = Math.round((float)y*scale);</span>
+<span class="fc" id="L647">                c1 = Math.round((float)x*scale);</span>
                 // if larger than largest pyramid image height
-<span class="pc bpc" id="L664" title="1 of 2 branches missed.">                if (c0 &gt;= rH) {</span>
-<span class="nc" id="L665">                    c0 = rH - 1;</span>
+<span class="pc bpc" id="L649" title="1 of 2 branches missed.">                if (c0 &gt;= rH) {</span>
+<span class="nc" id="L650">                    c0 = rH - 1;</span>
                 }
                 // if larger than largest pyramid image width
-<span class="pc bpc" id="L668" title="1 of 2 branches missed.">                if (c1 &gt;= cH) {</span>
-<span class="nc" id="L669">                    c1 = cH - 1;</span>
+<span class="pc bpc" id="L653" title="1 of 2 branches missed.">                if (c1 &gt;= cH) {</span>
+<span class="nc" id="L654">                    c1 = cH - 1;</span>
                 }
-<span class="fc" id="L671">                PairInt p = new PairInt(c0, c1); // y, x</span>
-<span class="fc bfc" id="L672" title="All 2 branches covered.">                if (set.contains(p)) {</span>
-<span class="fc" id="L673">                    continue;</span>
+<span class="fc" id="L656">                PairInt p = new PairInt(c0, c1); // y, x</span>
+<span class="fc bfc" id="L657" title="All 2 branches covered.">                if (set.contains(p)) {</span>
+<span class="fc" id="L658">                    continue;</span>
                 }
-<span class="fc" id="L675">                set.add(p);</span>
-<span class="fc" id="L676">                kp0s.add(y);</span>
-<span class="fc" id="L677">                kp1s.add(x);</span>
+<span class="fc" id="L660">                set.add(p);</span>
+<span class="fc" id="L661">                kp0s.add(y);</span>
+<span class="fc" id="L662">                kp1s.add(x);</span>
             }
             // let the VM reclaim the memory if it chooses:
-<span class="fc" id="L680">            set = null;</span>
-<span class="fc" id="L681">            kpc0s = null;</span>
-<span class="fc" id="L682">            kpc1s = null;</span>
+<span class="fc" id="L665">            set = null;</span>
+<span class="fc" id="L666">            kpc0s = null;</span>
+<span class="fc" id="L667">            kpc1s = null;</span>
             
             // filter for number of points if requested
-<span class="fc bfc" id="L685" title="All 2 branches covered.">            if (kp0s.size() &gt; this.nKeypoints) {</span>
-<span class="fc" id="L686">                len = kp0s.size() - this.nKeypoints;</span>
-<span class="fc" id="L687">                kp0s.remove(rmi, len);</span>
-<span class="fc" id="L688">                kp1s.remove(rmi, len);</span>
+<span class="fc bfc" id="L670" title="All 2 branches covered.">            if (kp0s.size() &gt; this.nKeypoints) {</span>
+<span class="fc" id="L671">                len = kp0s.size() - this.nKeypoints;</span>
+                // TIntList.remove(int offset, int length)
+                //          Removes length values from the list, starting at offset
+<span class="fc" id="L674">                kp0s.remove(this.nKeypoints, len);</span>
+<span class="fc" id="L675">                kp1s.remove(this.nKeypoints, len);</span>
             }
             // coords are in octave reference frame so expand to largest pyramid frame
-<span class="fc" id="L691">            octaveImage = pyramidImages[octave].a;</span>
-<span class="fc" id="L692">            orientations = calculateOrientations(octaveImage, kp0s, kp1s);</span>
+<span class="fc" id="L678">            octaveImage = pyramidImages[octave].a;</span>
+<span class="fc" id="L679">            orientations = calculateOrientations(octaveImage, kp0s, kp1s);</span>
             
-<span class="fc" id="L694">            responses = new TFloatArrayList(kp0s.size());</span>
-<span class="fc bfc" id="L695" title="All 2 branches covered.">            for (i = 0; i &lt; kp0s.size(); ++i) {</span>
-<span class="fc" id="L696">                c0 = kp0s.get(i);</span>
-<span class="fc" id="L697">                c1 = kp1s.get(i);</span>
-<span class="fc" id="L698">                responses.add(harrisResponse[c0][c1]);</span>
+<span class="fc" id="L681">            responses = new TFloatArrayList(kp0s.size());</span>
+<span class="fc bfc" id="L682" title="All 2 branches covered.">            for (i = 0; i &lt; kp0s.size(); ++i) {</span>
+<span class="fc" id="L683">                c0 = kp0s.get(i);</span>
+<span class="fc" id="L684">                c1 = kp1s.get(i);</span>
+<span class="fc" id="L685">                responses.add(harrisResponse[c0][c1]);</span>
             }
             
             // transform keypoints to full size coordinate reference frame.
-<span class="fc bfc" id="L702" title="All 2 branches covered.">            for (i = 0; i &lt; kp0s.size(); ++i) {</span>
-<span class="fc" id="L703">                c0 = Math.round(scale * kp0s.get(i));</span>
-<span class="pc bpc" id="L704" title="1 of 2 branches missed.">                if (c0 &gt;= rH) {</span>
-<span class="nc" id="L705">                    c0 = rH - 1;</span>
+<span class="fc bfc" id="L689" title="All 2 branches covered.">            for (i = 0; i &lt; kp0s.size(); ++i) {</span>
+<span class="fc" id="L690">                c0 = Math.round(scale * kp0s.get(i));</span>
+<span class="pc bpc" id="L691" title="1 of 2 branches missed.">                if (c0 &gt;= rH) {</span>
+<span class="nc" id="L692">                    c0 = rH - 1;</span>
                 }
-<span class="fc" id="L707">                kp0s.set(i, c0);</span>
+<span class="fc" id="L694">                kp0s.set(i, c0);</span>
 
-<span class="fc" id="L709">                c1 = Math.round(scale * kp1s.get(i));</span>
-<span class="pc bpc" id="L710" title="1 of 2 branches missed.">                if (c1 &gt;= cH) {</span>
-<span class="nc" id="L711">                    c1 = cH - 1;</span>
+<span class="fc" id="L696">                c1 = Math.round(scale * kp1s.get(i));</span>
+<span class="pc bpc" id="L697" title="1 of 2 branches missed.">                if (c1 &gt;= cH) {</span>
+<span class="nc" id="L698">                    c1 = cH - 1;</span>
                 }
-<span class="fc" id="L713">                kp1s.set(i, c1);</span>
+<span class="fc" id="L700">                kp1s.set(i, c1);</span>
             }
 
             // kp0s and kp1s are in coord frame of largest image
 
-<span class="fc" id="L718">            keypoints0List.add(kp0s);</span>
-<span class="fc" id="L719">            keypoints1List.add(kp1s);</span>
-<span class="fc" id="L720">            orientationsList.add(orientations);</span>
-<span class="fc" id="L721">            harrisResponses.add(responses);</span>
+<span class="fc" id="L705">            keypoints0List.add(kp0s);</span>
+<span class="fc" id="L706">            keypoints1List.add(kp1s);</span>
+<span class="fc" id="L707">            orientationsList.add(orientations);</span>
+<span class="fc" id="L708">            harrisResponses.add(responses);</span>
             
-<span class="pc bnc" id="L723" title="All 2 branches missed.">            assert(orientations.size() == kp0s.size());</span>
-<span class="pc bnc" id="L724" title="All 2 branches missed.">            assert(responses.size() == kp0s.size());</span>
-<span class="pc bnc" id="L725" title="All 2 branches missed.">            assert(kp1s.size() == kp0s.size());</span>
+<span class="pc bnc" id="L710" title="All 2 branches missed.">            assert(orientations.size() == kp0s.size());</span>
+<span class="pc bnc" id="L711" title="All 2 branches missed.">            assert(responses.size() == kp0s.size());</span>
+<span class="pc bnc" id="L712" title="All 2 branches missed.">            assert(kp1s.size() == kp0s.size());</span>
 
         } // end loop over octave
 
         // note, at this point, each octave has the limit of this.nKeypoints,
         //    but the total may be as large as scales.length*this.nKeypoints
         
-<span class="pc bnc" id="L732" title="All 2 branches missed.">        assert(pyramidImages.length == keypoints0List.size());</span>
-<span class="pc bnc" id="L733" title="All 2 branches missed.">        assert(pyramidImages.length == keypoints1List.size());</span>
-<span class="pc bnc" id="L734" title="All 2 branches missed.">        assert(pyramidImages.length == orientationsList.size());</span>
-<span class="pc bnc" id="L735" title="All 2 branches missed.">        assert(pyramidImages.length == this.harrisResponses.size());</span>
-<span class="pc bnc" id="L736" title="All 2 branches missed.">        assert(pyramidImages.length == scales.length);        </span>
-<span class="fc" id="L737">    }</span>
+<span class="pc bnc" id="L719" title="All 2 branches missed.">        assert(pyramidImages.length == keypoints0List.size());</span>
+<span class="pc bnc" id="L720" title="All 2 branches missed.">        assert(pyramidImages.length == keypoints1List.size());</span>
+<span class="pc bnc" id="L721" title="All 2 branches missed.">        assert(pyramidImages.length == orientationsList.size());</span>
+<span class="pc bnc" id="L722" title="All 2 branches missed.">        assert(pyramidImages.length == this.harrisResponses.size());</span>
+<span class="pc bnc" id="L723" title="All 2 branches missed.">        assert(pyramidImages.length == scales.length);        </span>
+<span class="fc" id="L724">    }</span>
 
     private void combineAndFilterTotal() {
         //combined into one list and sort by harris response then take first nKeypoints
                 
-<span class="fc" id="L742">        combinedKeypointList = new ArrayList&lt;PairInt&gt;();</span>
-<span class="fc" id="L743">        combinedOrientationList = new TDoubleArrayList();</span>
-<span class="fc" id="L744">        combinedHarrisResponseList = new TFloatArrayList();</span>
+<span class="fc" id="L729">        combinedKeypointList = new ArrayList&lt;PairInt&gt;();</span>
+<span class="fc" id="L730">        combinedOrientationList = new TDoubleArrayList();</span>
+<span class="fc" id="L731">        combinedHarrisResponseList = new TFloatArrayList();</span>
         
-<span class="fc bfc" id="L746" title="All 2 branches covered.">        if (descrChoice.ordinal() != DescriptorChoice.NONE.ordinal()) {</span>
-<span class="fc" id="L747">            combinedDescriptors = new Descriptors();</span>
+<span class="fc bfc" id="L733" title="All 2 branches covered.">        if (descrChoice.ordinal() != DescriptorChoice.NONE.ordinal()) {</span>
+<span class="fc" id="L734">            combinedDescriptors = new Descriptors();</span>
         }
         
-<span class="fc" id="L750">        final int nTotal = countKeypoints();</span>
+<span class="fc" id="L737">        final int nTotal = countKeypoints();</span>
         
         int octave, i;
-<span class="fc" id="L753">        int count = 0;</span>
+<span class="fc" id="L740">        int count = 0;</span>
         TFloatList h;
         
-<span class="fc bfc" id="L756" title="All 2 branches covered.">        if (nTotal &lt; this.nKeypoints) {</span>
+<span class="fc bfc" id="L743" title="All 2 branches covered.">        if (nTotal &lt; this.nKeypoints) {</span>
             //fill the arrays and return
             
-<span class="fc" id="L759">            VeryLongBitString[] combinedD = new VeryLongBitString[nTotal];</span>
+<span class="fc" id="L746">            VeryLongBitString[] combinedD = new VeryLongBitString[nTotal];</span>
             TDoubleList orList;
             TIntList kp0List, kp1List;
             Descriptors d;
             
-<span class="fc bfc" id="L764" title="All 2 branches covered.">            for (octave = 0; octave &lt; scales.length; ++octave) {</span>
-<span class="fc" id="L765">                kp0List = keypoints0List.get(octave);</span>
-<span class="fc" id="L766">                kp1List = keypoints1List.get(octave);</span>
-<span class="fc" id="L767">                orList = orientationsList.get(octave);</span>
-<span class="fc" id="L768">                h = harrisResponses.get(octave);</span>
-<span class="fc bfc" id="L769" title="All 2 branches covered.">                for (i = 0; i &lt; kp0List.size(); ++i) {</span>
-<span class="fc" id="L770">                    combinedKeypointList.add(new PairInt(kp1List.get(i), kp0List.get(i)));</span>
-<span class="fc" id="L771">                    combinedHarrisResponseList.add(h.get(i));</span>
-<span class="fc" id="L772">                    combinedOrientationList.add(orList.get(i));</span>
+<span class="fc bfc" id="L751" title="All 2 branches covered.">            for (octave = 0; octave &lt; scales.length; ++octave) {</span>
+<span class="fc" id="L752">                kp0List = keypoints0List.get(octave);</span>
+<span class="fc" id="L753">                kp1List = keypoints1List.get(octave);</span>
+<span class="fc" id="L754">                orList = orientationsList.get(octave);</span>
+<span class="fc" id="L755">                h = harrisResponses.get(octave);</span>
+<span class="fc bfc" id="L756" title="All 2 branches covered.">                for (i = 0; i &lt; kp0List.size(); ++i) {</span>
+<span class="fc" id="L757">                    combinedKeypointList.add(new PairInt(kp1List.get(i), kp0List.get(i)));</span>
+<span class="fc" id="L758">                    combinedHarrisResponseList.add(h.get(i));</span>
+<span class="fc" id="L759">                    combinedOrientationList.add(orList.get(i));</span>
                 }
             }
-<span class="fc" id="L775">            count = 0;</span>
-<span class="fc bfc" id="L776" title="All 2 branches covered.">            if (descrChoice.ordinal() != DescriptorChoice.NONE.ordinal()) {</span>
-<span class="fc bfc" id="L777" title="All 2 branches covered.">                for (octave = 0; octave &lt; scales.length; ++octave) {</span>
-<span class="fc" id="L778">                    d = descriptorsList.get(octave);</span>
-<span class="fc" id="L779">                    System.arraycopy(d.descriptors, 0, combinedD, count, d.descriptors.length);</span>
-<span class="fc" id="L780">                    count += d.descriptors.length;</span>
+<span class="fc" id="L762">            count = 0;</span>
+<span class="fc bfc" id="L763" title="All 2 branches covered.">            if (descrChoice.ordinal() != DescriptorChoice.NONE.ordinal()) {</span>
+<span class="fc bfc" id="L764" title="All 2 branches covered.">                for (octave = 0; octave &lt; scales.length; ++octave) {</span>
+<span class="fc" id="L765">                    d = descriptorsList.get(octave);</span>
+<span class="fc" id="L766">                    System.arraycopy(d.descriptors, 0, combinedD, count, d.descriptors.length);</span>
+<span class="fc" id="L767">                    count += d.descriptors.length;</span>
                 }
-<span class="fc" id="L782">                combinedDescriptors.descriptors = combinedD;</span>
-<span class="pc bnc" id="L783" title="All 2 branches missed.">                assert (combinedDescriptors.descriptors.length == nTotal);</span>
+<span class="fc" id="L769">                combinedDescriptors.descriptors = combinedD;</span>
+<span class="pc bnc" id="L770" title="All 2 branches missed.">                assert (combinedDescriptors.descriptors.length == nTotal);</span>
             }
-<span class="pc bnc" id="L785" title="All 2 branches missed.">            assert(combinedKeypointList.size() == nTotal);</span>
-<span class="pc bnc" id="L786" title="All 2 branches missed.">            assert (combinedOrientationList.size() == nTotal);</span>
-<span class="pc bnc" id="L787" title="All 2 branches missed.">            assert (combinedHarrisResponseList.size() == nTotal);</span>
+<span class="pc bnc" id="L772" title="All 2 branches missed.">            assert(combinedKeypointList.size() == nTotal);</span>
+<span class="pc bnc" id="L773" title="All 2 branches missed.">            assert (combinedOrientationList.size() == nTotal);</span>
+<span class="pc bnc" id="L774" title="All 2 branches missed.">            assert (combinedHarrisResponseList.size() == nTotal);</span>
 
-<span class="fc" id="L789">            return;</span>
+<span class="fc" id="L776">            return;</span>
         }
+
+        // else sort and keep the top nKeypoints
+
+        //TODO: consider the filtering that went into each octave and apply similar
+        // here over the combined keypoint list as there are repeated keypoints and
+        // some keypoints which are very near several other.
     
-<span class="fc" id="L792">        PairInt[] idxs00 = new PairInt[nTotal];</span>
-<span class="fc" id="L793">        int[] idxs0 = new int[nTotal];</span>
+<span class="fc" id="L785">        PairInt[] idxs00 = new PairInt[nTotal];</span>
+<span class="fc" id="L786">        int[] idxs0 = new int[nTotal];</span>
         
-<span class="fc" id="L795">        count = 0;</span>
-<span class="fc bfc" id="L796" title="All 2 branches covered.">        for (octave = 0; octave &lt; scales.length; ++octave) {</span>
-<span class="fc" id="L797">            h = harrisResponses.get(octave);</span>
-<span class="fc bfc" id="L798" title="All 2 branches covered.">            for (i = 0; i &lt; h.size(); ++i) {</span>
-<span class="fc" id="L799">                idxs00[count] = new PairInt(octave, i);</span>
-<span class="fc" id="L800">                idxs0[count] = count;</span>
-<span class="fc" id="L801">                count++;</span>
-<span class="fc" id="L802">                combinedHarrisResponseList.add(h.get(i));</span>
+<span class="fc" id="L788">        count = 0;</span>
+<span class="fc bfc" id="L789" title="All 2 branches covered.">        for (octave = 0; octave &lt; scales.length; ++octave) {</span>
+<span class="fc" id="L790">            h = harrisResponses.get(octave);</span>
+<span class="fc bfc" id="L791" title="All 2 branches covered.">            for (i = 0; i &lt; h.size(); ++i) {</span>
+<span class="fc" id="L792">                idxs00[count] = new PairInt(octave, i);</span>
+<span class="fc" id="L793">                idxs0[count] = count;</span>
+<span class="fc" id="L794">                count++;</span>
+<span class="fc" id="L795">                combinedHarrisResponseList.add(h.get(i));</span>
             }
         }
         
-<span class="fc" id="L806">        QuickSort.sortBy1stArg(combinedHarrisResponseList, idxs0);</span>
+<span class="fc" id="L799">        QuickSort.sortBy1stArg(combinedHarrisResponseList, idxs0);</span>
         
-<span class="fc" id="L808">        VeryLongBitString[] combinedD = new VeryLongBitString[this.nKeypoints];</span>
+<span class="fc" id="L801">        VeryLongBitString[] combinedD = new VeryLongBitString[this.nKeypoints];</span>
         int idxOctave, idxList, idx0;
         PairInt p;
         
-<span class="fc bfc" id="L812" title="All 2 branches covered.">        for (i = 0; i &lt; this.nKeypoints; ++i) {</span>
-<span class="fc" id="L813">            idx0 = idxs0[i];</span>
-<span class="fc" id="L814">            idxOctave = idxs00[idx0].getX();</span>
-<span class="fc" id="L815">            idxList = idxs00[idx0].getY();</span>
+<span class="fc bfc" id="L805" title="All 2 branches covered.">        for (i = 0; i &lt; this.nKeypoints; ++i) {</span>
+<span class="fc" id="L806">            idx0 = idxs0[i];</span>
+<span class="fc" id="L807">            idxOctave = idxs00[idx0].getX();</span>
+<span class="fc" id="L808">            idxList = idxs00[idx0].getY();</span>
             
-<span class="fc" id="L817">            p = new PairInt(keypoints1List.get(idxOctave).get(idxList),</span>
-<span class="fc" id="L818">                keypoints0List.get(idxOctave).get(idxList));</span>
-<span class="fc" id="L819">            combinedKeypointList.add(p);</span>
+<span class="fc" id="L810">            p = new PairInt(keypoints1List.get(idxOctave).get(idxList),</span>
+<span class="fc" id="L811">                keypoints0List.get(idxOctave).get(idxList));</span>
+<span class="fc" id="L812">            combinedKeypointList.add(p);</span>
             
-<span class="fc" id="L821">            combinedOrientationList.add(this.orientationsList.get(idxOctave).get(idxList));            </span>
+<span class="fc" id="L814">            combinedOrientationList.add(this.orientationsList.get(idxOctave).get(idxList));            </span>
         }
-<span class="fc bfc" id="L823" title="All 2 branches covered.">        if (descrChoice.ordinal() != DescriptorChoice.NONE.ordinal()) {</span>
-<span class="fc" id="L824">            count = 0;</span>
-<span class="fc bfc" id="L825" title="All 2 branches covered.">            for (i = 0; i &lt; this.nKeypoints; ++i) {</span>
-<span class="fc" id="L826">                idx0 = idxs0[i];</span>
-<span class="fc" id="L827">                idxOctave = idxs00[idx0].getX();</span>
-<span class="fc" id="L828">                idxList = idxs00[idx0].getY();</span>
+<span class="fc bfc" id="L816" title="All 2 branches covered.">        if (descrChoice.ordinal() != DescriptorChoice.NONE.ordinal()) {</span>
+<span class="fc" id="L817">            count = 0;</span>
+<span class="fc bfc" id="L818" title="All 2 branches covered.">            for (i = 0; i &lt; this.nKeypoints; ++i) {</span>
+<span class="fc" id="L819">                idx0 = idxs0[i];</span>
+<span class="fc" id="L820">                idxOctave = idxs00[idx0].getX();</span>
+<span class="fc" id="L821">                idxList = idxs00[idx0].getY();</span>
                 // this is the descriptor for one keypoint
-<span class="fc" id="L830">                combinedD[count] = descriptorsList.get(idxOctave).descriptors[idxList];</span>
-<span class="fc" id="L831">                count++;</span>
+<span class="fc" id="L823">                combinedD[count] = descriptorsList.get(idxOctave).descriptors[idxList];</span>
+<span class="fc" id="L824">                count++;</span>
             }
-<span class="fc" id="L833">            combinedDescriptors.descriptors = combinedD;</span>
-<span class="pc bnc" id="L834" title="All 2 branches missed.">            assert(combinedDescriptors.descriptors.length == this.nKeypoints);</span>
+<span class="fc" id="L826">            combinedDescriptors.descriptors = combinedD;</span>
+<span class="pc bnc" id="L827" title="All 2 branches missed.">            assert(combinedDescriptors.descriptors.length == this.nKeypoints);</span>
         }
         
-<span class="fc" id="L837">        combinedHarrisResponseList.remove(this.nKeypoints, nTotal - this.nKeypoints);</span>
+<span class="fc" id="L830">        combinedHarrisResponseList.remove(this.nKeypoints, nTotal - this.nKeypoints);</span>
         
-<span class="pc bnc" id="L839" title="All 2 branches missed.">        assert(combinedKeypointList.size() == this.nKeypoints);</span>
-<span class="pc bnc" id="L840" title="All 2 branches missed.">        assert(combinedOrientationList.size() == this.nKeypoints);</span>
-<span class="pc bnc" id="L841" title="All 2 branches missed.">        assert(combinedHarrisResponseList.size() == this.nKeypoints);</span>
-<span class="fc" id="L842">    }</span>
+<span class="pc bnc" id="L832" title="All 2 branches missed.">        assert(combinedKeypointList.size() == this.nKeypoints);</span>
+<span class="pc bnc" id="L833" title="All 2 branches missed.">        assert(combinedOrientationList.size() == this.nKeypoints);</span>
+<span class="pc bnc" id="L834" title="All 2 branches missed.">        assert(combinedHarrisResponseList.size() == this.nKeypoints);</span>
+<span class="fc" id="L835">    }</span>
 
     private void extractDescriptors() {
 
-<span class="fc bfc" id="L846" title="All 2 branches covered.">        if (descrChoice.equals(DescriptorChoice.NONE)) {</span>
-<span class="fc" id="L847">            return;</span>
+<span class="fc bfc" id="L839" title="All 2 branches covered.">        if (descrChoice.equals(DescriptorChoice.NONE)) {</span>
+<span class="fc" id="L840">            return;</span>
         }
         
-<span class="fc" id="L850">        int nScales = scales.length;</span>
+<span class="fc" id="L843">        int nScales = scales.length;</span>
         
-<span class="fc" id="L852">        descriptorsList = new ArrayList&lt;Descriptors&gt;(nScales);</span>
+<span class="fc" id="L845">        descriptorsList = new ArrayList&lt;Descriptors&gt;(nScales);</span>
     
         TIntList kp0;
         TIntList kp1;
         TDoubleList or;
-<span class="fc bfc" id="L857" title="All 2 branches covered.">        for (int i = 0; i &lt; nScales; ++i) {</span>
+<span class="fc bfc" id="L850" title="All 2 branches covered.">        for (int i = 0; i &lt; nScales; ++i) {</span>
 
-<span class="fc" id="L859">            float[][] octaveImage = pyramidImages[i].a;</span>
+<span class="fc" id="L852">            float[][] octaveImage = pyramidImages[i].a;</span>
 
-<span class="fc" id="L861">            kp0 = this.keypoints0List.get(i);</span>
-<span class="fc" id="L862">            kp1 = this.keypoints1List.get(i);</span>
-<span class="fc" id="L863">            or = this.orientationsList.get(i);</span>
+<span class="fc" id="L854">            kp0 = this.keypoints0List.get(i);</span>
+<span class="fc" id="L855">            kp1 = this.keypoints1List.get(i);</span>
+<span class="fc" id="L856">            or = this.orientationsList.get(i);</span>
 
             // result contains descriptors and mask.
             // also, modified by mask are the keypoints and orientations
-<span class="fc" id="L867">            Descriptors desc = extractOctaveDescriptor(octaveImage, kp0, kp1, or,</span>
+<span class="fc" id="L860">            Descriptors desc = extractOctaveDescriptor(octaveImage, kp0, kp1, or,</span>
                 scales[i]);
 
-<span class="fc" id="L870">            descriptorsList.add(desc);</span>
+<span class="fc" id="L863">            descriptorsList.add(desc);</span>
         }
-<span class="fc" id="L872">    }</span>
+<span class="fc" id="L865">    }</span>
 
     private int countKeypoints() {
-<span class="fc" id="L875">        int n = 0;</span>
-<span class="fc bfc" id="L876" title="All 2 branches covered.">        for (TIntList kp0 : keypoints0List) {</span>
-<span class="fc" id="L877">            n += kp0.size();</span>
-<span class="fc" id="L878">        }</span>
-<span class="fc" id="L879">        return n;</span>
+<span class="fc" id="L868">        int n = 0;</span>
+<span class="fc bfc" id="L869" title="All 2 branches covered.">        for (TIntList kp0 : keypoints0List) {</span>
+<span class="fc" id="L870">            n += kp0.size();</span>
+<span class="fc" id="L871">        }</span>
+<span class="fc" id="L872">        return n;</span>
     }
 
     private float[][] copy(float[][] a) {
 
-<span class="nc" id="L884">        int n1 = a.length;</span>
-<span class="nc" id="L885">        int n2 = a[0].length;</span>
+<span class="nc" id="L877">        int n1 = a.length;</span>
+<span class="nc" id="L878">        int n2 = a[0].length;</span>
 
-<span class="nc" id="L887">        float[][] out = new float[n1][n2];</span>
-<span class="nc bnc" id="L888" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="nc" id="L889">            out[i] = Arrays.copyOf(a[i], a[i].length);</span>
+<span class="nc" id="L880">        float[][] out = new float[n1][n2];</span>
+<span class="nc bnc" id="L881" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="nc" id="L882">            out[i] = Arrays.copyOf(a[i], a[i].length);</span>
         }
 
-<span class="nc" id="L892">        return out;</span>
+<span class="nc" id="L885">        return out;</span>
     }
 
     protected class Resp {
@@ -908,41 +901,41 @@ public class ORB {
      * adapted from
      * https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/orb.py
      *
-     * @param octave
+     * @param octave scale
      * @return
      */
     private Resp extractKeypoints(int octave) {
 
-<span class="fc" id="L916">        float[][] octaveImage = pyramidImages[octave].a;</span>
+<span class="fc" id="L909">        float[][] octaveImage = pyramidImages[octave].a;</span>
         
-<span class="fc" id="L918">        float scale = scales[octave];</span>
+<span class="fc" id="L911">        float scale = scales[octave];</span>
         
-<span class="fc" id="L920">        StructureTensor tensors = tensorComponents[octave];</span>
+<span class="fc" id="L913">        StructureTensor tensors = tensorComponents[octave];</span>
         
-<span class="fc" id="L922">        float[][] fastResponse = cornerFast(octaveImage, fastN, fastThreshold);</span>
+<span class="fc" id="L915">        float[][] fastResponse = cornerFast(octaveImage, fastN, fastThreshold);</span>
 
-<span class="fc" id="L924">        int nRows = fastResponse.length;</span>
-<span class="fc" id="L925">        int nCols = fastResponse[0].length;</span>
+<span class="fc" id="L917">        int nRows = fastResponse.length;</span>
+<span class="fc" id="L918">        int nCols = fastResponse[0].length;</span>
 
-<span class="fc" id="L927">        TIntList keypoints0 = new TIntArrayList();</span>
-<span class="fc" id="L928">        TIntList keypoints1 = new TIntArrayList();</span>
+<span class="fc" id="L920">        TIntList keypoints0 = new TIntArrayList();</span>
+<span class="fc" id="L921">        TIntList keypoints1 = new TIntArrayList();</span>
  
         // list of format [row, col, ...] of filtered maxima ordered by intensity
-<span class="fc" id="L931">        cornerPeaks(fastResponse, 1, keypoints0, keypoints1);</span>
-<span class="pc bpc" id="L932" title="1 of 2 branches missed.">        if (keypoints0.isEmpty()) {</span>
-<span class="nc" id="L933">            Resp r2 = new Resp();</span>
-<span class="nc" id="L934">            r2.keypoints0 = keypoints0;</span>
-<span class="nc" id="L935">            r2.keypoints1 = keypoints1;</span>
-<span class="nc" id="L936">            return r2;</span>
+<span class="fc" id="L924">        cornerPeaks(fastResponse, 1, keypoints0, keypoints1);</span>
+<span class="pc bpc" id="L925" title="1 of 2 branches missed.">        if (keypoints0.isEmpty()) {</span>
+<span class="nc" id="L926">            Resp r2 = new Resp();</span>
+<span class="nc" id="L927">            r2.keypoints0 = keypoints0;</span>
+<span class="nc" id="L928">            r2.keypoints1 = keypoints1;</span>
+<span class="nc" id="L929">            return r2;</span>
         }
         
-<span class="fc" id="L939">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L932">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
-<span class="fc bfc" id="L941" title="All 2 branches covered.">        if (doCreate1stDerivKeypoints) {</span>
+<span class="fc bfc" id="L934" title="All 2 branches covered.">        if (doCreate1stDerivKeypoints) {</span>
 
-<span class="fc" id="L943">            float hLimit = 0.01f;//0.09f;</span>
+<span class="fc" id="L936">            float hLimit = 0.01f;//0.09f;</span>
 
-<span class="fc" id="L945">            imageProcessor.createFirstDerivKeyPoints(</span>
+<span class="fc" id="L938">            imageProcessor.createFirstDerivKeyPoints(</span>
                 tensors, keypoints0, keypoints1, hLimit);
             
             /*try {
@@ -974,7 +967,7 @@ public class ORB {
             }*/
         }
 
-<span class="pc bpc" id="L977" title="1 of 2 branches missed.">        if (doCreateCurvatureKeyPoints) {</span>
+<span class="pc bpc" id="L970" title="1 of 2 branches missed.">        if (doCreateCurvatureKeyPoints) {</span>
 
             // usually, only create these points for points on an edge.
             // wanting the min and max of curvature,
@@ -984,7 +977,7 @@ public class ORB {
             // 2 times that of the preceding or proceeding minima.
 
             //default thresh is 0.01f
-<span class="nc" id="L987">            imageProcessor.createCurvatureKeyPoints(tensors, </span>
+<span class="nc" id="L980">            imageProcessor.createCurvatureKeyPoints(tensors, </span>
                 keypoints0, keypoints1, curvatureThresh);
 
             /*try {
@@ -1017,30 +1010,30 @@ public class ORB {
         }
            
         // remove redundant keypoints
-<span class="fc" id="L1020">        Set&lt;PairInt&gt; exists = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1013">        Set&lt;PairInt&gt; exists = new HashSet&lt;PairInt&gt;();</span>
         PairInt p;
-<span class="fc bfc" id="L1022" title="All 2 branches covered.">        for (int i = (keypoints0.size() - 1); i &gt; -1; --i) {</span>
-<span class="fc" id="L1023">            p = new PairInt(keypoints0.get(i), keypoints1.get(i));</span>
-<span class="pc bpc" id="L1024" title="1 of 2 branches missed.">            if (exists.contains(p)) {</span>
-<span class="nc" id="L1025">                keypoints0.removeAt(i);</span>
-<span class="nc" id="L1026">                keypoints1.removeAt(i);</span>
+<span class="fc bfc" id="L1015" title="All 2 branches covered.">        for (int i = (keypoints0.size() - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L1016">            p = new PairInt(keypoints0.get(i), keypoints1.get(i));</span>
+<span class="pc bpc" id="L1017" title="1 of 2 branches missed.">            if (exists.contains(p)) {</span>
+<span class="nc" id="L1018">                keypoints0.removeAt(i);</span>
+<span class="nc" id="L1019">                keypoints1.removeAt(i);</span>
             } else {
-<span class="fc" id="L1028">                exists.add(p);</span>
+<span class="fc" id="L1021">                exists.add(p);</span>
             }
         }
                
         // size is same a octaveImage
-<span class="fc" id="L1033">        float[][] harrisResponse = harrisResponseImages[octave].a;</span>
+<span class="fc" id="L1026">        float[][] harrisResponse = harrisResponseImages[octave].a;</span>
 
         // --- harris corners from response image ----
         
-<span class="fc" id="L1037">        imageProcessor.peakLocalMax(harrisResponse, </span>
+<span class="fc" id="L1030">        imageProcessor.peakLocalMax(harrisResponse, </span>
             1, 0.1f,
             true, keypoints0, keypoints1);
 
-<span class="fc" id="L1041">        Resp r2 = new Resp();</span>
-<span class="fc" id="L1042">        r2.keypoints0 = keypoints0;</span>
-<span class="fc" id="L1043">        r2.keypoints1 = keypoints1;</span>
+<span class="fc" id="L1034">        Resp r2 = new Resp();</span>
+<span class="fc" id="L1035">        r2.keypoints0 = keypoints0;</span>
+<span class="fc" id="L1036">        r2.keypoints1 = keypoints1;</span>
         
         /*{//DEBUG
             Image dbg = new Image(harrisResponse[0].length,
@@ -1071,7 +1064,7 @@ public class ORB {
                 octave);
         }*/
         
-<span class="fc" id="L1074">        return r2;</span>
+<span class="fc" id="L1067">        return r2;</span>
     }
 
     /**
@@ -1111,10 +1104,10 @@ public class ORB {
      */
     protected float[][] cornerFast(final float[][] img, final int n, final float threshold) {
 
-<span class="pc bnc" id="L1114" title="All 2 branches missed.">        assert(n == fastN);</span>
+<span class="pc bnc" id="L1107" title="All 2 branches missed.">        assert(n == fastN);</span>
 
-<span class="fc" id="L1116">        int nRows = img.length;</span>
-<span class="fc" id="L1117">        int nCols = img[0].length;</span>
+<span class="fc" id="L1109">        int nRows = img.length;</span>
+<span class="fc" id="L1110">        int nCols = img[0].length;</span>
 
         int i, j, k;
 
@@ -1122,69 +1115,69 @@ public class ORB {
         float curr_pixel;
         float lower_threshold, upper_threshold;
 
-<span class="fc" id="L1125">        float[][] cornerResponse = new float[nRows][nCols];</span>
-<span class="fc bfc" id="L1126" title="All 2 branches covered.">        for (i = 0; i &lt; nRows; ++i) {</span>
-<span class="fc" id="L1127">            cornerResponse[i] = new float[nCols];</span>
+<span class="fc" id="L1118">        float[][] cornerResponse = new float[nRows][nCols];</span>
+<span class="fc bfc" id="L1119" title="All 2 branches covered.">        for (i = 0; i &lt; nRows; ++i) {</span>
+<span class="fc" id="L1120">            cornerResponse[i] = new float[nCols];</span>
         }
 
-<span class="fc" id="L1130">        int[] rp = new int[]{0, 1, 2, 3, 3, 3, 2, 1, 0, -1, -2, -3, -3, -3, -2, -1};</span>
-<span class="fc" id="L1131">        int[] cp = new int[]{3, 3, 2, 1, 0, -1, -2, -3, -3, -3, -2, -1, 0, 1, 2, 3};</span>
-<span class="fc" id="L1132">        char[] bins = new char[16];</span>
-<span class="fc" id="L1133">        float[] circleIntensities = new float[16];</span>
+<span class="fc" id="L1123">        int[] rp = new int[]{0, 1, 2, 3, 3, 3, 2, 1, 0, -1, -2, -3, -3, -3, -2, -1};</span>
+<span class="fc" id="L1124">        int[] cp = new int[]{3, 3, 2, 1, 0, -1, -2, -3, -3, -3, -2, -1, 0, 1, 2, 3};</span>
+<span class="fc" id="L1125">        char[] bins = new char[16];</span>
+<span class="fc" id="L1126">        float[] circleIntensities = new float[16];</span>
         float currResponse;
 
-<span class="fc bfc" id="L1136" title="All 2 branches covered.">        for (i = 3; i &lt; (nRows - 3); ++i) {</span>
-<span class="fc bfc" id="L1137" title="All 2 branches covered.">            for (j = 3; j &lt; (nCols - 3); ++j) {</span>
-<span class="fc" id="L1138">                curr_pixel = img[i][j];</span>
-<span class="fc" id="L1139">                lower_threshold = curr_pixel - threshold;</span>
-<span class="fc" id="L1140">                upper_threshold = curr_pixel + threshold;</span>
+<span class="fc bfc" id="L1129" title="All 2 branches covered.">        for (i = 3; i &lt; (nRows - 3); ++i) {</span>
+<span class="fc bfc" id="L1130" title="All 2 branches covered.">            for (j = 3; j &lt; (nCols - 3); ++j) {</span>
+<span class="fc" id="L1131">                curr_pixel = img[i][j];</span>
+<span class="fc" id="L1132">                lower_threshold = curr_pixel - threshold;</span>
+<span class="fc" id="L1133">                upper_threshold = curr_pixel + threshold;</span>
 
-<span class="fc bfc" id="L1142" title="All 2 branches covered.">                for (k = 0; k &lt; 16; ++k) {</span>
-<span class="fc" id="L1143">                    circleIntensities[k] = img[i + rp[k]][j + cp[k]];</span>
-<span class="fc bfc" id="L1144" title="All 2 branches covered.">                    if (circleIntensities[k] &gt; upper_threshold) {</span>
+<span class="fc bfc" id="L1135" title="All 2 branches covered.">                for (k = 0; k &lt; 16; ++k) {</span>
+<span class="fc" id="L1136">                    circleIntensities[k] = img[i + rp[k]][j + cp[k]];</span>
+<span class="fc bfc" id="L1137" title="All 2 branches covered.">                    if (circleIntensities[k] &gt; upper_threshold) {</span>
                         //# Brighter pixel
-<span class="fc" id="L1146">                        bins[k] = 'b';</span>
-<span class="fc bfc" id="L1147" title="All 2 branches covered.">                    } else if (circleIntensities[k] &lt; lower_threshold) {</span>
+<span class="fc" id="L1139">                        bins[k] = 'b';</span>
+<span class="fc bfc" id="L1140" title="All 2 branches covered.">                    } else if (circleIntensities[k] &lt; lower_threshold) {</span>
                         //# Darker pixel
-<span class="fc" id="L1149">                        bins[k] = 'd';</span>
+<span class="fc" id="L1142">                        bins[k] = 'd';</span>
                     } else {
                         //# Similar pixel
-<span class="fc" id="L1152">                        bins[k] = 's';</span>
+<span class="fc" id="L1145">                        bins[k] = 's';</span>
                     }
                 }
                 //# High speed test for n &gt;= 12
-<span class="pc bpc" id="L1156" title="1 of 2 branches missed.">                if (n &gt;= 12) {</span>
-<span class="nc" id="L1157">                    speed_sum_b = 0;</span>
-<span class="nc" id="L1158">                    speed_sum_d = 0;</span>
-<span class="nc bnc" id="L1159" title="All 2 branches missed.">                    for (k = 0; k &lt; 16; k += 4) {</span>
-<span class="nc bnc" id="L1160" title="All 2 branches missed.">                        if (bins[k] == 'b') {</span>
-<span class="nc" id="L1161">                            speed_sum_b += 1;</span>
-<span class="nc bnc" id="L1162" title="All 2 branches missed.">                        } else if (bins[k] == 'd') {</span>
-<span class="nc" id="L1163">                            speed_sum_d += 1;</span>
+<span class="pc bpc" id="L1149" title="1 of 2 branches missed.">                if (n &gt;= 12) {</span>
+<span class="nc" id="L1150">                    speed_sum_b = 0;</span>
+<span class="nc" id="L1151">                    speed_sum_d = 0;</span>
+<span class="nc bnc" id="L1152" title="All 2 branches missed.">                    for (k = 0; k &lt; 16; k += 4) {</span>
+<span class="nc bnc" id="L1153" title="All 2 branches missed.">                        if (bins[k] == 'b') {</span>
+<span class="nc" id="L1154">                            speed_sum_b += 1;</span>
+<span class="nc bnc" id="L1155" title="All 2 branches missed.">                        } else if (bins[k] == 'd') {</span>
+<span class="nc" id="L1156">                            speed_sum_d += 1;</span>
                         }
                     }
-<span class="nc bnc" id="L1166" title="All 4 branches missed.">                    if ((speed_sum_d &lt; 3) &amp;&amp; (speed_sum_b &lt; 3)) {</span>
-<span class="nc" id="L1167">                        continue;</span>
+<span class="nc bnc" id="L1159" title="All 4 branches missed.">                    if ((speed_sum_d &lt; 3) &amp;&amp; (speed_sum_b &lt; 3)) {</span>
+<span class="nc" id="L1160">                        continue;</span>
                     }
                 }
 
                 //# Test for bright pixels
-<span class="fc" id="L1172">                currResponse = _corner_fast_response(curr_pixel,</span>
+<span class="fc" id="L1165">                currResponse = _corner_fast_response(curr_pixel,</span>
                     circleIntensities, bins, 'b', n);
 
                 //# Test for dark pixels
-<span class="fc bfc" id="L1176" title="All 2 branches covered.">                if (currResponse == 0) {</span>
-<span class="fc" id="L1177">                    currResponse = _corner_fast_response(curr_pixel,</span>
+<span class="fc bfc" id="L1169" title="All 2 branches covered.">                if (currResponse == 0) {</span>
+<span class="fc" id="L1170">                    currResponse = _corner_fast_response(curr_pixel,</span>
                         circleIntensities, bins, 'd', n);
                 }
 
-<span class="fc bfc" id="L1181" title="All 2 branches covered.">                if (currResponse &gt; 0) {</span>
-<span class="fc" id="L1182">                    cornerResponse[i][j] = currResponse;</span>
+<span class="fc bfc" id="L1174" title="All 2 branches covered.">                if (currResponse &gt; 0) {</span>
+<span class="fc" id="L1175">                    cornerResponse[i][j] = currResponse;</span>
                 }
             }
         }
 
-<span class="fc" id="L1187">        return cornerResponse;</span>
+<span class="fc" id="L1180">        return cornerResponse;</span>
     }
 
     /**
@@ -1200,90 +1193,90 @@ public class ORB {
     private float _corner_fast_response(final float curr_pixel,
         float[] circleIntensities, char[] bins, final char state, final int n) {
 
-<span class="fc" id="L1203">        int consecutiveCount = 0;</span>
+<span class="fc" id="L1196">        int consecutiveCount = 0;</span>
         float currResponse;
         int l, m;
-<span class="fc bfc" id="L1206" title="All 2 branches covered.">        for (l = 0; l &lt; (15 + n); ++l) {</span>
-<span class="fc bfc" id="L1207" title="All 2 branches covered.">            if (bins[l % 16] == state) {</span>
-<span class="fc" id="L1208">                consecutiveCount += 1;</span>
-<span class="fc bfc" id="L1209" title="All 2 branches covered.">                if (consecutiveCount == n) {</span>
-<span class="fc" id="L1210">                    currResponse = 0;</span>
-<span class="fc bfc" id="L1211" title="All 2 branches covered.">                    for (m = 0; m &lt; 16; ++m) {</span>
-<span class="fc" id="L1212">                        currResponse += Math.abs(circleIntensities[m] - curr_pixel);</span>
+<span class="fc bfc" id="L1199" title="All 2 branches covered.">        for (l = 0; l &lt; (15 + n); ++l) {</span>
+<span class="fc bfc" id="L1200" title="All 2 branches covered.">            if (bins[l % 16] == state) {</span>
+<span class="fc" id="L1201">                consecutiveCount += 1;</span>
+<span class="fc bfc" id="L1202" title="All 2 branches covered.">                if (consecutiveCount == n) {</span>
+<span class="fc" id="L1203">                    currResponse = 0;</span>
+<span class="fc bfc" id="L1204" title="All 2 branches covered.">                    for (m = 0; m &lt; 16; ++m) {</span>
+<span class="fc" id="L1205">                        currResponse += Math.abs(circleIntensities[m] - curr_pixel);</span>
                     }
-<span class="fc" id="L1214">                    return currResponse;</span>
+<span class="fc" id="L1207">                    return currResponse;</span>
                 }
             } else {
-<span class="fc" id="L1217">                consecutiveCount = 0;</span>
+<span class="fc" id="L1210">                consecutiveCount = 0;</span>
             }
         }
 
-<span class="fc" id="L1221">        return 0;</span>
+<span class="fc" id="L1214">        return 0;</span>
     }
 
     private void maskCoordinates(TIntList keypoints0, TIntList keypoints1,
         int nRows, int nCols, int maskRadius) {
 
-<span class="pc bnc" id="L1227" title="All 2 branches missed.">        assert(keypoints0.size() == keypoints1.size());</span>
+<span class="pc bnc" id="L1220" title="All 2 branches missed.">        assert(keypoints0.size() == keypoints1.size());</span>
 
-<span class="fc" id="L1229">        TIntSet peaks = new TIntHashSet();</span>
+<span class="fc" id="L1222">        TIntSet peaks = new TIntHashSet();</span>
 
         /* making single pixel index out of coordinates:
         (row * width) + col
         pixIdxs[count] = (j * nRows) + i;  this is consistent with Image.java for plotting 
         */
+<span class="fc bfc" id="L1228" title="All 2 branches covered.">        for (int i = 0; i &lt; keypoints0.size(); ++i) {</span>
+<span class="fc" id="L1229">            int ii = keypoints0.get(i);//row</span>
+<span class="fc" id="L1230">            int jj = keypoints1.get(i);//col</span>
+<span class="fc" id="L1231">            int pixIdx = (ii * nRows) + jj;</span>
+<span class="fc" id="L1232">            peaks.add(pixIdx);</span>
+        }
+
 <span class="fc bfc" id="L1235" title="All 2 branches covered.">        for (int i = 0; i &lt; keypoints0.size(); ++i) {</span>
-<span class="fc" id="L1236">            int ii = keypoints0.get(i);//row</span>
-<span class="fc" id="L1237">            int jj = keypoints1.get(i);//col</span>
+<span class="fc" id="L1236">            int ii = keypoints0.get(i); //row</span>
+<span class="fc" id="L1237">            int jj = keypoints1.get(i); //col</span>
 <span class="fc" id="L1238">            int pixIdx = (ii * nRows) + jj;</span>
-<span class="fc" id="L1239">            peaks.add(pixIdx);</span>
-        }
-
-<span class="fc bfc" id="L1242" title="All 2 branches covered.">        for (int i = 0; i &lt; keypoints0.size(); ++i) {</span>
-<span class="fc" id="L1243">            int ii = keypoints0.get(i); //row</span>
-<span class="fc" id="L1244">            int jj = keypoints1.get(i); //col</span>
-<span class="fc" id="L1245">            int pixIdx = (ii * nRows) + jj;</span>
-<span class="fc bfc" id="L1246" title="All 2 branches covered.">            if (!peaks.contains(pixIdx)) {</span>
-<span class="fc" id="L1247">                continue;</span>
+<span class="fc bfc" id="L1239" title="All 2 branches covered.">            if (!peaks.contains(pixIdx)) {</span>
+<span class="fc" id="L1240">                continue;</span>
             }
-<span class="fc bfc" id="L1249" title="All 2 branches covered.">            for (int k0 = ii - maskRadius; k0 &lt;= (ii + maskRadius); ++k0) {</span>
-<span class="pc bpc" id="L1250" title="2 of 4 branches missed.">                if ((k0 &lt; 0) || (k0 &gt; (nRows - 1))) {</span>
-<span class="nc" id="L1251">                    continue;</span>
+<span class="fc bfc" id="L1242" title="All 2 branches covered.">            for (int k0 = ii - maskRadius; k0 &lt;= (ii + maskRadius); ++k0) {</span>
+<span class="fc bfc" id="L1243" title="All 4 branches covered.">                if ((k0 &lt; 0) || (k0 &gt; (nRows - 1))) {</span>
+<span class="fc" id="L1244">                    continue;</span>
                 }
-<span class="fc bfc" id="L1253" title="All 2 branches covered.">                for (int k1 = jj - maskRadius; k1 &lt;= (jj + maskRadius); ++k1) {</span>
-<span class="pc bpc" id="L1254" title="2 of 8 branches missed.">                    if ((k1 &lt; 0) || (k1 &gt; (nCols - 1)) || (k0 == ii &amp;&amp; k1 == jj)) {</span>
-<span class="fc" id="L1255">                        continue;</span>
+<span class="fc bfc" id="L1246" title="All 2 branches covered.">                for (int k1 = jj - maskRadius; k1 &lt;= (jj + maskRadius); ++k1) {</span>
+<span class="fc bfc" id="L1247" title="All 8 branches covered.">                    if ((k1 &lt; 0) || (k1 &gt; (nCols - 1)) || (k0 == ii &amp;&amp; k1 == jj)) {</span>
+<span class="fc" id="L1248">                        continue;</span>
                     }
-<span class="fc" id="L1257">                    int pixIdx2 = (k0 * nRows) + k1;</span>
-<span class="fc bfc" id="L1258" title="All 2 branches covered.">                    if (peaks.contains(pixIdx2)) {</span>
-<span class="fc" id="L1259">                        peaks.remove(pixIdx2);</span>
+                    //TODO: check this.  looks like error in pixIdx2
+<span class="fc" id="L1251">                    int pixIdx2 = (k0 * nRows) + k1;</span>
+<span class="fc bfc" id="L1252" title="All 2 branches covered.">                    if (peaks.contains(pixIdx2)) {</span>
+<span class="fc" id="L1253">                        peaks.remove(pixIdx2);</span>
                     }
                 }
             }
         }
 
-<span class="fc" id="L1265">        TIntList keypoints0_2 = new TIntArrayList(peaks.size());</span>
-<span class="fc" id="L1266">        TIntList keypoints1_2 = new TIntArrayList(peaks.size());</span>
-<span class="fc bfc" id="L1267" title="All 2 branches covered.">        for (int i = 0; i &lt; keypoints0.size(); ++i) {</span>
-<span class="fc" id="L1268">            int ii = keypoints0.get(i);//row</span>
-<span class="fc" id="L1269">            int jj = keypoints1.get(i);//col</span>
-<span class="fc" id="L1270">            int pixIdx = (ii * nRows) + jj;</span>
-<span class="fc bfc" id="L1271" title="All 2 branches covered.">            if (peaks.contains(pixIdx)) {</span>
-<span class="fc" id="L1272">                keypoints0_2.add(ii);</span>
-<span class="fc" id="L1273">                keypoints1_2.add(jj);</span>
+<span class="fc" id="L1259">        TIntList keypoints0_2 = new TIntArrayList(peaks.size());</span>
+<span class="fc" id="L1260">        TIntList keypoints1_2 = new TIntArrayList(peaks.size());</span>
+<span class="fc bfc" id="L1261" title="All 2 branches covered.">        for (int i = 0; i &lt; keypoints0.size(); ++i) {</span>
+<span class="fc" id="L1262">            int ii = keypoints0.get(i);//row</span>
+<span class="fc" id="L1263">            int jj = keypoints1.get(i);//col</span>
+<span class="fc" id="L1264">            int pixIdx = (ii * nRows) + jj;</span>
+<span class="fc bfc" id="L1265" title="All 2 branches covered.">            if (peaks.contains(pixIdx)) {</span>
+<span class="fc" id="L1266">                keypoints0_2.add(ii);</span>
+<span class="fc" id="L1267">                keypoints1_2.add(jj);</span>
             }
         }
 
-<span class="fc" id="L1277">        keypoints0.clear();</span>
-<span class="fc" id="L1278">        keypoints0.addAll(keypoints0_2);</span>
+<span class="fc" id="L1271">        keypoints0.clear();</span>
+<span class="fc" id="L1272">        keypoints0.addAll(keypoints0_2);</span>
 
-<span class="fc" id="L1280">        keypoints1.clear();</span>
-<span class="fc" id="L1281">        keypoints1.addAll(keypoints1_2);</span>
-<span class="fc" id="L1282">    }</span>
+<span class="fc" id="L1274">        keypoints1.clear();</span>
+<span class="fc" id="L1275">        keypoints1.addAll(keypoints1_2);</span>
+<span class="fc" id="L1276">    }</span>
 
     /**
      *
-     * @param input
      * @param nRows
      * @param nCols
      * @param border
@@ -1294,31 +1287,31 @@ public class ORB {
     private TIntList maskCoordinatesIfBorder(TIntList coords0, TIntList coords1,
         int nRows, int nCols, int border) {
 
-<span class="fc" id="L1297">        TIntSet set = new TIntHashSet();</span>
+<span class="fc" id="L1290">        TIntSet set = new TIntHashSet();</span>
 
         /* making single pixel index out of coordinates:
         (row * width) + col
         pixIdxs[count] = (j * nRows) + i;
         */
-<span class="fc bfc" id="L1303" title="All 2 branches covered.">        for (int i = 0; i &lt; coords0.size(); ++i) {</span>
-<span class="fc" id="L1304">            int ii = coords0.get(i);</span>
-<span class="fc" id="L1305">            int jj = coords1.get(i);</span>
-<span class="fc" id="L1306">            int pixIdx = (jj * nRows) + ii;</span>
-<span class="fc" id="L1307">            set.add(pixIdx);</span>
+<span class="fc bfc" id="L1296" title="All 2 branches covered.">        for (int i = 0; i &lt; coords0.size(); ++i) {</span>
+<span class="fc" id="L1297">            int ii = coords0.get(i);</span>
+<span class="fc" id="L1298">            int jj = coords1.get(i);</span>
+<span class="fc" id="L1299">            int pixIdx = (jj * nRows) + ii;</span>
+<span class="fc" id="L1300">            set.add(pixIdx);</span>
         }
 
-<span class="fc" id="L1310">        int nBefore = set.size();</span>
+<span class="fc" id="L1303">        int nBefore = set.size();</span>
 
-<span class="fc bfc" id="L1312" title="All 2 branches covered.">        for (int i = 0; i &lt; coords0.size(); ++i) {</span>
-<span class="fc" id="L1313">            int ii = coords0.get(i);</span>
-<span class="fc" id="L1314">            int jj = coords1.get(i);</span>
-<span class="fc" id="L1315">            int pixIdx = (jj * nRows) + ii;</span>
-<span class="fc bfc" id="L1316" title="All 2 branches covered.">            if (!set.contains(pixIdx)) {</span>
-<span class="fc" id="L1317">                continue;</span>
+<span class="fc bfc" id="L1305" title="All 2 branches covered.">        for (int i = 0; i &lt; coords0.size(); ++i) {</span>
+<span class="fc" id="L1306">            int ii = coords0.get(i);</span>
+<span class="fc" id="L1307">            int jj = coords1.get(i);</span>
+<span class="fc" id="L1308">            int pixIdx = (jj * nRows) + ii;</span>
+<span class="fc bfc" id="L1309" title="All 2 branches covered.">            if (!set.contains(pixIdx)) {</span>
+<span class="fc" id="L1310">                continue;</span>
             }
-<span class="fc bfc" id="L1319" title="All 8 branches covered.">            if ((ii &lt; border) || (jj &lt; border) || (ii &gt; (nRows - border - 1)) ||</span>
+<span class="fc bfc" id="L1312" title="All 8 branches covered.">            if ((ii &lt; border) || (jj &lt; border) || (ii &gt; (nRows - border - 1)) ||</span>
                 (jj &gt; (nCols - border - 1))) {
-<span class="fc" id="L1321">                set.remove(pixIdx);</span>
+<span class="fc" id="L1314">                set.remove(pixIdx);</span>
             }
         }
 
@@ -1330,21 +1323,21 @@ public class ORB {
             border region of the image (``False``).
         */
 
-<span class="fc" id="L1333">        TIntList mask = new TIntArrayList(coords0.size());</span>
-<span class="fc bfc" id="L1334" title="All 2 branches covered.">        for (int i = 0; i &lt; coords0.size(); ++i) {</span>
-<span class="fc" id="L1335">            int ii = coords0.get(i);</span>
-<span class="fc" id="L1336">            int jj = coords1.get(i);</span>
-<span class="fc" id="L1337">            int pixIdx = (jj * nRows) + ii;</span>
-<span class="fc bfc" id="L1338" title="All 2 branches covered.">            if (set.contains(pixIdx)) {</span>
-<span class="fc" id="L1339">                mask.add(1);</span>
+<span class="fc" id="L1326">        TIntList mask = new TIntArrayList(coords0.size());</span>
+<span class="fc bfc" id="L1327" title="All 2 branches covered.">        for (int i = 0; i &lt; coords0.size(); ++i) {</span>
+<span class="fc" id="L1328">            int ii = coords0.get(i);</span>
+<span class="fc" id="L1329">            int jj = coords1.get(i);</span>
+<span class="fc" id="L1330">            int pixIdx = (jj * nRows) + ii;</span>
+<span class="fc bfc" id="L1331" title="All 2 branches covered.">            if (set.contains(pixIdx)) {</span>
+<span class="fc" id="L1332">                mask.add(1);</span>
             } else {
-<span class="fc" id="L1341">                mask.add(0);</span>
+<span class="fc" id="L1334">                mask.add(0);</span>
             }
         }
-<span class="pc bnc" id="L1344" title="All 2 branches missed.">        assert(coords0.size() == mask.size());</span>
-<span class="pc bnc" id="L1345" title="All 2 branches missed.">        assert(coords0.size() == coords1.size());</span>
+<span class="pc bnc" id="L1337" title="All 2 branches missed.">        assert(coords0.size() == mask.size());</span>
+<span class="pc bnc" id="L1338" title="All 2 branches missed.">        assert(coords0.size() == coords1.size());</span>
 
-<span class="fc" id="L1347">        return mask;</span>
+<span class="fc" id="L1340">        return mask;</span>
     }
 
     /**
@@ -1362,20 +1355,15 @@ public class ORB {
     protected void cornerPeaks(float[][] img, int minDistance,
         TIntList outputKeypoints0, TIntList outputKeypoints1) {
 
-        //threshold_abs=None,
-<span class="fc" id="L1366">        float thresholdRel = 0.1f;</span>
-<span class="fc" id="L1367">        boolean excludeBorder = true;</span>
-<span class="fc" id="L1368">        boolean indices = true;</span>
-<span class="fc" id="L1369">        int numPeaks = Integer.MAX_VALUE;</span>
-        //footprint=None, labels=None
+<span class="fc" id="L1358">        float thresholdRel = 0.1f;</span>
 
-<span class="fc" id="L1372">        int nRows = img.length;</span>
-<span class="fc" id="L1373">        int nCols = img[0].length;</span>
+<span class="fc" id="L1360">        int nRows = img.length;</span>
+<span class="fc" id="L1361">        int nCols = img[0].length;</span>
         
-<span class="fc" id="L1375">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L1363">        ImageProcessor imageProcessor = new ImageProcessor();</span>
         
         // these results have been sorted by decreasing intensity
-<span class="fc" id="L1378">        imageProcessor.peakLocalMax(img, minDistance, thresholdRel,</span>
+<span class="fc" id="L1366">        imageProcessor.peakLocalMax(img, minDistance, thresholdRel,</span>
             true, outputKeypoints0, outputKeypoints1);
 
         //System.out.println(&quot;keypoints in cornerPeaks=&quot;
@@ -1383,9 +1371,9 @@ public class ORB {
         //    + &quot;cols=&quot; + outputKeypoints1.toString()
         //    + &quot;\nsize=&quot; + outputKeypoints0.size());
 
-<span class="fc" id="L1386">        maskCoordinates(outputKeypoints0, outputKeypoints1, nRows, nCols,</span>
+<span class="fc" id="L1374">        maskCoordinates(outputKeypoints0, outputKeypoints1, nRows, nCols,</span>
             minDistance);
-<span class="fc" id="L1388">    }</span>
+<span class="fc" id="L1376">    }</span>
 
     public static class Pix implements Comparable&lt;Pix&gt; {
 
@@ -1451,65 +1439,66 @@ public class ORB {
         //cdef unsigned char[:, ::1] cmask = np.ascontiguousarray(mask != 0, dtype=np.uint8)
 
         int i, r, c, r0, c0;
-<span class="fc" id="L1454">        int nMaskRows = OFAST_MASK.length;</span>
-<span class="fc" id="L1455">        int nMaskCols = OFAST_MASK[0].length;</span>
-<span class="fc" id="L1456">        int nMaskRows2 = (nMaskRows - 1) / 2;</span>
-<span class="fc" id="L1457">        int nMaskCols2 = (nMaskCols - 1) / 2;</span>
+<span class="fc" id="L1442">        int nMaskRows = OFAST_MASK.length;</span>
+<span class="fc" id="L1443">        int nMaskCols = OFAST_MASK[0].length;</span>
+<span class="fc" id="L1444">        int nMaskRows2 = (nMaskRows - 1) / 2;</span>
+<span class="fc" id="L1445">        int nMaskCols2 = (nMaskCols - 1) / 2;</span>
 
         //cdef double[:, :] cimage = np.pad(image, (mrows2, mcols2), mode='constant',
         //    constant_values=0)
-<span class="fc" id="L1461">        int nRows2 = octaveImage.length + (2 * nMaskRows2);</span>
-<span class="fc" id="L1462">        int nCols2 = octaveImage[0].length + (2 * nMaskCols2);</span>
-<span class="fc" id="L1463">        double[][] cImage = new double[nRows2][nCols2];</span>
-<span class="fc bfc" id="L1464" title="All 2 branches covered.">        for (i = 0; i &lt; nRows2; ++i) {</span>
-<span class="fc" id="L1465">            cImage[i] = new double[nCols2];</span>
-<span class="fc bfc" id="L1466" title="All 4 branches covered.">            if ((i &gt;= nMaskRows2) &amp;&amp; (i &lt; (nRows2 - nMaskRows2 - 1))) {</span>
-<span class="fc" id="L1467">                float[] src = octaveImage[i - nMaskRows2];</span>
-<span class="fc bfc" id="L1468" title="All 2 branches covered.">                for (int ii = 0; ii &lt; src.length; ++ii) {</span>
-<span class="fc" id="L1469">                    cImage[i][ii + nMaskCols2] = src[ii];</span>
+<span class="fc" id="L1449">        int nRows2 = octaveImage.length + (2 * nMaskRows2);</span>
+<span class="fc" id="L1450">        int nCols2 = octaveImage[0].length + (2 * nMaskCols2);</span>
+<span class="fc" id="L1451">        double[][] cImage = new double[nRows2][nCols2];</span>
+<span class="fc bfc" id="L1452" title="All 2 branches covered.">        for (i = 0; i &lt; nRows2; ++i) {</span>
+<span class="fc" id="L1453">            cImage[i] = new double[nCols2];</span>
+<span class="fc bfc" id="L1454" title="All 4 branches covered.">            if ((i &gt;= nMaskRows2) &amp;&amp; (i &lt; (nRows2 - nMaskRows2 - 1))) {</span>
+<span class="fc" id="L1455">                float[] src = octaveImage[i - nMaskRows2];</span>
+<span class="fc bfc" id="L1456" title="All 2 branches covered.">                for (int ii = 0; ii &lt; src.length; ++ii) {</span>
+<span class="fc" id="L1457">                    cImage[i][ii + nMaskCols2] = src[ii];</span>
                 }
             }
         }
 
         // number of corner coord pairs
-<span class="fc" id="L1475">        int nCorners = keypoints0.size();</span>
+<span class="fc" id="L1463">        int nCorners = keypoints0.size();</span>
 
-<span class="fc" id="L1477">        TDoubleList orientations = new TDoubleArrayList(nCorners);</span>
+<span class="fc" id="L1465">        TDoubleList orientations = new TDoubleArrayList(nCorners);</span>
 
         // eqns (1), (2), (3) of Rublee et al.
         double curr_pixel;
         double m01, m10, m01_tmp;
 
-<span class="fc bfc" id="L1483" title="All 2 branches covered.">        for (i = 0; i &lt; nCorners; ++i) {</span>
-<span class="fc" id="L1484">            r0 = keypoints0.get(i);</span>
-<span class="fc" id="L1485">            c0 = keypoints1.get(i);</span>
+<span class="fc bfc" id="L1471" title="All 2 branches covered.">        for (i = 0; i &lt; nCorners; ++i) {</span>
+<span class="fc" id="L1472">            r0 = keypoints0.get(i);</span>
+<span class="fc" id="L1473">            c0 = keypoints1.get(i);</span>
 
-<span class="fc" id="L1487">            m01 = 0;</span>
-<span class="fc" id="L1488">            m10 = 0;</span>
+<span class="fc" id="L1475">            m01 = 0;</span>
+<span class="fc" id="L1476">            m10 = 0;</span>
 
-<span class="fc bfc" id="L1490" title="All 2 branches covered.">            for (r = 0; r &lt; nMaskRows; ++r) {</span>
-<span class="fc" id="L1491">                m01_tmp = 0;</span>
-<span class="fc bfc" id="L1492" title="All 2 branches covered.">                for (c = 0; c &lt; nMaskCols; ++c) {</span>
-<span class="fc bfc" id="L1493" title="All 2 branches covered.">                    if (OFAST_MASK[r][c] &gt; 0) {</span>
-<span class="fc" id="L1494">                        curr_pixel = cImage[r0 + r][c0 + c];</span>
-<span class="fc" id="L1495">                        m10 += curr_pixel * (c - nMaskCols2);</span>
-<span class="fc" id="L1496">                        m01_tmp += curr_pixel;</span>
+<span class="fc bfc" id="L1478" title="All 2 branches covered.">            for (r = 0; r &lt; nMaskRows; ++r) {</span>
+<span class="fc" id="L1479">                m01_tmp = 0;</span>
+<span class="fc bfc" id="L1480" title="All 2 branches covered.">                for (c = 0; c &lt; nMaskCols; ++c) {</span>
+<span class="fc bfc" id="L1481" title="All 2 branches covered.">                    if (OFAST_MASK[r][c] &gt; 0) {</span>
+<span class="fc" id="L1482">                        curr_pixel = cImage[r0 + r][c0 + c];</span>
+<span class="fc" id="L1483">                        m10 += curr_pixel * (c - nMaskCols2);</span>
+<span class="fc" id="L1484">                        m01_tmp += curr_pixel;</span>
                     }
                 }
-<span class="fc" id="L1499">                m01 += m01_tmp * (r - nMaskRows2);</span>
+<span class="fc" id="L1487">                m01 += m01_tmp * (r - nMaskRows2);</span>
             }
 
             //arc tangent of y/x, in the interval [-pi,+pi] radians
-<span class="fc" id="L1503">            orientations.add(Math.atan2(m01, m10));</span>
+<span class="fc" id="L1491">            orientations.add(Math.atan2(m01, m10));</span>
 
         }
 
-<span class="fc" id="L1507">        return orientations;</span>
+<span class="fc" id="L1495">        return orientations;</span>
     }
 
     /**
       Compute Harris corner measure response image.
-        This corner detector uses information from the auto-correlation matrix A::
+        This corner detector uses information from the auto-correlation matrix A
+        (a.k.a. he structure tensor):
             A = [(imx**2)   (imx*imy)] = [Axx Axy]
                 [(imx*imy)   (imy**2)]   [Axy Ayy]
         Where imx and imy are first derivatives, averaged with a gaussian filter.
@@ -1534,34 +1523,98 @@ public class ORB {
 
         // method = 'k'.  k is Sensitivity factor to separate corners from edges,
         // Small values of k result in detection of sharp corners.
-<span class="fc" id="L1537">        float k = this.harrisK;</span>
+<span class="fc" id="L1526">        float k = this.harrisK;</span>
 
         //response = detA - k * traceA ** 2
         // unless detA is all 0's, then will use only +k * traceA**2
-<span class="fc" id="L1541">        float[][] response = new float[detA.length][];</span>
-<span class="fc" id="L1542">        boolean detAAll0s = true;</span>
-<span class="fc bfc" id="L1543" title="All 2 branches covered.">        for (int i = 0; i &lt; detA.length; ++i) {</span>
-<span class="fc" id="L1544">            response[i] = new float[detA[0].length];</span>
-<span class="fc bfc" id="L1545" title="All 2 branches covered.">            for (int j = 0; j &lt; detA[i].length; ++j) {</span>
-<span class="fc bfc" id="L1546" title="All 2 branches covered.">                if (detA[i][j] != 0.f) {</span>
-<span class="fc" id="L1547">                    detAAll0s = false;</span>
-<span class="fc" id="L1548">                    break;</span>
+<span class="fc" id="L1530">        float[][] response = new float[detA.length][];</span>
+<span class="fc" id="L1531">        boolean detAAll0s = true;</span>
+<span class="fc bfc" id="L1532" title="All 2 branches covered.">        for (int i = 0; i &lt; detA.length; ++i) {</span>
+<span class="fc" id="L1533">            response[i] = new float[detA[0].length];</span>
+<span class="fc bfc" id="L1534" title="All 2 branches covered.">            for (int j = 0; j &lt; detA[i].length; ++j) {</span>
+<span class="fc bfc" id="L1535" title="All 2 branches covered.">                if (detA[i][j] != 0.f) {</span>
+<span class="fc" id="L1536">                    detAAll0s = false;</span>
+<span class="fc" id="L1537">                    break;</span>
                 }
             }
         }
         
-<span class="fc bfc" id="L1553" title="All 2 branches covered.">        for (int i = 0; i &lt; detA.length; ++i) {</span>
-<span class="fc bfc" id="L1554" title="All 2 branches covered.">            for (int j = 0; j &lt; detA[i].length; ++j) {</span>
-<span class="fc" id="L1555">                float v = k * (traceA[i][j] * traceA[i][j]);</span>
-<span class="fc bfc" id="L1556" title="All 2 branches covered.">                if (detAAll0s) {</span>
-<span class="fc" id="L1557">                    response[i][j] = v;</span>
+<span class="fc bfc" id="L1542" title="All 2 branches covered.">        for (int i = 0; i &lt; detA.length; ++i) {</span>
+<span class="fc bfc" id="L1543" title="All 2 branches covered.">            for (int j = 0; j &lt; detA[i].length; ++j) {</span>
+<span class="fc" id="L1544">                float v = k * (traceA[i][j] * traceA[i][j]);</span>
+<span class="fc bfc" id="L1545" title="All 2 branches covered.">                if (detAAll0s) {</span>
+<span class="fc" id="L1546">                    response[i][j] = v;</span>
                 } else {
-<span class="fc" id="L1559">                    response[i][j] = detA[i][j] - v;</span>
+<span class="fc" id="L1548">                    response[i][j] = detA[i][j] - v;</span>
                 }
             }
         }
 
-<span class="fc" id="L1564">        return response;</span>
+<span class="fc" id="L1553">        return response;</span>
+    }
+
+    /**
+     Compute Harris corner measure response image
+     ([Harris and Stephens, 1988).
+     This corner detector uses information from the auto-correlation matrix A
+     (a.k.a. the structure tensor):
+     &lt;pre&gt;
+     A = [(imx**2)   (imx*imy)] = [Axx Axy]
+        [(imx*imy)   (imy**2)]   [Axy Ayy]
+     &lt;/pre&gt;
+     Where imx and imy are first derivatives, averaged with a gaussian filter.
+     The corner measure is then defined as::
+     MASKS eqn (11.1)
+         det(A) + k * trace(A)**2
+
+     originally adapted
+     from https://github.com/scikit-image/scikit-image/blob/master/skimage/feature/corner.py
+
+     @param image
+     @return the harris corner response image of same size as image,
+      *   and composed of
+      *   response = detA + k * traceA ** 2 built from the 2nd derivatives of
+      *   image intensity.
+     */
+    public static double[][] cornerHarris(double[][] image) {
+
+<span class="fc" id="L1581">        float sigma = 1.f;</span>
+
+<span class="fc" id="L1583">        StructureTensorD tensor = new StructureTensorD(image, sigma, false);</span>
+
+        // method = 'k'.  k is Sensitivity factor to separate corners from edges,
+        // Small values of k result in detection of sharp corners.
+<span class="fc" id="L1587">        double k = 0.04;</span>
+
+<span class="fc" id="L1589">        double[][] detA = tensor.getDeterminant();</span>
+<span class="fc" id="L1590">        double[][] traceA = tensor.getTrace();</span>
+        int i;
+        int j;
+<span class="fc" id="L1593">        boolean detAAll0s = true;</span>
+        //response = detA - k * traceA ** 2
+<span class="fc" id="L1595">        double[][] response = new double[detA.length][];</span>
+<span class="fc bfc" id="L1596" title="All 2 branches covered.">        for (i = 0; i &lt; detA.length; ++i) {</span>
+<span class="fc" id="L1597">            response[i] = new double[detA[0].length];</span>
+<span class="pc bpc" id="L1598" title="1 of 2 branches missed.">            for (j = 0; j &lt; detA[i].length; ++j) {</span>
+<span class="pc bpc" id="L1599" title="1 of 2 branches missed.">                if (detA[i][j] != 0.f) {</span>
+<span class="fc" id="L1600">                    detAAll0s = false;</span>
+<span class="fc" id="L1601">                    break;</span>
+                }
+            }
+        }
+        double v;
+<span class="fc bfc" id="L1606" title="All 2 branches covered.">        for (i = 0; i &lt; detA.length; ++i) {</span>
+<span class="fc bfc" id="L1607" title="All 2 branches covered.">            for (j = 0; j &lt; detA[i].length; ++j) {</span>
+<span class="fc" id="L1608">                v = k * (traceA[i][j] * traceA[i][j]);</span>
+<span class="pc bpc" id="L1609" title="1 of 2 branches missed.">                if (detAAll0s) {</span>
+<span class="nc" id="L1610">                    response[i][j] = v;</span>
+                } else {
+<span class="fc" id="L1612">                    response[i][j] = detA[i][j] - v;</span>
+                }
+            }
+        }
+
+<span class="fc" id="L1617">        return response;</span>
     }
 
     /**
@@ -1576,20 +1629,25 @@ public class ORB {
     protected TIntList filterNearBorder(float[][] octaveImage,
         TIntList keypoints0, TIntList keypoints1) {
 
-<span class="fc" id="L1579">        int nRows = octaveImage.length;</span>
-<span class="fc" id="L1580">        int nCols = octaveImage[0].length;</span>
+<span class="fc" id="L1632">        int nRows = octaveImage.length;</span>
+<span class="fc" id="L1633">        int nCols = octaveImage[0].length;</span>
 
-<span class="fc" id="L1582">        TIntList mask = maskCoordinatesIfBorder(keypoints0, keypoints1,</span>
-            nRows, nCols, 5);//16);
+<span class="fc" id="L1635">        int border = 5;</span>
+<span class="fc bfc" id="L1636" title="All 2 branches covered.">        if (Math.min(nRows, nCols)/20. &lt; border) {</span>
+<span class="fc" id="L1637">            border = (int)(Math.min(nRows, nCols)/20.);</span>
+        }
 
-<span class="fc bfc" id="L1585" title="All 2 branches covered.">        for (int i = (mask.size() - 1); i &gt; -1; --i) {</span>
-<span class="fc bfc" id="L1586" title="All 2 branches covered.">            if (mask.get(i) == 0) {</span>
-<span class="fc" id="L1587">                keypoints0.removeAt(i);</span>
-<span class="fc" id="L1588">                keypoints1.removeAt(i);</span>
+<span class="fc" id="L1640">        TIntList mask = maskCoordinatesIfBorder(keypoints0, keypoints1,</span>
+            nRows, nCols, border);//16);
+
+<span class="fc bfc" id="L1643" title="All 2 branches covered.">        for (int i = (mask.size() - 1); i &gt; -1; --i) {</span>
+<span class="fc bfc" id="L1644" title="All 2 branches covered.">            if (mask.get(i) == 0) {</span>
+<span class="fc" id="L1645">                keypoints0.removeAt(i);</span>
+<span class="fc" id="L1646">                keypoints1.removeAt(i);</span>
             }
         }
 
-<span class="fc" id="L1592">        return mask;</span>
+<span class="fc" id="L1650">        return mask;</span>
     }
 
     /**
@@ -1609,19 +1667,19 @@ public class ORB {
         TIntList keypoints0, TIntList keypoints1,
         TDoubleList orientations, float scale) {
 
-<span class="pc bnc" id="L1612" title="All 2 branches missed.">        assert(orientations.size() == keypoints0.size());</span>
-<span class="pc bnc" id="L1613" title="All 2 branches missed.">        assert(orientations.size() == keypoints1.size());</span>
+<span class="pc bnc" id="L1670" title="All 2 branches missed.">        assert(orientations.size() == keypoints0.size());</span>
+<span class="pc bnc" id="L1671" title="All 2 branches missed.">        assert(orientations.size() == keypoints1.size());</span>
 
-<span class="fc" id="L1615">        Descriptors desc = new Descriptors();</span>
+<span class="fc" id="L1673">        Descriptors desc = new Descriptors();</span>
 
-<span class="pc bpc" id="L1617" title="1 of 2 branches missed.">        if (descrChoice.equals(DescriptorChoice.NONE)) {</span>
-<span class="nc" id="L1618">            desc.descriptors = new VeryLongBitString[0];</span>
+<span class="pc bpc" id="L1675" title="1 of 2 branches missed.">        if (descrChoice.equals(DescriptorChoice.NONE)) {</span>
+<span class="nc" id="L1676">            desc.descriptors = new VeryLongBitString[0];</span>
         } else {
-<span class="fc" id="L1620">            desc.descriptors = orbLoop(octaveImage, keypoints0, keypoints1,</span>
+<span class="fc" id="L1678">            desc.descriptors = orbLoop(octaveImage, keypoints0, keypoints1,</span>
                 orientations, scale);
         }
 
-<span class="fc" id="L1624">        return desc;</span>
+<span class="fc" id="L1682">        return desc;</span>
     }
 
     /**
@@ -1644,24 +1702,24 @@ public class ORB {
     private VeryLongBitString[] orbLoop(float[][] octaveImage, TIntList keypoints0,
         TIntList keypoints1, TDoubleList orientations, float scale) {
       
-<span class="pc bnc" id="L1647" title="All 2 branches missed.">        assert(orientations.size() == keypoints0.size());</span>
+<span class="pc bnc" id="L1705" title="All 2 branches missed.">        assert(orientations.size() == keypoints0.size());</span>
 
-<span class="fc bfc" id="L1649" title="All 2 branches covered.">        if (POS0 == null) {</span>
-<span class="fc" id="L1650">            POS0 = ORBDescriptorPositions.POS0;</span>
+<span class="fc bfc" id="L1707" title="All 2 branches covered.">        if (POS0 == null) {</span>
+<span class="fc" id="L1708">            POS0 = ORBDescriptorPositions.POS0;</span>
         }
-<span class="fc bfc" id="L1652" title="All 2 branches covered.">        if (POS1 == null) {</span>
-<span class="fc" id="L1653">            POS1 = ORBDescriptorPositions.POS1;</span>
+<span class="fc bfc" id="L1710" title="All 2 branches covered.">        if (POS1 == null) {</span>
+<span class="fc" id="L1711">            POS1 = ORBDescriptorPositions.POS1;</span>
         }
         
-<span class="fc" id="L1656">        int nKP = keypoints0.size();</span>
+<span class="fc" id="L1714">        int nKP = keypoints0.size();</span>
 
-<span class="fc" id="L1658">        log.fine(&quot;nKP=&quot; + nKP);</span>
+<span class="fc" id="L1716">        log.fine(&quot;nKP=&quot; + nKP);</span>
 
         // each item is a 256 length bit string
-<span class="fc" id="L1661">        VeryLongBitString[] descriptors = new VeryLongBitString[nKP];</span>
+<span class="fc" id="L1719">        VeryLongBitString[] descriptors = new VeryLongBitString[nKP];</span>
         
-<span class="pc bpc" id="L1663" title="1 of 2 branches missed.">        if (nKP == 0) {</span>
-<span class="nc" id="L1664">            return descriptors;</span>
+<span class="pc bpc" id="L1721" title="1 of 2 branches missed.">        if (nKP == 0) {</span>
+<span class="nc" id="L1722">            return descriptors;</span>
         }
         
         //System.out.printf(&quot;scale=%.2f, nKP=%d\n&quot;, scale, nKP);
@@ -1669,53 +1727,53 @@ public class ORB {
         double pr0, pc0, pr1, pc1, angle, sinA, cosA;
         int spr0, spc0, spr1, spc1, kr, kc, i, j, x0, y0, x1, y1;
       
-<span class="fc bfc" id="L1672" title="All 2 branches covered.">        for (i = 0; i &lt; nKP; ++i) {</span>
+<span class="fc bfc" id="L1730" title="All 2 branches covered.">        for (i = 0; i &lt; nKP; ++i) {</span>
 
-<span class="fc" id="L1674">            descriptors[i] = new VeryLongBitString(POS1.length);</span>
+<span class="fc" id="L1732">            descriptors[i] = new VeryLongBitString(POS1.length);</span>
 
-<span class="fc" id="L1676">            angle = orientations.get(i);</span>
-<span class="fc" id="L1677">            sinA = Math.sin(angle);</span>
-<span class="fc" id="L1678">            cosA = Math.cos(angle);</span>
+<span class="fc" id="L1734">            angle = orientations.get(i);</span>
+<span class="fc" id="L1735">            sinA = Math.sin(angle);</span>
+<span class="fc" id="L1736">            cosA = Math.cos(angle);</span>
 
-<span class="fc" id="L1680">            kr = keypoints0.get(i);</span>
-<span class="fc" id="L1681">            kc = keypoints1.get(i);</span>
+<span class="fc" id="L1738">            kr = keypoints0.get(i);</span>
+<span class="fc" id="L1739">            kc = keypoints1.get(i);</span>
 
             // put kr and kc into this octave's pyramid image reference frame.
-<span class="fc" id="L1684">            kr = (int)(kr/scale);</span>
-<span class="fc" id="L1685">            kc = (int)(kc/scale);</span>
+<span class="fc" id="L1742">            kr = (int)(kr/scale);</span>
+<span class="fc" id="L1743">            kc = (int)(kc/scale);</span>
 
-<span class="fc bfc" id="L1687" title="All 2 branches covered.">            for (j = 0; j &lt; POS0.length; ++j) {</span>
-<span class="fc" id="L1688">                pr0 = POS0[j][0];</span>
-<span class="fc" id="L1689">                pc0 = POS0[j][1];</span>
-<span class="fc" id="L1690">                pr1 = POS1[j][0];</span>
-<span class="fc" id="L1691">                pc1 = POS1[j][1];</span>
+<span class="fc bfc" id="L1745" title="All 2 branches covered.">            for (j = 0; j &lt; POS0.length; ++j) {</span>
+<span class="fc" id="L1746">                pr0 = POS0[j][0];</span>
+<span class="fc" id="L1747">                pc0 = POS0[j][1];</span>
+<span class="fc" id="L1748">                pr1 = POS1[j][0];</span>
+<span class="fc" id="L1749">                pc1 = POS1[j][1];</span>
 
-<span class="fc" id="L1693">                spr0 = (int)Math.round(sinA * pr0 + cosA * pc0);</span>
-<span class="fc" id="L1694">                spc0 = (int)Math.round(cosA * pr0 - sinA * pc0);</span>
-<span class="fc" id="L1695">                spr1 = (int)Math.round(sinA * pr1 + cosA * pc1);</span>
-<span class="fc" id="L1696">                spc1 = (int)Math.round(cosA * pr1 - sinA * pc1);</span>
+<span class="fc" id="L1751">                spr0 = (int)Math.round(sinA * pr0 + cosA * pc0);</span>
+<span class="fc" id="L1752">                spc0 = (int)Math.round(cosA * pr0 - sinA * pc0);</span>
+<span class="fc" id="L1753">                spr1 = (int)Math.round(sinA * pr1 + cosA * pc1);</span>
+<span class="fc" id="L1754">                spc1 = (int)Math.round(cosA * pr1 - sinA * pc1);</span>
 
-<span class="fc" id="L1698">                x0 = kr + spr0;</span>
-<span class="fc" id="L1699">                y0 = kc + spc0;</span>
-<span class="fc" id="L1700">                x1 = kr + spr1;</span>
-<span class="fc" id="L1701">                y1 = kc + spc1;</span>
+<span class="fc" id="L1756">                x0 = kr + spr0;</span>
+<span class="fc" id="L1757">                y0 = kc + spc0;</span>
+<span class="fc" id="L1758">                x1 = kr + spr1;</span>
+<span class="fc" id="L1759">                y1 = kc + spc1;</span>
 
-<span class="fc bfc" id="L1703" title="All 16 branches covered.">                if (x0 &lt; 0 || y0 &lt; 0 || x1 &lt; 0 || y1 &lt; 0 ||</span>
+<span class="fc bfc" id="L1761" title="All 16 branches covered.">                if (x0 &lt; 0 || y0 &lt; 0 || x1 &lt; 0 || y1 &lt; 0 ||</span>
                     (x0 &gt; (octaveImage.length - 1)) ||
                     (x1 &gt; (octaveImage.length - 1)) ||
                     (y0 &gt; (octaveImage[0].length - 1)) ||
                     (y1 &gt; (octaveImage[0].length - 1))
                     ) {
-<span class="fc" id="L1709">                    continue;</span>
+<span class="fc" id="L1767">                    continue;</span>
                 }
                 // eqn (4) of Rublee et al.
-<span class="fc bfc" id="L1712" title="All 2 branches covered.">                if (octaveImage[x0][y0] &lt; octaveImage[x1][y1]) {</span>
-<span class="fc" id="L1713">                    descriptors[i].setBit(j);</span>
+<span class="fc bfc" id="L1770" title="All 2 branches covered.">                if (octaveImage[x0][y0] &lt; octaveImage[x1][y1]) {</span>
+<span class="fc" id="L1771">                    descriptors[i].setBit(j);</span>
                 }
             }
         }
 
-<span class="fc" id="L1718">        return descriptors;</span>
+<span class="fc" id="L1776">        return descriptors;</span>
     }
 
     /**
@@ -1726,7 +1784,7 @@ public class ORB {
      * @return
      */
     public List&lt;Descriptors&gt; getDescriptorsList() {
-<span class="nc" id="L1729">        return descriptorsList;</span>
+<span class="fc" id="L1787">        return descriptorsList;</span>
     }
 
     /**
@@ -1736,7 +1794,7 @@ public class ORB {
      * @return
      */
     public Descriptors getAllDescriptors() {
-<span class="fc" id="L1739">        return combinedDescriptors;</span>
+<span class="fc" id="L1797">        return combinedDescriptors;</span>
     }
 
     /**
@@ -1747,29 +1805,29 @@ public class ORB {
      */
     public static Descriptors combineDescriptors(List&lt;Descriptors&gt; list) {
 
-<span class="nc" id="L1750">        int n = 0;</span>
-<span class="nc bnc" id="L1751" title="All 2 branches missed.">        for (Descriptors dl : list) {</span>
-<span class="nc" id="L1752">            n += dl.descriptors.length;</span>
-<span class="nc" id="L1753">        }</span>
+<span class="nc" id="L1808">        int n = 0;</span>
+<span class="nc bnc" id="L1809" title="All 2 branches missed.">        for (Descriptors dl : list) {</span>
+<span class="nc" id="L1810">            n += dl.descriptors.length;</span>
+<span class="nc" id="L1811">        }</span>
 
-<span class="nc" id="L1755">        int nPos0 = ORBDescriptorPositions.POS0.length;</span>
+<span class="nc" id="L1813">        int nPos0 = ORBDescriptorPositions.POS0.length;</span>
 
-<span class="nc" id="L1757">        VeryLongBitString[] combinedD = new VeryLongBitString[n];</span>
+<span class="nc" id="L1815">        VeryLongBitString[] combinedD = new VeryLongBitString[n];</span>
 
-<span class="nc" id="L1759">        int count = 0;</span>
-<span class="nc bnc" id="L1760" title="All 2 branches missed.">        for (int i = 0; i &lt; list.size(); ++i) {</span>
+<span class="nc" id="L1817">        int count = 0;</span>
+<span class="nc bnc" id="L1818" title="All 2 branches missed.">        for (int i = 0; i &lt; list.size(); ++i) {</span>
 
-<span class="nc" id="L1762">            VeryLongBitString[] d = list.get(i).descriptors;</span>
+<span class="nc" id="L1820">            VeryLongBitString[] d = list.get(i).descriptors;</span>
 
             //TODO: may want to revisit this and use the instance copy methods individually
-<span class="nc" id="L1765">            System.arraycopy(d, 0, combinedD, count, d.length);</span>
-<span class="nc" id="L1766">            count += d.length;</span>
+<span class="nc" id="L1823">            System.arraycopy(d, 0, combinedD, count, d.length);</span>
+<span class="nc" id="L1824">            count += d.length;</span>
         }
 
-<span class="nc" id="L1769">        Descriptors combined = new Descriptors();</span>
-<span class="nc" id="L1770">        combined.descriptors = combinedD;</span>
+<span class="nc" id="L1827">        Descriptors combined = new Descriptors();</span>
+<span class="nc" id="L1828">        combined.descriptors = combinedD;</span>
 
-<span class="nc" id="L1772">        return combined;</span>
+<span class="nc" id="L1830">        return combined;</span>
     }
     
     /**
@@ -1791,79 +1849,127 @@ public class ORB {
     public static Object[] combine(Descriptors d1, List&lt;PairInt&gt; k1, TDoubleList o1,
         Descriptors d2, List&lt;PairInt&gt; k2, TDoubleList o2) {
         
-<span class="nc bnc" id="L1794" title="All 2 branches missed.">        if (d1.descriptors.length != k1.size()) {</span>
-<span class="nc" id="L1795">            throw new IllegalArgumentException(&quot;d1.descriptors.length and k1.size must be the same&quot;);</span>
+<span class="nc bnc" id="L1852" title="All 2 branches missed.">        if (d1.descriptors.length != k1.size()) {</span>
+<span class="nc" id="L1853">            throw new IllegalArgumentException(&quot;d1.descriptors.length and k1.size must be the same&quot;);</span>
         }
-<span class="nc bnc" id="L1797" title="All 2 branches missed.">        if (d2.descriptors.length != k2.size()) {</span>
-<span class="nc" id="L1798">            throw new IllegalArgumentException(&quot;d2.descriptors.length and k2.size must be the same&quot;);</span>
+<span class="nc bnc" id="L1855" title="All 2 branches missed.">        if (d2.descriptors.length != k2.size()) {</span>
+<span class="nc" id="L1856">            throw new IllegalArgumentException(&quot;d2.descriptors.length and k2.size must be the same&quot;);</span>
         }
-<span class="nc bnc" id="L1800" title="All 2 branches missed.">        if (k1.size() != o1.size()) {</span>
-<span class="nc" id="L1801">            throw new IllegalArgumentException(&quot;k1.size and o1.size must be the same&quot;);</span>
+<span class="nc bnc" id="L1858" title="All 2 branches missed.">        if (k1.size() != o1.size()) {</span>
+<span class="nc" id="L1859">            throw new IllegalArgumentException(&quot;k1.size and o1.size must be the same&quot;);</span>
         }
-<span class="nc bnc" id="L1803" title="All 2 branches missed.">        if (k2.size() != o2.size()) {</span>
-<span class="nc" id="L1804">            throw new IllegalArgumentException(&quot;k2.size and o2.size must be the same&quot;);</span>
+<span class="nc bnc" id="L1861" title="All 2 branches missed.">        if (k2.size() != o2.size()) {</span>
+<span class="nc" id="L1862">            throw new IllegalArgumentException(&quot;k2.size and o2.size must be the same&quot;);</span>
         }
         
-<span class="nc" id="L1807">        int n = k1.size() + k2.size();</span>
+<span class="nc" id="L1865">        int n = k1.size() + k2.size();</span>
 
-<span class="nc" id="L1809">        Set&lt;PairInt&gt; k12 = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L1867">        Set&lt;PairInt&gt; k12 = new HashSet&lt;PairInt&gt;();</span>
                 
-<span class="nc" id="L1811">        List&lt;PairInt&gt; kCombined = new ArrayList&lt;PairInt&gt;();</span>
-<span class="nc" id="L1812">        Descriptors dCombined = new Descriptors();</span>
-<span class="nc" id="L1813">        dCombined.descriptors = new VeryLongBitString[n];</span>
-<span class="nc" id="L1814">        TDoubleList oCombined = new TDoubleArrayList();</span>
+<span class="nc" id="L1869">        List&lt;PairInt&gt; kCombined = new ArrayList&lt;PairInt&gt;();</span>
+<span class="nc" id="L1870">        Descriptors dCombined = new Descriptors();</span>
+<span class="nc" id="L1871">        dCombined.descriptors = new VeryLongBitString[n];</span>
+<span class="nc" id="L1872">        TDoubleList oCombined = new TDoubleArrayList();</span>
         
         PairInt p;
         int idx, j;
-<span class="nc bnc" id="L1818" title="All 2 branches missed.">        for (idx = 0; idx &lt; k1.size(); ++idx) {</span>
-<span class="nc" id="L1819">            p = k1.get(idx);</span>
-<span class="nc bnc" id="L1820" title="All 2 branches missed.">            if (!k12.contains(p)) {</span>
-<span class="nc" id="L1821">                kCombined.add(k1.get(idx));</span>
-<span class="nc" id="L1822">                oCombined.add(o1.get(idx));</span>
-<span class="nc" id="L1823">                j = k12.size();</span>
-<span class="nc" id="L1824">                dCombined.descriptors[j] = d1.descriptors[idx].copy();</span>
-<span class="nc" id="L1825">                k12.add(k1.get(idx));</span>
+<span class="nc bnc" id="L1876" title="All 2 branches missed.">        for (idx = 0; idx &lt; k1.size(); ++idx) {</span>
+<span class="nc" id="L1877">            p = k1.get(idx);</span>
+<span class="nc bnc" id="L1878" title="All 2 branches missed.">            if (!k12.contains(p)) {</span>
+<span class="nc" id="L1879">                kCombined.add(k1.get(idx));</span>
+<span class="nc" id="L1880">                oCombined.add(o1.get(idx));</span>
+<span class="nc" id="L1881">                j = k12.size();</span>
+<span class="nc" id="L1882">                dCombined.descriptors[j] = d1.descriptors[idx].copy();</span>
+<span class="nc" id="L1883">                k12.add(k1.get(idx));</span>
             }
         }    
-<span class="nc bnc" id="L1828" title="All 2 branches missed.">        for (idx = 0; idx &lt; k2.size(); ++idx) {</span>
-<span class="nc" id="L1829">            p = k2.get(idx);</span>
-<span class="nc bnc" id="L1830" title="All 2 branches missed.">            if (!k12.contains(p)) {</span>
-<span class="nc" id="L1831">                kCombined.add(p);</span>
-<span class="nc" id="L1832">                oCombined.add(o2.get(idx));</span>
-<span class="nc" id="L1833">                j = k12.size();</span>
-<span class="nc" id="L1834">                dCombined.descriptors[j] = d2.descriptors[idx].copy();</span>
-<span class="nc" id="L1835">                k12.add(p);</span>
+<span class="nc bnc" id="L1886" title="All 2 branches missed.">        for (idx = 0; idx &lt; k2.size(); ++idx) {</span>
+<span class="nc" id="L1887">            p = k2.get(idx);</span>
+<span class="nc bnc" id="L1888" title="All 2 branches missed.">            if (!k12.contains(p)) {</span>
+<span class="nc" id="L1889">                kCombined.add(p);</span>
+<span class="nc" id="L1890">                oCombined.add(o2.get(idx));</span>
+<span class="nc" id="L1891">                j = k12.size();</span>
+<span class="nc" id="L1892">                dCombined.descriptors[j] = d2.descriptors[idx].copy();</span>
+<span class="nc" id="L1893">                k12.add(p);</span>
             }
         }
         
-<span class="nc bnc" id="L1839" title="All 2 branches missed.">        if (k12.size() &lt; n) {</span>
-<span class="nc" id="L1840">            dCombined.descriptors = Arrays.copyOf(dCombined.descriptors, k12.size());</span>
+<span class="nc bnc" id="L1897" title="All 2 branches missed.">        if (k12.size() &lt; n) {</span>
+<span class="nc" id="L1898">            dCombined.descriptors = Arrays.copyOf(dCombined.descriptors, k12.size());</span>
         }
         
-<span class="nc bnc" id="L1843" title="All 2 branches missed.">        assert(dCombined.descriptors.length == kCombined.size());</span>
-<span class="nc bnc" id="L1844" title="All 2 branches missed.">        assert(kCombined.size() == oCombined.size());</span>
-<span class="nc bnc" id="L1845" title="All 2 branches missed.">        assert(kCombined.size() == k12.size());</span>
+<span class="nc bnc" id="L1901" title="All 2 branches missed.">        assert(dCombined.descriptors.length == kCombined.size());</span>
+<span class="nc bnc" id="L1902" title="All 2 branches missed.">        assert(kCombined.size() == oCombined.size());</span>
+<span class="nc bnc" id="L1903" title="All 2 branches missed.">        assert(kCombined.size() == k12.size());</span>
         
-<span class="nc" id="L1847">        return new Object[]{dCombined, kCombined, oCombined};</span>
+<span class="nc" id="L1905">        return new Object[]{dCombined, kCombined, oCombined};</span>
     }
 
     /**
      * get a list of each octave's keypoint rows as a combined list.
      * The list contains coordinates which have already been scaled to the
-     * full image reference frame.  These are the row coordinates of
-     * key-points.  (The column coordinates are in keypoints1).
+     * full image reference frame.
+     * These are the row coordinates of key-points.  (The column coordinates are in keypoints1).
      * @return
      */
     public TIntList getAllKeyPoints0() {
 
-<span class="fc" id="L1859">        TIntList combined = new TIntArrayList(combinedKeypointList.size());</span>
+<span class="fc" id="L1917">        TIntList combined = new TIntArrayList(combinedKeypointList.size());</span>
         PairInt p;
-<span class="fc bfc" id="L1861" title="All 2 branches covered.">        for (int i = 0; i &lt; combinedKeypointList.size(); ++i) {</span>
-<span class="fc" id="L1862">            p = combinedKeypointList.get(i);</span>
-<span class="fc" id="L1863">            combined.add(p.getY());</span>
+<span class="fc bfc" id="L1919" title="All 2 branches covered.">        for (int i = 0; i &lt; combinedKeypointList.size(); ++i) {</span>
+<span class="fc" id="L1920">            p = combinedKeypointList.get(i);</span>
+<span class="fc" id="L1921">            combined.add(p.getY());</span>
         }
 
-<span class="fc" id="L1866">        return combined;</span>
+<span class="fc" id="L1924">        return combined;</span>
+    }
+
+    /**
+     * get a list of the octave's keypoints in format [3 X nKeypoints] where
+     * row 0 are the column (== x-axis) indexes, row 1 are the row (== y-axis)
+     * indexes, and row 2 are all 1's for the homogeneous coordinate z-axis.
+     * All coordinates are with respect to the largest image frame, scales[0],
+     * which is also called the first octave.
+     * @return keypoints in format [3 X nKeypoints] where
+     * row 0 are the column (== x-axis) indexes, row 1 are the row (== y-axis)
+     * indexes, and row 2 are all 1's for the homogeneous coordinate z-axis.
+     */
+    public double[][] getKeyPointsHomogenous(int octave) {
+<span class="pc bpc" id="L1938" title="2 of 4 branches missed.">        if (octave &lt; 0 || octave &gt;= scales.length) {</span>
+<span class="nc" id="L1939">            throw new IllegalArgumentException(&quot;octave can be 0 to &quot; + (scales.length - 1) + &quot;, inclusive&quot;);</span>
+        }
+<span class="fc" id="L1941">        TIntList rows = this.keypoints0List.get(octave);</span>
+<span class="fc" id="L1942">        TIntList cols = this.keypoints1List.get(octave);</span>
+<span class="fc" id="L1943">        int n = rows.size();</span>
+<span class="fc" id="L1944">        double[][] x = MatrixUtil.zeros(3, n);</span>
+<span class="fc bfc" id="L1945" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L1946">            x[0][i] = cols.get(i);</span>
+<span class="fc" id="L1947">            x[1][i] = rows.get(i);</span>
+        }
+<span class="fc" id="L1949">        Arrays.fill(x[2], 1);</span>
+<span class="fc" id="L1950">        return x;</span>
+    }
+
+    /**
+     * get a list of all octave's keypoints in format [3 X nKeypoints] where
+     * row 0 are the column (== x-axis) indexes, row 1 are the row (== y-axis)
+     * indexes, and row 2 are all 1's for the homogeneous coordinate z-axis.
+     * All coordinates are with respect to the largest image frame, scales[0],
+     * which is also called the first octave.
+     * @return keypoints in format [3 X nKeypoints] where
+     * row 0 are the column (== x-axis) indexes, row 1 are the row (== y-axis)
+     * indexes, and row 2 are all 1's for the homogeneous coordinate z-axis.
+     */
+    public double[][] getAllKeyPointsHomogenous() {
+        // combined are x,y
+<span class="fc" id="L1965">        int n = combinedKeypointList.size();</span>
+<span class="fc" id="L1966">        double[][] x = MatrixUtil.zeros(3, n);</span>
+<span class="fc bfc" id="L1967" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L1968">            x[0][i] = combinedKeypointList.get(i).getX();</span>
+<span class="fc" id="L1969">            x[1][i] = combinedKeypointList.get(i).getY();</span>
+        }
+<span class="fc" id="L1971">        Arrays.fill(x[2], 1);</span>
+<span class="fc" id="L1972">        return x;</span>
     }
     
     /**
@@ -1876,14 +1982,14 @@ public class ORB {
      */
     public TIntList getAllKeyPoints1() {
 
-<span class="fc" id="L1879">        TIntList combined = new TIntArrayList(combinedKeypointList.size());</span>
+<span class="fc" id="L1985">        TIntList combined = new TIntArrayList(combinedKeypointList.size());</span>
         PairInt p;
-<span class="fc bfc" id="L1881" title="All 2 branches covered.">        for (int i = 0; i &lt; combinedKeypointList.size(); ++i) {</span>
-<span class="fc" id="L1882">            p = combinedKeypointList.get(i);</span>
-<span class="fc" id="L1883">            combined.add(p.getX());</span>
+<span class="fc bfc" id="L1987" title="All 2 branches covered.">        for (int i = 0; i &lt; combinedKeypointList.size(); ++i) {</span>
+<span class="fc" id="L1988">            p = combinedKeypointList.get(i);</span>
+<span class="fc" id="L1989">            combined.add(p.getX());</span>
         }
 
-<span class="fc" id="L1886">        return combined;</span>
+<span class="fc" id="L1992">        return combined;</span>
     }
 
 
@@ -1894,7 +2000,7 @@ public class ORB {
      * @return
      */
     public List&lt;PairInt&gt; getAllKeyPoints() {
-<span class="fc" id="L1897">        return combinedKeypointList;</span>
+<span class="fc" id="L2003">        return combinedKeypointList;</span>
     }
 
 
@@ -1904,7 +2010,7 @@ public class ORB {
      * @return
      */
     public TDoubleList getAllOrientations() {
-<span class="fc" id="L1907">        return combinedOrientationList;</span>
+<span class="fc" id="L2013">        return combinedOrientationList;</span>
     }
 
     /**
@@ -1913,7 +2019,7 @@ public class ORB {
      * @return
      */
     public TFloatList getAllHarrisResponses() {
-<span class="fc" id="L1916">        return combinedHarrisResponseList;</span>
+<span class="fc" id="L2022">        return combinedHarrisResponseList;</span>
     }
 
     /**
@@ -1922,13 +2028,13 @@ public class ORB {
      * @return
      */
     public List&lt;PairInt&gt; getKeyPointListColMaj(int octave) {
-<span class="nc" id="L1925">        List&lt;PairInt&gt; out = new ArrayList&lt;PairInt&gt;();</span>
-<span class="nc bnc" id="L1926" title="All 2 branches missed.">        for (int i = 0; i &lt; keypoints0List.get(octave).size(); ++i) {</span>
-<span class="nc" id="L1927">            int x = keypoints1List.get(octave).get(i);</span>
-<span class="nc" id="L1928">            int y = keypoints0List.get(octave).get(i);</span>
-<span class="nc" id="L1929">            out.add(new PairInt(x, y));</span>
+<span class="nc" id="L2031">        List&lt;PairInt&gt; out = new ArrayList&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L2032" title="All 2 branches missed.">        for (int i = 0; i &lt; keypoints0List.get(octave).size(); ++i) {</span>
+<span class="nc" id="L2033">            int x = keypoints1List.get(octave).get(i);</span>
+<span class="nc" id="L2034">            int y = keypoints0List.get(octave).get(i);</span>
+<span class="nc" id="L2035">            out.add(new PairInt(x, y));</span>
         }
-<span class="nc" id="L1931">        return out;</span>
+<span class="nc" id="L2037">        return out;</span>
     }
     
     /**
@@ -1937,16 +2043,16 @@ public class ORB {
      * @return
      */
     public TIntList getKeyPointListPix(int octave) {
-<span class="nc" id="L1940">        int w = this.pyramidImages[octave].a[0].length;</span>
+<span class="nc" id="L2046">        int w = this.pyramidImages[octave].a[0].length;</span>
         //(row * width) + col
-<span class="nc" id="L1942">        TIntList out = new TIntArrayList();</span>
-<span class="nc bnc" id="L1943" title="All 2 branches missed.">        for (int i = 0; i &lt; keypoints0List.get(octave).size(); ++i) {</span>
-<span class="nc" id="L1944">            int x = keypoints1List.get(octave).get(i);</span>
-<span class="nc" id="L1945">            int y = keypoints0List.get(octave).get(i);</span>
-<span class="nc" id="L1946">            int pixIdx = (y * w) + x;</span>
-<span class="nc" id="L1947">            out.add(pixIdx);</span>
+<span class="nc" id="L2048">        TIntList out = new TIntArrayList();</span>
+<span class="nc bnc" id="L2049" title="All 2 branches missed.">        for (int i = 0; i &lt; keypoints0List.get(octave).size(); ++i) {</span>
+<span class="nc" id="L2050">            int x = keypoints1List.get(octave).get(i);</span>
+<span class="nc" id="L2051">            int y = keypoints0List.get(octave).get(i);</span>
+<span class="nc" id="L2052">            int pixIdx = (y * w) + x;</span>
+<span class="nc" id="L2053">            out.add(pixIdx);</span>
         }
-<span class="nc" id="L1949">        return out;</span>
+<span class="nc" id="L2055">        return out;</span>
     }
     
     /**
@@ -1956,7 +2062,11 @@ public class ORB {
      * @return
      */
     public List&lt;TIntList&gt; getKeyPoint0List() {
-<span class="nc" id="L1959">        return keypoints0List;</span>
+<span class="pc bpc" id="L2065" title="1 of 2 branches missed.">        if (keypoints0List == null) {</span>
+            //TODO: consider whether this should be an IllegalStateException
+<span class="nc" id="L2067">            System.err.println(&quot;keypoint0List is null.  detectAndExtract() must be run first&quot;);</span>
+        }
+<span class="fc" id="L2069">        return keypoints0List;</span>
     }
 
     /**
@@ -1966,7 +2076,11 @@ public class ORB {
      * @return
      */
     public List&lt;TIntList&gt; getKeyPoint1List() {
-<span class="nc" id="L1969">        return keypoints1List;</span>
+<span class="pc bpc" id="L2079" title="1 of 2 branches missed.">        if (keypoints1List == null) {</span>
+            //TODO: consider whether this should be an IllegalStateException
+<span class="nc" id="L2081">            System.err.println(&quot;keypoints1List is null.  detectAndExtract() must be run first&quot;);</span>
+        }
+<span class="fc" id="L2083">        return keypoints1List;</span>
     }
 
     /**
@@ -1977,7 +2091,7 @@ public class ORB {
      * @return
      */
     public List&lt;TDoubleList&gt; getOrientationsList() {
-<span class="nc" id="L1980">        return orientationsList;</span>
+<span class="nc" id="L2094">        return orientationsList;</span>
     }
 
     /**
@@ -1986,7 +2100,7 @@ public class ORB {
      * @return
      */
     public float[] getScales() {
-<span class="nc" id="L1989">        return scales;</span>
+<span class="fc" id="L2103">        return scales;</span>
     }
 
     /**
@@ -1997,7 +2111,7 @@ public class ORB {
      * @return
      */
     public List&lt;TFloatList&gt; getHarrisResponseList() {
-<span class="nc" id="L2000">        return harrisResponses;</span>
+<span class="nc" id="L2114">        return harrisResponses;</span>
     }
 
     /**
@@ -2011,18 +2125,18 @@ public class ORB {
     public static int[][] calcDescriptorCostMatrix(
         VeryLongBitString[] d1, VeryLongBitString[] d2) {
 
-<span class="fc" id="L2014">        int n1 = d1.length;</span>
-<span class="fc" id="L2015">        int n2 = d2.length;</span>
+<span class="fc" id="L2128">        int n1 = d1.length;</span>
+<span class="fc" id="L2129">        int n2 = d2.length;</span>
 
-<span class="fc" id="L2017">        int[][] cost = new int[n1][n2];</span>
-<span class="fc bfc" id="L2018" title="All 2 branches covered.">        for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="fc" id="L2019">            cost[i] = new int[n2];</span>
-<span class="fc bfc" id="L2020" title="All 2 branches covered.">            for (int j = 0; j &lt; n2; ++j) {</span>
-<span class="fc" id="L2021">                cost[i][j] = (int)d1[i].nBitsDifferent(d2[j]);</span>
+<span class="fc" id="L2131">        int[][] cost = new int[n1][n2];</span>
+<span class="fc bfc" id="L2132" title="All 2 branches covered.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="fc" id="L2133">            cost[i] = new int[n2];</span>
+<span class="fc bfc" id="L2134" title="All 2 branches covered.">            for (int j = 0; j &lt; n2; ++j) {</span>
+<span class="fc" id="L2135">                cost[i][j] = (int)d1[i].nBitsDifferent(d2[j]);</span>
             }
         }
 
-<span class="fc" id="L2025">        return cost;</span>
+<span class="fc" id="L2139">        return cost;</span>
     }
 
     /**
@@ -2038,35 +2152,35 @@ public class ORB {
     public static int[][] calcDescriptorCostMatrix(
         Descriptors[] desc1, Descriptors[] desc2) {
 
-<span class="nc bnc" id="L2041" title="All 2 branches missed.">        assert(desc1.length == desc2.length);</span>
+<span class="nc bnc" id="L2155" title="All 2 branches missed.">        assert(desc1.length == desc2.length);</span>
 
-<span class="nc" id="L2043">        int nd = desc1.length;</span>
+<span class="nc" id="L2157">        int nd = desc1.length;</span>
 
-<span class="nc" id="L2045">        int n1 = desc1[0].descriptors.length;</span>
-<span class="nc" id="L2046">        int n2 = desc2[0].descriptors.length;</span>
+<span class="nc" id="L2159">        int n1 = desc1[0].descriptors.length;</span>
+<span class="nc" id="L2160">        int n2 = desc2[0].descriptors.length;</span>
 
         // d1 contains multiple descriptors for same points, such as
         // descriptors for H, S, and V
 
-<span class="nc" id="L2051">        int[][] cost = new int[n1][n2];</span>
-<span class="nc bnc" id="L2052" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="nc" id="L2053">            cost[i] = new int[n2];</span>
+<span class="nc" id="L2165">        int[][] cost = new int[n1][n2];</span>
+<span class="nc bnc" id="L2166" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="nc" id="L2167">            cost[i] = new int[n2];</span>
         }
 
-<span class="nc bnc" id="L2056" title="All 2 branches missed.">        for (int k = 0; k &lt; nd; ++k) {</span>
-<span class="nc" id="L2057">            VeryLongBitString[] d1 = desc1[k].descriptors;</span>
-<span class="nc" id="L2058">            VeryLongBitString[] d2 = desc2[k].descriptors;</span>
-<span class="nc bnc" id="L2059" title="All 2 branches missed.">            assert(d1.length == n1);</span>
-<span class="nc bnc" id="L2060" title="All 2 branches missed.">            assert(d2.length == n2);</span>
-<span class="nc bnc" id="L2061" title="All 2 branches missed.">            for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="nc bnc" id="L2062" title="All 2 branches missed.">                for (int j = 0; j &lt; n2; ++j) {</span>
+<span class="nc bnc" id="L2170" title="All 2 branches missed.">        for (int k = 0; k &lt; nd; ++k) {</span>
+<span class="nc" id="L2171">            VeryLongBitString[] d1 = desc1[k].descriptors;</span>
+<span class="nc" id="L2172">            VeryLongBitString[] d2 = desc2[k].descriptors;</span>
+<span class="nc bnc" id="L2173" title="All 2 branches missed.">            assert(d1.length == n1);</span>
+<span class="nc bnc" id="L2174" title="All 2 branches missed.">            assert(d2.length == n2);</span>
+<span class="nc bnc" id="L2175" title="All 2 branches missed.">            for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="nc bnc" id="L2176" title="All 2 branches missed.">                for (int j = 0; j &lt; n2; ++j) {</span>
                     //cost[i][j] += (nbits * nbits); could use sq diff...
-<span class="nc" id="L2064">                    cost[i][j] += (int)d1[i].nBitsDifferent(d2[j]);</span>
+<span class="nc" id="L2178">                    cost[i][j] += (int)d1[i].nBitsDifferent(d2[j]);</span>
                 }
             }
         }
 
-<span class="nc" id="L2069">        return cost;</span>
+<span class="nc" id="L2183">        return cost;</span>
     }
 
     /**
@@ -2075,44 +2189,44 @@ public class ORB {
      * @return
      */
     public static Image convertToImage(TwoDFloatArray a) {
-<span class="nc" id="L2078">        int n1 = a.a.length;</span>
-<span class="nc" id="L2079">        int n2 = a.a[0].length;</span>
-<span class="nc" id="L2080">        Image img = new Image(n2, n1);</span>
-<span class="nc bnc" id="L2081" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="nc bnc" id="L2082" title="All 2 branches missed.">            for (int j = 0; j &lt; n2; ++j) {</span>
-<span class="nc" id="L2083">                float v = 255.f * a.a[i][j];</span>
-<span class="nc" id="L2084">                int vInt = Math.round(v);</span>
-<span class="nc bnc" id="L2085" title="All 2 branches missed.">                if (vInt &gt; 255) {</span>
-<span class="nc" id="L2086">                    vInt = 255;</span>
+<span class="nc" id="L2192">        int n1 = a.a.length;</span>
+<span class="nc" id="L2193">        int n2 = a.a[0].length;</span>
+<span class="nc" id="L2194">        Image img = new Image(n2, n1);</span>
+<span class="nc bnc" id="L2195" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="nc bnc" id="L2196" title="All 2 branches missed.">            for (int j = 0; j &lt; n2; ++j) {</span>
+<span class="nc" id="L2197">                float v = 255.f * a.a[i][j];</span>
+<span class="nc" id="L2198">                int vInt = Math.round(v);</span>
+<span class="nc bnc" id="L2199" title="All 2 branches missed.">                if (vInt &gt; 255) {</span>
+<span class="nc" id="L2200">                    vInt = 255;</span>
                 }
-<span class="nc" id="L2088">                img.setRGB(j, i, vInt, vInt, vInt);</span>
+<span class="nc" id="L2202">                img.setRGB(j, i, vInt, vInt, vInt);</span>
             }
         }
-<span class="nc" id="L2091">        return img;</span>
+<span class="nc" id="L2205">        return img;</span>
     }
     
     private void extractATrousKeypoints(TIntList outputKP0, TIntList outputKP1) {
         
-<span class="fc" id="L2096">        List&lt;GreyscaleImage&gt; transformed = new ArrayList&lt;GreyscaleImage&gt;();</span>
-<span class="fc" id="L2097">        List&lt;GreyscaleImage&gt; coeffs = new ArrayList&lt;GreyscaleImage&gt;();</span>
+<span class="fc" id="L2210">        List&lt;GreyscaleImage&gt; transformed = new ArrayList&lt;GreyscaleImage&gt;();</span>
+<span class="fc" id="L2211">        List&lt;GreyscaleImage&gt; coeffs = new ArrayList&lt;GreyscaleImage&gt;();</span>
 
-<span class="fc" id="L2099">        ATrousWaveletTransform at = new ATrousWaveletTransform();</span>
-<span class="fc" id="L2100">        at.calculateWithB3SplineScalingFunction(img, transformed, coeffs, 2);</span>
+<span class="fc" id="L2213">        ATrousWaveletTransform at = new ATrousWaveletTransform();</span>
+<span class="fc" id="L2214">        at.calculateWithB3SplineScalingFunction(img, transformed, coeffs, 2);</span>
 
-<span class="pc bpc" id="L2102" title="1 of 2 branches missed.">        if (coeffs.size() &gt;= 2) {</span>
+<span class="pc bpc" id="L2216" title="1 of 2 branches missed.">        if (coeffs.size() &gt;= 2) {</span>
 
-<span class="fc" id="L2104">            ImageProcessor imageProcessor = new ImageProcessor();</span>
-<span class="fc" id="L2105">            float[][] rowMajorImg = imageProcessor.copyToRowMajor(</span>
-<span class="fc" id="L2106">                coeffs.get(1));</span>
-<span class="fc" id="L2107">            MatrixUtil.multiply(rowMajorImg, 1.f / 255.f);</span>
+<span class="fc" id="L2218">            ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L2219">            float[][] rowMajorImg = imageProcessor.copyToRowMajor(</span>
+<span class="fc" id="L2220">                coeffs.get(1));</span>
+<span class="fc" id="L2221">            MatrixUtil.multiply(rowMajorImg, 1.f / 255.f);</span>
 
             // lowering this results in more keypoints
-<span class="fc" id="L2110">            float ff = 0.08f;</span>
+<span class="fc" id="L2224">            float ff = 0.08f;</span>
 
-<span class="fc" id="L2112">            float[][] fastResponse = cornerFast(rowMajorImg, fastN, ff);</span>
+<span class="fc" id="L2226">            float[][] fastResponse = cornerFast(rowMajorImg, fastN, ff);</span>
 
-<span class="fc" id="L2114">            float f = 0.1f;</span>
-<span class="fc" id="L2115">            imageProcessor.peakLocalMax(fastResponse, 1, f, </span>
+<span class="fc" id="L2228">            float f = 0.1f;</span>
+<span class="fc" id="L2229">            imageProcessor.peakLocalMax(fastResponse, 1, f, </span>
                 true, outputKP0, outputKP1);
             /*
             float factor = 255.f;
@@ -2125,9 +2239,9 @@ public class ORB {
             algorithms.misc.MiscDebug.writeImage(img2, &quot;_atrous_&quot; 
                 + algorithms.misc.MiscDebug.getCurrentTimeFormatted());
             */
-<span class="fc" id="L2128">            log.fine(&quot;  atrous nKeypoints= &quot; + outputKP0.size());</span>
+<span class="fc" id="L2242">            log.fine(&quot;  atrous nKeypoints= &quot; + outputKP0.size());</span>
         }
-<span class="fc" id="L2130">    }</span>
+<span class="fc" id="L2244">    }</span>
     
     /**
      * create col major image from row major input
@@ -2135,34 +2249,34 @@ public class ORB {
      * @return
      */
     public static GreyscaleImage convertToImageGS(TwoDFloatArray a) {
-<span class="nc" id="L2138">        int n1 = a.a.length;</span>
-<span class="nc" id="L2139">        int n2 = a.a[0].length;</span>
-<span class="nc" id="L2140">        GreyscaleImage img = new GreyscaleImage(n2, n1);</span>
-<span class="nc bnc" id="L2141" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="nc bnc" id="L2142" title="All 2 branches missed.">            for (int j = 0; j &lt; n2; ++j) {</span>
-<span class="nc" id="L2143">                float v = 255.f * a.a[i][j];</span>
-<span class="nc" id="L2144">                int vInt = Math.round(v);</span>
-<span class="nc bnc" id="L2145" title="All 2 branches missed.">                if (vInt &gt; 255) {</span>
-<span class="nc" id="L2146">                    vInt = 255;</span>
+<span class="nc" id="L2252">        int n1 = a.a.length;</span>
+<span class="nc" id="L2253">        int n2 = a.a[0].length;</span>
+<span class="nc" id="L2254">        GreyscaleImage img = new GreyscaleImage(n2, n1);</span>
+<span class="nc bnc" id="L2255" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="nc bnc" id="L2256" title="All 2 branches missed.">            for (int j = 0; j &lt; n2; ++j) {</span>
+<span class="nc" id="L2257">                float v = 255.f * a.a[i][j];</span>
+<span class="nc" id="L2258">                int vInt = Math.round(v);</span>
+<span class="nc bnc" id="L2259" title="All 2 branches missed.">                if (vInt &gt; 255) {</span>
+<span class="nc" id="L2260">                    vInt = 255;</span>
                 }
-<span class="nc" id="L2148">                img.setValue(j, i, vInt);</span>
+<span class="nc" id="L2262">                img.setValue(j, i, vInt);</span>
             }
         }
-<span class="nc" id="L2151">        return img;</span>
+<span class="nc" id="L2265">        return img;</span>
     }
 
      /**
      * @return the pyramidImages
      */
     public TwoDFloatArray[] getPyramidImages() {
-<span class="nc" id="L2158">        return pyramidImages;</span>
+<span class="nc" id="L2272">        return pyramidImages;</span>
     }
 
     /**
      * @return the descrChoice
      */
     public DescriptorChoice getDescrChoice() {
-<span class="nc" id="L2165">        return descrChoice;</span>
+<span class="nc" id="L2279">        return descrChoice;</span>
     }
 
 }

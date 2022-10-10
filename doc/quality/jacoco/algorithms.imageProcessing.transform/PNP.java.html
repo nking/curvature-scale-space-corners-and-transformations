@@ -445,8 +445,8 @@ import no.uib.cipr.matrix.NotConvergedException;
 <span class="fc" id="L445">                System.out.printf(&quot;fPrev updated to fTest: fPrev=%.11e fTest=%.11e\n&quot;, fPrev, fTest);</span>
 <span class="fc" id="L446">                System.out.flush();</span>
                 
-<span class="fc" id="L448">                System.out.printf(&quot;elementwise diff in rotation:\n%s\n&quot;, </span>
-<span class="fc" id="L449">                    FormatArray.toString(MatrixUtil.elementwiseSubtract(outExtr.getRotation(), rTest),</span>
+<span class="fc" id="L448">                System.out.printf(&quot;pointwise diff in rotation:\n%s\n&quot;, </span>
+<span class="fc" id="L449">                    FormatArray.toString(MatrixUtil.pointwiseSubtract(outExtr.getRotation(), rTest),</span>
                     &quot;%.11e&quot;));
             
 <span class="fc" id="L452">                outExtr.setRotation(MatrixUtil.copy(rTest));</span>
@@ -749,7 +749,7 @@ import no.uib.cipr.matrix.NotConvergedException;
 <span class="nc" id="L749">        double[][] identity = MatrixUtil.createIdentityMatrix(6);</span>
 <span class="nc" id="L750">        MatrixUtil.multiply(identity, lambda);</span>
         // 6 X 6
-<span class="nc" id="L752">        double[][] a = MatrixUtil.elementwiseAdd(jTJ, identity);</span>
+<span class="nc" id="L752">        double[][] a = MatrixUtil.pointwiseAdd(jTJ, identity);</span>
 <span class="nc" id="L753">        double[][] aInv = MatrixUtil.pseudoinverseFullColumnRank(a);</span>
         
 <span class="nc" id="L755">        double[] step = MatrixUtil.multiplyMatrixByColumnVector(aInv, jTBF);</span>

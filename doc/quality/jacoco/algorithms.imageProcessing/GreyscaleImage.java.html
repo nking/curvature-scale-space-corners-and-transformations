@@ -922,7 +922,7 @@ import java.util.Arrays;
         https://en.wikipedia.org/wiki/Grayscale
             grey = red * .2126 + green * .07152 + blue * .0722;
         */
-<span class="pc bpc" id="L925" title="1 of 2 branches missed.">        Image img2 = new Image(width, height, !is64Bit);</span>
+<span class="fc bfc" id="L925" title="All 2 branches covered.">        Image img2 = new Image(width, height, !is64Bit);</span>
         
 <span class="fc bfc" id="L927" title="All 2 branches covered.">        for (int i = 0; i &lt; nPixels; ++i) {</span>
 <span class="fc" id="L928">            int v = getValue(i);</span>
@@ -1171,15 +1171,15 @@ import java.util.Arrays;
      */
     public float[][] toNormalizedRowMajorArray() {
         
-<span class="nc" id="L1174">        float[][] a = new float[height][];</span>
-<span class="nc bnc" id="L1175" title="All 2 branches missed.">        for (int i = 0; i &lt; height; ++i) {</span>
-<span class="nc" id="L1176">            a[i] = new float[width];</span>
-<span class="nc bnc" id="L1177" title="All 2 branches missed.">            for (int j = 0; j &lt; width; ++j) {</span>
-<span class="nc" id="L1178">                a[i][j] = ((float)getValue(j, i))/255.f;</span>
+<span class="fc" id="L1174">        float[][] a = new float[height][];</span>
+<span class="fc bfc" id="L1175" title="All 2 branches covered.">        for (int i = 0; i &lt; height; ++i) {</span>
+<span class="fc" id="L1176">            a[i] = new float[width];</span>
+<span class="fc bfc" id="L1177" title="All 2 branches covered.">            for (int j = 0; j &lt; width; ++j) {</span>
+<span class="fc" id="L1178">                a[i][j] = ((float)getValue(j, i))/255.f;</span>
             }
         }
         
-<span class="nc" id="L1182">        return a;</span>
+<span class="fc" id="L1182">        return a;</span>
     }
 
     @Override

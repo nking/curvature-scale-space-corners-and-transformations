@@ -11,43 +11,54 @@ import no.uib.cipr.matrix.DenseMatrix;
 public class EpipolarTransformationFit extends AbstractTransformationFit {
     
     private final ErrorType errorType;
-    
+
+    //TODO: change type to double[][] when have finished changes to RANSACSolver2 and ORB2 and classes that use the previous versions
     private DenseMatrix fundamentalMatrix;
-    
+
     public EpipolarTransformationFit(DenseMatrix theFundamentalMatrix,
         List&lt;Integer&gt; theInlierIndexes, ErrorType theErrorType,
         List&lt;Double&gt; theErrors, double theTolerance) {
-        
-<span class="fc" id="L21">        super(theInlierIndexes, theErrors, theTolerance);</span>
-        
-<span class="fc" id="L23">        fundamentalMatrix = theFundamentalMatrix.copy();</span>
-<span class="fc" id="L24">        errorType = theErrorType;</span>
-<span class="fc" id="L25">    }</span>
+
+<span class="fc" id="L22">        super(theInlierIndexes, theErrors, theTolerance);</span>
+
+<span class="fc" id="L24">        fundamentalMatrix = theFundamentalMatrix.copy();</span>
+<span class="fc" id="L25">        errorType = theErrorType;</span>
+<span class="fc" id="L26">    }</span>
+
+    public EpipolarTransformationFit(double[][] theFundamentalMatrix,
+                                     List&lt;Integer&gt; theInlierIndexes, ErrorType theErrorType,
+                                     List&lt;Double&gt; theErrors, double theTolerance) {
+
+<span class="nc" id="L32">        super(theInlierIndexes, theErrors, theTolerance);</span>
+
+<span class="nc" id="L34">        fundamentalMatrix = new DenseMatrix(theFundamentalMatrix);</span>
+<span class="nc" id="L35">        errorType = theErrorType;</span>
+<span class="nc" id="L36">    }</span>
    
     public DenseMatrix getFundamentalMatrix() {
-<span class="fc" id="L28">        return fundamentalMatrix;</span>
+<span class="fc" id="L39">        return fundamentalMatrix;</span>
     }
 
     /**
      * @return the errorType
      */
     public ErrorType getErrorType() {
-<span class="fc" id="L35">        return errorType;</span>
+<span class="fc" id="L46">        return errorType;</span>
     }
     
     public void setFundamentalMatrix(DenseMatrix theFM) {
-<span class="nc" id="L39">        fundamentalMatrix = theFM;</span>
-<span class="nc" id="L40">    }</span>
+<span class="nc" id="L50">        fundamentalMatrix = theFM;</span>
+<span class="nc" id="L51">    }</span>
 
     @Override
     public String toString() {
-<span class="fc" id="L44">        String str = super.toString();</span>
-<span class="fc" id="L45">        StringBuilder sb = new StringBuilder(str);</span>
-<span class="fc" id="L46">        sb.append(&quot;\n  tol=&quot;).append(tolerance);</span>
-<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (fundamentalMatrix != null) {</span>
-<span class="fc" id="L48">            sb.append(&quot;\n  fm=\n&quot;).append(_toString(fundamentalMatrix, &quot;%.3e&quot;));</span>
+<span class="fc" id="L55">        String str = super.toString();</span>
+<span class="fc" id="L56">        StringBuilder sb = new StringBuilder(str);</span>
+<span class="fc" id="L57">        sb.append(&quot;\n  tol=&quot;).append(tolerance);</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        if (fundamentalMatrix != null) {</span>
+<span class="fc" id="L59">            sb.append(&quot;\n  fm=\n&quot;).append(_toString(fundamentalMatrix, &quot;%.3e&quot;));</span>
         }
-<span class="fc" id="L50">        return sb.toString();</span>
+<span class="fc" id="L61">        return sb.toString();</span>
     }
    
 }

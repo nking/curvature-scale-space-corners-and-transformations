@@ -318,95 +318,93 @@ public class HoughTransform {
      * to remove outliers.
      * @param linePoints input and output modified set
      * @param roughTheta
-     * @param meanTolerance
-     * @param stDvTolerance
-     * @return 
+     * @return
      */
     private float[] calculateReducedLinePolarCoordsAndStats(
         Set&lt;PairInt&gt; linePoints, Integer roughTheta) {
         
-<span class="nc" id="L328">        PairFloatArray xy = new PairFloatArray();</span>
+<span class="nc" id="L326">        PairFloatArray xy = new PairFloatArray();</span>
         
-<span class="nc bnc" id="L330" title="All 2 branches missed.">        for (PairInt p : linePoints) {</span>
-<span class="nc" id="L331">            xy.add(p.getX(), p.getY());</span>
-<span class="nc" id="L332">        }</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">        for (PairInt p : linePoints) {</span>
+<span class="nc" id="L329">            xy.add(p.getX(), p.getY());</span>
+<span class="nc" id="L330">        }</span>
             
-<span class="nc" id="L334">        LinearRegression lReg = new LinearRegression();</span>
+<span class="nc" id="L332">        LinearRegression lReg = new LinearRegression();</span>
         //lReg.plotTheLinearRegression(x, y);
         
         float[] yInterceptAndSlope;
         
-<span class="nc bnc" id="L339" title="All 2 branches missed.">        if (xy.getN() &gt; 3162) {</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">        if (xy.getN() &gt; 3162) {</span>
         //if (xy.getN() &gt; 46340) {
             // need to reduce the number of points
             //TODO: replace with faster sampling
-<span class="nc" id="L343">            Random random = new Random(System.nanoTime());</span>
-<span class="nc" id="L344">            int n = 3162;</span>
-<span class="nc" id="L345">            float[] xs = new float[n];</span>
-<span class="nc" id="L346">            float[] ys = new float[n];</span>
-<span class="nc" id="L347">            Set&lt;Integer&gt; chosen = new HashSet&lt;Integer&gt;();</span>
-<span class="nc bnc" id="L348" title="All 2 branches missed.">            while (chosen.size() &lt; n) {</span>
-<span class="nc" id="L349">                int idx = random.nextInt(n);</span>
-<span class="nc" id="L350">                Integer index = Integer.valueOf(idx);</span>
-<span class="nc bnc" id="L351" title="All 2 branches missed.">                if (!chosen.contains(index)) {</span>
-<span class="nc" id="L352">                    xs[chosen.size()] = xy.getX(idx);</span>
-<span class="nc" id="L353">                    ys[chosen.size()] = xy.getY(idx);</span>
-<span class="nc" id="L354">                    chosen.add(index);</span>
+<span class="nc" id="L341">            Random random = new Random(System.nanoTime());</span>
+<span class="nc" id="L342">            int n = 3162;</span>
+<span class="nc" id="L343">            float[] xs = new float[n];</span>
+<span class="nc" id="L344">            float[] ys = new float[n];</span>
+<span class="nc" id="L345">            Set&lt;Integer&gt; chosen = new HashSet&lt;Integer&gt;();</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">            while (chosen.size() &lt; n) {</span>
+<span class="nc" id="L347">                int idx = random.nextInt(n);</span>
+<span class="nc" id="L348">                Integer index = Integer.valueOf(idx);</span>
+<span class="nc bnc" id="L349" title="All 2 branches missed.">                if (!chosen.contains(index)) {</span>
+<span class="nc" id="L350">                    xs[chosen.size()] = xy.getX(idx);</span>
+<span class="nc" id="L351">                    ys[chosen.size()] = xy.getY(idx);</span>
+<span class="nc" id="L352">                    chosen.add(index);</span>
                 }
-<span class="nc" id="L356">            }</span>
-<span class="nc" id="L357">            yInterceptAndSlope = lReg.calculateTheilSenEstimatorParams(xs, ys);</span>
-<span class="nc" id="L358">        } else {            </span>
-<span class="nc" id="L359">            float[] x = Arrays.copyOf(xy.getX(), xy.getN());</span>
-<span class="nc" id="L360">            float[] y = Arrays.copyOf(xy.getY(), xy.getN());</span>
-<span class="nc" id="L361">            yInterceptAndSlope = lReg.calculateTheilSenEstimatorParams(x, y);</span>
+<span class="nc" id="L354">            }</span>
+<span class="nc" id="L355">            yInterceptAndSlope = lReg.calculateTheilSenEstimatorParams(xs, ys);</span>
+<span class="nc" id="L356">        } else {            </span>
+<span class="nc" id="L357">            float[] x = Arrays.copyOf(xy.getX(), xy.getN());</span>
+<span class="nc" id="L358">            float[] y = Arrays.copyOf(xy.getY(), xy.getN());</span>
+<span class="nc" id="L359">            yInterceptAndSlope = lReg.calculateTheilSenEstimatorParams(x, y);</span>
         }
         
         double thetaRadians;
-<span class="nc" id="L365">        double rSum = 0;</span>
+<span class="nc" id="L363">        double rSum = 0;</span>
         
-<span class="nc bnc" id="L367" title="All 2 branches missed.">        boolean isVertical = (yInterceptAndSlope[1] == Float.MAX_VALUE);</span>
-<span class="nc bnc" id="L368" title="All 2 branches missed.">        boolean isHorizontal = (yInterceptAndSlope[1] == 0); </span>
+<span class="nc bnc" id="L365" title="All 2 branches missed.">        boolean isVertical = (yInterceptAndSlope[1] == Float.MAX_VALUE);</span>
+<span class="nc bnc" id="L366" title="All 2 branches missed.">        boolean isHorizontal = (yInterceptAndSlope[1] == 0); </span>
         
-<span class="nc bnc" id="L370" title="All 2 branches missed.">        if (isVertical) {</span>
-<span class="nc" id="L371">            thetaRadians = Math.PI/2.;</span>
-<span class="nc" id="L372">            int count = 0;</span>
-<span class="nc bnc" id="L373" title="All 2 branches missed.">            for (PairInt p : linePoints) {</span>
-<span class="nc bnc" id="L374" title="All 2 branches missed.">                if ((count &amp; 1) == 1) {</span>
-<span class="nc" id="L375">                    continue;</span>
+<span class="nc bnc" id="L368" title="All 2 branches missed.">        if (isVertical) {</span>
+<span class="nc" id="L369">            thetaRadians = Math.PI/2.;</span>
+<span class="nc" id="L370">            int count = 0;</span>
+<span class="nc bnc" id="L371" title="All 2 branches missed.">            for (PairInt p : linePoints) {</span>
+<span class="nc bnc" id="L372" title="All 2 branches missed.">                if ((count &amp; 1) == 1) {</span>
+<span class="nc" id="L373">                    continue;</span>
                 }
-<span class="nc" id="L377">                rSum += p.getX();</span>
-<span class="nc" id="L378">                ++count;</span>
-<span class="nc" id="L379">            }</span>
-<span class="nc" id="L380">            rSum /= count;</span>
-<span class="nc bnc" id="L381" title="All 2 branches missed.">        } else if (isHorizontal) {</span>
-<span class="nc" id="L382">            thetaRadians = 0;</span>
-<span class="nc" id="L383">            int count = 0;</span>
-<span class="nc bnc" id="L384" title="All 2 branches missed.">            for (PairInt p : linePoints) {</span>
-<span class="nc bnc" id="L385" title="All 2 branches missed.">                if ((count &amp; 1) == 1) {</span>
-<span class="nc" id="L386">                    continue;</span>
+<span class="nc" id="L375">                rSum += p.getX();</span>
+<span class="nc" id="L376">                ++count;</span>
+<span class="nc" id="L377">            }</span>
+<span class="nc" id="L378">            rSum /= count;</span>
+<span class="nc bnc" id="L379" title="All 2 branches missed.">        } else if (isHorizontal) {</span>
+<span class="nc" id="L380">            thetaRadians = 0;</span>
+<span class="nc" id="L381">            int count = 0;</span>
+<span class="nc bnc" id="L382" title="All 2 branches missed.">            for (PairInt p : linePoints) {</span>
+<span class="nc bnc" id="L383" title="All 2 branches missed.">                if ((count &amp; 1) == 1) {</span>
+<span class="nc" id="L384">                    continue;</span>
                 }
-<span class="nc" id="L388">                rSum += p.getY();</span>
-<span class="nc" id="L389">                ++count;</span>
-<span class="nc" id="L390">            }</span>
-<span class="nc" id="L391">            rSum /= count;</span>
-<span class="nc" id="L392">        } else {</span>
-<span class="nc" id="L393">            thetaRadians = Math.atan(yInterceptAndSlope[1]);</span>
-<span class="nc" id="L394">            double ct = Math.cos(thetaRadians);</span>
-<span class="nc" id="L395">            double st = Math.sin(thetaRadians);</span>
-<span class="nc" id="L396">            int count = 0;</span>
-<span class="nc bnc" id="L397" title="All 2 branches missed.">            for (PairInt p : linePoints) {</span>
-<span class="nc bnc" id="L398" title="All 2 branches missed.">                if ((count &amp; 1) == 1) {</span>
-<span class="nc" id="L399">                    continue;</span>
+<span class="nc" id="L386">                rSum += p.getY();</span>
+<span class="nc" id="L387">                ++count;</span>
+<span class="nc" id="L388">            }</span>
+<span class="nc" id="L389">            rSum /= count;</span>
+<span class="nc" id="L390">        } else {</span>
+<span class="nc" id="L391">            thetaRadians = Math.atan(yInterceptAndSlope[1]);</span>
+<span class="nc" id="L392">            double ct = Math.cos(thetaRadians);</span>
+<span class="nc" id="L393">            double st = Math.sin(thetaRadians);</span>
+<span class="nc" id="L394">            int count = 0;</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">            for (PairInt p : linePoints) {</span>
+<span class="nc bnc" id="L396" title="All 2 branches missed.">                if ((count &amp; 1) == 1) {</span>
+<span class="nc" id="L397">                    continue;</span>
                 }
-<span class="nc" id="L401">                rSum += (p.getX() * ct) + (p.getY() * st);</span>
-<span class="nc" id="L402">                ++count;</span>
-<span class="nc" id="L403">            }</span>
-<span class="nc" id="L404">            rSum /= count;</span>
+<span class="nc" id="L399">                rSum += (p.getX() * ct) + (p.getY() * st);</span>
+<span class="nc" id="L400">                ++count;</span>
+<span class="nc" id="L401">            }</span>
+<span class="nc" id="L402">            rSum /= count;</span>
         }
         
-<span class="nc" id="L407">        int t = (int)Math.round(thetaRadians*180./Math.PI);</span>
-<span class="nc bnc" id="L408" title="All 2 branches missed.">        if (t &lt; 0) {</span>
-<span class="nc" id="L409">            t += 360;</span>
+<span class="nc" id="L405">        int t = (int)Math.round(thetaRadians*180./Math.PI);</span>
+<span class="nc bnc" id="L406" title="All 2 branches missed.">        if (t &lt; 0) {</span>
+<span class="nc" id="L407">            t += 360;</span>
         }
         
         // ----- evaluate ------
@@ -422,99 +420,99 @@ public class HoughTransform {
         )
         */
         
-<span class="nc" id="L425">        float m = yInterceptAndSlope[1];</span>
-<span class="nc" id="L426">        float k = yInterceptAndSlope[0];</span>
+<span class="nc" id="L423">        float m = yInterceptAndSlope[1];</span>
+<span class="nc" id="L424">        float k = yInterceptAndSlope[0];</span>
         float mn, stdv;
             
-<span class="nc" id="L429">        double sum = 0;</span>
-<span class="nc" id="L430">        int count = 0;</span>
-<span class="nc" id="L431">        double[] d = new double[linePoints.size()];</span>
-<span class="nc" id="L432">        List&lt;PairInt&gt; points = new ArrayList&lt;PairInt&gt;(linePoints);</span>
-<span class="nc bnc" id="L433" title="All 2 branches missed.">        for (PairInt p : points) {</span>
-<span class="nc" id="L434">            int x0 = p.getX();</span>
-<span class="nc" id="L435">            int y0 = p.getY();</span>
-<span class="nc bnc" id="L436" title="All 2 branches missed.">            if (isVertical) {</span>
-<span class="nc" id="L437">                d[count] = x0 - rSum;</span>
-<span class="nc bnc" id="L438" title="All 2 branches missed.">            } else if (isHorizontal) {</span>
-<span class="nc" id="L439">                d[count] = y0 - rSum;</span>
+<span class="nc" id="L427">        double sum = 0;</span>
+<span class="nc" id="L428">        int count = 0;</span>
+<span class="nc" id="L429">        double[] d = new double[linePoints.size()];</span>
+<span class="nc" id="L430">        List&lt;PairInt&gt; points = new ArrayList&lt;PairInt&gt;(linePoints);</span>
+<span class="nc bnc" id="L431" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc" id="L432">            int x0 = p.getX();</span>
+<span class="nc" id="L433">            int y0 = p.getY();</span>
+<span class="nc bnc" id="L434" title="All 2 branches missed.">            if (isVertical) {</span>
+<span class="nc" id="L435">                d[count] = x0 - rSum;</span>
+<span class="nc bnc" id="L436" title="All 2 branches missed.">            } else if (isHorizontal) {</span>
+<span class="nc" id="L437">                d[count] = y0 - rSum;</span>
             } else {
                 /*
                 m*x - y + yIntercept = 0
                 */
-<span class="nc" id="L444">                d[count] = Math.sqrt(Math.abs(m*x0 - y0 + k)/(m*m + 1));  </span>
+<span class="nc" id="L442">                d[count] = Math.sqrt(Math.abs(m*x0 - y0 + k)/(m*m + 1));  </span>
             }
-<span class="nc" id="L446">            sum += d[count];</span>
-<span class="nc" id="L447">            count++;</span>
-<span class="nc" id="L448">        }</span>
-<span class="nc" id="L449">        sum /= (double)linePoints.size();</span>
-<span class="nc" id="L450">        mn = (float)sum;</span>
-<span class="nc" id="L451">        sum = 0;</span>
-<span class="nc bnc" id="L452" title="All 2 branches missed.">        for (int i = 0; i &lt; d.length; ++i) {</span>
-<span class="nc" id="L453">            double diff = d[i] - mn;</span>
-<span class="nc" id="L454">            sum += (diff * diff);</span>
-<span class="nc" id="L455">            count++;</span>
+<span class="nc" id="L444">            sum += d[count];</span>
+<span class="nc" id="L445">            count++;</span>
+<span class="nc" id="L446">        }</span>
+<span class="nc" id="L447">        sum /= (double)linePoints.size();</span>
+<span class="nc" id="L448">        mn = (float)sum;</span>
+<span class="nc" id="L449">        sum = 0;</span>
+<span class="nc bnc" id="L450" title="All 2 branches missed.">        for (int i = 0; i &lt; d.length; ++i) {</span>
+<span class="nc" id="L451">            double diff = d[i] - mn;</span>
+<span class="nc" id="L452">            sum += (diff * diff);</span>
+<span class="nc" id="L453">            count++;</span>
         }
-<span class="nc" id="L457">        stdv = (float)Math.sqrt(sum/((double)linePoints.size() - 1.));        </span>
+<span class="nc" id="L455">        stdv = (float)Math.sqrt(sum/((double)linePoints.size() - 1.));        </span>
         
-<span class="nc bnc" id="L459" title="All 2 branches missed.">        if (stdv == 0) {</span>
-<span class="nc" id="L460">            return new float[]{t, (float)Math.abs(rSum), Math.abs(mn), stdv};</span>
+<span class="nc bnc" id="L457" title="All 2 branches missed.">        if (stdv == 0) {</span>
+<span class="nc" id="L458">            return new float[]{t, (float)Math.abs(rSum), Math.abs(mn), stdv};</span>
         }
         
         // TODO: might want to allow a tolerance to be passed in
-<span class="nc" id="L464">        double limit = stdv;</span>
+<span class="nc" id="L462">        double limit = stdv;</span>
         // if it's highly inclined line, tolerance has to allow for step width
-<span class="nc bnc" id="L466" title="All 2 branches missed.">        if ((Math.abs(AngleUtil.getAngleDifference(t, 22.5f)) &lt; 12) || </span>
-<span class="nc bnc" id="L467" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 67.5f)) &lt; 12) ||</span>
-<span class="nc bnc" id="L468" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 112.5f)) &lt; 12) ||</span>
-<span class="nc bnc" id="L469" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 157.5f)) &lt; 12) ||</span>
-<span class="nc bnc" id="L470" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 202.5f)) &lt; 12) ||</span>
-<span class="nc bnc" id="L471" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 247.5f)) &lt; 12) ||</span>
-<span class="nc bnc" id="L472" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 292.5f)) &lt; 12) ||</span>
-<span class="nc bnc" id="L473" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 337.5f)) &lt; 12)</span>
+<span class="nc bnc" id="L464" title="All 2 branches missed.">        if ((Math.abs(AngleUtil.getAngleDifference(t, 22.5f)) &lt; 12) || </span>
+<span class="nc bnc" id="L465" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 67.5f)) &lt; 12) ||</span>
+<span class="nc bnc" id="L466" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 112.5f)) &lt; 12) ||</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 157.5f)) &lt; 12) ||</span>
+<span class="nc bnc" id="L468" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 202.5f)) &lt; 12) ||</span>
+<span class="nc bnc" id="L469" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 247.5f)) &lt; 12) ||</span>
+<span class="nc bnc" id="L470" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 292.5f)) &lt; 12) ||</span>
+<span class="nc bnc" id="L471" title="All 2 branches missed.">            (Math.abs(AngleUtil.getAngleDifference(t, 337.5f)) &lt; 12)</span>
             ) {
             //TODO:
             // this picks up the meeting of lines at a corner, so
             // may need revision
-<span class="nc" id="L478">            limit = 2*stdv;</span>
+<span class="nc" id="L476">            limit = 2*stdv;</span>
         }
-<span class="nc bnc" id="L480" title="All 2 branches missed.">        if (limit &lt; 1) {</span>
-<span class="nc" id="L481">            limit = 1;</span>
+<span class="nc bnc" id="L478" title="All 2 branches missed.">        if (limit &lt; 1) {</span>
+<span class="nc" id="L479">            limit = 1;</span>
         }
         
-<span class="nc" id="L484">        Set&lt;Integer&gt; remove = new HashSet&lt;Integer&gt;();</span>
-<span class="nc bnc" id="L485" title="All 2 branches missed.">        for (int i = 0; i &lt; d.length; ++i) {</span>
-<span class="nc" id="L486">            double diff = Math.abs(d[i] - mn);</span>
-<span class="nc bnc" id="L487" title="All 2 branches missed.">            if (diff &gt; limit) {</span>
-<span class="nc" id="L488">                remove.add(Integer.valueOf(i));</span>
+<span class="nc" id="L482">        Set&lt;Integer&gt; remove = new HashSet&lt;Integer&gt;();</span>
+<span class="nc bnc" id="L483" title="All 2 branches missed.">        for (int i = 0; i &lt; d.length; ++i) {</span>
+<span class="nc" id="L484">            double diff = Math.abs(d[i] - mn);</span>
+<span class="nc bnc" id="L485" title="All 2 branches missed.">            if (diff &gt; limit) {</span>
+<span class="nc" id="L486">                remove.add(Integer.valueOf(i));</span>
             }
         }
         
         // --- recalc mean and stdev w/o outliers ----
   //TODO: consider recalculating the slope and intercept w/ thiel sen
-<span class="nc" id="L494">        sum = 0;</span>
-<span class="nc" id="L495">        count = 0;</span>
-<span class="nc bnc" id="L496" title="All 2 branches missed.">        for (int i = 0; i &lt; d.length; ++i) {</span>
-<span class="nc bnc" id="L497" title="All 2 branches missed.">            if (remove.contains(Integer.valueOf(i))) {</span>
-<span class="nc" id="L498">                linePoints.remove(points.get(i));</span>
-<span class="nc" id="L499">                continue;</span>
+<span class="nc" id="L492">        sum = 0;</span>
+<span class="nc" id="L493">        count = 0;</span>
+<span class="nc bnc" id="L494" title="All 2 branches missed.">        for (int i = 0; i &lt; d.length; ++i) {</span>
+<span class="nc bnc" id="L495" title="All 2 branches missed.">            if (remove.contains(Integer.valueOf(i))) {</span>
+<span class="nc" id="L496">                linePoints.remove(points.get(i));</span>
+<span class="nc" id="L497">                continue;</span>
             }
-<span class="nc" id="L501">            sum += d[i];</span>
-<span class="nc" id="L502">            count++;</span>
+<span class="nc" id="L499">            sum += d[i];</span>
+<span class="nc" id="L500">            count++;</span>
         }
-<span class="nc" id="L504">        sum /= (double)count;</span>
-<span class="nc" id="L505">        mn = (float)sum;</span>
-<span class="nc" id="L506">        count = 0;</span>
-<span class="nc" id="L507">        sum = 0;</span>
-<span class="nc bnc" id="L508" title="All 2 branches missed.">        for (int i = 0; i &lt; d.length; ++i) {</span>
-<span class="nc bnc" id="L509" title="All 2 branches missed.">            if (remove.contains(Integer.valueOf(i))) {</span>
-<span class="nc" id="L510">                continue;</span>
+<span class="nc" id="L502">        sum /= (double)count;</span>
+<span class="nc" id="L503">        mn = (float)sum;</span>
+<span class="nc" id="L504">        count = 0;</span>
+<span class="nc" id="L505">        sum = 0;</span>
+<span class="nc bnc" id="L506" title="All 2 branches missed.">        for (int i = 0; i &lt; d.length; ++i) {</span>
+<span class="nc bnc" id="L507" title="All 2 branches missed.">            if (remove.contains(Integer.valueOf(i))) {</span>
+<span class="nc" id="L508">                continue;</span>
             }
-<span class="nc" id="L512">            double diff = Math.abs(d[i] - mn);</span>
-<span class="nc" id="L513">            sum += (diff * diff);</span>
-<span class="nc" id="L514">            count++;</span>
+<span class="nc" id="L510">            double diff = Math.abs(d[i] - mn);</span>
+<span class="nc" id="L511">            sum += (diff * diff);</span>
+<span class="nc" id="L512">            count++;</span>
         }
-<span class="nc" id="L516">        stdv = (float)Math.sqrt(sum/((double)count - 1.));        </span>
-<span class="nc" id="L517">        return new float[]{t, (float)Math.abs(rSum), Math.abs(mn), stdv};</span>
+<span class="nc" id="L514">        stdv = (float)Math.sqrt(sum/((double)count - 1.));        </span>
+<span class="nc" id="L515">        return new float[]{t, (float)Math.abs(rSum), Math.abs(mn), stdv};</span>
     }
     
     public class HoughTransformLines {

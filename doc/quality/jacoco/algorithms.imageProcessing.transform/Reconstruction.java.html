@@ -224,7 +224,7 @@ import no.uib.cipr.matrix.NotConvergedException;
         
 <span class="nc" id="L225">        double[][] x1Pt = new double[3][1];</span>
 <span class="nc" id="L226">        double[][] x2Pt = new double[3][1];</span>
-        int i, j, ii;
+        int i, ii;
 <span class="nc bnc" id="L228" title="All 2 branches missed.">        for (i = 0; i &lt; 3; ++i) {</span>
 <span class="nc" id="L229">            x1Pt[i] = new double[1];</span>
 <span class="nc" id="L230">            x2Pt[i] = new double[1];</span>
@@ -833,7 +833,7 @@ import no.uib.cipr.matrix.NotConvergedException;
         /*
         http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
         
-        (1) compute fundamental mat5rix FM from the correspondence x1, x2
+        (1) compute fundamental matrix FM from the correspondence x1, x2
         (2) compute the camera matrices P1, P2 from FM.
         (3) For each point correspondence, compute the point X in 3D space (triangularization)
         */
@@ -1065,10 +1065,11 @@ import no.uib.cipr.matrix.NotConvergedException;
 <span class="nc" id="L1065">            throw new IllegalArgumentException(&quot;x must have a multiple of mImages as the number of columns&quot;);</span>
         }
 <span class="fc" id="L1067">        int nFeatures = x[0].length / mImages;</span>
-        
+
+        //TODO: check this
         //2mn &gt;= 8m + 3n – 12
-<span class="pc bpc" id="L1070" title="1 of 2 branches missed.">        if ((2*mImages * nFeatures) &lt; (8*mImages +3*nFeatures - 12)) {</span>
-<span class="nc" id="L1071">            throw new IllegalArgumentException(&quot;more points are necessary:&quot;</span>
+<span class="pc bpc" id="L1071" title="1 of 2 branches missed.">        if ((2*mImages * nFeatures) &lt; (8*mImages +3*nFeatures - 12)) {</span>
+<span class="nc" id="L1072">            throw new IllegalArgumentException(&quot;more points are necessary:&quot;</span>
                 + &quot;2 * mImages * nFeatures &gt;= 8 * mImages + 3 * nFeatures – 12.&quot;
                 +  &quot;\narguments: mImages=&quot; + mImages + &quot; nFeatures=&quot; + nFeatures
                 + &quot;\n&quot; + (2*mImages * nFeatures) + &quot; &lt; &quot; +
@@ -1090,30 +1091,30 @@ import no.uib.cipr.matrix.NotConvergedException;
         // row[1] = image_1_x[0], image_1_x[1], image_1_x[2], ...
         // ...
         // row[mImages+0] = image_0_y[0], image_0_y[1], image_0_y[2], ...
-<span class="fc" id="L1093">        double[][] w = MatrixUtil.zeros(2*mImages, nFeatures);</span>
+<span class="fc" id="L1094">        double[][] w = MatrixUtil.zeros(2*mImages, nFeatures);</span>
         // t points to the camera's focal point
-<span class="fc" id="L1095">        double[] t = new double[2*mImages];</span>
+<span class="fc" id="L1096">        double[] t = new double[2*mImages];</span>
         int i, j;
         int m, n, rowU, rowV, col;
-<span class="fc bfc" id="L1098" title="All 2 branches covered.">        for (m = 0; m &lt; mImages; ++m) {</span>
-<span class="fc" id="L1099">            rowU = m;</span>
-<span class="fc" id="L1100">            rowV = mImages + m;</span>
-<span class="fc bfc" id="L1101" title="All 2 branches covered.">            for (n = 0; n &lt; nFeatures; ++n) {</span>
-<span class="fc" id="L1102">                col = nFeatures*m + n;</span>
-<span class="fc" id="L1103">                w[rowU][n] = x[0][col];</span>
-<span class="fc" id="L1104">                t[rowU] += x[0][col];</span>
-<span class="fc" id="L1105">                w[rowV][n] = x[1][col];</span>
-<span class="fc" id="L1106">                t[rowV] += x[1][col];</span>
+<span class="fc bfc" id="L1099" title="All 2 branches covered.">        for (m = 0; m &lt; mImages; ++m) {</span>
+<span class="fc" id="L1100">            rowU = m;</span>
+<span class="fc" id="L1101">            rowV = mImages + m;</span>
+<span class="fc bfc" id="L1102" title="All 2 branches covered.">            for (n = 0; n &lt; nFeatures; ++n) {</span>
+<span class="fc" id="L1103">                col = nFeatures*m + n;</span>
+<span class="fc" id="L1104">                w[rowU][n] = x[0][col];</span>
+<span class="fc" id="L1105">                t[rowU] += x[0][col];</span>
+<span class="fc" id="L1106">                w[rowV][n] = x[1][col];</span>
+<span class="fc" id="L1107">                t[rowV] += x[1][col];</span>
             }
-<span class="fc" id="L1108">            t[rowU] /= (double)nFeatures;</span>
-<span class="fc" id="L1109">            t[rowV] /= (double)nFeatures;</span>
+<span class="fc" id="L1109">            t[rowU] /= (double)nFeatures;</span>
+<span class="fc" id="L1110">            t[rowV] /= (double)nFeatures;</span>
         }
         
         //registered measurement matrix:
-<span class="fc" id="L1113">        double[][] wC = MatrixUtil.copy(w);</span>
-<span class="fc bfc" id="L1114" title="All 2 branches covered.">        for (i = 0; i &lt; t.length; ++i) {</span>
-<span class="fc bfc" id="L1115" title="All 2 branches covered.">            for (n = 0; n &lt; wC[i].length; ++n) {</span>
-<span class="fc" id="L1116">                wC[i][n] -= t[i];</span>
+<span class="fc" id="L1114">        double[][] wC = MatrixUtil.copy(w);</span>
+<span class="fc bfc" id="L1115" title="All 2 branches covered.">        for (i = 0; i &lt; t.length; ++i) {</span>
+<span class="fc bfc" id="L1116" title="All 2 branches covered.">            for (n = 0; n &lt; wC[i].length; ++n) {</span>
+<span class="fc" id="L1117">                wC[i][n] -= t[i];</span>
             }
         }
         
@@ -1129,42 +1130,42 @@ import no.uib.cipr.matrix.NotConvergedException;
                 
         // the registered measurement matrix is highly rank deficient
         // eqn (3.11)
-<span class="fc" id="L1132">        SVDProducts svd = MatrixUtil.performSVD(wC);</span>
+<span class="fc" id="L1133">        SVDProducts svd = MatrixUtil.performSVD(wC);</span>
         
         // Tomasi &amp; Kanade 1992,eqn (3.12): 1st 3 columns of U, upper 3X3 of S, and first 3 rows of V^T
         //U3 is 2FX3 where F is the number of image frames
         //S3 is 3X3
         //VT3 is 3XP where P is the number of points, that is features, per image
-<span class="fc" id="L1138">        double[][] u3 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length-1, 0, 2);</span>
-<span class="fc" id="L1139">        double[][] s3 = MatrixUtil.zeros(3, 3);</span>
-<span class="fc" id="L1140">        s3[0][0] = svd.s[0];</span>
-<span class="fc" id="L1141">        s3[1][1] = svd.s[1];</span>
-<span class="fc" id="L1142">        s3[2][2] = svd.s[2];</span>
-<span class="fc" id="L1143">        double[][] sqrts3 = MatrixUtil.copy(s3);</span>
-<span class="fc" id="L1144">        sqrts3[0][0] = Math.sqrt(sqrts3[0][0]);</span>
-<span class="fc" id="L1145">        sqrts3[1][1] = Math.sqrt(sqrts3[1][1]);</span>
-<span class="fc" id="L1146">        sqrts3[2][2] = Math.sqrt(sqrts3[2][2]);</span>
-<span class="fc" id="L1147">        double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 2, 0, svd.vT[0].length-1);</span>
+<span class="fc" id="L1139">        double[][] u3 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length-1, 0, 2);</span>
+<span class="fc" id="L1140">        double[][] s3 = MatrixUtil.zeros(3, 3);</span>
+<span class="fc" id="L1141">        s3[0][0] = svd.s[0];</span>
+<span class="fc" id="L1142">        s3[1][1] = svd.s[1];</span>
+<span class="fc" id="L1143">        s3[2][2] = svd.s[2];</span>
+<span class="fc" id="L1144">        double[][] sqrts3 = MatrixUtil.copy(s3);</span>
+<span class="fc" id="L1145">        sqrts3[0][0] = Math.sqrt(sqrts3[0][0]);</span>
+<span class="fc" id="L1146">        sqrts3[1][1] = Math.sqrt(sqrts3[1][1]);</span>
+<span class="fc" id="L1147">        sqrts3[2][2] = Math.sqrt(sqrts3[2][2]);</span>
+<span class="fc" id="L1148">        double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 2, 0, svd.vT[0].length-1);</span>
         
         // if the ratio between the 3rd and 4th largest singular value of the registered measurement matrix
         //   is large, then the noise portion of the full decomposition
         //   can be ignored (the noise portion is the block partitions not 
         //   copied to U3, sqrtS3 and vT3).
         // there is more about this in Morita &amp; Kanade 1994/1997
-<span class="fc" id="L1154">        double sRatio = svd.s[2]/svd.s[3];</span>
-<span class="fc" id="L1155">        System.out.printf(&quot;svd.s[2]/svd.s[3]=%.3e\n&quot;, sRatio);</span>
+<span class="fc" id="L1155">        double sRatio = svd.s[2]/svd.s[3];</span>
+<span class="fc" id="L1156">        System.out.printf(&quot;svd.s[2]/svd.s[3]=%.3e\n&quot;, sRatio);</span>
         
         //Tamasi &amp; Kanade
         // (2*mImages)X3
-<span class="fc" id="L1159">        double[][] rC = MatrixUtil.multiply(u3, sqrts3);</span>
+<span class="fc" id="L1160">        double[][] rC = MatrixUtil.multiply(u3, sqrts3);</span>
         // 3XnFeatures
-<span class="fc" id="L1161">        double[][] sC = MatrixUtil.multiply(sqrts3, vT3);</span>
+<span class="fc" id="L1162">        double[][] sC = MatrixUtil.multiply(sqrts3, vT3);</span>
         
-<span class="fc" id="L1163">        System.out.printf(&quot;rC=\n%s\n&quot;, FormatArray.toString(rC, &quot;%.4e&quot;));</span>
+<span class="fc" id="L1164">        System.out.printf(&quot;rC=\n%s\n&quot;, FormatArray.toString(rC, &quot;%.4e&quot;));</span>
         
-<span class="fc" id="L1165">        System.out.printf(&quot;wC=\n%s\n&quot;, FormatArray.toString(wC, &quot;%.4e&quot;));</span>
-<span class="fc" id="L1166">        System.out.printf(&quot;rC*sC=\n%s\n&quot;, FormatArray.toString(</span>
-<span class="fc" id="L1167">            MatrixUtil.multiply(rC, sC), </span>
+<span class="fc" id="L1166">        System.out.printf(&quot;wC=\n%s\n&quot;, FormatArray.toString(wC, &quot;%.4e&quot;));</span>
+<span class="fc" id="L1167">        System.out.printf(&quot;rC*sC=\n%s\n&quot;, FormatArray.toString(</span>
+<span class="fc" id="L1168">            MatrixUtil.multiply(rC, sC), </span>
             &quot;%.4e&quot;));
         
         // wC = rC * sC  
@@ -1189,7 +1190,7 @@ import no.uib.cipr.matrix.NotConvergedException;
            double[][] ar = Rotation.procrustesAlgorithmForRotation(rot1, _r2);
         */
         
-<span class="fc" id="L1192">        double[][] q = solveForTransformationToOrthoNormal(rC);</span>
+<span class="fc" id="L1193">        double[][] q = solveForTransformationToOrthoNormal(rC);</span>
         
        
         //Q is an affine transformation which transforms rC into R in motion space
@@ -1199,14 +1200,14 @@ import no.uib.cipr.matrix.NotConvergedException;
         
         // rC size is  (2*mImages)X3
         // sC size is 3XnFeatures
-<span class="fc" id="L1202">        double[][] r2 = MatrixUtil.multiply(rC, q);</span>
+<span class="fc" id="L1203">        double[][] r2 = MatrixUtil.multiply(rC, q);</span>
         
         //assertDotProductMetrics(r2, mImages);
         
-<span class="fc" id="L1206">        double[][] s2 = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q), sC);</span>
+<span class="fc" id="L1207">        double[][] s2 = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q), sC);</span>
         
         // assert that wC is the same as wC2
-<span class="fc" id="L1209">        System.out.printf(&quot;r2*s2=\n%s\n&quot;, FormatArray.toString(MatrixUtil.multiply(r2, s2), </span>
+<span class="fc" id="L1210">        System.out.printf(&quot;r2*s2=\n%s\n&quot;, FormatArray.toString(MatrixUtil.multiply(r2, s2), </span>
             &quot;%.4e&quot;));
         
         /*
@@ -1225,21 +1226,21 @@ import no.uib.cipr.matrix.NotConvergedException;
         j1x j1y j1z
         */
         
-<span class="fc" id="L1228">        System.out.printf(&quot;r2=\n%s\n&quot;, FormatArray.toString(r2, &quot;%.4e&quot;));</span>
+<span class="fc" id="L1229">        System.out.printf(&quot;r2=\n%s\n&quot;, FormatArray.toString(r2, &quot;%.4e&quot;));</span>
  
         /* r2 * R0 = I
                 R0 = inv(r2)
         */
-<span class="fc" id="L1233">        double[][] rFirst = new double[3][3];</span>
-<span class="fc" id="L1234">        rFirst[0] = Arrays.copyOf(r2[0], r2[0].length);</span>
-<span class="fc" id="L1235">        rFirst[1] = Arrays.copyOf(r2[mImages], r2[mImages].length);</span>
-<span class="fc" id="L1236">        rFirst[2] = MatrixUtil.crossProduct(rFirst[0], rFirst[1]);</span>
-<span class="fc" id="L1237">        double[][] r0 = MatrixUtil.pseudoinverseFullColumnRank(rFirst);</span>
+<span class="fc" id="L1234">        double[][] rFirst = new double[3][3];</span>
+<span class="fc" id="L1235">        rFirst[0] = Arrays.copyOf(r2[0], r2[0].length);</span>
+<span class="fc" id="L1236">        rFirst[1] = Arrays.copyOf(r2[mImages], r2[mImages].length);</span>
+<span class="fc" id="L1237">        rFirst[2] = MatrixUtil.crossProduct(rFirst[0], rFirst[1]);</span>
+<span class="fc" id="L1238">        double[][] r0 = MatrixUtil.pseudoinverseFullColumnRank(rFirst);</span>
         
-<span class="fc" id="L1239">        System.out.printf(&quot;r0= \n%s\n&quot;, FormatArray.toString(r0,&quot;%.4e&quot;));</span>
+<span class="fc" id="L1240">        System.out.printf(&quot;r0= \n%s\n&quot;, FormatArray.toString(r0,&quot;%.4e&quot;));</span>
         
-<span class="fc" id="L1241">        System.out.printf(&quot;chk==1: \n%s\n&quot;, FormatArray.toString(</span>
-<span class="fc" id="L1242">            MatrixUtil.multiply(rFirst, r0),&quot;%.4e&quot;));</span>
+<span class="fc" id="L1242">        System.out.printf(&quot;chk==1: \n%s\n&quot;, FormatArray.toString(</span>
+<span class="fc" id="L1243">            MatrixUtil.multiply(rFirst, r0),&quot;%.4e&quot;));</span>
         
         // with orthographic, can only recover rotation, not translation
         //(2*mImages)X3
@@ -1247,33 +1248,33 @@ import no.uib.cipr.matrix.NotConvergedException;
          
         // r has the i and j direction and k=i cross j.
         // create a stack of rotation matrices, one per image.
-<span class="fc" id="L1250">        double[][] rotStack = MatrixUtil.zeros(3*mImages, 3);</span>
-<span class="fc" id="L1251">        double[][] r3 = new double[2*mImages][];//(2*mImages)X3</span>
-<span class="fc" id="L1252">        double[][] rTmp = new double[3][];</span>
+<span class="fc" id="L1251">        double[][] rotStack = MatrixUtil.zeros(3*mImages, 3);</span>
+<span class="fc" id="L1252">        double[][] r3 = new double[2*mImages][];//(2*mImages)X3</span>
+<span class="fc" id="L1253">        double[][] rTmp = new double[3][];</span>
         //r2 size is (2*mImages)X3
-<span class="fc bfc" id="L1254" title="All 2 branches covered.">        for (i = 0; i &lt; mImages; ++i) {</span>
-<span class="fc" id="L1255">            rTmp[0] = Arrays.copyOf(r2[i], r2[i].length);</span>
-<span class="fc" id="L1256">            rTmp[1] = Arrays.copyOf(r2[mImages + i], r2[mImages + i].length);</span>
-<span class="fc" id="L1257">            rTmp[2] = MatrixUtil.crossProduct(rTmp[0], rTmp[1]);</span>
-<span class="fc" id="L1258">            rTmp = MatrixUtil.multiply(rTmp, r0);</span>
-<span class="fc bfc" id="L1259" title="All 2 branches covered.">            for (j = 0; j &lt; 3; ++j) {</span>
-<span class="fc" id="L1260">                rotStack[i*3 + j] = rTmp[j]; </span>
+<span class="fc bfc" id="L1255" title="All 2 branches covered.">        for (i = 0; i &lt; mImages; ++i) {</span>
+<span class="fc" id="L1256">            rTmp[0] = Arrays.copyOf(r2[i], r2[i].length);</span>
+<span class="fc" id="L1257">            rTmp[1] = Arrays.copyOf(r2[mImages + i], r2[mImages + i].length);</span>
+<span class="fc" id="L1258">            rTmp[2] = MatrixUtil.crossProduct(rTmp[0], rTmp[1]);</span>
+<span class="fc" id="L1259">            rTmp = MatrixUtil.multiply(rTmp, r0);</span>
+<span class="fc bfc" id="L1260" title="All 2 branches covered.">            for (j = 0; j &lt; 3; ++j) {</span>
+<span class="fc" id="L1261">                rotStack[i*3 + j] = rTmp[j]; </span>
             }
-<span class="fc" id="L1262">            r3[i] = rTmp[0];</span>
-<span class="fc" id="L1263">            r3[i + mImages] = rTmp[1];</span>
+<span class="fc" id="L1263">            r3[i] = rTmp[0];</span>
+<span class="fc" id="L1264">            r3[i + mImages] = rTmp[1];</span>
         }
         
-<span class="fc" id="L1266">        double[][] shape = MatrixUtil.multiply(rFirst, s2);</span>
+<span class="fc" id="L1267">        double[][] shape = MatrixUtil.multiply(rFirst, s2);</span>
         
-<span class="fc" id="L1268">        System.out.printf(&quot;**r3=\n%s\n&quot;, FormatArray.toString(r3, </span>
+<span class="fc" id="L1269">        System.out.printf(&quot;**r3=\n%s\n&quot;, FormatArray.toString(r3, </span>
             &quot;%.4e&quot;));
-<span class="fc" id="L1270">        System.out.printf(&quot;**rot stack=\n%s\n&quot;, FormatArray.toString(rotStack, </span>
-            &quot;%.4e&quot;));
-        
-<span class="fc" id="L1273">        System.out.printf(&quot;shape=\n%s\n&quot;, FormatArray.toString(shape, </span>
+<span class="fc" id="L1271">        System.out.printf(&quot;**rot stack=\n%s\n&quot;, FormatArray.toString(rotStack, </span>
             &quot;%.4e&quot;));
         
-<span class="fc" id="L1276">        System.out.printf(&quot;t=\n%s\n&quot;, FormatArray.toString(t, </span>
+<span class="fc" id="L1274">        System.out.printf(&quot;shape=\n%s\n&quot;, FormatArray.toString(shape, </span>
+            &quot;%.4e&quot;));
+        
+<span class="fc" id="L1277">        System.out.printf(&quot;t=\n%s\n&quot;, FormatArray.toString(t, </span>
             &quot;%.4e&quot;));
         
         //assert eqn (3.7) of Tomasi &amp; Kanade:
@@ -1281,21 +1282,21 @@ import no.uib.cipr.matrix.NotConvergedException;
         //    W = R*X + t*(e_p)^T 
         //        where t = the vector of centroids a_0, a_1,...a_(F-1),b_0,b_1,...b_(F-1)
         //         and e_P^T is a vector of P 1's.
-<span class="fc" id="L1284">        double[] ep = new double[nFeatures];</span>
-<span class="fc" id="L1285">        Arrays.fill(ep, 1);</span>
-<span class="fc" id="L1286">        double[][] tep = MatrixUtil.outerProduct(t, ep);</span>
-<span class="fc" id="L1287">        System.out.printf(&quot;W = R*X + t*(e_p)^T=\n%s\n&quot;, </span>
-<span class="fc" id="L1288">            FormatArray.toString(MatrixUtil.elementwiseAdd(</span>
-<span class="fc" id="L1289">                MatrixUtil.multiply(r3, shape), tep), </span>
+<span class="fc" id="L1285">        double[] ep = new double[nFeatures];</span>
+<span class="fc" id="L1286">        Arrays.fill(ep, 1);</span>
+<span class="fc" id="L1287">        double[][] tep = MatrixUtil.outerProduct(t, ep);</span>
+<span class="fc" id="L1288">        System.out.printf(&quot;W = R*X + t*(e_p)^T=\n%s\n&quot;, </span>
+<span class="fc" id="L1289">            FormatArray.toString(MatrixUtil.pointwiseAdd(</span>
+<span class="fc" id="L1290">                MatrixUtil.multiply(r3, shape), tep), </span>
             &quot;%.4e&quot;));
-<span class="fc" id="L1291">        System.out.printf(&quot;orig W = \n%s\n&quot;, FormatArray.toString(w, </span>
+<span class="fc" id="L1292">        System.out.printf(&quot;orig W = \n%s\n&quot;, FormatArray.toString(w, </span>
             &quot;%.4e&quot;));
         
-<span class="fc" id="L1294">        OrthographicProjectionResults results = new OrthographicProjectionResults();</span>
-<span class="fc" id="L1295">        results.XW = shape;</span>
-<span class="fc" id="L1296">        results.rotationMatrices = rotStack;</span>
+<span class="fc" id="L1295">        OrthographicProjectionResults results = new OrthographicProjectionResults();</span>
+<span class="fc" id="L1296">        results.XW = shape;</span>
+<span class="fc" id="L1297">        results.rotationMatrices = rotStack;</span>
                 
-<span class="fc" id="L1298">        return results;</span>
+<span class="fc" id="L1299">        return results;</span>
     }
     
     /**
@@ -1309,17 +1310,18 @@ import no.uib.cipr.matrix.NotConvergedException;
     static OrthographicProjectionResults _DoNotUseThisCalculateAffineReconstruction(
         double[][] x, int mImages) throws NotConvergedException {
                                 
-<span class="nc bnc" id="L1312" title="All 2 branches missed.">        if (x.length != 2) {</span>
-<span class="nc" id="L1313">            throw new IllegalArgumentException(&quot;x.length must be 2&quot;);</span>
+<span class="nc bnc" id="L1313" title="All 2 branches missed.">        if (x.length != 2) {</span>
+<span class="nc" id="L1314">            throw new IllegalArgumentException(&quot;x.length must be 2&quot;);</span>
         }
-<span class="nc bnc" id="L1315" title="All 2 branches missed.">        if ((x[0].length % mImages) != 0) {</span>
-<span class="nc" id="L1316">            throw new IllegalArgumentException(&quot;x must have a multiple of mImages as the number of columns&quot;);</span>
+<span class="nc bnc" id="L1316" title="All 2 branches missed.">        if ((x[0].length % mImages) != 0) {</span>
+<span class="nc" id="L1317">            throw new IllegalArgumentException(&quot;x must have a multiple of mImages as the number of columns&quot;);</span>
         }
-<span class="nc" id="L1318">        int nFeatures = x[0].length / mImages;</span>
-        
+<span class="nc" id="L1319">        int nFeatures = x[0].length / mImages;</span>
+
+        //TODO: check this
         //2mn &gt;= 8m + 3n – 12
-<span class="nc bnc" id="L1321" title="All 2 branches missed.">        if ((2*mImages * nFeatures) &lt; (8*mImages +3*nFeatures - 12)) {</span>
-<span class="nc" id="L1322">            throw new IllegalArgumentException(&quot;more points are necessary:&quot;</span>
+<span class="nc bnc" id="L1323" title="All 2 branches missed.">        if ((2*mImages * nFeatures) &lt; (8*mImages +3*nFeatures - 12)) {</span>
+<span class="nc" id="L1324">            throw new IllegalArgumentException(&quot;more points are necessary:&quot;</span>
                 + &quot;2 * mImages * nFeatures &gt;= 8 * mImages + 3 * nFeatures – 12.&quot;
                 +  &quot;\narguments: mImages=&quot; + mImages + &quot; nFeatures=&quot; + nFeatures
                 + &quot;\n&quot; + (2*mImages * nFeatures) + &quot; &lt; &quot; +
@@ -1342,33 +1344,33 @@ import no.uib.cipr.matrix.NotConvergedException;
         // ...
         // row[mImages+0] = image_0_y[0], image_0_y[1], image_0_y[2], ...
         //NOTE: adding the Z axis=1
-<span class="nc" id="L1345">        double[][] w = MatrixUtil.zeros(3*mImages, nFeatures);</span>
-<span class="nc" id="L1346">        double[] t = new double[3*mImages];</span>
+<span class="nc" id="L1347">        double[][] w = MatrixUtil.zeros(3*mImages, nFeatures);</span>
+<span class="nc" id="L1348">        double[] t = new double[3*mImages];</span>
         int i, j;
         int m, n, rowX, rowY, rowZ, col;
-<span class="nc bnc" id="L1349" title="All 2 branches missed.">        for (m = 0; m &lt; mImages; ++m) {</span>
-<span class="nc" id="L1350">            rowX = m;</span>
-<span class="nc" id="L1351">            rowY = mImages + m;</span>
-<span class="nc" id="L1352">            rowZ = 2*mImages + m;</span>
-<span class="nc bnc" id="L1353" title="All 2 branches missed.">            for (n = 0; n &lt; nFeatures; ++n) {</span>
-<span class="nc" id="L1354">                col = nFeatures*m + n;</span>
-<span class="nc" id="L1355">                w[rowX][n] = x[0][col];</span>
-<span class="nc" id="L1356">                t[rowX] += x[0][col];</span>
-<span class="nc" id="L1357">                w[rowY][n] = x[1][col];</span>
-<span class="nc" id="L1358">                t[rowY] += x[1][col];</span>
-<span class="nc" id="L1359">                w[rowZ][n] = 1;</span>
-<span class="nc" id="L1360">                t[rowZ] += 1;</span>
+<span class="nc bnc" id="L1351" title="All 2 branches missed.">        for (m = 0; m &lt; mImages; ++m) {</span>
+<span class="nc" id="L1352">            rowX = m;</span>
+<span class="nc" id="L1353">            rowY = mImages + m;</span>
+<span class="nc" id="L1354">            rowZ = 2*mImages + m;</span>
+<span class="nc bnc" id="L1355" title="All 2 branches missed.">            for (n = 0; n &lt; nFeatures; ++n) {</span>
+<span class="nc" id="L1356">                col = nFeatures*m + n;</span>
+<span class="nc" id="L1357">                w[rowX][n] = x[0][col];</span>
+<span class="nc" id="L1358">                t[rowX] += x[0][col];</span>
+<span class="nc" id="L1359">                w[rowY][n] = x[1][col];</span>
+<span class="nc" id="L1360">                t[rowY] += x[1][col];</span>
+<span class="nc" id="L1361">                w[rowZ][n] = 1;</span>
+<span class="nc" id="L1362">                t[rowZ] += 1;</span>
             }
-<span class="nc" id="L1362">            t[rowX] /= (double)nFeatures;</span>
-<span class="nc" id="L1363">            t[rowY] /= (double)nFeatures;</span>
-<span class="nc" id="L1364">            t[rowZ] /= (double)nFeatures;</span>
+<span class="nc" id="L1364">            t[rowX] /= (double)nFeatures;</span>
+<span class="nc" id="L1365">            t[rowY] /= (double)nFeatures;</span>
+<span class="nc" id="L1366">            t[rowZ] /= (double)nFeatures;</span>
         }
         
         //registered measurement matrix:
-<span class="nc" id="L1368">        double[][] wC = MatrixUtil.copy(w);</span>
-<span class="nc bnc" id="L1369" title="All 2 branches missed.">        for (i = 0; i &lt; t.length; ++i) {</span>
-<span class="nc bnc" id="L1370" title="All 2 branches missed.">            for (n = 0; n &lt; wC[i].length; ++n) {</span>
-<span class="nc" id="L1371">                wC[i][n] -= t[i];</span>
+<span class="nc" id="L1370">        double[][] wC = MatrixUtil.copy(w);</span>
+<span class="nc bnc" id="L1371" title="All 2 branches missed.">        for (i = 0; i &lt; t.length; ++i) {</span>
+<span class="nc bnc" id="L1372" title="All 2 branches missed.">            for (n = 0; n &lt; wC[i].length; ++n) {</span>
+<span class="nc" id="L1373">                wC[i][n] -= t[i];</span>
             }
         }
         
@@ -1384,43 +1386,43 @@ import no.uib.cipr.matrix.NotConvergedException;
                 
         // the registered measurement matrix is highly rank deficient
         // eqn (3.11)
-<span class="nc" id="L1387">        SVDProducts svd = MatrixUtil.performSVD(wC);</span>
+<span class="nc" id="L1389">        SVDProducts svd = MatrixUtil.performSVD(wC);</span>
         
         // Tomasi &amp; Kanade 1992,eqn (3.12): 1st 3 columns of U, upper 3X3 of S, and first 3 rows of V^T
         //U3 is 2FX3 where F is the number of image frames
         //S3 is 3X3
         //VT3 is 3XP where P is the number of points, that is features, per image
-<span class="nc" id="L1393">        double[][] u3 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length-1, 0, 2);</span>
-<span class="nc" id="L1394">        double[][] s3 = MatrixUtil.zeros(3, 3);</span>
-<span class="nc" id="L1395">        s3[0][0] = svd.s[0];</span>
-<span class="nc" id="L1396">        s3[1][1] = svd.s[1];</span>
-<span class="nc" id="L1397">        s3[2][2] = svd.s[2];</span>
-<span class="nc" id="L1398">        double[][] sqrts3 = MatrixUtil.copy(s3);</span>
-<span class="nc" id="L1399">        sqrts3[0][0] = Math.sqrt(sqrts3[0][0]);</span>
-<span class="nc" id="L1400">        sqrts3[1][1] = Math.sqrt(sqrts3[1][1]);</span>
-<span class="nc" id="L1401">        sqrts3[2][2] = Math.sqrt(sqrts3[2][2]);</span>
-<span class="nc" id="L1402">        double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 2, 0, svd.vT[0].length-1);</span>
+<span class="nc" id="L1395">        double[][] u3 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length-1, 0, 2);</span>
+<span class="nc" id="L1396">        double[][] s3 = MatrixUtil.zeros(3, 3);</span>
+<span class="nc" id="L1397">        s3[0][0] = svd.s[0];</span>
+<span class="nc" id="L1398">        s3[1][1] = svd.s[1];</span>
+<span class="nc" id="L1399">        s3[2][2] = svd.s[2];</span>
+<span class="nc" id="L1400">        double[][] sqrts3 = MatrixUtil.copy(s3);</span>
+<span class="nc" id="L1401">        sqrts3[0][0] = Math.sqrt(sqrts3[0][0]);</span>
+<span class="nc" id="L1402">        sqrts3[1][1] = Math.sqrt(sqrts3[1][1]);</span>
+<span class="nc" id="L1403">        sqrts3[2][2] = Math.sqrt(sqrts3[2][2]);</span>
+<span class="nc" id="L1404">        double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 2, 0, svd.vT[0].length-1);</span>
         
         // if the ratio between the 3rd and 4th largest singular value of the registered measurement matrix
         //   is large, then the noise portion of the full decomposition
         //   can be ignored (the noise portion is the block partitions not 
         //   copied to U3, sqrtS3 and vT3).
         // there is more about this in Morita &amp; Kanade 1994/1997
-<span class="nc" id="L1409">        double sRatio = svd.s[2]/svd.s[3];</span>
-<span class="nc" id="L1410">        System.out.printf(&quot;svd.s[2]/svd.s[3]=%.3e\n&quot;, sRatio);</span>
+<span class="nc" id="L1411">        double sRatio = svd.s[2]/svd.s[3];</span>
+<span class="nc" id="L1412">        System.out.printf(&quot;svd.s[2]/svd.s[3]=%.3e\n&quot;, sRatio);</span>
         
         //Tamasi &amp; Kanade
         // (2*mImages)X3
-<span class="nc" id="L1414">        double[][] rC = MatrixUtil.multiply(u3, sqrts3);</span>
+<span class="nc" id="L1416">        double[][] rC = MatrixUtil.multiply(u3, sqrts3);</span>
         // 3XnFeatures
-<span class="nc" id="L1416">        double[][] sC = MatrixUtil.multiply(sqrts3, vT3);</span>
+<span class="nc" id="L1418">        double[][] sC = MatrixUtil.multiply(sqrts3, vT3);</span>
         
-<span class="nc" id="L1418">        System.out.printf(&quot;rC=\n%s\n&quot;, FormatArray.toString(rC, &quot;%.4e&quot;));</span>
+<span class="nc" id="L1420">        System.out.printf(&quot;rC=\n%s\n&quot;, FormatArray.toString(rC, &quot;%.4e&quot;));</span>
         
-<span class="nc" id="L1420">        System.out.printf(&quot;w=\n%s\n&quot;, FormatArray.toString(w, &quot;%.4e&quot;));</span>
-<span class="nc" id="L1421">        System.out.printf(&quot;wC=\n%s\n&quot;, FormatArray.toString(wC, &quot;%.4e&quot;));</span>
-<span class="nc" id="L1422">        System.out.printf(&quot;rC*sC=\n%s\n&quot;, FormatArray.toString(</span>
-<span class="nc" id="L1423">            MatrixUtil.multiply(rC, sC), </span>
+<span class="nc" id="L1422">        System.out.printf(&quot;w=\n%s\n&quot;, FormatArray.toString(w, &quot;%.4e&quot;));</span>
+<span class="nc" id="L1423">        System.out.printf(&quot;wC=\n%s\n&quot;, FormatArray.toString(wC, &quot;%.4e&quot;));</span>
+<span class="nc" id="L1424">        System.out.printf(&quot;rC*sC=\n%s\n&quot;, FormatArray.toString(</span>
+<span class="nc" id="L1425">            MatrixUtil.multiply(rC, sC), </span>
             &quot;%.4e&quot;));
         
         // wC = rC * sC  
@@ -1457,49 +1459,49 @@ import no.uib.cipr.matrix.NotConvergedException;
         
         double[][] invR;
         
-<span class="nc" id="L1460">        double[][] rot = new double[3*mImages][3];</span>
-<span class="nc" id="L1461">        double[][] r3 = new double[2*mImages][3];</span>
-<span class="nc" id="L1462">        double[][] shape = new double[3*mImages][nFeatures];</span>
+<span class="nc" id="L1462">        double[][] rot = new double[3*mImages][3];</span>
+<span class="nc" id="L1463">        double[][] r3 = new double[2*mImages][3];</span>
+<span class="nc" id="L1464">        double[][] shape = new double[3*mImages][nFeatures];</span>
         
         // 3X3
-<span class="nc" id="L1465">        double[][] rCP = new double[3][];</span>
+<span class="nc" id="L1467">        double[][] rCP = new double[3][];</span>
         double[] tmp;
         //3X3
         double[][] rCO;
         SVDProducts svdRC;
         double[][] si;
-<span class="nc" id="L1471">        double[][] wCij = new double[3][];//3XnFeatures</span>
-<span class="nc bnc" id="L1472" title="All 2 branches missed.">        for (int ii = 0; ii &lt; mImages; ++ii) {</span>
-<span class="nc" id="L1473">            rCP[0] = rC[ii];</span>
-<span class="nc" id="L1474">            rCP[1] = rC[ii + mImages];</span>
-<span class="nc" id="L1475">            rCP[2] = rC[ii + 2*mImages];</span>
-<span class="nc" id="L1476">            tmp = MatrixUtil.crossProduct(rCP[0], rCP[1]);</span>
-<span class="nc" id="L1477">            System.out.printf(&quot;compare %s to %s\n&quot;, </span>
-<span class="nc" id="L1478">                FormatArray.toString(rCP[2], &quot;%.3e&quot;), FormatArray.toString(tmp, &quot;%.3e&quot;));</span>
+<span class="nc" id="L1473">        double[][] wCij = new double[3][];//3XnFeatures</span>
+<span class="nc bnc" id="L1474" title="All 2 branches missed.">        for (int ii = 0; ii &lt; mImages; ++ii) {</span>
+<span class="nc" id="L1475">            rCP[0] = rC[ii];</span>
+<span class="nc" id="L1476">            rCP[1] = rC[ii + mImages];</span>
+<span class="nc" id="L1477">            rCP[2] = rC[ii + 2*mImages];</span>
+<span class="nc" id="L1478">            tmp = MatrixUtil.crossProduct(rCP[0], rCP[1]);</span>
+<span class="nc" id="L1479">            System.out.printf(&quot;compare %s to %s\n&quot;, </span>
+<span class="nc" id="L1480">                FormatArray.toString(rCP[2], &quot;%.3e&quot;), FormatArray.toString(tmp, &quot;%.3e&quot;));</span>
     
-<span class="nc" id="L1480">            System.out.printf(&quot;rC_%d=\n%s\n&quot;, ii, FormatArray.toString(rCP, &quot;%.4e&quot;));</span>
-<span class="nc" id="L1481">            double detR = MatrixUtil.determinant(rCP);</span>
-<span class="nc" id="L1482">            System.out.printf(&quot;det(rC_%d)=%.4e\n&quot;, ii, detR);</span>
+<span class="nc" id="L1482">            System.out.printf(&quot;rC_%d=\n%s\n&quot;, ii, FormatArray.toString(rCP, &quot;%.4e&quot;));</span>
+<span class="nc" id="L1483">            double detR = MatrixUtil.determinant(rCP);</span>
+<span class="nc" id="L1484">            System.out.printf(&quot;det(rC_%d)=%.4e\n&quot;, ii, detR);</span>
             
-<span class="nc" id="L1484">            svdRC = MatrixUtil.performSVD(rCP);</span>
-<span class="nc" id="L1485">            rCO = MatrixUtil.multiply(svdRC.u, MatrixUtil.transpose(svdRC.vT));</span>
-<span class="nc" id="L1486">            System.out.printf(&quot;r_uvtt=\n%s\n&quot;, FormatArray.toString(rCO, &quot;%.4e&quot;));</span>
-<span class="nc" id="L1487">            detR = MatrixUtil.determinant(rCO);</span>
-<span class="nc" id="L1488">            System.out.printf(&quot;det(r_uvtt_%d)=%.4e\n&quot;, ii, detR);</span>
+<span class="nc" id="L1486">            svdRC = MatrixUtil.performSVD(rCP);</span>
+<span class="nc" id="L1487">            rCO = MatrixUtil.multiply(svdRC.u, MatrixUtil.transpose(svdRC.vT));</span>
+<span class="nc" id="L1488">            System.out.printf(&quot;r_uvtt=\n%s\n&quot;, FormatArray.toString(rCO, &quot;%.4e&quot;));</span>
+<span class="nc" id="L1489">            detR = MatrixUtil.determinant(rCO);</span>
+<span class="nc" id="L1490">            System.out.printf(&quot;det(r_uvtt_%d)=%.4e\n&quot;, ii, detR);</span>
            
-<span class="nc" id="L1490">            System.out.printf(&quot;rC_%d * (rC_%d)^T=\n%s\n&quot;, ii, ii,</span>
-<span class="nc" id="L1491">                FormatArray.toString(MatrixUtil.multiply(rCP, MatrixUtil.transpose(rCP)), &quot;%.4e&quot;));</span>
+<span class="nc" id="L1492">            System.out.printf(&quot;rC_%d * (rC_%d)^T=\n%s\n&quot;, ii, ii,</span>
+<span class="nc" id="L1493">                FormatArray.toString(MatrixUtil.multiply(rCP, MatrixUtil.transpose(rCP)), &quot;%.4e&quot;));</span>
             
-<span class="nc" id="L1493">            System.out.printf(&quot;r_uvtt_%d * (r_uvtt_%d)^T=\n%s\n&quot;, ii, ii,</span>
-<span class="nc" id="L1494">                FormatArray.toString(MatrixUtil.multiply(rCO, MatrixUtil.transpose(rCO)), &quot;%.4e&quot;));</span>
+<span class="nc" id="L1495">            System.out.printf(&quot;r_uvtt_%d * (r_uvtt_%d)^T=\n%s\n&quot;, ii, ii,</span>
+<span class="nc" id="L1496">                FormatArray.toString(MatrixUtil.multiply(rCO, MatrixUtil.transpose(rCO)), &quot;%.4e&quot;));</span>
             
-<span class="nc" id="L1496">            System.out.flush();</span>
+<span class="nc" id="L1498">            System.out.flush();</span>
            
-<span class="nc bnc" id="L1498" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
-<span class="nc" id="L1499">                rot[ii*3 + j] = rCO[j];</span>
+<span class="nc bnc" id="L1500" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L1501">                rot[ii*3 + j] = rCO[j];</span>
             }
-<span class="nc" id="L1501">            r3[ii] = Arrays.copyOf(rCO[0], rCO[0].length);</span>
-<span class="nc" id="L1502">            r3[ii + mImages] = Arrays.copyOf(rCO[1], rCO[1].length);</span>
+<span class="nc" id="L1503">            r3[ii] = Arrays.copyOf(rCO[0], rCO[0].length);</span>
+<span class="nc" id="L1504">            r3[ii + mImages] = Arrays.copyOf(rCO[1], rCO[1].length);</span>
             
             /*
             block[0] = rCP[0] times sC = 1XnFeatures
@@ -1511,61 +1513,61 @@ import no.uib.cipr.matrix.NotConvergedException;
             (z^-1)*sC= inv(rOth)*wC_i_j
             store in blocks of trans
             */     
-<span class="nc" id="L1514">            invR = MatrixUtil.pseudoinverseFullColumnRank(rCO);</span>
+<span class="nc" id="L1516">            invR = MatrixUtil.pseudoinverseFullColumnRank(rCO);</span>
             
             // 3XnFeatures
-<span class="nc" id="L1517">            wCij[0] = wC[ii];</span>
-<span class="nc" id="L1518">            wCij[1] = wC[ii + mImages];</span>
-<span class="nc" id="L1519">            wCij[2] = wC[ii + 2*mImages];</span>
+<span class="nc" id="L1519">            wCij[0] = wC[ii];</span>
+<span class="nc" id="L1520">            wCij[1] = wC[ii + mImages];</span>
+<span class="nc" id="L1521">            wCij[2] = wC[ii + 2*mImages];</span>
             
             //3XnFeatures
-<span class="nc" id="L1522">            si = MatrixUtil.multiply(invR, wCij);</span>
+<span class="nc" id="L1524">            si = MatrixUtil.multiply(invR, wCij);</span>
             
             //double[][] trans = new double[3*mImages][nFeatures];
-<span class="nc bnc" id="L1525" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
-<span class="nc" id="L1526">                shape[ii*3 + j] = si[j];</span>
+<span class="nc bnc" id="L1527" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L1528">                shape[ii*3 + j] = si[j];</span>
             }
             
             // TODO: need to consider the rotation and translation origins now
-<span class="nc" id="L1530">            System.out.printf(&quot;for image%d have shape=\n%s\n&quot;, ii, FormatArray.toString(si, &quot;%.4e&quot;));</span>
+<span class="nc" id="L1532">            System.out.printf(&quot;for image%d have shape=\n%s\n&quot;, ii, FormatArray.toString(si, &quot;%.4e&quot;));</span>
         }
         
-<span class="nc" id="L1533">        System.out.printf(&quot;rot stack=\n%s\n&quot;, FormatArray.toString(rot, </span>
+<span class="nc" id="L1535">        System.out.printf(&quot;rot stack=\n%s\n&quot;, FormatArray.toString(rot, </span>
             &quot;%.4e&quot;));
         
-<span class="nc" id="L1536">        System.out.printf(&quot;shape=\n%s\n&quot;, FormatArray.toString(shape, </span>
+<span class="nc" id="L1538">        System.out.printf(&quot;shape=\n%s\n&quot;, FormatArray.toString(shape, </span>
             &quot;%.4e&quot;));
         
-<span class="nc" id="L1539">        System.out.printf(&quot;t=\n%s\n&quot;, FormatArray.toString(t, </span>
+<span class="nc" id="L1541">        System.out.printf(&quot;t=\n%s\n&quot;, FormatArray.toString(t, </span>
             &quot;%.4e&quot;));
         // shape size is
         //r3 = new double[2*mImages][3];
-<span class="nc" id="L1543">        double[][] _si = new double[3][nFeatures];</span>
-<span class="nc" id="L1544">        double[][] _ri = new double[2][3];</span>
+<span class="nc" id="L1545">        double[][] _si = new double[3][nFeatures];</span>
+<span class="nc" id="L1546">        double[][] _ri = new double[2][3];</span>
         double[][] _rs;
-<span class="nc bnc" id="L1546" title="All 2 branches missed.">        for (i = 0; i &lt; mImages; ++i) {</span>
-<span class="nc" id="L1547">            _si[0] = shape[i*mImages + i];//3XnFeatures</span>
-<span class="nc" id="L1548">            _si[1] = shape[i*mImages + i + 1];</span>
-<span class="nc" id="L1549">            _si[2] = shape[i*mImages + i + 2]; </span>
-<span class="nc" id="L1550">            _ri[0] = r3[i*mImages + 0];//2X3</span>
-<span class="nc" id="L1551">            _ri[1] = r3[i*mImages + 1];</span>
-<span class="nc" id="L1552">            _rs = MatrixUtil.multiply(_ri, _si);//2XnFeatures</span>
-<span class="nc bnc" id="L1553" title="All 2 branches missed.">            for (int k = 0; k &lt; nFeatures; ++k) {</span>
-<span class="nc" id="L1554">                _rs[0][k] += t[i*mImages + i];</span>
-<span class="nc" id="L1555">                _rs[1][k] += t[i*mImages + i + 1];</span>
+<span class="nc bnc" id="L1548" title="All 2 branches missed.">        for (i = 0; i &lt; mImages; ++i) {</span>
+<span class="nc" id="L1549">            _si[0] = shape[i*mImages + i];//3XnFeatures</span>
+<span class="nc" id="L1550">            _si[1] = shape[i*mImages + i + 1];</span>
+<span class="nc" id="L1551">            _si[2] = shape[i*mImages + i + 2]; </span>
+<span class="nc" id="L1552">            _ri[0] = r3[i*mImages + 0];//2X3</span>
+<span class="nc" id="L1553">            _ri[1] = r3[i*mImages + 1];</span>
+<span class="nc" id="L1554">            _rs = MatrixUtil.multiply(_ri, _si);//2XnFeatures</span>
+<span class="nc bnc" id="L1555" title="All 2 branches missed.">            for (int k = 0; k &lt; nFeatures; ++k) {</span>
+<span class="nc" id="L1556">                _rs[0][k] += t[i*mImages + i];</span>
+<span class="nc" id="L1557">                _rs[1][k] += t[i*mImages + i + 1];</span>
             }
             
-<span class="nc" id="L1558">            System.out.printf(&quot;W = R*X + t*(e_p)^T=\n%s\n&quot;, </span>
-<span class="nc" id="L1559">                FormatArray.toString(_rs, &quot;%.4e&quot;));</span>
+<span class="nc" id="L1560">            System.out.printf(&quot;W = R*X + t*(e_p)^T=\n%s\n&quot;, </span>
+<span class="nc" id="L1561">                FormatArray.toString(_rs, &quot;%.4e&quot;));</span>
         }
-<span class="nc" id="L1561">        System.out.printf(&quot;original W = \n%s\n&quot;, </span>
-<span class="nc" id="L1562">            FormatArray.toString(w, &quot;%.4e&quot;));</span>
+<span class="nc" id="L1563">        System.out.printf(&quot;original W = \n%s\n&quot;, </span>
+<span class="nc" id="L1564">            FormatArray.toString(w, &quot;%.4e&quot;));</span>
         
-<span class="nc" id="L1564">        OrthographicProjectionResults results = new OrthographicProjectionResults();</span>
-<span class="nc" id="L1565">        results.XW = shape;</span>
-<span class="nc" id="L1566">        results.rotationMatrices = rot;</span>
+<span class="nc" id="L1566">        OrthographicProjectionResults results = new OrthographicProjectionResults();</span>
+<span class="nc" id="L1567">        results.XW = shape;</span>
+<span class="nc" id="L1568">        results.rotationMatrices = rot;</span>
                 
-<span class="nc" id="L1568">        return results;</span>
+<span class="nc" id="L1570">        return results;</span>
            
     }
     
@@ -1638,17 +1640,18 @@ import no.uib.cipr.matrix.NotConvergedException;
     public static ParaperspectiveProjectionResults calculateParaperspectiveReconstruction(
         double[][] x, int mImages) throws NotConvergedException {
                         
-<span class="pc bpc" id="L1641" title="1 of 2 branches missed.">        if (x.length != 2) {</span>
-<span class="nc" id="L1642">            throw new IllegalArgumentException(&quot;x.length must be 2&quot;);</span>
+<span class="pc bpc" id="L1643" title="1 of 2 branches missed.">        if (x.length != 2) {</span>
+<span class="nc" id="L1644">            throw new IllegalArgumentException(&quot;x.length must be 2&quot;);</span>
         }
-<span class="pc bpc" id="L1644" title="1 of 2 branches missed.">        if ((x[0].length % mImages) != 0) {</span>
-<span class="nc" id="L1645">            throw new IllegalArgumentException(&quot;x must have a multiple of mImages as the number of columns&quot;);</span>
+<span class="pc bpc" id="L1646" title="1 of 2 branches missed.">        if ((x[0].length % mImages) != 0) {</span>
+<span class="nc" id="L1647">            throw new IllegalArgumentException(&quot;x must have a multiple of mImages as the number of columns&quot;);</span>
         }
-<span class="fc" id="L1647">        int nFeatures = x[0].length / mImages;</span>
-        
+<span class="fc" id="L1649">        int nFeatures = x[0].length / mImages;</span>
+
+        //TODO: check this
         ///2mn &gt;= 8m + 3n – 12
-<span class="pc bpc" id="L1650" title="1 of 2 branches missed.">        if ((2*mImages * nFeatures) &lt; (8*mImages +3*nFeatures - 12)) {</span>
-<span class="nc" id="L1651">            throw new IllegalArgumentException(&quot;more points are necessary:&quot;</span>
+<span class="pc bpc" id="L1653" title="1 of 2 branches missed.">        if ((2*mImages * nFeatures) &lt; (8*mImages +3*nFeatures - 12)) {</span>
+<span class="nc" id="L1654">            throw new IllegalArgumentException(&quot;more points are necessary:&quot;</span>
                 + &quot;2 * mImages * nFeatures &gt;= 8 * mImages + 3 * nFeatures – 12.&quot;
                 +  &quot;\narguments: mImages=&quot; + mImages + &quot; nFeatures=&quot; + nFeatures
                 + &quot;\n&quot; + (2*mImages * nFeatures) + &quot; &lt; &quot; +
@@ -1663,65 +1666,65 @@ import no.uib.cipr.matrix.NotConvergedException;
         //     where V is rows of each image's y coordinates (size os mImages X nFeatures).
         // create matrix t which holds the centroids of each row of W
         // create registered measurement matrix WC = W - t
-<span class="fc" id="L1666">        double[][] w = MatrixUtil.zeros(2*mImages, nFeatures);</span>
+<span class="fc" id="L1669">        double[][] w = MatrixUtil.zeros(2*mImages, nFeatures);</span>
         // t points to the camera's focal point
-<span class="fc" id="L1668">        double[] t = new double[2*mImages];</span>
+<span class="fc" id="L1671">        double[] t = new double[2*mImages];</span>
         int i, j;
         int m, n, rowU, rowV, col;
-<span class="fc bfc" id="L1671" title="All 2 branches covered.">        for (m = 0; m &lt; mImages; ++m) {</span>
-<span class="fc" id="L1672">            rowU = m;</span>
-<span class="fc" id="L1673">            rowV = mImages + m;</span>
-<span class="fc bfc" id="L1674" title="All 2 branches covered.">            for (n = 0; n &lt; nFeatures; ++n) {</span>
-<span class="fc" id="L1675">                col = nFeatures*m + n;</span>
-<span class="fc" id="L1676">                w[rowU][n] = x[0][col];</span>
-<span class="fc" id="L1677">                t[rowU] += x[0][col];</span>
-<span class="fc" id="L1678">                w[rowV][n] = x[1][col];</span>
-<span class="fc" id="L1679">                t[rowV] += x[1][col];</span>
+<span class="fc bfc" id="L1674" title="All 2 branches covered.">        for (m = 0; m &lt; mImages; ++m) {</span>
+<span class="fc" id="L1675">            rowU = m;</span>
+<span class="fc" id="L1676">            rowV = mImages + m;</span>
+<span class="fc bfc" id="L1677" title="All 2 branches covered.">            for (n = 0; n &lt; nFeatures; ++n) {</span>
+<span class="fc" id="L1678">                col = nFeatures*m + n;</span>
+<span class="fc" id="L1679">                w[rowU][n] = x[0][col];</span>
+<span class="fc" id="L1680">                t[rowU] += x[0][col];</span>
+<span class="fc" id="L1681">                w[rowV][n] = x[1][col];</span>
+<span class="fc" id="L1682">                t[rowV] += x[1][col];</span>
             }
-<span class="fc" id="L1681">            t[rowU] /= (double)nFeatures;</span>
-<span class="fc" id="L1682">            t[rowV] /= (double)nFeatures;</span>
+<span class="fc" id="L1684">            t[rowU] /= (double)nFeatures;</span>
+<span class="fc" id="L1685">            t[rowV] /= (double)nFeatures;</span>
         }
         
         //registered measurement matrix:
-<span class="fc" id="L1686">        double[][] wC = MatrixUtil.copy(w);</span>
-<span class="fc bfc" id="L1687" title="All 2 branches covered.">        for (i = 0; i &lt; t.length; ++i) {</span>
-<span class="fc bfc" id="L1688" title="All 2 branches covered.">            for (n = 0; n &lt; wC[i].length; ++n) {</span>
-<span class="fc" id="L1689">                wC[i][n] -= t[i];</span>
+<span class="fc" id="L1689">        double[][] wC = MatrixUtil.copy(w);</span>
+<span class="fc bfc" id="L1690" title="All 2 branches covered.">        for (i = 0; i &lt; t.length; ++i) {</span>
+<span class="fc bfc" id="L1691" title="All 2 branches covered.">            for (n = 0; n &lt; wC[i].length; ++n) {</span>
+<span class="fc" id="L1692">                wC[i][n] -= t[i];</span>
             }
         }
         
-<span class="fc" id="L1693">        SVDProducts svd = MatrixUtil.performSVD(wC);</span>
+<span class="fc" id="L1696">        SVDProducts svd = MatrixUtil.performSVD(wC);</span>
         //U3 is 2FX3 where F is the number of image frames
         //S3 is 3X3
         //VT3 is 3XP where P is the number of points, that is features, per image
-<span class="fc" id="L1697">        double[][] u3 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length-1, 0, 2);</span>
-<span class="fc" id="L1698">        double[][] s3 = MatrixUtil.zeros(3, 3);</span>
-<span class="fc" id="L1699">        s3[0][0] = svd.s[0];</span>
-<span class="fc" id="L1700">        s3[1][1] = svd.s[1];</span>
-<span class="fc" id="L1701">        s3[2][2] = svd.s[2];</span>
-<span class="fc" id="L1702">        double[][] sqrts3 = MatrixUtil.copy(s3);</span>
-<span class="fc" id="L1703">        sqrts3[0][0] = Math.sqrt(sqrts3[0][0]);</span>
-<span class="fc" id="L1704">        sqrts3[1][1] = Math.sqrt(sqrts3[1][1]);</span>
-<span class="fc" id="L1705">        sqrts3[2][2] = Math.sqrt(sqrts3[2][2]);</span>
-<span class="fc" id="L1706">        double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 2, 0, svd.vT[0].length-1);</span>
+<span class="fc" id="L1700">        double[][] u3 = MatrixUtil.copySubMatrix(svd.u, 0, svd.u.length-1, 0, 2);</span>
+<span class="fc" id="L1701">        double[][] s3 = MatrixUtil.zeros(3, 3);</span>
+<span class="fc" id="L1702">        s3[0][0] = svd.s[0];</span>
+<span class="fc" id="L1703">        s3[1][1] = svd.s[1];</span>
+<span class="fc" id="L1704">        s3[2][2] = svd.s[2];</span>
+<span class="fc" id="L1705">        double[][] sqrts3 = MatrixUtil.copy(s3);</span>
+<span class="fc" id="L1706">        sqrts3[0][0] = Math.sqrt(sqrts3[0][0]);</span>
+<span class="fc" id="L1707">        sqrts3[1][1] = Math.sqrt(sqrts3[1][1]);</span>
+<span class="fc" id="L1708">        sqrts3[2][2] = Math.sqrt(sqrts3[2][2]);</span>
+<span class="fc" id="L1709">        double[][] vT3 = MatrixUtil.copySubMatrix(svd.vT, 0, 2, 0, svd.vT[0].length-1);</span>
         
         // if the ratio between the 3rd and 4th largest singular value of the registered measurement matrix
         //   is large, then the noise portion of the full decomposition
         //   can be ignored (the noise portion is the block partitions not 
         //   copied to U3, sqrtS3 and vT3).
         // there is more about this in Morita &amp; Kanade 1994/1997
-<span class="fc" id="L1713">        double sRatio = svd.s[2]/svd.s[3];</span>
-<span class="fc" id="L1714">        System.out.printf(&quot;svd.s[2]/svd.s[3]=%.3e\n&quot;, sRatio);</span>
+<span class="fc" id="L1716">        double sRatio = svd.s[2]/svd.s[3];</span>
+<span class="fc" id="L1717">        System.out.printf(&quot;svd.s[2]/svd.s[3]=%.3e\n&quot;, sRatio);</span>
                 
         // (2*mImages)X3
-<span class="fc" id="L1717">        double[][] mC = MatrixUtil.multiply(u3, sqrts3);</span>
+<span class="fc" id="L1720">        double[][] mC = MatrixUtil.multiply(u3, sqrts3);</span>
         // 3XnFeatures
-<span class="fc" id="L1719">        double[][] sC = MatrixUtil.multiply(sqrts3, vT3);</span>
+<span class="fc" id="L1722">        double[][] sC = MatrixUtil.multiply(sqrts3, vT3);</span>
         
-<span class="fc" id="L1721">        System.out.printf(&quot;wC=\n%s\n&quot;, FormatArray.toString(wC, &quot;%.4e&quot;));</span>
+<span class="fc" id="L1724">        System.out.printf(&quot;wC=\n%s\n&quot;, FormatArray.toString(wC, &quot;%.4e&quot;));</span>
         
         // assert that wC is the same as wC2
-<span class="fc" id="L1724">        System.out.printf(&quot;mC*sC=\n%s\n&quot;, FormatArray.toString(MatrixUtil.multiply(mC, sC), </span>
+<span class="fc" id="L1727">        System.out.printf(&quot;mC*sC=\n%s\n&quot;, FormatArray.toString(MatrixUtil.multiply(mC, sC), </span>
             &quot;%.4e&quot;));
         
         /*
@@ -1890,80 +1893,80 @@ import no.uib.cipr.matrix.NotConvergedException;
                                      [Q^2_col2]
         */
         
-<span class="fc" id="L1893">        double[][] g = new double[2*mImages + 1][9];</span>
-<span class="fc" id="L1894">        double[] z0 = new double[3];</span>
-<span class="fc" id="L1895">        double[] z1 = new double[3];</span>
-<span class="fc" id="L1896">        double[] z2 = new double[3];</span>
-<span class="fc" id="L1897">        double[] y0 = new double[3];</span>
-<span class="fc" id="L1898">        double[] y1 = new double[3];</span>
-<span class="fc" id="L1899">        double[] y2 = new double[3];</span>
-<span class="fc" id="L1900">        double[] w0 = new double[3];</span>
-<span class="fc" id="L1901">        double[] w1 = new double[3];</span>
-<span class="fc" id="L1902">        double[] w2 = new double[3];</span>
+<span class="fc" id="L1896">        double[][] g = new double[2*mImages + 1][9];</span>
+<span class="fc" id="L1897">        double[] z0 = new double[3];</span>
+<span class="fc" id="L1898">        double[] z1 = new double[3];</span>
+<span class="fc" id="L1899">        double[] z2 = new double[3];</span>
+<span class="fc" id="L1900">        double[] y0 = new double[3];</span>
+<span class="fc" id="L1901">        double[] y1 = new double[3];</span>
+<span class="fc" id="L1902">        double[] y2 = new double[3];</span>
+<span class="fc" id="L1903">        double[] w0 = new double[3];</span>
+<span class="fc" id="L1904">        double[] w1 = new double[3];</span>
+<span class="fc" id="L1905">        double[] w2 = new double[3];</span>
         double c2, xf, yf, divXf, divYf;
         
-<span class="fc bfc" id="L1905" title="All 2 branches covered.">        for (i = 0; i &lt; mImages; ++i) {</span>
-<span class="fc" id="L1906">            xf = t[i];</span>
-<span class="fc" id="L1907">            yf = t[mImages + i];</span>
+<span class="fc bfc" id="L1908" title="All 2 branches covered.">        for (i = 0; i &lt; mImages; ++i) {</span>
+<span class="fc" id="L1909">            xf = t[i];</span>
+<span class="fc" id="L1910">            yf = t[mImages + i];</span>
             
-<span class="fc" id="L1909">            z0[0] = mC[i][0] * mC[i][0]; </span>
-<span class="fc" id="L1910">            z0[1] = mC[i][0] * mC[i][1];</span>
-<span class="fc" id="L1911">            z0[2] = mC[i][0] * mC[i][2];</span>
+<span class="fc" id="L1912">            z0[0] = mC[i][0] * mC[i][0]; </span>
+<span class="fc" id="L1913">            z0[1] = mC[i][0] * mC[i][1];</span>
+<span class="fc" id="L1914">            z0[2] = mC[i][0] * mC[i][2];</span>
             
-<span class="fc" id="L1913">            z1[0] = mC[i][1] * mC[i][0]; </span>
-<span class="fc" id="L1914">            z1[1] = mC[i][1] * mC[i][1];</span>
-<span class="fc" id="L1915">            z1[2] = mC[i][1] * mC[i][2];</span>
+<span class="fc" id="L1916">            z1[0] = mC[i][1] * mC[i][0]; </span>
+<span class="fc" id="L1917">            z1[1] = mC[i][1] * mC[i][1];</span>
+<span class="fc" id="L1918">            z1[2] = mC[i][1] * mC[i][2];</span>
             
-<span class="fc" id="L1917">            z2[0] = mC[i][2] * mC[i][0]; </span>
-<span class="fc" id="L1918">            z2[1] = mC[i][2] * mC[i][1];</span>
-<span class="fc" id="L1919">            z2[2] = mC[i][2] * mC[i][2];</span>
+<span class="fc" id="L1920">            z2[0] = mC[i][2] * mC[i][0]; </span>
+<span class="fc" id="L1921">            z2[1] = mC[i][2] * mC[i][1];</span>
+<span class="fc" id="L1922">            z2[2] = mC[i][2] * mC[i][2];</span>
             
-<span class="fc" id="L1921">            y0[0] = mC[mImages + i][0] * mC[mImages + i][0];</span>
-<span class="fc" id="L1922">            y0[1] = mC[mImages + i][0] * mC[mImages + i][1];</span>
-<span class="fc" id="L1923">            y0[2] = mC[mImages + i][0] * mC[mImages + i][2];</span>
+<span class="fc" id="L1924">            y0[0] = mC[mImages + i][0] * mC[mImages + i][0];</span>
+<span class="fc" id="L1925">            y0[1] = mC[mImages + i][0] * mC[mImages + i][1];</span>
+<span class="fc" id="L1926">            y0[2] = mC[mImages + i][0] * mC[mImages + i][2];</span>
             
-<span class="fc" id="L1925">            y1[0] = mC[mImages + i][1] * mC[mImages + i][0];</span>
-<span class="fc" id="L1926">            y1[1] = mC[mImages + i][1] * mC[mImages + i][1];</span>
-<span class="fc" id="L1927">            y1[2] = mC[mImages + i][1] * mC[mImages + i][2];</span>
+<span class="fc" id="L1928">            y1[0] = mC[mImages + i][1] * mC[mImages + i][0];</span>
+<span class="fc" id="L1929">            y1[1] = mC[mImages + i][1] * mC[mImages + i][1];</span>
+<span class="fc" id="L1930">            y1[2] = mC[mImages + i][1] * mC[mImages + i][2];</span>
             
-<span class="fc" id="L1929">            y2[0] = mC[mImages + i][2] * mC[mImages + i][0];</span>
-<span class="fc" id="L1930">            y2[1] = mC[mImages + i][2] * mC[mImages + i][1];</span>
-<span class="fc" id="L1931">            y2[2] = mC[mImages + i][2] * mC[mImages + i][2];</span>
+<span class="fc" id="L1932">            y2[0] = mC[mImages + i][2] * mC[mImages + i][0];</span>
+<span class="fc" id="L1933">            y2[1] = mC[mImages + i][2] * mC[mImages + i][1];</span>
+<span class="fc" id="L1934">            y2[2] = mC[mImages + i][2] * mC[mImages + i][2];</span>
             
-<span class="fc" id="L1933">            w0[0] = mC[i][0] * mC[mImages + i][0];</span>
-<span class="fc" id="L1934">            w0[1] = mC[i][0] * mC[mImages + i][1];</span>
-<span class="fc" id="L1935">            w0[2] = mC[i][0] * mC[mImages + i][2];</span>
+<span class="fc" id="L1936">            w0[0] = mC[i][0] * mC[mImages + i][0];</span>
+<span class="fc" id="L1937">            w0[1] = mC[i][0] * mC[mImages + i][1];</span>
+<span class="fc" id="L1938">            w0[2] = mC[i][0] * mC[mImages + i][2];</span>
             
-<span class="fc" id="L1937">            w1[0] = mC[i][1] * mC[mImages + i][0];</span>
-<span class="fc" id="L1938">            w1[1] = mC[i][1] * mC[mImages + i][1];</span>
-<span class="fc" id="L1939">            w1[2] = mC[i][1] * mC[mImages + i][2];</span>
+<span class="fc" id="L1940">            w1[0] = mC[i][1] * mC[mImages + i][0];</span>
+<span class="fc" id="L1941">            w1[1] = mC[i][1] * mC[mImages + i][1];</span>
+<span class="fc" id="L1942">            w1[2] = mC[i][1] * mC[mImages + i][2];</span>
             
-<span class="fc" id="L1941">            w2[0] = mC[i][2] * mC[mImages + i][0];</span>
-<span class="fc" id="L1942">            w2[1] = mC[i][2] * mC[mImages + i][1];</span>
-<span class="fc" id="L1943">            w2[2] = mC[i][2] * mC[mImages + i][2];</span>
+<span class="fc" id="L1944">            w2[0] = mC[i][2] * mC[mImages + i][0];</span>
+<span class="fc" id="L1945">            w2[1] = mC[i][2] * mC[mImages + i][1];</span>
+<span class="fc" id="L1946">            w2[2] = mC[i][2] * mC[mImages + i][2];</span>
             
-<span class="fc" id="L1945">            c2 = 0.5*xf*yf;</span>
+<span class="fc" id="L1948">            c2 = 0.5*xf*yf;</span>
             
-<span class="fc" id="L1947">            divXf = 1./(1.+xf*xf);</span>
-<span class="fc" id="L1948">            divYf = 1./(1.+yf*yf);</span>
+<span class="fc" id="L1950">            divXf = 1./(1.+xf*xf);</span>
+<span class="fc" id="L1951">            divYf = 1./(1.+yf*yf);</span>
             
             // length 9
             // eqn(15) of paper is the 1st mImages rows of g
             //   [ (z0/(1+x_f^2) -y0/(1+y_f^2))  (z1/(1+x_f^2) -y1/(1+y_f^2))  (z2/(1+x_f^2) -y2/(1+y_f^2)) ] ... = 0
-<span class="fc" id="L1953">            g[i] = new double[9]; // g is (2*mImages + 1) X 9;</span>
-<span class="fc bfc" id="L1954" title="All 2 branches covered.">            for (j = 0; j &lt; 3; ++j) { </span>
-<span class="fc" id="L1955">                g[i][j] = (z0[j]*divXf - y0[j]*divYf);                </span>
-<span class="fc" id="L1956">                g[i][3+j] = (z1[j]*divXf - y1[j]*divYf);</span>
-<span class="fc" id="L1957">                g[i][6+j] = (z2[j]*divXf - y2[j]*divYf);                </span>
+<span class="fc" id="L1956">            g[i] = new double[9]; // g is (2*mImages + 1) X 9;</span>
+<span class="fc bfc" id="L1957" title="All 2 branches covered.">            for (j = 0; j &lt; 3; ++j) { </span>
+<span class="fc" id="L1958">                g[i][j] = (z0[j]*divXf - y0[j]*divYf);                </span>
+<span class="fc" id="L1959">                g[i][3+j] = (z1[j]*divXf - y1[j]*divYf);</span>
+<span class="fc" id="L1960">                g[i][6+j] = (z2[j]*divXf - y2[j]*divYf);                </span>
             }
             
             //eqn(17) of paper is the 2nd mImages rows of g
             //  [ (w0 -z0*c2 -y0*c2)  (w1 -z1*c2 -y1*c2)  (w2 -z2*c2 -y2*c2)] ... = 0
-<span class="fc" id="L1962">            g[mImages + i] = new double[9]; // g is (2*mImages + 1) X 9;</span>
-<span class="fc bfc" id="L1963" title="All 2 branches covered.">            for (j = 0; j &lt; 3; ++j) { </span>
-<span class="fc" id="L1964">                g[mImages + i][j] = (w0[j] - z0[j]*c2 - y0[j]*c2);                </span>
-<span class="fc" id="L1965">                g[mImages + i][3+j] = (w1[j] - z1[j]*c2 - y1[j]*c2);</span>
-<span class="fc" id="L1966">                g[mImages + i][6+j] = (w2[j] - z2[j]*c2 - y2[j]*c2);               </span>
+<span class="fc" id="L1965">            g[mImages + i] = new double[9]; // g is (2*mImages + 1) X 9;</span>
+<span class="fc bfc" id="L1966" title="All 2 branches covered.">            for (j = 0; j &lt; 3; ++j) { </span>
+<span class="fc" id="L1967">                g[mImages + i][j] = (w0[j] - z0[j]*c2 - y0[j]*c2);                </span>
+<span class="fc" id="L1968">                g[mImages + i][3+j] = (w1[j] - z1[j]*c2 - y1[j]*c2);</span>
+<span class="fc" id="L1969">                g[mImages + i][6+j] = (w2[j] - z2[j]*c2 - y2[j]*c2);               </span>
             }
         }
         
@@ -1972,61 +1975,61 @@ import no.uib.cipr.matrix.NotConvergedException;
         //    v2 = [ `m_0[0]*`mf2  `m_0[1]*`m_0[2]  `m_0[2]*`m_0[2] ]
         // length 9
         // [ v0 v1 v2 ] = 1
-<span class="fc" id="L1975">        i = 0;</span>
-<span class="fc" id="L1976">        double[] v0 = new double[] {</span>
+<span class="fc" id="L1978">        i = 0;</span>
+<span class="fc" id="L1979">        double[] v0 = new double[] {</span>
            mC[i][0] * mC[i][0], mC[i][0] * mC[i][1], mC[i][0] * mC[i][2]};
-<span class="fc" id="L1978">        double[] v1 = new double[] {</span>
+<span class="fc" id="L1981">        double[] v1 = new double[] {</span>
             mC[i][1] * mC[i][0], mC[i][1] * mC[i][1], mC[i][1] * mC[i][2]};
-<span class="fc" id="L1980">        double[] v2 = new double[] {</span>
+<span class="fc" id="L1983">        double[] v2 = new double[] {</span>
             mC[i][2] * mC[i][0], mC[i][2] * mC[i][1], mC[i][2] * mC[i][2]};
-<span class="fc" id="L1982">        g[2*mImages] = new double[9]; // g is (2*mImages + 1) X 9;</span>
-<span class="fc bfc" id="L1983" title="All 2 branches covered.">        for (j = 0; j &lt; 3; ++j) { </span>
-<span class="fc" id="L1984">            g[2*mImages][j] = v0[j];                </span>
-<span class="fc" id="L1985">            g[2*mImages][3+j] = v1[j];</span>
-<span class="fc" id="L1986">            g[2*mImages][6+j] = v2[j];               </span>
+<span class="fc" id="L1985">        g[2*mImages] = new double[9]; // g is (2*mImages + 1) X 9;</span>
+<span class="fc bfc" id="L1986" title="All 2 branches covered.">        for (j = 0; j &lt; 3; ++j) { </span>
+<span class="fc" id="L1987">            g[2*mImages][j] = v0[j];                </span>
+<span class="fc" id="L1988">            g[2*mImages][3+j] = v1[j];</span>
+<span class="fc" id="L1989">            g[2*mImages][6+j] = v2[j];               </span>
         }
         
-<span class="fc" id="L1989">        double[] c = new double[2*mImages + 1];</span>
-<span class="fc" id="L1990">        c[2*mImages] = 1;</span>
+<span class="fc" id="L1992">        double[] c = new double[2*mImages + 1];</span>
+<span class="fc" id="L1993">        c[2*mImages] = 1;</span>
         
-<span class="fc" id="L1992">        double[][] gInv = MatrixUtil.pseudoinverseFullColumnRank(g);</span>
-<span class="fc" id="L1993">        double[] iVector = MatrixUtil.multiplyMatrixByColumnVector(gInv, c);</span>
-<span class="pc bnc" id="L1994" title="All 2 branches missed.">        assert(iVector.length == 9);</span>
+<span class="fc" id="L1995">        double[][] gInv = MatrixUtil.pseudoinverseFullColumnRank(g);</span>
+<span class="fc" id="L1996">        double[] iVector = MatrixUtil.multiplyMatrixByColumnVector(gInv, c);</span>
+<span class="pc bnc" id="L1997" title="All 2 branches missed.">        assert(iVector.length == 9);</span>
         
         // 3X3
-<span class="fc" id="L1997">        double[][] ell = new double[3][3];</span>
-<span class="fc" id="L1998">        ell[0] = new double[]{iVector[0], iVector[1], iVector[2]};</span>
-<span class="fc" id="L1999">        ell[1] = new double[]{iVector[1], iVector[3], iVector[4]};</span>
-<span class="fc" id="L2000">        ell[2] = new double[]{iVector[2], iVector[4], iVector[5]};</span>
+<span class="fc" id="L2000">        double[][] ell = new double[3][3];</span>
+<span class="fc" id="L2001">        ell[0] = new double[]{iVector[0], iVector[1], iVector[2]};</span>
+<span class="fc" id="L2002">        ell[1] = new double[]{iVector[1], iVector[3], iVector[4]};</span>
+<span class="fc" id="L2003">        ell[2] = new double[]{iVector[2], iVector[4], iVector[5]};</span>
 
         // Q can be determined :
         //   as the square root of ell,
         //   or with the Cholesky decomposition
         //   or with eigendecomposition
 
-<span class="fc" id="L2007">        double eps = 1e-16;//1.e-11; eps close to zero within machine precision to perturb the matrix to smallest eigenvalue of eps</span>
-<span class="fc" id="L2008">        double[][] lPSD = MatrixUtil.nearestPositiveSemidefiniteToASymmetric(ell, eps);</span>
-<span class="fc" id="L2009">        EVD evd2 = EVD.factorize(new DenseMatrix(lPSD));</span>
-<span class="fc" id="L2010">        double[] eig = evd2.getRealEigenvalues();</span>
-<span class="fc" id="L2011">        System.out.printf(&quot;eig(L_PSD)=\n%s\n&quot;, FormatArray.toString(eig, &quot;%.4e&quot;));</span>
-<span class="fc" id="L2012">        double[][] aMinusPSD = MatrixUtil.elementwiseSubtract(ell, lPSD);</span>
-<span class="fc" id="L2013">        double dist1 = MatrixUtil.frobeniusNorm(aMinusPSD);</span>
+<span class="fc" id="L2010">        double eps = 1e-16;//1.e-11; eps close to zero within machine precision to perturb the matrix to smallest eigenvalue of eps</span>
+<span class="fc" id="L2011">        double[][] lPSD = MatrixUtil.nearestPositiveSemidefiniteToASymmetric(ell, eps);</span>
+<span class="fc" id="L2012">        EVD evd2 = EVD.factorize(new DenseMatrix(lPSD));</span>
+<span class="fc" id="L2013">        double[] eig = evd2.getRealEigenvalues();</span>
+<span class="fc" id="L2014">        System.out.printf(&quot;eig(L_PSD)=\n%s\n&quot;, FormatArray.toString(eig, &quot;%.4e&quot;));</span>
+<span class="fc" id="L2015">        double[][] aMinusPSD = MatrixUtil.pointwiseSubtract(ell, lPSD);</span>
+<span class="fc" id="L2016">        double dist1 = MatrixUtil.frobeniusNorm(aMinusPSD);</span>
         
-<span class="fc" id="L2015">        boolean ipd = MatrixUtil.isPositiveDefinite(lPSD);</span>
-<span class="pc bnc" id="L2016" title="All 2 branches missed.">        assert(ipd);</span>
+<span class="fc" id="L2018">        boolean ipd = MatrixUtil.isPositiveDefinite(lPSD);</span>
+<span class="pc bnc" id="L2019" title="All 2 branches missed.">        assert(ipd);</span>
         
         //decompose Q = L * (sigma+) * L^T;  Q is size 3X3
-<span class="fc" id="L2019">        double[][] q = LinearEquations.choleskyDecompositionViaMTJ(lPSD);</span>
+<span class="fc" id="L2022">        double[][] q = LinearEquations.choleskyDecompositionViaMTJ(lPSD);</span>
         
         // (2*mImages)X3
-<span class="fc" id="L2022">        double[][] _M = MatrixUtil.multiply(mC, q);</span>
+<span class="fc" id="L2025">        double[][] _M = MatrixUtil.multiply(mC, q);</span>
         // 3XnFeatures
-<span class="fc" id="L2024">        double[][] _S = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q), sC);</span>
+<span class="fc" id="L2027">        double[][] _S = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q), sC);</span>
         
-<span class="fc" id="L2026">        System.out.printf(&quot;_M=\n%s\n&quot;, FormatArray.toString(_M, &quot;%.4e&quot;));</span>
+<span class="fc" id="L2029">        System.out.printf(&quot;_M=\n%s\n&quot;, FormatArray.toString(_M, &quot;%.4e&quot;));</span>
         
         // assert that wC is the same as _M*_S
-<span class="fc" id="L2029">        System.out.printf(&quot;_M*_S=\n%s\n&quot;, FormatArray.toString(MatrixUtil.multiply(_M, _S), </span>
+<span class="fc" id="L2032">        System.out.printf(&quot;_M*_S=\n%s\n&quot;, FormatArray.toString(MatrixUtil.multiply(_M, _S), </span>
             &quot;%.4e&quot;));
                 
         /*
@@ -2142,58 +2145,58 @@ import no.uib.cipr.matrix.NotConvergedException;
             `k_f[2] = `i_f[0]*`j_f[1] - `i_f[1]*`j_f[0]
         */
                 
-<span class="fc" id="L2145">        double[] zf = new double[mImages];</span>
+<span class="fc" id="L2148">        double[] zf = new double[mImages];</span>
         double[] mf, nf, tmp1, tmp2, tmp3;
         double xDivY, mDotM, nDotN, tmp4, tmp5;
-<span class="fc" id="L2148">        double[][] _MCameraOrientation2D = new double[2*mImages][3];</span>
-<span class="fc bfc" id="L2149" title="All 2 branches covered.">        for (i = 0; i &lt; mImages; ++i) {</span>
-<span class="fc" id="L2150">            xf = t[i];</span>
-<span class="fc" id="L2151">            yf = t[mImages + i];</span>
-<span class="fc" id="L2152">            xDivY = xf/yf;</span>
-<span class="fc" id="L2153">            mf = _M[i];</span>
-<span class="fc" id="L2154">            nf = _M[mImages + i];</span>
-<span class="fc" id="L2155">            mDotM = 0;</span>
-<span class="fc" id="L2156">            nDotN = 0;</span>
-<span class="fc bfc" id="L2157" title="All 2 branches covered.">            for (j=0; j&lt;mf.length; ++j) {</span>
-<span class="fc" id="L2158">                mDotM += mf[i] * mf[i];</span>
-<span class="fc" id="L2159">                nDotN += nf[i] * nf[i];</span>
+<span class="fc" id="L2151">        double[][] _MCameraOrientation2D = new double[2*mImages][3];</span>
+<span class="fc bfc" id="L2152" title="All 2 branches covered.">        for (i = 0; i &lt; mImages; ++i) {</span>
+<span class="fc" id="L2153">            xf = t[i];</span>
+<span class="fc" id="L2154">            yf = t[mImages + i];</span>
+<span class="fc" id="L2155">            xDivY = xf/yf;</span>
+<span class="fc" id="L2156">            mf = _M[i];</span>
+<span class="fc" id="L2157">            nf = _M[mImages + i];</span>
+<span class="fc" id="L2158">            mDotM = 0;</span>
+<span class="fc" id="L2159">            nDotN = 0;</span>
+<span class="fc bfc" id="L2160" title="All 2 branches covered.">            for (j=0; j&lt;mf.length; ++j) {</span>
+<span class="fc" id="L2161">                mDotM += mf[i] * mf[i];</span>
+<span class="fc" id="L2162">                nDotN += nf[i] * nf[i];</span>
             }
             //for z_f^2 take an average of eqn (15).  it's always positive
-<span class="fc" id="L2162">            tmp4 = 1 + xf * xf;</span>
-<span class="fc" id="L2163">            tmp4 /= mDotM;</span>
-<span class="fc" id="L2164">            tmp5 = 1 + yf * yf;</span>
-<span class="fc" id="L2165">            tmp5 /= nDotN;</span>
-<span class="fc" id="L2166">            zf[i] = (tmp4 + tmp5) / 2.;</span>
-<span class="fc" id="L2167">            zf[i] = Math.sqrt(zf[i]);</span>
+<span class="fc" id="L2165">            tmp4 = 1 + xf * xf;</span>
+<span class="fc" id="L2166">            tmp4 /= mDotM;</span>
+<span class="fc" id="L2167">            tmp5 = 1 + yf * yf;</span>
+<span class="fc" id="L2168">            tmp5 /= nDotN;</span>
+<span class="fc" id="L2169">            zf[i] = (tmp4 + tmp5) / 2.;</span>
+<span class="fc" id="L2170">            zf[i] = Math.sqrt(zf[i]);</span>
 
             //j_f[0] = -(x_f/y_f)/ (m_f[0]*z_f - (n_f[0]*z_f*x_f/y_f))
-<span class="fc" id="L2170">            tmp1 = Arrays.copyOf(mf, mf.length);</span>
-<span class="fc" id="L2171">            MatrixUtil.multiply(tmp1, zf[i]);</span>
-<span class="fc" id="L2172">            tmp2 = Arrays.copyOf(nf, nf.length);</span>
-<span class="fc" id="L2173">            MatrixUtil.multiply(tmp2, zf[i]);</span>
-<span class="fc" id="L2174">            MatrixUtil.multiply(tmp2, xDivY);</span>
+<span class="fc" id="L2173">            tmp1 = Arrays.copyOf(mf, mf.length);</span>
+<span class="fc" id="L2174">            MatrixUtil.multiply(tmp1, zf[i]);</span>
+<span class="fc" id="L2175">            tmp2 = Arrays.copyOf(nf, nf.length);</span>
+<span class="fc" id="L2176">            MatrixUtil.multiply(tmp2, zf[i]);</span>
+<span class="fc" id="L2177">            MatrixUtil.multiply(tmp2, xDivY);</span>
             // j_f
-<span class="fc" id="L2176">            _MCameraOrientation2D[mImages + i] = new double[3];</span>
-<span class="fc bfc" id="L2177" title="All 2 branches covered.">            for (j = 0; j &lt; 3; ++j) {</span>
-<span class="fc" id="L2178">                _MCameraOrientation2D[mImages + i][j] = -xDivY/(tmp1[j] - (tmp2[j]/yf));</span>
+<span class="fc" id="L2179">            _MCameraOrientation2D[mImages + i] = new double[3];</span>
+<span class="fc bfc" id="L2180" title="All 2 branches covered.">            for (j = 0; j &lt; 3; ++j) {</span>
+<span class="fc" id="L2181">                _MCameraOrientation2D[mImages + i][j] = -xDivY/(tmp1[j] - (tmp2[j]/yf));</span>
             }
             
             //`i_f = `j_f*(x_f/y_f) + m_f*z_f - n_f*(z_f*x_f/y_f)
-<span class="fc" id="L2182">            tmp1 = Arrays.copyOf(_MCameraOrientation2D[mImages + i], _MCameraOrientation2D[mImages + i].length);</span>
-<span class="fc" id="L2183">            MatrixUtil.multiply(tmp1, xDivY);</span>
-<span class="fc" id="L2184">            tmp2 = Arrays.copyOf(mf, mf.length);</span>
-<span class="fc" id="L2185">            MatrixUtil.multiply(tmp2, zf[i]);</span>
-<span class="fc" id="L2186">            tmp3 = Arrays.copyOf(nf, nf.length);</span>
-<span class="fc" id="L2187">            MatrixUtil.multiply(tmp3, zf[i]);</span>
-<span class="fc" id="L2188">            MatrixUtil.multiply(tmp3, xDivY);</span>
+<span class="fc" id="L2185">            tmp1 = Arrays.copyOf(_MCameraOrientation2D[mImages + i], _MCameraOrientation2D[mImages + i].length);</span>
+<span class="fc" id="L2186">            MatrixUtil.multiply(tmp1, xDivY);</span>
+<span class="fc" id="L2187">            tmp2 = Arrays.copyOf(mf, mf.length);</span>
+<span class="fc" id="L2188">            MatrixUtil.multiply(tmp2, zf[i]);</span>
+<span class="fc" id="L2189">            tmp3 = Arrays.copyOf(nf, nf.length);</span>
+<span class="fc" id="L2190">            MatrixUtil.multiply(tmp3, zf[i]);</span>
+<span class="fc" id="L2191">            MatrixUtil.multiply(tmp3, xDivY);</span>
             // i_f
-<span class="fc" id="L2190">            _MCameraOrientation2D[i] = new double[3];</span>
-<span class="fc bfc" id="L2191" title="All 2 branches covered.">            for (j = 0; j &lt; 3; ++j) {</span>
-<span class="fc" id="L2192">                _MCameraOrientation2D[i][j] = tmp1[j] + tmp2[j] - tmp3[j];</span>
+<span class="fc" id="L2193">            _MCameraOrientation2D[i] = new double[3];</span>
+<span class="fc bfc" id="L2194" title="All 2 branches covered.">            for (j = 0; j &lt; 3; ++j) {</span>
+<span class="fc" id="L2195">                _MCameraOrientation2D[i][j] = tmp1[j] + tmp2[j] - tmp3[j];</span>
             }
         }
         
-<span class="fc" id="L2196">        System.out.printf(&quot;_MCameraOrientation2D=\n%s\n&quot;, FormatArray.toString(_MCameraOrientation2D, &quot;%.4e&quot;));</span>
+<span class="fc" id="L2199">        System.out.printf(&quot;_MCameraOrientation2D=\n%s\n&quot;, FormatArray.toString(_MCameraOrientation2D, &quot;%.4e&quot;));</span>
         
         // _M: rank is 3, mRows is &gt;= 4, nCols=3
         // _MCameraOrientation2D: rank is 3, mRows is &gt;= 4, nCols=3
@@ -2201,32 +2204,32 @@ import no.uib.cipr.matrix.NotConvergedException;
         // _M * A = _MCameraOrientation2D
         // A = pseudoInv(_M)*_MCameraOrientation2D;
         // A^-1 = pseudoInv(_MCameraOrientation2D)*_M 
-<span class="fc" id="L2204">        double[][] aInv = MatrixUtil.multiply(</span>
-<span class="fc" id="L2205">            MatrixUtil.pseudoinverseFullColumnRank(_MCameraOrientation2D), _M);</span>
-<span class="fc" id="L2206">        double[][] __S2 = MatrixUtil.multiply(aInv, _S);</span>
+<span class="fc" id="L2207">        double[][] aInv = MatrixUtil.multiply(</span>
+<span class="fc" id="L2208">            MatrixUtil.pseudoinverseFullColumnRank(_MCameraOrientation2D), _M);</span>
+<span class="fc" id="L2209">        double[][] __S2 = MatrixUtil.multiply(aInv, _S);</span>
         
         
-<span class="fc" id="L2209">        double[][] q2 = solveForTransformationToOrthoNormal(_MCameraOrientation2D);</span>
+<span class="fc" id="L2212">        double[][] q2 = solveForTransformationToOrthoNormal(_MCameraOrientation2D);</span>
                 
-<span class="fc" id="L2211">        _MCameraOrientation2D = MatrixUtil.multiply(_MCameraOrientation2D, q2);</span>
+<span class="fc" id="L2214">        _MCameraOrientation2D = MatrixUtil.multiply(_MCameraOrientation2D, q2);</span>
         
         //assertDotProductMetrics(_MCameraOrientation2D, mImages);
         
         //_S2 is inv(q2)*shape
         //__S2 is inv(q2)*inv(a)*shape
-<span class="fc" id="L2217">        double[][] _S2 = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q2), _S);</span>
-<span class="fc" id="L2218">        __S2 = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q2), __S2);</span>
+<span class="fc" id="L2220">        double[][] _S2 = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q2), _S);</span>
+<span class="fc" id="L2221">        __S2 = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(q2), __S2);</span>
         
-<span class="fc" id="L2220">        System.out.printf(&quot;after orthonormalization: _MCameraOrientation2D=\n%s\n&quot;, </span>
-<span class="fc" id="L2221">            FormatArray.toString(_MCameraOrientation2D, &quot;%.4e&quot;));</span>
+<span class="fc" id="L2223">        System.out.printf(&quot;after orthonormalization: _MCameraOrientation2D=\n%s\n&quot;, </span>
+<span class="fc" id="L2224">            FormatArray.toString(_MCameraOrientation2D, &quot;%.4e&quot;));</span>
         
-<span class="fc" id="L2223">        System.out.printf(&quot;__S2=inv(q2)*inv(a)*_S=\n%s\n&quot;, FormatArray.toString(__S2, &quot;%.4e&quot;));</span>
-<span class="fc" id="L2224">        System.out.printf(&quot;_S2=inv(q2)*_S=\n%s\n&quot;, FormatArray.toString(_S2, &quot;%.4e&quot;));</span>
+<span class="fc" id="L2226">        System.out.printf(&quot;__S2=inv(q2)*inv(a)*_S=\n%s\n&quot;, FormatArray.toString(__S2, &quot;%.4e&quot;));</span>
+<span class="fc" id="L2227">        System.out.printf(&quot;_S2=inv(q2)*_S=\n%s\n&quot;, FormatArray.toString(_S2, &quot;%.4e&quot;));</span>
         
-<span class="fc" id="L2226">        System.out.printf(&quot;_MCameraOrientation2D*__S2=\n%s\n&quot;, </span>
-<span class="fc" id="L2227">            FormatArray.toString(MatrixUtil.multiply(_MCameraOrientation2D, __S2), &quot;%.4e&quot;));</span>
-<span class="fc" id="L2228">        System.out.printf(&quot;_MCameraOrientation2D*_S2=\n%s\n&quot;, </span>
-<span class="fc" id="L2229">            FormatArray.toString(MatrixUtil.multiply(_MCameraOrientation2D, _S2), &quot;%.4e&quot;));</span>
+<span class="fc" id="L2229">        System.out.printf(&quot;_MCameraOrientation2D*__S2=\n%s\n&quot;, </span>
+<span class="fc" id="L2230">            FormatArray.toString(MatrixUtil.multiply(_MCameraOrientation2D, __S2), &quot;%.4e&quot;));</span>
+<span class="fc" id="L2231">        System.out.printf(&quot;_MCameraOrientation2D*_S2=\n%s\n&quot;, </span>
+<span class="fc" id="L2232">            FormatArray.toString(MatrixUtil.multiply(_MCameraOrientation2D, _S2), &quot;%.4e&quot;));</span>
                   
         /*
         from Tomasi &amp; Kanade 1992:
@@ -2245,41 +2248,41 @@ import no.uib.cipr.matrix.NotConvergedException;
         */
         
 
-<span class="fc" id="L2248">        double[][] rFirst = new double[3][3];</span>
-<span class="fc" id="L2249">        rFirst[0] = Arrays.copyOf(_MCameraOrientation2D[0], _MCameraOrientation2D[0].length);</span>
-<span class="fc" id="L2250">        rFirst[1] = Arrays.copyOf(_MCameraOrientation2D[mImages], _MCameraOrientation2D[mImages].length);</span>
-<span class="fc" id="L2251">        rFirst[2] = MatrixUtil.crossProduct(rFirst[0], rFirst[1]);</span>
+<span class="fc" id="L2251">        double[][] rFirst = new double[3][3];</span>
+<span class="fc" id="L2252">        rFirst[0] = Arrays.copyOf(_MCameraOrientation2D[0], _MCameraOrientation2D[0].length);</span>
+<span class="fc" id="L2253">        rFirst[1] = Arrays.copyOf(_MCameraOrientation2D[mImages], _MCameraOrientation2D[mImages].length);</span>
+<span class="fc" id="L2254">        rFirst[2] = MatrixUtil.crossProduct(rFirst[0], rFirst[1]);</span>
         
-<span class="fc" id="L2253">        double[][] r0 = MatrixUtil.pseudoinverseFullColumnRank(rFirst);</span>
+<span class="fc" id="L2256">        double[][] r0 = MatrixUtil.pseudoinverseFullColumnRank(rFirst);</span>
         
-<span class="fc" id="L2255">        System.out.printf(&quot;r0= \n%s\n&quot;, FormatArray.toString(r0,&quot;%.4e&quot;));</span>
+<span class="fc" id="L2258">        System.out.printf(&quot;r0= \n%s\n&quot;, FormatArray.toString(r0,&quot;%.4e&quot;));</span>
         
-<span class="fc" id="L2257">        System.out.printf(&quot;chk==1: \n%s\n&quot;, FormatArray.toString(</span>
-<span class="fc" id="L2258">            MatrixUtil.multiply(rFirst, r0),&quot;%.4e&quot;));</span>
+<span class="fc" id="L2260">        System.out.printf(&quot;chk==1: \n%s\n&quot;, FormatArray.toString(</span>
+<span class="fc" id="L2261">            MatrixUtil.multiply(rFirst, r0),&quot;%.4e&quot;));</span>
                   
         // multiply rotation matrices in the elements of the latest motion matrix by r0
-<span class="fc" id="L2261">        double[][] rotStack = MatrixUtil.zeros(3*mImages, 3);</span>
-<span class="fc" id="L2262">        double[][] _M3 = new double[3*mImages][];//(2*mImages)X3</span>
-<span class="fc" id="L2263">        double[][] rTmp = new double[3][];</span>
-<span class="fc bfc" id="L2264" title="All 2 branches covered.">        for (i = 0; i &lt; mImages; ++i) {</span>
-<span class="fc" id="L2265">            rTmp[0] = Arrays.copyOf(_MCameraOrientation2D[i], _MCameraOrientation2D[i].length);</span>
-<span class="fc" id="L2266">            rTmp[1] = Arrays.copyOf(_MCameraOrientation2D[mImages + i], _MCameraOrientation2D[mImages + i].length);</span>
-<span class="fc" id="L2267">            rTmp[2] = MatrixUtil.crossProduct(rTmp[0], rTmp[1]);</span>
-<span class="fc" id="L2268">            rTmp = MatrixUtil.multiply(rTmp, r0);</span>
-<span class="fc bfc" id="L2269" title="All 2 branches covered.">            for (j = 0; j &lt; 3; ++j) {</span>
-<span class="fc" id="L2270">                rotStack[i*3 + j] = rTmp[j]; </span>
+<span class="fc" id="L2264">        double[][] rotStack = MatrixUtil.zeros(3*mImages, 3);</span>
+<span class="fc" id="L2265">        double[][] _M3 = new double[3*mImages][];//(2*mImages)X3</span>
+<span class="fc" id="L2266">        double[][] rTmp = new double[3][];</span>
+<span class="fc bfc" id="L2267" title="All 2 branches covered.">        for (i = 0; i &lt; mImages; ++i) {</span>
+<span class="fc" id="L2268">            rTmp[0] = Arrays.copyOf(_MCameraOrientation2D[i], _MCameraOrientation2D[i].length);</span>
+<span class="fc" id="L2269">            rTmp[1] = Arrays.copyOf(_MCameraOrientation2D[mImages + i], _MCameraOrientation2D[mImages + i].length);</span>
+<span class="fc" id="L2270">            rTmp[2] = MatrixUtil.crossProduct(rTmp[0], rTmp[1]);</span>
+<span class="fc" id="L2271">            rTmp = MatrixUtil.multiply(rTmp, r0);</span>
+<span class="fc bfc" id="L2272" title="All 2 branches covered.">            for (j = 0; j &lt; 3; ++j) {</span>
+<span class="fc" id="L2273">                rotStack[i*3 + j] = rTmp[j]; </span>
             }
-<span class="fc" id="L2272">            _M3[i] = rTmp[0];</span>
-<span class="fc" id="L2273">            _M3[i + mImages] = rTmp[1];</span>
-<span class="fc" id="L2274">            _M3[i + 2*mImages] = rTmp[2];</span>
+<span class="fc" id="L2275">            _M3[i] = rTmp[0];</span>
+<span class="fc" id="L2276">            _M3[i + mImages] = rTmp[1];</span>
+<span class="fc" id="L2277">            _M3[i + 2*mImages] = rTmp[2];</span>
         }
         
-<span class="fc" id="L2277">        double[][] _S3 = MatrixUtil.multiply(rFirst, __S2);</span>
+<span class="fc" id="L2280">        double[][] _S3 = MatrixUtil.multiply(rFirst, __S2);</span>
         
-<span class="fc" id="L2279">        System.out.printf(&quot;_M3=\n%s\n&quot;, FormatArray.toString(_M3,  &quot;%.4e&quot;));</span>
-<span class="fc" id="L2280">        System.out.printf(&quot;rot stack=\n%s\n&quot;, FormatArray.toString(rotStack,  &quot;%.4e&quot;));</span>
-<span class="fc" id="L2281">        System.out.printf(&quot;shape=\n%s\n&quot;, FormatArray.toString(_S3, &quot;%.4e&quot;));</span>
-<span class="fc" id="L2282">        System.out.printf(&quot;t=\n%s\n&quot;, FormatArray.toString(t, </span>
+<span class="fc" id="L2282">        System.out.printf(&quot;_M3=\n%s\n&quot;, FormatArray.toString(_M3,  &quot;%.4e&quot;));</span>
+<span class="fc" id="L2283">        System.out.printf(&quot;rot stack=\n%s\n&quot;, FormatArray.toString(rotStack,  &quot;%.4e&quot;));</span>
+<span class="fc" id="L2284">        System.out.printf(&quot;shape=\n%s\n&quot;, FormatArray.toString(_S3, &quot;%.4e&quot;));</span>
+<span class="fc" id="L2285">        System.out.printf(&quot;t=\n%s\n&quot;, FormatArray.toString(t, </span>
             &quot;%.4e&quot;));
         /*
         Poelman &amp; Kanade, last paragraph, Sect 3.4:
@@ -2312,57 +2315,57 @@ import no.uib.cipr.matrix.NotConvergedException;
             (1/xf)*if[0]    (1/xf)*if[1]   (1/xf)*if[2]  -zf
             (1/yf)*jf[0]    (1/yf)*jf[1]   (1/yf)*jf[2]  -zf
         */
-<span class="fc" id="L2315">        double[][] trans = new double[mImages][3];</span>
-<span class="fc" id="L2316">        double[][] tf = MatrixUtil.zeros(3, 3);</span>
+<span class="fc" id="L2318">        double[][] trans = new double[mImages][3];</span>
+<span class="fc" id="L2319">        double[][] tf = MatrixUtil.zeros(3, 3);</span>
         double[][] g3Inv;
         double[] i3Vector;
-<span class="fc" id="L2319">        double[] cs = new double[3];</span>
-<span class="fc bfc" id="L2320" title="All 2 branches covered.">        for (i = 0; i &lt; mImages; ++i) {</span>
-<span class="fc" id="L2321">            Arrays.fill(cs, -zf[i]);</span>
-<span class="fc" id="L2322">            xf = t[i];</span>
-<span class="fc" id="L2323">            yf = t[mImages + i];</span>
+<span class="fc" id="L2322">        double[] cs = new double[3];</span>
+<span class="fc bfc" id="L2323" title="All 2 branches covered.">        for (i = 0; i &lt; mImages; ++i) {</span>
+<span class="fc" id="L2324">            Arrays.fill(cs, -zf[i]);</span>
+<span class="fc" id="L2325">            xf = t[i];</span>
+<span class="fc" id="L2326">            yf = t[mImages + i];</span>
             
             // i_f[i] is _M3[i]
             // j_f[i] is _M3[mImages + i]
             // k_f[i] is _M3[2*mImages + i]
-<span class="fc bfc" id="L2328" title="All 2 branches covered.">            for (j = 0; j &lt; 3; ++j) {</span>
-<span class="fc" id="L2329">                tf[0][j] = _M3[2*mImages + i][j];</span>
-<span class="fc" id="L2330">                tf[1][j] = _M3[i][j]/xf;</span>
-<span class="fc" id="L2331">                tf[2][j] = _M3[mImages + i][j]/yf;</span>
+<span class="fc bfc" id="L2331" title="All 2 branches covered.">            for (j = 0; j &lt; 3; ++j) {</span>
+<span class="fc" id="L2332">                tf[0][j] = _M3[2*mImages + i][j];</span>
+<span class="fc" id="L2333">                tf[1][j] = _M3[i][j]/xf;</span>
+<span class="fc" id="L2334">                tf[2][j] = _M3[mImages + i][j]/yf;</span>
             }            
             //SVDProducts svdi = MatrixUtil.performSVD(tf);
-<span class="fc" id="L2334">            g3Inv = MatrixUtil.pseudoinverseFullColumnRank(tf);</span>
-<span class="fc" id="L2335">            i3Vector = MatrixUtil.multiplyMatrixByColumnVector(g3Inv, cs);</span>
-<span class="pc bnc" id="L2336" title="All 2 branches missed.">            assert(i3Vector.length == 3);</span>
+<span class="fc" id="L2337">            g3Inv = MatrixUtil.pseudoinverseFullColumnRank(tf);</span>
+<span class="fc" id="L2338">            i3Vector = MatrixUtil.multiplyMatrixByColumnVector(g3Inv, cs);</span>
+<span class="pc bnc" id="L2339" title="All 2 branches missed.">            assert(i3Vector.length == 3);</span>
             
-<span class="fc" id="L2338">            trans[i] = new double[]{i3Vector[0], i3Vector[1], i3Vector[2]};</span>
+<span class="fc" id="L2341">            trans[i] = new double[]{i3Vector[0], i3Vector[1], i3Vector[2]};</span>
         }
         
-<span class="fc" id="L2341">        System.out.printf(&quot;trans=\n%s\n&quot;, FormatArray.toString(trans, &quot;%.4e&quot;));</span>
+<span class="fc" id="L2344">        System.out.printf(&quot;trans=\n%s\n&quot;, FormatArray.toString(trans, &quot;%.4e&quot;));</span>
         
-<span class="fc" id="L2343">        ParaperspectiveProjectionResults results = new ParaperspectiveProjectionResults();</span>
-<span class="fc" id="L2344">        results.XW = _S3; // or _S</span>
-<span class="fc" id="L2345">        results.rotationMatrices = rotStack;</span>
-<span class="fc" id="L2346">        results.translationVectors = trans;</span>
+<span class="fc" id="L2346">        ParaperspectiveProjectionResults results = new ParaperspectiveProjectionResults();</span>
+<span class="fc" id="L2347">        results.XW = _S3; // or _S</span>
+<span class="fc" id="L2348">        results.rotationMatrices = rotStack;</span>
+<span class="fc" id="L2349">        results.translationVectors = trans;</span>
           
-<span class="fc" id="L2348">        return results;        </span>
+<span class="fc" id="L2351">        return results;        </span>
     }
     
     private static DenseMatrix extractIndices(DenseMatrix m, List&lt;Integer&gt; inlierIndexes) {
-<span class="fc" id="L2352">        DenseMatrix out = new DenseMatrix(m.numRows(), inlierIndexes.size());</span>
-<span class="fc" id="L2353">        int r = 0;</span>
-<span class="fc bfc" id="L2354" title="All 2 branches covered.">        for (int i = 0; i &lt; inlierIndexes.size(); ++i) {</span>
-<span class="fc" id="L2355">            int idx = inlierIndexes.get(i);</span>
-<span class="fc bfc" id="L2356" title="All 2 branches covered.">            for (int j = 0; j &lt; m.numRows(); ++j) {</span>
-<span class="fc" id="L2357">                out.add(j, r, m.get(j, idx));</span>
+<span class="fc" id="L2355">        DenseMatrix out = new DenseMatrix(m.numRows(), inlierIndexes.size());</span>
+<span class="fc" id="L2356">        int r = 0;</span>
+<span class="fc bfc" id="L2357" title="All 2 branches covered.">        for (int i = 0; i &lt; inlierIndexes.size(); ++i) {</span>
+<span class="fc" id="L2358">            int idx = inlierIndexes.get(i);</span>
+<span class="fc bfc" id="L2359" title="All 2 branches covered.">            for (int j = 0; j &lt; m.numRows(); ++j) {</span>
+<span class="fc" id="L2360">                out.add(j, r, m.get(j, idx));</span>
             }
-<span class="fc" id="L2359">            r++;</span>
+<span class="fc" id="L2362">            r++;</span>
         }
-<span class="fc" id="L2361">        return out;</span>
+<span class="fc" id="L2364">        return out;</span>
     }
 
     private static double[] gT(double[] a, double[] b) {
-<span class="fc" id="L2365">        double[] gT = new double[]{</span>
+<span class="fc" id="L2368">        double[] gT = new double[]{</span>
             a[0]*b[0], 
             a[0]*b[1] + a[1]*b[0],
             a[0]*b[2] + a[2]*b[0],
@@ -2370,59 +2373,59 @@ import no.uib.cipr.matrix.NotConvergedException;
             a[1]*b[2] + a[2]*b[1],
             a[2]*b[2]
         };
-<span class="fc" id="L2373">        return gT;</span>
+<span class="fc" id="L2376">        return gT;</span>
     }
 
     private static double[][] extractAndNormalize(double[][] x, int imageNumber, 
         int nFeatures, double[] outputNorm) {
         
-<span class="nc" id="L2379">        double[][] xN = new double[3][nFeatures];</span>
-<span class="nc" id="L2380">        xN[0] = new double[nFeatures];</span>
-<span class="nc" id="L2381">        xN[1] = new double[nFeatures];</span>
-<span class="nc" id="L2382">        xN[2] = new double[nFeatures];</span>
-<span class="nc" id="L2383">        Arrays.fill(xN[2], 1);</span>
+<span class="nc" id="L2382">        double[][] xN = new double[3][nFeatures];</span>
+<span class="nc" id="L2383">        xN[0] = new double[nFeatures];</span>
+<span class="nc" id="L2384">        xN[1] = new double[nFeatures];</span>
+<span class="nc" id="L2385">        xN[2] = new double[nFeatures];</span>
+<span class="nc" id="L2386">        Arrays.fill(xN[2], 1);</span>
         
-<span class="nc" id="L2385">        int imageIdx = (x.length/nFeatures)*imageNumber;</span>
+<span class="nc" id="L2388">        int imageIdx = (x.length/nFeatures)*imageNumber;</span>
         
-<span class="nc" id="L2387">        double cen0 = 0;</span>
-<span class="nc" id="L2388">        double cen1 = 0;</span>
-<span class="nc bnc" id="L2389" title="All 2 branches missed.">        for (int i = 0; i &lt; nFeatures; ++i) {</span>
-<span class="nc" id="L2390">            cen0 += x[0][imageIdx + i];</span>
-<span class="nc" id="L2391">            cen1 += x[0][imageIdx + i];</span>
+<span class="nc" id="L2390">        double cen0 = 0;</span>
+<span class="nc" id="L2391">        double cen1 = 0;</span>
+<span class="nc bnc" id="L2392" title="All 2 branches missed.">        for (int i = 0; i &lt; nFeatures; ++i) {</span>
+<span class="nc" id="L2393">            cen0 += x[0][imageIdx + i];</span>
+<span class="nc" id="L2394">            cen1 += x[0][imageIdx + i];</span>
         }
-<span class="nc" id="L2393">        cen0 /= (double)nFeatures;</span>
-<span class="nc" id="L2394">        cen1 /= (double)nFeatures;</span>
+<span class="nc" id="L2396">        cen0 /= (double)nFeatures;</span>
+<span class="nc" id="L2397">        cen1 /= (double)nFeatures;</span>
 
-<span class="nc" id="L2396">        double scale = 0;</span>
+<span class="nc" id="L2399">        double scale = 0;</span>
         double diffX, diffY;
-<span class="nc bnc" id="L2398" title="All 2 branches missed.">        for (int i = 0; i &lt; nFeatures; ++i) {</span>
-<span class="nc" id="L2399">            diffX = x[0][imageIdx + i] - cen0;</span>
-<span class="nc" id="L2400">            diffY = x[0][imageIdx + i] - cen1;</span>
-<span class="nc" id="L2401">            scale += (diffX*diffX + diffY*diffY);</span>
+<span class="nc bnc" id="L2401" title="All 2 branches missed.">        for (int i = 0; i &lt; nFeatures; ++i) {</span>
+<span class="nc" id="L2402">            diffX = x[0][imageIdx + i] - cen0;</span>
+<span class="nc" id="L2403">            diffY = x[0][imageIdx + i] - cen1;</span>
+<span class="nc" id="L2404">            scale += (diffX*diffX + diffY*diffY);</span>
         }
-<span class="nc" id="L2403">        scale = Math.sqrt(scale/(2.*(nFeatures - 1.)));</span>
+<span class="nc" id="L2406">        scale = Math.sqrt(scale/(2.*(nFeatures - 1.)));</span>
         // to use std dev instead: scale = Math.sqrt(scale/(n-1.));
         
-<span class="nc" id="L2406">        outputNorm[imageNumber*3 + 0] = cen0;</span>
-<span class="nc" id="L2407">        outputNorm[imageNumber*3 + 1] = cen1;</span>
-<span class="nc" id="L2408">        outputNorm[imageNumber*3 + 2] = scale;</span>
+<span class="nc" id="L2409">        outputNorm[imageNumber*3 + 0] = cen0;</span>
+<span class="nc" id="L2410">        outputNorm[imageNumber*3 + 1] = cen1;</span>
+<span class="nc" id="L2411">        outputNorm[imageNumber*3 + 2] = scale;</span>
         
-<span class="nc bnc" id="L2410" title="All 2 branches missed.">        for (int i = 0; i &lt; nFeatures; ++i) {</span>
-<span class="nc" id="L2411">            xN[0][i] = (x[0][imageIdx + i] - cen0)/scale;</span>
-<span class="nc" id="L2412">            xN[1][i] = (x[1][imageIdx + i] - cen1)/scale;</span>
+<span class="nc bnc" id="L2413" title="All 2 branches missed.">        for (int i = 0; i &lt; nFeatures; ++i) {</span>
+<span class="nc" id="L2414">            xN[0][i] = (x[0][imageIdx + i] - cen0)/scale;</span>
+<span class="nc" id="L2415">            xN[1][i] = (x[1][imageIdx + i] - cen1)/scale;</span>
         }
         
-<span class="nc" id="L2415">        return xN;</span>
+<span class="nc" id="L2418">        return xN;</span>
     }
 
     private static void calculateLeftEpipole(DenseMatrix fundamentalMatrix,
         double[] outputE01) throws NotConvergedException {
         
-<span class="nc bnc" id="L2421" title="All 2 branches missed.">        if (outputE01.length != 3) {</span>
-<span class="nc" id="L2422">            throw new IllegalArgumentException(&quot;outputE01 length must be 3&quot;);</span>
+<span class="nc bnc" id="L2424" title="All 2 branches missed.">        if (outputE01.length != 3) {</span>
+<span class="nc" id="L2425">            throw new IllegalArgumentException(&quot;outputE01 length must be 3&quot;);</span>
         }
         
-<span class="nc" id="L2425">        SVDProducts svdE = MatrixUtil.performSVD(fundamentalMatrix);</span>
+<span class="nc" id="L2428">        SVDProducts svdE = MatrixUtil.performSVD(fundamentalMatrix);</span>
         
         /*
          The left epipole is e1 = last column of U / last item of that column
@@ -2431,22 +2434,22 @@ import no.uib.cipr.matrix.NotConvergedException;
          It is the right image position of the epipolar projection of the left camera center
         */
         
-<span class="nc bnc" id="L2434" title="All 2 branches missed.">        assert(svdE.u[0].length == 3);</span>
-<span class="nc bnc" id="L2435" title="All 2 branches missed.">        assert(svdE.u.length == 3);</span>
-<span class="nc bnc" id="L2436" title="All 2 branches missed.">        assert(svdE.vT[0].length == 3);</span>
-<span class="nc bnc" id="L2437" title="All 2 branches missed.">        assert(svdE.vT.length == 3);</span>
+<span class="nc bnc" id="L2437" title="All 2 branches missed.">        assert(svdE.u[0].length == 3);</span>
+<span class="nc bnc" id="L2438" title="All 2 branches missed.">        assert(svdE.u.length == 3);</span>
+<span class="nc bnc" id="L2439" title="All 2 branches missed.">        assert(svdE.vT[0].length == 3);</span>
+<span class="nc bnc" id="L2440" title="All 2 branches missed.">        assert(svdE.vT.length == 3);</span>
         
         //double e1Div = svdE.vT[2][2];
-<span class="nc bnc" id="L2440" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; i++) {</span>
-<span class="nc" id="L2441">            outputE01[i] = svdE.vT[2][i];///e1Div;</span>
+<span class="nc bnc" id="L2443" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; i++) {</span>
+<span class="nc" id="L2444">            outputE01[i] = svdE.vT[2][i];///e1Div;</span>
         }
-<span class="nc" id="L2443">    }</span>
+<span class="nc" id="L2446">    }</span>
 
     private static void extractColumn(double[][] x, int idx, double[] outputPoint) {
-<span class="nc" id="L2446">        outputPoint[0] = x[0][idx];</span>
-<span class="nc" id="L2447">        outputPoint[1] = x[1][idx];</span>
-<span class="nc" id="L2448">        outputPoint[2] = x[2][idx];</span>
-<span class="nc" id="L2449">    }</span>
+<span class="nc" id="L2449">        outputPoint[0] = x[0][idx];</span>
+<span class="nc" id="L2450">        outputPoint[1] = x[1][idx];</span>
+<span class="nc" id="L2451">        outputPoint[2] = x[2][idx];</span>
+<span class="nc" id="L2452">    }</span>
 
     /**
      * 
@@ -2555,22 +2558,22 @@ import no.uib.cipr.matrix.NotConvergedException;
         G*L_vectorized = c ==&gt;  L_vectorized = G^-1 * c
         */
         
-<span class="fc" id="L2558">         int mImages = motion.length/2;</span>
+<span class="fc" id="L2561">         int mImages = motion.length/2;</span>
         
         int i, j;
-<span class="fc" id="L2561">        double[] c = new double[3*mImages];</span>
-<span class="fc bfc" id="L2562" title="All 2 branches covered.">        for (i = 0; i &lt; 2*mImages; ++i) {</span>
-<span class="fc" id="L2563">            c[i] = 1;</span>
+<span class="fc" id="L2564">        double[] c = new double[3*mImages];</span>
+<span class="fc bfc" id="L2565" title="All 2 branches covered.">        for (i = 0; i &lt; 2*mImages; ++i) {</span>
+<span class="fc" id="L2566">            c[i] = 1;</span>
         }
         
         //g is 3F X 6
-<span class="fc" id="L2567">        double[][] g = new double[3*mImages][6];</span>
-<span class="fc bfc" id="L2568" title="All 2 branches covered.">        for (i = 0; i &lt; 2*mImages; ++i) {</span>
-<span class="fc" id="L2569">            g[i] = gT(motion[i], motion[i]);</span>
-<span class="pc bnc" id="L2570" title="All 2 branches missed.">            assert(g[i].length == 6);</span>
+<span class="fc" id="L2570">        double[][] g = new double[3*mImages][6];</span>
+<span class="fc bfc" id="L2571" title="All 2 branches covered.">        for (i = 0; i &lt; 2*mImages; ++i) {</span>
+<span class="fc" id="L2572">            g[i] = gT(motion[i], motion[i]);</span>
+<span class="pc bnc" id="L2573" title="All 2 branches missed.">            assert(g[i].length == 6);</span>
         }
-<span class="fc bfc" id="L2572" title="All 2 branches covered.">        for (i = 2*mImages, j=0; i &lt; 3*mImages; ++i, j++) {</span>
-<span class="fc" id="L2573">            g[i] = gT(motion[j], motion[mImages + j]);</span>
+<span class="fc bfc" id="L2575" title="All 2 branches covered.">        for (i = 2*mImages, j=0; i &lt; 3*mImages; ++i, j++) {</span>
+<span class="fc" id="L2576">            g[i] = gT(motion[j], motion[mImages + j]);</span>
         }
                 
         // rank of G is 4
@@ -2578,17 +2581,17 @@ import no.uib.cipr.matrix.NotConvergedException;
         // G^T * G * L = G^T * c
         // L = (G^T*G)^-1*G^T * c
         //     pseudoinverse of G is (G^T*G)^-1*G^T
-<span class="fc" id="L2581">        double[][] gInv = MatrixUtil.pseudoinverseRankDeficient(g);</span>
+<span class="fc" id="L2584">        double[][] gInv = MatrixUtil.pseudoinverseRankDeficient(g);</span>
         
         // 6X1
-<span class="fc" id="L2584">        double[] lVector = MatrixUtil.multiplyMatrixByColumnVector(gInv, c);</span>
-<span class="pc bnc" id="L2585" title="All 2 branches missed.">        assert(lVector.length == 6);</span>
+<span class="fc" id="L2587">        double[] lVector = MatrixUtil.multiplyMatrixByColumnVector(gInv, c);</span>
+<span class="pc bnc" id="L2588" title="All 2 branches missed.">        assert(lVector.length == 6);</span>
         
         // 3X3
-<span class="fc" id="L2588">        double[][] ell = new double[3][3];</span>
-<span class="fc" id="L2589">        ell[0] = new double[]{lVector[0], lVector[1], lVector[2]};</span>
-<span class="fc" id="L2590">        ell[1] = new double[]{lVector[1], lVector[3], lVector[4]};</span>
-<span class="fc" id="L2591">        ell[2] = new double[]{lVector[2], lVector[4], lVector[5]};</span>
+<span class="fc" id="L2591">        double[][] ell = new double[3][3];</span>
+<span class="fc" id="L2592">        ell[0] = new double[]{lVector[0], lVector[1], lVector[2]};</span>
+<span class="fc" id="L2593">        ell[1] = new double[]{lVector[1], lVector[3], lVector[4]};</span>
+<span class="fc" id="L2594">        ell[2] = new double[]{lVector[2], lVector[4], lVector[5]};</span>
         
         // Q can be determined :
         //   as the square root of ell,
@@ -2596,20 +2599,27 @@ import no.uib.cipr.matrix.NotConvergedException;
         //   or with eigendecomposition
         
         // enforcing positive definiteness of L (which is ell here).
-<span class="fc" id="L2599">        double eps = 1e-16;//1.e-11; eps close to zero within machine precision to perturb the matrix to smallest eigenvalue of eps</span>
-<span class="fc" id="L2600">        double[][] lPSD = MatrixUtil.nearestPositiveSemidefiniteToASymmetric(ell, eps);</span>
-        /*EVD evd2 = EVD.factorize(new DenseMatrix(lPSD));
-        double[] eig = evd2.getRealEigenvalues();
-        double[][] aMinusPSD = MatrixUtil.elementwiseSubtract(ell, lPSD);
-        double dist1 = MatrixUtil.frobeniusNorm(aMinusPSD);
-        */
-<span class="fc" id="L2606">        boolean ipd = MatrixUtil.isPositiveDefinite(lPSD);</span>
-<span class="pc bnc" id="L2607" title="All 2 branches missed.">        assert(ipd);</span>
+<span class="fc" id="L2602">        double eps = 1e-16;//1.e-11; eps close to zero within machine precision to perturb the matrix to smallest eigenvalue of eps</span>
+<span class="fc" id="L2603">        double[][] lPSD = MatrixUtil.nearestPositiveSemidefiniteToASymmetric(ell, eps);</span>
+
+        // debugging
+<span class="fc" id="L2606">        EVD evd2 = EVD.factorize(new DenseMatrix(lPSD));</span>
+<span class="fc" id="L2607">        double[] eig = evd2.getRealEigenvalues();</span>
+<span class="fc" id="L2608">        double[][] aMinusPSD = MatrixUtil.pointwiseSubtract(ell, lPSD);</span>
+<span class="fc" id="L2609">        double dist1 = MatrixUtil.frobeniusNorm(aMinusPSD);</span>
+
+<span class="fc" id="L2611">        boolean ipd = MatrixUtil.isPositiveDefinite(lPSD);</span>
+<span class="pc bpc" id="L2612" title="1 of 2 branches missed.">        if (!ipd) {</span>
+            //TODO: consider throwing an exception so i'll fix this...
+<span class="nc" id="L2614">            System.err.printf(&quot;WARNING: matrix L_PSD is not positive semi-definite.&quot; +</span>
+<span class="nc" id="L2615">                    &quot; The distance between L and L_PSD=%.3e, but should be near 0.\n&quot;, dist1);</span>
+        }
+
        
         //decompose Q = L * (sigma+) * L^T;  Q is size 3X3
-<span class="fc" id="L2610">        double[][] q = LinearEquations.choleskyDecompositionViaMTJ(lPSD);</span>
+<span class="fc" id="L2620">        double[][] q = LinearEquations.choleskyDecompositionViaMTJ(lPSD);</span>
         
-<span class="fc" id="L2612">        return q;</span>
+<span class="fc" id="L2622">        return q;</span>
     }
 
     private static void assertDotProductMetrics(double[][] motion,
@@ -2617,21 +2627,21 @@ import no.uib.cipr.matrix.NotConvergedException;
         double[] tmp1, tmp2, tmp3;
         int i, j;
         double tmp4, tmp5, tmp6, tmp7;
-<span class="nc bnc" id="L2620" title="All 2 branches missed.">        for (i = 0; i &lt; mImages; ++i) {</span>
-<span class="nc" id="L2621">            tmp1 = Arrays.copyOf(motion[i], motion[i].length);</span>
-<span class="nc" id="L2622">            tmp2 = Arrays.copyOf(motion[mImages + i], motion[mImages + i].length);</span>
-<span class="nc" id="L2623">            tmp3 = MatrixUtil.crossProduct(tmp1, tmp2);</span>
-<span class="nc" id="L2624">            tmp4 = 0; // i dot i = 1</span>
-<span class="nc" id="L2625">            tmp5 = 0; // j dot j = 1</span>
-<span class="nc" id="L2626">            tmp6 = 0; // i dot j = 0</span>
-<span class="nc" id="L2627">            tmp7 = 0; // k dot k = 1</span>
-<span class="nc bnc" id="L2628" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
-<span class="nc" id="L2629">                tmp4 += (tmp1[j]*tmp1[j]);</span>
-<span class="nc" id="L2630">                tmp5 += (tmp2[j]*tmp2[j]);</span>
-<span class="nc" id="L2631">                tmp6 += (tmp1[j]*tmp2[j]);</span>
-<span class="nc" id="L2632">                tmp7 += (tmp3[j]*tmp3[j]);</span>
+<span class="nc bnc" id="L2630" title="All 2 branches missed.">        for (i = 0; i &lt; mImages; ++i) {</span>
+<span class="nc" id="L2631">            tmp1 = Arrays.copyOf(motion[i], motion[i].length);</span>
+<span class="nc" id="L2632">            tmp2 = Arrays.copyOf(motion[mImages + i], motion[mImages + i].length);</span>
+<span class="nc" id="L2633">            tmp3 = MatrixUtil.crossProduct(tmp1, tmp2);</span>
+<span class="nc" id="L2634">            tmp4 = 0; // i dot i = 1</span>
+<span class="nc" id="L2635">            tmp5 = 0; // j dot j = 1</span>
+<span class="nc" id="L2636">            tmp6 = 0; // i dot j = 0</span>
+<span class="nc" id="L2637">            tmp7 = 0; // k dot k = 1</span>
+<span class="nc bnc" id="L2638" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L2639">                tmp4 += (tmp1[j]*tmp1[j]);</span>
+<span class="nc" id="L2640">                tmp5 += (tmp2[j]*tmp2[j]);</span>
+<span class="nc" id="L2641">                tmp6 += (tmp1[j]*tmp2[j]);</span>
+<span class="nc" id="L2642">                tmp7 += (tmp3[j]*tmp3[j]);</span>
             }
-<span class="nc" id="L2634">            System.out.printf(&quot;tmps:%.4e, %.4e, %.4e, %.4e\n&quot;, tmp4, tmp5, tmp7, tmp6);</span>
+<span class="nc" id="L2644">            System.out.printf(&quot;tmps:%.4e, %.4e, %.4e, %.4e\n&quot;, tmp4, tmp5, tmp7, tmp6);</span>
             /* if had perfect data:
             assert(Math.abs(tmp4 - 1) &lt; 1e-2);
             assert(Math.abs(tmp5 - 1) &lt; 1e-2);
@@ -2639,7 +2649,7 @@ import no.uib.cipr.matrix.NotConvergedException;
             assert(Math.abs(tmp6) &lt; 1e-2);
             */
         }
-<span class="nc" id="L2642">    }</span>
+<span class="nc" id="L2652">    }</span>
 
     /**
      * calculates the homography as the canonical pose for the un-calibrated camera
@@ -2793,21 +2803,21 @@ import no.uib.cipr.matrix.NotConvergedException;
         They both produce the same answer, though might need multiplication by -1.
         */
         // these are 3X3
-<span class="fc" id="L2796">        double[][] e2SkewT = MatrixUtil.transpose(MatrixUtil.skewSymmetric(e2));</span>
-<span class="fc" id="L2797">        double[][] e2SkewTF = MatrixUtil.multiply(e2SkewT, fm);</span>
-<span class="fc" id="L2798">        int n = x1P[0].length;</span>
+<span class="fc" id="L2806">        double[][] e2SkewT = MatrixUtil.transpose(MatrixUtil.skewSymmetric(e2));</span>
+<span class="fc" id="L2807">        double[][] e2SkewTF = MatrixUtil.multiply(e2SkewT, fm);</span>
+<span class="fc" id="L2808">        int n = x1P[0].length;</span>
         int i;
-<span class="fc" id="L2800">        double[] x1 = new double[3];</span>
-<span class="fc" id="L2801">        double[] x2 = new double[3];</span>
+<span class="fc" id="L2810">        double[] x1 = new double[3];</span>
+<span class="fc" id="L2811">        double[] x2 = new double[3];</span>
         //3*n X 1
-<span class="fc" id="L2803">        double[] b = new double[3 * n];</span>
+<span class="fc" id="L2813">        double[] b = new double[3 * n];</span>
         //3*n X 3
-<span class="fc" id="L2805">        double[][] a = new double[3 * n][];</span>
+<span class="fc" id="L2815">        double[][] a = new double[3 * n][];</span>
         
         //3X3
-<span class="fc" id="L2808">        double[][] x2Skew = MatrixUtil.zeros(3, 3);</span>
-<span class="fc" id="L2809">        double[][] tmp = MatrixUtil.zeros(3, 3);</span>
-<span class="fc" id="L2810">        double[] bI = new double[3];</span>
+<span class="fc" id="L2818">        double[][] x2Skew = MatrixUtil.zeros(3, 3);</span>
+<span class="fc" id="L2819">        double[][] tmp = MatrixUtil.zeros(3, 3);</span>
+<span class="fc" id="L2820">        double[] bI = new double[3];</span>
         double x10;
         double x11;
         double x12;
@@ -2817,33 +2827,33 @@ import no.uib.cipr.matrix.NotConvergedException;
         double e20;
         double e21;
         double e22;
-<span class="fc bfc" id="L2820" title="All 2 branches covered.">        for (i = 0; i &lt; x1P[0].length; ++i) {</span>
-<span class="fc" id="L2821">            MatrixUtil.extractColumn(x1P, i, x1);</span>
-<span class="fc" id="L2822">            MatrixUtil.extractColumn(x2P, i, x2);</span>
-<span class="fc" id="L2823">            MatrixUtil.skewSymmetric(x2, x2Skew);</span>
+<span class="fc bfc" id="L2830" title="All 2 branches covered.">        for (i = 0; i &lt; x1P[0].length; ++i) {</span>
+<span class="fc" id="L2831">            MatrixUtil.extractColumn(x1P, i, x1);</span>
+<span class="fc" id="L2832">            MatrixUtil.extractColumn(x2P, i, x2);</span>
+<span class="fc" id="L2833">            MatrixUtil.skewSymmetric(x2, x2Skew);</span>
             // 3X1  [x2]_x*( ([e2]_x)^T * F)*x1
-<span class="fc" id="L2825">            MatrixUtil.multiply(x2Skew, e2SkewTF, tmp);</span>
-<span class="fc" id="L2826">            MatrixUtil.multiplyMatrixByColumnVector(tmp, x1, bI);</span>
-<span class="fc" id="L2827">            MatrixUtil.multiply(bI, -1);</span>
-<span class="fc" id="L2828">            System.arraycopy(bI, 0, b, i * 3, 3);</span>
-<span class="fc" id="L2829">            x10 = x1[0];</span>
-<span class="fc" id="L2830">            x11 = x1[1];</span>
-<span class="fc" id="L2831">            x12 = x1[2];</span>
-<span class="fc" id="L2832">            x20 = x2[0];</span>
-<span class="fc" id="L2833">            x21 = x2[1];</span>
-<span class="fc" id="L2834">            x22 = x2[2];</span>
-<span class="fc" id="L2835">            e20 = e2[0];</span>
-<span class="fc" id="L2836">            e21 = e2[1];</span>
-<span class="fc" id="L2837">            e22 = e2[2];</span>
+<span class="fc" id="L2835">            MatrixUtil.multiply(x2Skew, e2SkewTF, tmp);</span>
+<span class="fc" id="L2836">            MatrixUtil.multiplyMatrixByColumnVector(tmp, x1, bI);</span>
+<span class="fc" id="L2837">            MatrixUtil.multiply(bI, -1);</span>
+<span class="fc" id="L2838">            System.arraycopy(bI, 0, b, i * 3, 3);</span>
+<span class="fc" id="L2839">            x10 = x1[0];</span>
+<span class="fc" id="L2840">            x11 = x1[1];</span>
+<span class="fc" id="L2841">            x12 = x1[2];</span>
+<span class="fc" id="L2842">            x20 = x2[0];</span>
+<span class="fc" id="L2843">            x21 = x2[1];</span>
+<span class="fc" id="L2844">            x22 = x2[2];</span>
+<span class="fc" id="L2845">            e20 = e2[0];</span>
+<span class="fc" id="L2846">            e21 = e2[1];</span>
+<span class="fc" id="L2847">            e22 = e2[2];</span>
             /*
             [x2]_x*(e2*v^T)*x1
               = |v0*(-x22*e21*x10+x21*e22*x10) + v1*(-x22*e21*x11+x21*e22*x11) + v2*(-x22*e21*x12+x21*e22*x12) |
                 |v0*(x22*e20*x10-x20*e22*x10) + v1*(x22*e20*x11-x20*e22*x11) + v2*(x22*e20*x12-x20*e22*x12)    |
                 |v0*(-x21*e20*x10+x20*e21*x10) + v1*(-x21*e20*x11+x20*e21*x11) + v2*(-x21*e20*x12+x20*e21*x12) |
              */
-<span class="fc" id="L2844">            a[i * 3] = new double[]{-x22 * e21 * x10 + x21 * e22 * x10, -x22 * e21 * x11 + x21 * e22 * x11, -x22 * e21 * x12 + x21 * e22 * x12};</span>
-<span class="fc" id="L2845">            a[i * 3 + 1] = new double[]{x22 * e20 * x10 - x20 * e22 * x10, x22 * e20 * x11 - x20 * e22 * x11, x22 * e20 * x12 - x20 * e22 * x12};</span>
-<span class="fc" id="L2846">            a[i * 3 + 2] = new double[]{-x21 * e20 * x10 + x20 * e21 * x10, -x21 * e20 * x11 + x20 * e21 * x11, -x21 * e20 * x12 + x20 * e21 * x12};</span>
+<span class="fc" id="L2854">            a[i * 3] = new double[]{-x22 * e21 * x10 + x21 * e22 * x10, -x22 * e21 * x11 + x21 * e22 * x11, -x22 * e21 * x12 + x21 * e22 * x12};</span>
+<span class="fc" id="L2855">            a[i * 3 + 1] = new double[]{x22 * e20 * x10 - x20 * e22 * x10, x22 * e20 * x11 - x20 * e22 * x11, x22 * e20 * x12 - x20 * e22 * x12};</span>
+<span class="fc" id="L2856">            a[i * 3 + 2] = new double[]{-x21 * e20 * x10 + x20 * e21 * x10, -x21 * e20 * x11 + x20 * e21 * x11, -x21 * e20 * x12 + x20 * e21 * x12};</span>
         }
         // 
         //    as -1*v below
@@ -2851,12 +2861,12 @@ import no.uib.cipr.matrix.NotConvergedException;
         //A * x = b
         // x = A^-1 * b
         // 3 X n
-<span class="fc" id="L2854">        double[][] aInv = MatrixUtil.pseudoinverseFullColumnRank(a);</span>
-<span class="fc" id="L2855">        double[] v = MatrixUtil.multiplyMatrixByColumnVector(aInv, b);</span>
+<span class="fc" id="L2864">        double[][] aInv = MatrixUtil.pseudoinverseFullColumnRank(a);</span>
+<span class="fc" id="L2865">        double[] v = MatrixUtil.multiplyMatrixByColumnVector(aInv, b);</span>
         //H = ([e2]_x)^T * F + e2*v^T
         //  = e2SkewTF + e2*v^T
-<span class="fc" id="L2858">        double[][] h = MatrixUtil.elementwiseAdd(e2SkewTF, MatrixUtil.outerProduct(e2, v));</span>
-<span class="fc" id="L2859">        return h;</span>
+<span class="fc" id="L2868">        double[][] h = MatrixUtil.pointwiseAdd(e2SkewTF, MatrixUtil.outerProduct(e2, v));</span>
+<span class="fc" id="L2869">        return h;</span>
     }
     
     public static class ProjectionResults {
@@ -3044,126 +3054,126 @@ import no.uib.cipr.matrix.NotConvergedException;
         double[][] R1, double[][] R2, double[] t1, double[] t2, 
         double[][] rSelected, double[] tSelected, double[][] outputX) {
     
-<span class="fc" id="L3047">        int n = x1[0].length;</span>
+<span class="fc" id="L3057">        int n = x1[0].length;</span>
         
-<span class="pc bpc" id="L3049" title="1 of 2 branches missed.">        if (outputX.length != 4) {</span>
-<span class="nc" id="L3050">            throw new IllegalArgumentException(&quot;outputX.length must be 4&quot;);</span>
+<span class="pc bpc" id="L3059" title="1 of 2 branches missed.">        if (outputX.length != 4) {</span>
+<span class="nc" id="L3060">            throw new IllegalArgumentException(&quot;outputX.length must be 4&quot;);</span>
         }
-<span class="pc bpc" id="L3052" title="1 of 2 branches missed.">        if (outputX[0].length != n) {</span>
-<span class="nc" id="L3053">            throw new IllegalArgumentException(&quot;outputX[0].length must be the same as x1[0].length&quot;);</span>
+<span class="pc bpc" id="L3062" title="1 of 2 branches missed.">        if (outputX[0].length != n) {</span>
+<span class="nc" id="L3063">            throw new IllegalArgumentException(&quot;outputX[0].length must be the same as x1[0].length&quot;);</span>
         }
         
         // for this model, for the first image, the camera extrinsics are
         //    R = I and t = [0], which leaves all rotation and translation in
         //    the 2nd camera extrinsics w.r.t. the first.
-<span class="fc" id="L3059">        double[][] k1ExtrRot = MatrixUtil.createIdentityMatrix(3);</span>
-<span class="fc" id="L3060">        double[] k1ExtrTrans = new double[3];</span>
+<span class="fc" id="L3069">        double[][] k1ExtrRot = MatrixUtil.createIdentityMatrix(3);</span>
+<span class="fc" id="L3070">        double[] k1ExtrTrans = new double[3];</span>
         
         // save the first that pass the tests for Z&gt;=0.
-<span class="fc" id="L3063">        double[][] bestR = null;</span>
-<span class="fc" id="L3064">        double[] bestT = null;</span>
-<span class="fc" id="L3065">        double[][] bestXW = null;</span>
-<span class="fc" id="L3066">        String bestLabel = null;</span>
-<span class="fc" id="L3067">        int bestNPosZ = Integer.MIN_VALUE;</span>
+<span class="fc" id="L3073">        double[][] bestR = null;</span>
+<span class="fc" id="L3074">        double[] bestT = null;</span>
+<span class="fc" id="L3075">        double[][] bestXW = null;</span>
+<span class="fc" id="L3076">        String bestLabel = null;</span>
+<span class="fc" id="L3077">        int bestNPosZ = Integer.MIN_VALUE;</span>
         
         double[][] XW;
         double[] XWPt;
-<span class="fc" id="L3071">        String label = null;</span>
+<span class="fc" id="L3081">        String label = null;</span>
         
-<span class="fc" id="L3073">        XWPt = new double[4];</span>
-<span class="fc" id="L3074">        XW = new double[4][n];</span>
-<span class="fc bfc" id="L3075" title="All 2 branches covered.">        for (int i = 0; i &lt; 4; ++i) {</span>
-<span class="fc" id="L3076">            XW[i] = new double[n];</span>
+<span class="fc" id="L3083">        XWPt = new double[4];</span>
+<span class="fc" id="L3084">        XW = new double[4][n];</span>
+<span class="fc bfc" id="L3085" title="All 2 branches covered.">        for (int i = 0; i &lt; 4; ++i) {</span>
+<span class="fc" id="L3086">            XW[i] = new double[n];</span>
         }
             
-<span class="fc" id="L3079">        double[][] rTst = null;</span>
-<span class="fc" id="L3080">        double[] tTst = null;</span>
-<span class="fc" id="L3081">        double[][] x1Pt = new double[3][1];</span>
-<span class="fc" id="L3082">        double[][] x2Pt = new double[3][1];</span>
+<span class="fc" id="L3089">        double[][] rTst = null;</span>
+<span class="fc" id="L3090">        double[] tTst = null;</span>
+<span class="fc" id="L3091">        double[][] x1Pt = new double[3][1];</span>
+<span class="fc" id="L3092">        double[][] x2Pt = new double[3][1];</span>
         int i, j, ii;
-<span class="fc bfc" id="L3084" title="All 2 branches covered.">        for (i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L3085">            x1Pt[i] = new double[1];</span>
-<span class="fc" id="L3086">            x2Pt[i] = new double[1];</span>
+<span class="fc bfc" id="L3094" title="All 2 branches covered.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L3095">            x1Pt[i] = new double[1];</span>
+<span class="fc" id="L3096">            x2Pt[i] = new double[1];</span>
         }
         
         int nPosZ; 
         
-<span class="fc bfc" id="L3091" title="All 2 branches covered.">        for (j = 0; j &lt; 4; ++j) {</span>
-<span class="fc bfc" id="L3092" title="All 4 branches covered.">            switch(j) {</span>
+<span class="fc bfc" id="L3101" title="All 2 branches covered.">        for (j = 0; j &lt; 4; ++j) {</span>
+<span class="fc bfc" id="L3102" title="All 4 branches covered.">            switch(j) {</span>
                 case 0: {
-<span class="fc" id="L3094">                    label = &quot;R1, T1&quot;;</span>
-<span class="fc" id="L3095">                    rTst = R1;</span>
-<span class="fc" id="L3096">                    tTst = t1;</span>
-<span class="fc" id="L3097">                    break;</span>
+<span class="fc" id="L3104">                    label = &quot;R1, T1&quot;;</span>
+<span class="fc" id="L3105">                    rTst = R1;</span>
+<span class="fc" id="L3106">                    tTst = t1;</span>
+<span class="fc" id="L3107">                    break;</span>
                 }
                 case 1: {
-<span class="fc" id="L3100">                    label = &quot;R1, T2&quot;;</span>
-<span class="fc" id="L3101">                    rTst = R1;</span>
-<span class="fc" id="L3102">                    tTst = t2;</span>
-<span class="fc" id="L3103">                    break;</span>
+<span class="fc" id="L3110">                    label = &quot;R1, T2&quot;;</span>
+<span class="fc" id="L3111">                    rTst = R1;</span>
+<span class="fc" id="L3112">                    tTst = t2;</span>
+<span class="fc" id="L3113">                    break;</span>
                 }
                 case 2: {
-<span class="fc" id="L3106">                    label = &quot;R2, T1&quot;;</span>
-<span class="fc" id="L3107">                    rTst = R2;</span>
-<span class="fc" id="L3108">                    tTst = t1;</span>
-<span class="fc" id="L3109">                    break;</span>
+<span class="fc" id="L3116">                    label = &quot;R2, T1&quot;;</span>
+<span class="fc" id="L3117">                    rTst = R2;</span>
+<span class="fc" id="L3118">                    tTst = t1;</span>
+<span class="fc" id="L3119">                    break;</span>
                 }
                 default: {                    
-<span class="fc" id="L3112">                    label = &quot;R2, T2&quot;;</span>
-<span class="fc" id="L3113">                    rTst = R2;</span>
-<span class="fc" id="L3114">                    tTst = t2;</span>
+<span class="fc" id="L3122">                    label = &quot;R2, T2&quot;;</span>
+<span class="fc" id="L3123">                    rTst = R2;</span>
+<span class="fc" id="L3124">                    tTst = t2;</span>
                     break;
                 }
             }
-<span class="fc" id="L3118">            nPosZ = 0;</span>
-<span class="fc bfc" id="L3119" title="All 2 branches covered.">            for (i = 0; i &lt; n; ++i) {</span>
-<span class="fc bfc" id="L3120" title="All 2 branches covered.">                for (ii = 0; ii &lt; 3; ++ii) {</span>
-<span class="fc" id="L3121">                    x1Pt[ii][0] = x1[ii][i];</span>
-<span class="fc" id="L3122">                    x2Pt[ii][0] = x2[ii][i];</span>
+<span class="fc" id="L3128">            nPosZ = 0;</span>
+<span class="fc bfc" id="L3129" title="All 2 branches covered.">            for (i = 0; i &lt; n; ++i) {</span>
+<span class="fc bfc" id="L3130" title="All 2 branches covered.">                for (ii = 0; ii &lt; 3; ++ii) {</span>
+<span class="fc" id="L3131">                    x1Pt[ii][0] = x1[ii][i];</span>
+<span class="fc" id="L3132">                    x2Pt[ii][0] = x2[ii][i];</span>
                 }
                 //
-<span class="fc" id="L3125">                XWPt = Triangulation.calculateWCSPoint(</span>
+<span class="fc" id="L3135">                XWPt = Triangulation.calculateWCSPoint(</span>
                     k1, k1ExtrRot, k1ExtrTrans, 
                     k2, rTst, tTst, 
                     x1Pt, x2Pt);
-<span class="fc bfc" id="L3129" title="All 2 branches covered.">                if (XWPt[2] &gt;= 0) {</span>
-<span class="fc" id="L3130">                    nPosZ++;</span>
+<span class="fc bfc" id="L3139" title="All 2 branches covered.">                if (XWPt[2] &gt;= 0) {</span>
+<span class="fc" id="L3140">                    nPosZ++;</span>
                 }
-<span class="fc bfc" id="L3132" title="All 2 branches covered.">                for (ii = 0; ii &lt; 4; ++ii) {</span>
-<span class="fc" id="L3133">                    XW[ii][i] = XWPt[ii];</span>
+<span class="fc bfc" id="L3142" title="All 2 branches covered.">                for (ii = 0; ii &lt; 4; ++ii) {</span>
+<span class="fc" id="L3143">                    XW[ii][i] = XWPt[ii];</span>
                 } 
             }
-<span class="fc bfc" id="L3136" title="All 2 branches covered.">            if (nPosZ &gt; bestNPosZ) {</span>
-<span class="fc" id="L3137">                bestNPosZ = nPosZ;</span>
-<span class="fc" id="L3138">                bestR = rTst;</span>
-<span class="fc" id="L3139">                bestT = tTst;</span>
-<span class="fc" id="L3140">                bestLabel = label;</span>
-<span class="fc" id="L3141">                bestXW = MatrixUtil.copy(XW);</span>
+<span class="fc bfc" id="L3146" title="All 2 branches covered.">            if (nPosZ &gt; bestNPosZ) {</span>
+<span class="fc" id="L3147">                bestNPosZ = nPosZ;</span>
+<span class="fc" id="L3148">                bestR = rTst;</span>
+<span class="fc" id="L3149">                bestT = tTst;</span>
+<span class="fc" id="L3150">                bestLabel = label;</span>
+<span class="fc" id="L3151">                bestXW = MatrixUtil.copy(XW);</span>
             }
         }
         
-<span class="pc bpc" id="L3145" title="1 of 2 branches missed.">        if (bestR == null) {</span>
-<span class="nc" id="L3146">            return;</span>
+<span class="pc bpc" id="L3155" title="1 of 2 branches missed.">        if (bestR == null) {</span>
+<span class="nc" id="L3156">            return;</span>
         }
         
         // copy into output variables:
-<span class="fc bfc" id="L3150" title="All 2 branches covered.">        for (i = 0; i &lt; bestR.length; ++i) {</span>
-<span class="fc" id="L3151">            System.arraycopy(bestR[i], 0, rSelected[i], 0, bestR[i].length);</span>
+<span class="fc bfc" id="L3160" title="All 2 branches covered.">        for (i = 0; i &lt; bestR.length; ++i) {</span>
+<span class="fc" id="L3161">            System.arraycopy(bestR[i], 0, rSelected[i], 0, bestR[i].length);</span>
         }
-<span class="fc" id="L3153">        System.arraycopy(bestT, 0, tSelected, 0, bestT.length);</span>
+<span class="fc" id="L3163">        System.arraycopy(bestT, 0, tSelected, 0, bestT.length);</span>
         
-<span class="fc" id="L3155">        System.out.println(&quot;choosing solution: &quot; + bestLabel);</span>
+<span class="fc" id="L3165">        System.out.println(&quot;choosing solution: &quot; + bestLabel);</span>
         //double estimatedRotY = Math.atan(R[0][2]/R[0][0]) * (180./Math.PI);
-<span class="fc" id="L3157">        double estimatedRotZ = Math.atan(-bestR[1][0]/bestR[1][1]) * (180./Math.PI);</span>
-<span class="fc" id="L3158">        System.out.printf(&quot;estimated rotation in degrees about z axis from R=%.2f\n&quot;, estimatedRotZ);</span>
+<span class="fc" id="L3167">        double estimatedRotZ = Math.atan(-bestR[1][0]/bestR[1][1]) * (180./Math.PI);</span>
+<span class="fc" id="L3168">        System.out.printf(&quot;estimated rotation in degrees about z axis from R=%.2f\n&quot;, estimatedRotZ);</span>
         //System.out.printf(&quot;X_WCS=\n%s\n&quot;, FormatArray.toString(bestXW, &quot;%.3e&quot;));
-<span class="fc" id="L3160">        System.out.flush();</span>
+<span class="fc" id="L3170">        System.out.flush();</span>
         
-<span class="fc bfc" id="L3162" title="All 2 branches covered.">        for (i = 0; i &lt; XW.length; ++i) {</span>
-<span class="fc" id="L3163">            System.arraycopy(bestXW[i], 0, outputX[i], 0, bestXW[i].length);</span>
+<span class="fc bfc" id="L3172" title="All 2 branches covered.">        for (i = 0; i &lt; XW.length; ++i) {</span>
+<span class="fc" id="L3173">            System.arraycopy(bestXW[i], 0, outputX[i], 0, bestXW[i].length);</span>
         }
         
-<span class="fc" id="L3166">    }</span>
+<span class="fc" id="L3176">    }</span>
 
     static void populateWithDet1Rs(MatrixUtil.SVDProducts svdE, 
         double[][] r1Out, double[][] r2Out, double[][] uOut) {
@@ -3177,78 +3187,78 @@ import no.uib.cipr.matrix.NotConvergedException;
         //R_z_-90^T = [ [0, -1, 0], [0, 1, 0], [0, 0, 1] ]
          
         //R_z_90
-<span class="fc" id="L3180">        double[][] r90T = new double[3][3];</span>
-<span class="fc" id="L3181">        r90T[0] = new double[]{0, 1, 0};</span>
-<span class="fc" id="L3182">        r90T[1] = new double[]{-1, 0, 0};</span>
-<span class="fc" id="L3183">        r90T[2] = new double[]{0, 0, 1};</span>
-<span class="fc" id="L3184">        double[][] r90NegT = MatrixUtil.transpose(r90T);</span>
+<span class="fc" id="L3190">        double[][] r90T = new double[3][3];</span>
+<span class="fc" id="L3191">        r90T[0] = new double[]{0, 1, 0};</span>
+<span class="fc" id="L3192">        r90T[1] = new double[]{-1, 0, 0};</span>
+<span class="fc" id="L3193">        r90T[2] = new double[]{0, 0, 1};</span>
+<span class="fc" id="L3194">        double[][] r90NegT = MatrixUtil.transpose(r90T);</span>
         
-<span class="fc" id="L3186">        double[][] u = svdE.u;</span>
-<span class="fc" id="L3187">        double[][] uNeg = MatrixUtil.copy(u);</span>
-<span class="fc" id="L3188">        MatrixUtil.multiply(uNeg, -1);</span>
+<span class="fc" id="L3196">        double[][] u = svdE.u;</span>
+<span class="fc" id="L3197">        double[][] uNeg = MatrixUtil.copy(u);</span>
+<span class="fc" id="L3198">        MatrixUtil.multiply(uNeg, -1);</span>
         
-<span class="fc" id="L3190">        double[][] rr1 = MatrixUtil.multiply(MatrixUtil.multiply(u, r90T), svdE.vT);</span>
-<span class="fc" id="L3191">        double[][] rr2 = MatrixUtil.multiply(MatrixUtil.multiply(uNeg, r90T), svdE.vT);</span>
-<span class="fc" id="L3192">        double[][] rr3 = MatrixUtil.multiply(MatrixUtil.multiply(u, r90NegT), svdE.vT);</span>
-<span class="fc" id="L3193">        double[][] rr4 = MatrixUtil.multiply(MatrixUtil.multiply(uNeg, r90NegT), svdE.vT);</span>
+<span class="fc" id="L3200">        double[][] rr1 = MatrixUtil.multiply(MatrixUtil.multiply(u, r90T), svdE.vT);</span>
+<span class="fc" id="L3201">        double[][] rr2 = MatrixUtil.multiply(MatrixUtil.multiply(uNeg, r90T), svdE.vT);</span>
+<span class="fc" id="L3202">        double[][] rr3 = MatrixUtil.multiply(MatrixUtil.multiply(u, r90NegT), svdE.vT);</span>
+<span class="fc" id="L3203">        double[][] rr4 = MatrixUtil.multiply(MatrixUtil.multiply(uNeg, r90NegT), svdE.vT);</span>
         
-<span class="fc" id="L3195">        double det1 = MatrixUtil.determinant(rr1);</span>
-<span class="fc" id="L3196">        double det2 = MatrixUtil.determinant(rr2);</span>
-<span class="fc" id="L3197">        double det3 = MatrixUtil.determinant(rr3);</span>
-<span class="fc" id="L3198">        double det4 = MatrixUtil.determinant(rr4);</span>
+<span class="fc" id="L3205">        double det1 = MatrixUtil.determinant(rr1);</span>
+<span class="fc" id="L3206">        double det2 = MatrixUtil.determinant(rr2);</span>
+<span class="fc" id="L3207">        double det3 = MatrixUtil.determinant(rr3);</span>
+<span class="fc" id="L3208">        double det4 = MatrixUtil.determinant(rr4);</span>
         
-<span class="fc" id="L3200">        System.out.printf(&quot;det(r1,r2,r3,r4)=%.3e,%.3e,%.3e,%.3e\n&quot;, det1, det2, det3, det4);</span>
-<span class="fc" id="L3201">        System.out.printf(&quot;r1:\n%s\n&quot;, FormatArray.toString(rr1, &quot;%.4e&quot;));</span>
-<span class="fc" id="L3202">        System.out.printf(&quot;r2:\n%s\n&quot;, FormatArray.toString(rr2, &quot;%.4e&quot;));</span>
-<span class="fc" id="L3203">        System.out.printf(&quot;r3:\n%s\n&quot;, FormatArray.toString(rr3, &quot;%.4e&quot;));</span>
-<span class="fc" id="L3204">        System.out.printf(&quot;r4:\n%s\n&quot;, FormatArray.toString(rr4, &quot;%.4e&quot;));</span>
+<span class="fc" id="L3210">        System.out.printf(&quot;det(r1,r2,r3,r4)=%.3e,%.3e,%.3e,%.3e\n&quot;, det1, det2, det3, det4);</span>
+<span class="fc" id="L3211">        System.out.printf(&quot;r1:\n%s\n&quot;, FormatArray.toString(rr1, &quot;%.4e&quot;));</span>
+<span class="fc" id="L3212">        System.out.printf(&quot;r2:\n%s\n&quot;, FormatArray.toString(rr2, &quot;%.4e&quot;));</span>
+<span class="fc" id="L3213">        System.out.printf(&quot;r3:\n%s\n&quot;, FormatArray.toString(rr3, &quot;%.4e&quot;));</span>
+<span class="fc" id="L3214">        System.out.printf(&quot;r4:\n%s\n&quot;, FormatArray.toString(rr4, &quot;%.4e&quot;));</span>
         
-<span class="fc" id="L3206">        boolean useUPos = true;</span>
+<span class="fc" id="L3216">        boolean useUPos = true;</span>
         
         int i;
-<span class="pc bpc" id="L3209" title="1 of 2 branches missed.">        if (Math.abs(det1 - 1.) &lt; eps) {</span>
-<span class="fc" id="L3210">            System.out.printf(&quot;using +U\n&quot;);</span>
-<span class="fc bfc" id="L3211" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L3212">                System.arraycopy(rr1[i], 0, r1Out[i], 0, rr1[i].length);</span>
+<span class="pc bpc" id="L3219" title="1 of 2 branches missed.">        if (Math.abs(det1 - 1.) &lt; eps) {</span>
+<span class="fc" id="L3220">            System.out.printf(&quot;using +U\n&quot;);</span>
+<span class="fc bfc" id="L3221" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L3222">                System.arraycopy(rr1[i], 0, r1Out[i], 0, rr1[i].length);</span>
             }
-<span class="nc bnc" id="L3214" title="All 2 branches missed.">        } else if (Math.abs(det2 - 1.) &lt; eps) {</span>
-<span class="nc" id="L3215">            System.out.printf(&quot;using -U\n&quot;);</span>
-<span class="nc" id="L3216">            useUPos = false;</span>
-<span class="nc bnc" id="L3217" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L3218">                System.arraycopy(rr2[i], 0, r1Out[i], 0, rr2[i].length);</span>
+<span class="nc bnc" id="L3224" title="All 2 branches missed.">        } else if (Math.abs(det2 - 1.) &lt; eps) {</span>
+<span class="nc" id="L3225">            System.out.printf(&quot;using -U\n&quot;);</span>
+<span class="nc" id="L3226">            useUPos = false;</span>
+<span class="nc bnc" id="L3227" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L3228">                System.arraycopy(rr2[i], 0, r1Out[i], 0, rr2[i].length);</span>
             }
         } else {
-<span class="nc" id="L3221">            throw new IllegalStateException(&quot;neither rotation matrix is SO(3)&quot;);</span>
+<span class="nc" id="L3231">            throw new IllegalStateException(&quot;neither rotation matrix is SO(3)&quot;);</span>
         }
-<span class="pc bpc" id="L3223" title="1 of 2 branches missed.">        if (Math.abs(det3 - 1.) &lt; eps) {</span>
-<span class="pc bpc" id="L3224" title="1 of 2 branches missed.">            if (!useUPos) {</span>
-<span class="nc" id="L3225">                throw new IllegalStateException(&quot;expecting to need +U&quot;);</span>
+<span class="pc bpc" id="L3233" title="1 of 2 branches missed.">        if (Math.abs(det3 - 1.) &lt; eps) {</span>
+<span class="pc bpc" id="L3234" title="1 of 2 branches missed.">            if (!useUPos) {</span>
+<span class="nc" id="L3235">                throw new IllegalStateException(&quot;expecting to need +U&quot;);</span>
             }
-<span class="fc" id="L3227">            System.out.printf(&quot;using +U\n&quot;);</span>
-<span class="fc bfc" id="L3228" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L3229">                System.arraycopy(rr3[i], 0, r2Out[i], 0, rr3[i].length);</span>
+<span class="fc" id="L3237">            System.out.printf(&quot;using +U\n&quot;);</span>
+<span class="fc bfc" id="L3238" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L3239">                System.arraycopy(rr3[i], 0, r2Out[i], 0, rr3[i].length);</span>
             }
-<span class="nc bnc" id="L3231" title="All 2 branches missed.">        } else if (Math.abs(det4 - 1.) &lt; eps) {</span>
-<span class="nc bnc" id="L3232" title="All 2 branches missed.">            if (useUPos) {</span>
-<span class="nc" id="L3233">                throw new IllegalStateException(&quot;expecting to need -U&quot;);</span>
+<span class="nc bnc" id="L3241" title="All 2 branches missed.">        } else if (Math.abs(det4 - 1.) &lt; eps) {</span>
+<span class="nc bnc" id="L3242" title="All 2 branches missed.">            if (useUPos) {</span>
+<span class="nc" id="L3243">                throw new IllegalStateException(&quot;expecting to need -U&quot;);</span>
             }
-<span class="nc" id="L3235">            System.out.printf(&quot;using -U\n&quot;);</span>
-<span class="nc bnc" id="L3236" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L3237">                System.arraycopy(rr4[i], 0, r2Out[i], 0, rr4[i].length);</span>
+<span class="nc" id="L3245">            System.out.printf(&quot;using -U\n&quot;);</span>
+<span class="nc bnc" id="L3246" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L3247">                System.arraycopy(rr4[i], 0, r2Out[i], 0, rr4[i].length);</span>
             }
         } else {
-<span class="nc" id="L3240">            throw new IllegalStateException(&quot;neither rotation matrix is SO(3)&quot;);</span>
+<span class="nc" id="L3250">            throw new IllegalStateException(&quot;neither rotation matrix is SO(3)&quot;);</span>
         }
         
-<span class="pc bpc" id="L3243" title="1 of 2 branches missed.">        if (useUPos) {</span>
-<span class="fc bfc" id="L3244" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L3245">                System.arraycopy(u[i], 0, uOut[i], 0, u[i].length);</span>
+<span class="pc bpc" id="L3253" title="1 of 2 branches missed.">        if (useUPos) {</span>
+<span class="fc bfc" id="L3254" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L3255">                System.arraycopy(u[i], 0, uOut[i], 0, u[i].length);</span>
             }
         } else {
-<span class="nc bnc" id="L3248" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L3249">                System.arraycopy(uNeg[i], 0, uOut[i], 0, uNeg[i].length);</span>
+<span class="nc bnc" id="L3258" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L3259">                System.arraycopy(uNeg[i], 0, uOut[i], 0, uNeg[i].length);</span>
             }
         }
-<span class="fc" id="L3252">    }</span>
+<span class="fc" id="L3262">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
