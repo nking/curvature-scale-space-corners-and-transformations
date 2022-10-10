@@ -179,9 +179,7 @@ public class RANSACSolverTest extends TestCase {
             "r_merton"); 
          
         List<Double> errors = fit.getErrors();
-        
         double thresh = tolerance * fit.getStDevFromMean();
-        
         for (int i = 0; i < errors.size(); ++i) {
             
             // if normalize the points and use the normalized
@@ -352,7 +350,7 @@ public class RANSACSolverTest extends TestCase {
         
     }
     
-    public void testErrors_moderateProjection_01() throws IOException {
+    public void estErrors_moderateProjection_01() throws IOException {
         
         // 480 X 640
         String fileName1 = "campus_010.jpg";
@@ -426,7 +424,7 @@ public class RANSACSolverTest extends TestCase {
         
     }
     
-    public void testErrors_moderateProjection_02() {
+    public void estErrors_moderateProjection_02() {
         
         // scaled versions of android 04 and 02
         

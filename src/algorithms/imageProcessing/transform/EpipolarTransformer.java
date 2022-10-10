@@ -788,6 +788,7 @@ public class EpipolarTransformer {
     */
 
     /**
+     * NOT READY FOR USE YET
      * calculate the epipolar projection for 7 correspondences and filter
      * with a chirality check.  returns a list of the filtered solutions.
      * NOTE that for best results, the method should be given unit standard
@@ -872,14 +873,6 @@ public class EpipolarTransformer {
         
         DenseMatrix[] solutions = solveFor7Point(ff1, ff2);
 
-        double[][] solutions2 = null;
-        try {
-            solutions2 = calculateEpipolarProjectionUsing7Points(
-                    MatrixUtil.convertToRowMajor(leftXY), MatrixUtil.convertToRowMajor(rightXY));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         List<DenseMatrix> validatedFM = new ArrayList<DenseMatrix>();
         for (DenseMatrix solution : solutions) {
             //System.out.printf("validating FM=\n%s\n", FormatArray.toString(solution, "%.3e"));
@@ -891,23 +884,6 @@ public class EpipolarTransformer {
             validatedFM.add(solution);
         }
 
-        List<DenseMatrix> validatedFM2 = new ArrayList<>();
-        if (solutions2 != null) {
-            DenseMatrix solution = new DenseMatrix(3, 3);
-            for (int i = 0; i < solutions2.length/3; ++i) {
-                for (int row = 0; row < 3; ++row) {
-                    solution.set(row, 0, solutions2[i*3 + row][0]);
-                    solution.set(row, 1, solutions2[i*3 + row][1]);
-                    solution.set(row, 2, solutions2[i*3 + row][2]);
-                }
-                DenseMatrix validated2 = validateSolution(solution, leftXY, rightXY);
-                if (validated2 == null) {
-                    continue;
-                }
-                validatedFM2.add(solution.copy());
-            }
-        }
-        
         return validatedFM;
     }
    
@@ -1208,7 +1184,17 @@ public class EpipolarTransformer {
         //solve for the roots of equation a0 * x^3 + a1 * x^2 + a2 * x + a3 = 0;
 
         double[] coeffs = calcOrderCoeffs(ff1, ff2);
-        double[] roots = MiscMath.solveCubicRoots(coeffs[0], coeffs[1], coeffs[2], coeffs[3]);
+        double[] roots = null;//MiscMath.solveCubicRoots(coeffs[0], coeffs[1], coeffs[2], coeffs[3]);
+        if (Math.abs(coeffs[3]) < 1E-7) {
+            roots = MiscMath.solveCubicRoots(coeffs[0], coeffs[1], coeffs[2], coeffs[3]);
+        } else {
+            try {
+                roots = PolynomialRootSolver.solveForRealUsingMPSolve(coeffs, eps);
+            } catch (IOException e) {
+                log.severe("PolynomialRootSolver error: " + e.getMessage());
+                roots = MiscMath.solveCubicRoots(coeffs[0], coeffs[1], coeffs[2], coeffs[3]);
+            }
+        }
 
         double[][] m = new double[3][];
         for (int i = 0; i < 3; i++) {
@@ -1217,6 +1203,8 @@ public class EpipolarTransformer {
 
         DenseMatrix[] solutions = new DenseMatrix[roots.length];
 
+        double detF;
+        int c = 0;
         for (int i = 0; i < roots.length; i++) {
             //Fi = a(i)*FF{1} + (1-a(i))*FF{2};
             double a = roots[i];
@@ -1225,21 +1213,17 @@ public class EpipolarTransformer {
                     m[row][col] = a*ff1[row][col] + (1. - a)*ff2[row][col];
                 }
             }
-            solutions[i] = new DenseMatrix(m);
-        }
-        double eps = 1E-4;
-        double[] roots2;
-        if (Math.abs(coeffs[3]) < 1E-7) {
-            roots2 = MiscMath.solveCubicRoots(coeffs[0], coeffs[1], coeffs[2], coeffs[3]);
-        } else {
-            try {
-                roots2 = PolynomialRootSolver.solveForRealUsingMPSolve(coeffs, eps);
-            } catch (IOException e) {
-                log.severe("PolynomialRootSolver error: " + e.getMessage());
-                roots2 = MiscMath.solveCubicRoots(coeffs[0], coeffs[1], coeffs[2], coeffs[3]);
+            // MASKS Appendix 6.A: usually only one of the solved 'a's is consistent with det(F1 + a*F2) = 0
+            detF = MatrixUtil.determinant(m);
+            if (Math.abs(detF) < eps) {
+                solutions[c] = new DenseMatrix(m);
+                ++c;
             }
         }
-        // MASKS Appendix 6.A: usually only one of the solved 'a's is consistent with det(F1 + a*F2) = 0
+        double eps = 1E-4;
+        if (c < roots.length) {
+            solutions = Arrays.copyOfRange(solutions,0, c);
+        }
 
         return solutions;
     }

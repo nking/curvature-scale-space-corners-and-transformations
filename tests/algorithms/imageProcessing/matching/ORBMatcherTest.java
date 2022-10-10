@@ -9,10 +9,7 @@ import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.features.HOGs;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.features.orb.ORB.Descriptors;
-import algorithms.imageProcessing.transform.EpipolarNormalizationHelper;
-import algorithms.imageProcessing.transform.Reconstruction;
-import algorithms.imageProcessing.transform.TransformationParameters;
-import algorithms.imageProcessing.transform.Transformer;
+import algorithms.imageProcessing.transform.*;
 import algorithms.matrix.MatrixUtil;
 import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.misc.MiscDebug;
@@ -75,8 +72,13 @@ public class ORBMatcherTest extends TestCase {
                 "merton_college_I_001.jpg",
                 "merton_college_I_002.jpg"};
         
-        boolean binImages = true;
-        
+        boolean binImages = false;//true;
+
+        boolean useToleranceAsStatFactor = true;
+        boolean recalcIterations = false;// possibly faster if set to true
+        double tolerance = 3.8;
+        ErrorType errorType = ErrorType.SAMPSONS;
+
         int i, ii, np;
         for (int rotate = 0; rotate < 2; ++rotate) {
         //for (int rotate = 0; rotate < 1; ++rotate) {
@@ -84,6 +86,9 @@ public class ORBMatcherTest extends TestCase {
             String lbl = "_";
             if (rotate == 1) {
                 lbl = "rot90_";
+                tolerance = 4;
+            } else {
+                tolerance = 2;
             }
  
             for (ii = 0; ii < filePairs.length; ++ii) {
@@ -186,12 +191,14 @@ public class ORBMatcherTest extends TestCase {
                 int[][] matchedIdxs = null;
                 if (true /*normalize points*/) {
                     // col, row
-                    matchedIdxs = ORBMatcher.matchDescriptors(d1, d2, xKP1n, xKP2n);
+                    matchedIdxs = ORBMatcher.matchDescriptors(d1, d2, xKP1n, xKP2n, useToleranceAsStatFactor,
+                            tolerance, errorType, recalcIterations);
                     if (matchedIdxs != null) {
                         System.out.printf("%d) # matched after normalization = %d\n", ii, matchedIdxs.length);
                     }
                 } else {
-                    matchedIdxs = ORBMatcher.matchDescriptors(d1, d2, xKP1, xKP2);
+                    matchedIdxs = ORBMatcher.matchDescriptors(d1, d2, xKP1, xKP2, useToleranceAsStatFactor, tolerance, errorType,
+                            recalcIterations);
                 }
 
                 if (matchedIdxs == null) {
@@ -220,6 +227,25 @@ public class ORBMatcherTest extends TestCase {
                       by Huynh, Hartley, and Heydeon 2003
                       Proceedings of the Ninth IEEE International Conference on Computer Vision (ICCV’03)
                 */
+
+                System.out.printf("ii=%d, file=%s  rotate=%d\n", ii, fileName1Root, rotate);
+                EpipolarTransformationFit fit = null;
+                if (matchedIdxs.length >= 7) {
+                    fit = ORBMatcher.fitWithRANSAC(matchedIdxs, xKP1n, xKP2n,
+                            useToleranceAsStatFactor, tolerance, errorType, recalcIterations);
+                }
+                if (fit != null) {
+                    List<Double> errors = fit.getErrors();
+                    double thresh = fit.getTolerance() * fit.getStDevFromMean();
+                    for (i = 0; i < errors.size(); ++i) {
+                        // if normalize the points and use the normalized
+                        //  matrix, can expect these to be <0.001
+                        System.out.printf("error=%.3e, thresh=%.3e\n", errors.get(i).doubleValue(), thresh);
+                        //assertTrue(Math.abs(errors.get(i).doubleValue()) < thresh);
+                    }
+                } else {
+                    System.out.printf("ii=%d, no solution %s\n", ii, fileName1Root);
+                }
             }
         }
     }

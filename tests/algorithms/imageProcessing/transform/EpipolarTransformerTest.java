@@ -1013,7 +1013,7 @@ public class EpipolarTransformerTest extends TestCase {
         x1[0] = new double[]{5, 2.5,   7.5, 5};// x's
         x1[1] = new double[]{5,  10,   10, 15};// y's
         x1[2] = new double[]{1,   1,    1,  1};// z's
-        
+
         d = MiscMath0.areColinear(x1, 1E-6);
         assertFalse(d);
     }

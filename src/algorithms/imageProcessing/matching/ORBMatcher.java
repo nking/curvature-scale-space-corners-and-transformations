@@ -74,7 +74,7 @@ public class ORBMatcher {
         //   PartialShapeMatcher.java
         return matches;
     }
-    
+
     /**
      * greedy matching of d1 to d2 by min difference, with unique mappings for
      * all indexes.
@@ -93,8 +93,54 @@ public class ORBMatcher {
      * where each row is (index1, index2).
      */
     public static int[][] matchDescriptors(ORB.Descriptors d1,
+                                           ORB.Descriptors d2, double[][] keypoints1,
+                                           double[][] keypoints2) {
+        boolean useToleranceAsStatFactor = true;
+        boolean recalcIterations = false;// possibly faster if set to true
+        final double tolerance = 3.8;
+        ErrorType errorType = ErrorType.SAMPSONS;
+
+        return matchDescriptors(d1, d2, keypoints1, keypoints2, useToleranceAsStatFactor, tolerance, errorType,
+                recalcIterations);
+    }
+    
+    /**
+     * greedy matching of d1 to d2 by min difference, with unique mappings for
+     * all indexes.
+     * NOTE that if 2 descriptors match equally well, either one
+     * might get the assignment.
+     * Consider using instead, matchDescriptors2 which matches
+     * by descriptor and relative spatial location.
+     *
+     * @param d1 descriptors of the keypoints in image 1 (before any keypoint normalization).
+     * @param d2 descriptors of the keypoints in image 2 (before any keypoint normalization).
+     * @param keypoints1 keypoints from image 1 in format [3 X n].  any normalization that is needed should be
+     *                   performed on keypoints1 before given to this method.
+     * @param keypoints2 keypoints from image 2 in format [3 X n].  any normalization that is needed should be
+     *      *                   performed on keypoints2 before given to this method.
+     * @param errorType algorithm used to evaluate the fit of the fundamental matrix solutions.
+     *      * @param useToleranceAsStatFactor if set to false, tolerance is used as
+     *      * a fixed number in outlier removal, else if set to true, tolerance
+     *      * is used as the chi-squared statistic factor for the standard deviation
+     *      * of errors use in outlier removal.
+     *      * @param tolerance tolerance in distance from epipolar line for a point to
+     *      * be an inlier in the final fit.   NOTE: if useToleranceAsStatFactor is true,
+     *      * it is interpreted as a chiSqStatFactor which is then used as
+     *      * tolerance = tolerance * standard deviation of the mean distance errors.
+     *      * @param reCalcIterations if true, upon each better fit found, the
+     *      * outlier percentage is re-estimated and then the number of iterations necessary for 95%
+     *      * probability that sample has all good points.
+     *      * @param calibrated if true, solves for the Essential Matrix, else solves
+     *      * for the Fundamental Matrix.  The difference is in the diagonal used for
+     *      * dimension reduction.
+     * @return matches as pairs of indexes relative to keypoints1 and keypoints2.  the result is dimension [n X 2]
+     * where each row is (index1, index2).
+     */
+    public static int[][] matchDescriptors(ORB.Descriptors d1,
         ORB.Descriptors d2, double[][] keypoints1,
-        double[][] keypoints2) {
+        double[][] keypoints2, boolean useToleranceAsStatFactor,
+                                                   final double tolerance,
+                                                   ErrorType errorType, boolean reCalcIterations) {
         
         int n1 = d1.descriptors.length;
         int n2 = d2.descriptors.length;
@@ -173,7 +219,8 @@ public class ORBMatcher {
         // ransac to remove outliers.
         //NOTE: the fundamental matrix in the fit has not been de-normalized.
         // and fit.inliers are indexes with respect to the matched array
-        EpipolarTransformationFit fit = fitWithRANSAC(matched, keypoints1, keypoints2);
+        EpipolarTransformationFit fit = fitWithRANSAC(matched, keypoints1, keypoints2,
+                useToleranceAsStatFactor, tolerance, errorType, reCalcIterations);
 
         if (fit == null) {
             return null;
@@ -444,25 +491,36 @@ public class ORBMatcher {
      * @param matches
      * @param x1 (a.k.a. left) data in dimension [3 X n]. any normalization needed should be performed on points before given to this method
      * @param x2 (a.k.a. right) data in dimension [3 X n]. any normalization needed should be performed on points before given to this method
+     @param errorType algorithm used to evaluate the fit of the fundamental matrix solutions.
+      *      * @param useToleranceAsStatFactor if set to false, tolerance is used as
+      *      * a fixed number in outlier removal, else if set to true, tolerance
+      *      * is used as the chi-squared statistic factor for the standard deviation
+      *      * of errors use in outlier removal.
+      *      * @param tolerance tolerance in distance from epipolar line for a point to
+      *      * be an inlier in the final fit.   NOTE: if useToleranceAsStatFactor is true,
+      *      * it is interpreted as a chiSqStatFactor which is then used as
+      *      * tolerance = tolerance * standard deviation of the mean distance errors.
+      *      * @param reCalcIterations if true, upon each better fit found, the
+      *      * outlier percentage is re-estimated and then the number of iterations necessary for 95%
+      *      * probability that sample has all good points.
+      *      * @param calibrated if true, solves for the Essential Matrix, else solves
+      *      * for the Fundamental Matrix.  The difference is in the diagonal used for
+      *      * dimension reduction.
      * @return epipolar fit to the matches.  note that the if correspondence
      * is unit standard normalized then the fundamental matrix returned
      * in the fit is not de-normalized.  also note that the inliers in the fit are indexes
      * with respect to the matches array.
      */
-    private static EpipolarTransformationFit fitWithRANSAC(int[][] matches,
-                                                           double[][] x1, double[][] x2) {
+    public static EpipolarTransformationFit fitWithRANSAC(int[][] matches,
+                                                           double[][] x1, double[][] x2,
+                                                          boolean useToleranceAsStatFactor,
+                                                          final double tolerance,
+                                                          ErrorType errorType, boolean reCalcIterations) {
         
         int n0 = matches.length;
 
         int i, idx1, idx2;
 
-        //TODO:  refactor  matchDescriptors to accept tolerance as an argument, and pass that
-        // into this method.  for some applications, a tolerance as small as 1 sigma is wanted
-        boolean useToleranceAsStatFactor = true;
-        final double tolerance = 3;//3.8;
-        ErrorType errorType = ErrorType.SAMPSONS;
-
-        boolean reCalcIterations = false;
         RANSACSolver solver = new RANSACSolver();
 
         // left and right are the subset of keypoints1 and keypoints 2 designated by matches
