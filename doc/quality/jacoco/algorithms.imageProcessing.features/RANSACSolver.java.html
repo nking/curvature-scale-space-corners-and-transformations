@@ -11,6 +11,7 @@ import algorithms.matrix.MatrixUtil;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscMath;
 import algorithms.misc.MiscMath0;
+import algorithms.util.FormatArray;
 import algorithms.util.PairIntArray;
 
 import java.io.IOException;
@@ -73,13 +74,13 @@ an important part of the algorithm to keep the runtime tractable.
  * &lt;/pre&gt;
  * @author nichole
  */
-<span class="fc" id="L76">public class RANSACSolver {</span>
+<span class="fc" id="L77">public class RANSACSolver {</span>
     
     //TODO: edit to be able to choose nSet = 8 or 7
 
-<span class="fc" id="L80">    private boolean debug = true;</span>
+<span class="fc" id="L81">    private boolean debug = true;</span>
 
-<span class="fc" id="L82">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L83">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
 
     /**
      * calculate the epipolar transformation among the given points with the
@@ -114,14 +115,14 @@ an important part of the algorithm to keep the runtime tractable.
         boolean useToleranceAsStatFactor, final double tolerance,
         boolean reCalcIterations, boolean calibrated) {
 
-<span class="fc" id="L117">        double[][] left = convertX(leftCorres);</span>
-<span class="fc" id="L118">        double[][] right = convertX(rightCorres);</span>
+<span class="fc" id="L118">        double[][] left = convertX(leftCorres);</span>
+<span class="fc" id="L119">        double[][] right = convertX(rightCorres);</span>
 
-<span class="fc" id="L120">        long seed = System.currentTimeMillis();</span>
-<span class="fc" id="L121">        log.info(&quot;SEED=&quot; + seed);</span>
-<span class="fc" id="L122">        Random rand = new Random(seed);</span>
+<span class="fc" id="L121">        long seed = System.currentTimeMillis();</span>
+<span class="fc" id="L122">        log.info(&quot;SEED=&quot; + seed);</span>
+<span class="fc" id="L123">        Random rand = new Random(seed);</span>
 
-<span class="fc" id="L124">        return run(left, right, errorType, useToleranceAsStatFactor, tolerance, reCalcIterations, calibrated, rand);</span>
+<span class="fc" id="L125">        return run(left, right, errorType, useToleranceAsStatFactor, tolerance, reCalcIterations, calibrated, rand);</span>
     }
 
     /**
@@ -156,10 +157,10 @@ an important part of the algorithm to keep the runtime tractable.
             ErrorType errorType,boolean useToleranceAsStatFactor, final double tolerance,
             boolean reCalcIterations, boolean calibrated, Random rand) {
 
-<span class="nc" id="L159">        double[][] left = convertX(leftCorres);</span>
-<span class="nc" id="L160">        double[][] right = convertX(rightCorres);</span>
+<span class="nc" id="L160">        double[][] left = convertX(leftCorres);</span>
+<span class="nc" id="L161">        double[][] right = convertX(rightCorres);</span>
 
-<span class="nc" id="L162">        return run(left, right, errorType, useToleranceAsStatFactor, tolerance, reCalcIterations, calibrated, rand);</span>
+<span class="nc" id="L163">        return run(left, right, errorType, useToleranceAsStatFactor, tolerance, reCalcIterations, calibrated, rand);</span>
     }
 
     /**
@@ -196,7 +197,7 @@ an important part of the algorithm to keep the runtime tractable.
             boolean useToleranceAsStatFactor, final double tolerance,
             boolean reCalcIterations, boolean calibrated, Random rand) {
 
-<span class="nc" id="L199">        return run(leftCorres, rightCorres, errorType, useToleranceAsStatFactor, tolerance, reCalcIterations, calibrated, rand);</span>
+<span class="nc" id="L200">        return run(leftCorres, rightCorres, errorType, useToleranceAsStatFactor, tolerance, reCalcIterations, calibrated, rand);</span>
     }
 
     /**
@@ -232,22 +233,22 @@ an important part of the algorithm to keep the runtime tractable.
             boolean useToleranceAsStatFactor, final double tolerance,
             boolean reCalcIterations, boolean calibrated) {
 
-<span class="nc" id="L235">        long seed = System.currentTimeMillis();</span>
-<span class="nc" id="L236">        log.info(&quot;SEED=&quot; + seed);</span>
-<span class="nc" id="L237">        Random rand = new Random(seed);</span>
+<span class="nc" id="L236">        long seed = System.currentTimeMillis();</span>
+<span class="nc" id="L237">        log.info(&quot;SEED=&quot; + seed);</span>
+<span class="nc" id="L238">        Random rand = new Random(seed);</span>
 
-<span class="nc" id="L239">        return run(leftCorres, rightCorres, errorType, useToleranceAsStatFactor, tolerance, reCalcIterations, calibrated, rand);</span>
+<span class="nc" id="L240">        return run(leftCorres, rightCorres, errorType, useToleranceAsStatFactor, tolerance, reCalcIterations, calibrated, rand);</span>
     }
 
     private double[][] convertX(DenseMatrix x) {
-<span class="fc" id="L243">        double[][] d = MatrixUtil.zeros(x.numRows(), x.numColumns());</span>
+<span class="fc" id="L244">        double[][] d = MatrixUtil.zeros(x.numRows(), x.numColumns());</span>
         int i, j;
-<span class="fc bfc" id="L245" title="All 2 branches covered.">        for (i = 0; i &lt; d.length; ++i) {</span>
-<span class="fc bfc" id="L246" title="All 2 branches covered.">            for (j = 0; j &lt; d[i].length; ++j) {</span>
-<span class="fc" id="L247">                d[i][j] = x.get(i, j);</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">        for (i = 0; i &lt; d.length; ++i) {</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">            for (j = 0; j &lt; d[i].length; ++j) {</span>
+<span class="fc" id="L248">                d[i][j] = x.get(i, j);</span>
             }
         }
-<span class="fc" id="L250">        return d;</span>
+<span class="fc" id="L251">        return d;</span>
     }
 
     private  EpipolarTransformationFit run(
@@ -256,24 +257,24 @@ an important part of the algorithm to keep the runtime tractable.
         boolean useToleranceAsStatFactor, final double tolerance,
         boolean reCalcIterations, boolean calibrated, Random rand) {
 
-<span class="fc" id="L259">        int nPoints = left[0].length;</span>
-<span class="fc" id="L260">        final int nSet = 7;</span>
+<span class="fc" id="L260">        int nPoints = left[0].length;</span>
+<span class="fc" id="L261">        final int nSet = 7;</span>
         
-<span class="pc bpc" id="L262" title="1 of 2 branches missed.">        if (nPoints &lt; nSet) {</span>
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">        if (nPoints &lt; nSet) {</span>
             // cannot use this algorithm.
-<span class="nc" id="L264">            throw new IllegalArgumentException(</span>
+<span class="nc" id="L265">            throw new IllegalArgumentException(</span>
                 &quot;the algorithms require 7 or more points.&quot;
                 + &quot; leftCorres.n=&quot; + left[0].length);
         }
-<span class="pc bpc" id="L268" title="1 of 2 branches missed.">        if (left.length != 3) {</span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">        if (left.length != 3) {</span>
             // cannot use this algorithm.
-<span class="nc" id="L270">            throw new IllegalArgumentException(</span>
+<span class="nc" id="L271">            throw new IllegalArgumentException(</span>
                 &quot;the algorithms require 3 rows representing x, y, and '1' values.&quot;
                 + &quot; leftCorres.n=&quot; + left.length);
         }
-<span class="pc bpc" id="L274" title="2 of 4 branches missed.">        if (left[0].length != right[0].length ||</span>
+<span class="pc bpc" id="L275" title="2 of 4 branches missed.">        if (left[0].length != right[0].length ||</span>
             left.length != right.length) {
-<span class="nc" id="L276">            throw new IllegalArgumentException(</span>
+<span class="nc" id="L277">            throw new IllegalArgumentException(</span>
                 &quot;leftCorres and rightCorres bmust be the same size&quot;);
         }
 
@@ -306,12 +307,12 @@ an important part of the algorithm to keep the runtime tractable.
        
         // n!/(k!*(n-k)!
         //final long nPointsSubsets = MiscMath.computeNDivKTimesNMinusK(nPoints, nSet);
-<span class="fc" id="L309">        boolean useAllSubsets = false;</span>
+<span class="fc" id="L310">        boolean useAllSubsets = false;</span>
 
-<span class="fc" id="L311">        EpipolarTransformer spTransformer = new EpipolarTransformer();</span>
+<span class="fc" id="L312">        EpipolarTransformer spTransformer = new EpipolarTransformer();</span>
                 
         // consensus best fit and inlier indexes
-<span class="fc" id="L314">        EpipolarTransformationFit bestFit = null;</span>
+<span class="fc" id="L315">        EpipolarTransformationFit bestFit = null;</span>
         
         /*
         could consider a threshold max iteration based upon the image size such
@@ -319,13 +320,13 @@ an important part of the algorithm to keep the runtime tractable.
         which uses 0.6% of the maximum image dimension.
         */
         
-<span class="fc" id="L322">        int outlierPercent = 50;</span>
-<span class="fc" id="L323">        int t = (int)Math.ceil((1. - (outlierPercent/100.))*nPoints);</span>
+<span class="fc" id="L323">        int outlierPercent = 50;</span>
+<span class="fc" id="L324">        int t = (int)Math.ceil((1. - (outlierPercent/100.))*nPoints);</span>
         
         long nMaxIter;
-<span class="fc bfc" id="L326" title="All 2 branches covered.">        if (nPoints == nSet) {</span>
-<span class="fc" id="L327">            nMaxIter = 1;</span>
-<span class="fc" id="L328">            useAllSubsets = true;</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">        if (nPoints == nSet) {</span>
+<span class="fc" id="L328">            nMaxIter = 1;</span>
+<span class="fc" id="L329">            useAllSubsets = true;</span>
         } else {
             /* The number of subsamples required to ensure T &gt;= 0.95 
             for given outlierPercent as fraction of contaminated data, 
@@ -333,8 +334,8 @@ an important part of the algorithm to keep the runtime tractable.
             points selected in one subsample are non-outliers.
             */
             // maximum is 382 for nSet=7 and outlierPercent=50%, and for nSet=8 it is 766
-<span class="fc" id="L336">            nMaxIter = RANSACAlgorithmIterations</span>
-<span class="fc" id="L337">                .numberOfSubsamplesFor95PercentInliers(outlierPercent, nSet);</span>
+<span class="fc" id="L337">            nMaxIter = RANSACAlgorithmIterations</span>
+<span class="fc" id="L338">                .numberOfSubsamplesFor95PercentInliers(outlierPercent, nSet);</span>
         }
         
         //System.out.println(&quot;nPoints=&quot; + nPoints + &quot; estimate for nMaxIter=&quot; +
@@ -342,18 +343,18 @@ an important part of the algorithm to keep the runtime tractable.
 
         // max iter for nSet=7 is 382 for 50%.  11!/(7!*(11-7)!)=330
         // max iter for nSet=8 is 766 for 50%.  12!/(8!*(12-8)!)=495
-<span class="fc bfc" id="L345" title="All 2 branches covered.">        if ((nSet==7 &amp;&amp; nPoints &lt; 12) || (nSet == 8 &amp;&amp; nPoints &lt; 13)) {</span>
-<span class="fc" id="L346">            nMaxIter = Math.min(nMaxIter, MiscMath0.computeNDivKTimesNMinusK(nPoints, nSet));</span>
-<span class="fc" id="L347">            useAllSubsets = true;</span>
+<span class="fc bfc" id="L346" title="All 2 branches covered.">        if ((nSet==7 &amp;&amp; nPoints &lt; 12) || (nSet == 8 &amp;&amp; nPoints &lt; 13)) {</span>
+<span class="fc" id="L347">            nMaxIter = Math.min(nMaxIter, MiscMath0.computeNDivKTimesNMinusK(nPoints, nSet));</span>
+<span class="fc" id="L348">            useAllSubsets = true;</span>
         }
         
-<span class="fc" id="L350">        int nIter = 0;</span>
+<span class="fc" id="L351">        int nIter = 0;</span>
 
-<span class="fc" id="L352">        double eps = 1.e-6;</span>
+<span class="fc" id="L353">        double eps = 1.e-6;</span>
 
         //TODO: finish changes to replace DenseMatrix with double[][] throughout this method
-<span class="fc" id="L355">        DenseMatrix leftCorres = new DenseMatrix(left);</span>
-<span class="fc" id="L356">        DenseMatrix rightCorres = new DenseMatrix(right);</span>
+<span class="fc" id="L356">        DenseMatrix leftCorres = new DenseMatrix(left);</span>
+<span class="fc" id="L357">        DenseMatrix rightCorres = new DenseMatrix(right);</span>
 
         /*
         double[][] sampleLeft = MatrixUtil.zeros(3, nSet);
@@ -363,57 +364,57 @@ an important part of the algorithm to keep the runtime tractable.
         Arrays.fill(sampleRight[2], 1);
         */
 
-<span class="fc" id="L366">        DenseMatrix sampleLeft = new DenseMatrix(3, nSet);</span>
-<span class="fc" id="L367">        DenseMatrix sampleRight = new DenseMatrix(3, nSet);</span>
+<span class="fc" id="L367">        DenseMatrix sampleLeft = new DenseMatrix(3, nSet);</span>
+<span class="fc" id="L368">        DenseMatrix sampleRight = new DenseMatrix(3, nSet);</span>
         // initialize the unchanging 3rd dimension
-<span class="fc bfc" id="L369" title="All 2 branches covered.">        for (int i = 0; i &lt; nSet; ++i) {</span>
-<span class="fc" id="L370">            sampleLeft.set(2, i, 1);</span>
-<span class="fc" id="L371">            sampleRight.set(2, i, 1);</span>
+<span class="fc bfc" id="L370" title="All 2 branches covered.">        for (int i = 0; i &lt; nSet; ++i) {</span>
+<span class="fc" id="L371">            sampleLeft.set(2, i, 1);</span>
+<span class="fc" id="L372">            sampleRight.set(2, i, 1);</span>
         }
 
-<span class="fc" id="L374">        int[] selectedIndexes = new int[nSet];</span>
+<span class="fc" id="L375">        int[] selectedIndexes = new int[nSet];</span>
 
-<span class="fc" id="L376">        SubsetChooser chooser = null;</span>
-<span class="fc bfc" id="L377" title="All 2 branches covered.">        if (useAllSubsets) {</span>
-<span class="fc" id="L378">            chooser = new SubsetChooser(nPoints, nSet);</span>
+<span class="fc" id="L377">        SubsetChooser chooser = null;</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">        if (useAllSubsets) {</span>
+<span class="fc" id="L379">            chooser = new SubsetChooser(nPoints, nSet);</span>
         }
 
-<span class="fc" id="L381">        Distances distances = new Distances();</span>
+<span class="fc" id="L382">        Distances distances = new Distances();</span>
         
-<span class="fc bfc" id="L383" title="All 2 branches covered.">        while (nIter &lt; nMaxIter) {</span>
-<span class="fc bfc" id="L384" title="All 2 branches covered.">            if (useAllSubsets) {</span>
-<span class="fc" id="L385">                int chk = chooser.getNextSubset(selectedIndexes);</span>
-<span class="pc bpc" id="L386" title="1 of 2 branches missed.">                if (chk == -1) {</span>
-<span class="nc" id="L387">                    throw new IllegalStateException(&quot;have overrun subsets in chooser.&quot;);</span>
+<span class="fc bfc" id="L384" title="All 2 branches covered.">        while (nIter &lt; nMaxIter) {</span>
+<span class="fc bfc" id="L385" title="All 2 branches covered.">            if (useAllSubsets) {</span>
+<span class="fc" id="L386">                int chk = chooser.getNextSubset(selectedIndexes);</span>
+<span class="pc bpc" id="L387" title="1 of 2 branches missed.">                if (chk == -1) {</span>
+<span class="nc" id="L388">                    throw new IllegalStateException(&quot;have overrun subsets in chooser.&quot;);</span>
                 }                
-<span class="fc" id="L389">            } else {</span>
-<span class="fc" id="L390">                MiscMath.chooseRandomly(rand, selectedIndexes, nPoints);</span>
+<span class="fc" id="L390">            } else {</span>
+<span class="fc" id="L391">                MiscMath.chooseRandomly(rand, selectedIndexes, nPoints);</span>
             }
             
-<span class="fc" id="L393">            Arrays.sort(selectedIndexes);</span>
+<span class="fc" id="L394">            Arrays.sort(selectedIndexes);</span>
 
-<span class="fc" id="L395">            int count = 0;</span>
-<span class="fc bfc" id="L396" title="All 2 branches covered.">            for (int bitIndex : selectedIndexes) {</span>
+<span class="fc" id="L396">            int count = 0;</span>
+<span class="fc bfc" id="L397" title="All 2 branches covered.">            for (int bitIndex : selectedIndexes) {</span>
                 /*sampleLeft[0][count] = leftCorres[0][bitIndex];
                 sampleLeft[1][count] = leftCorres[1][bitIndex];
                 sampleRight[0][count] = rightCorres[0][bitIndex];
                 sampleRight[1][count] = rightCorres[1][bitIndex];*/
-<span class="fc" id="L401">                sampleLeft.set(0, count, leftCorres.get(0, bitIndex));</span>
-<span class="fc" id="L402">                sampleLeft.set(1, count, leftCorres.get(1, bitIndex));</span>
-<span class="fc" id="L403">                sampleRight.set(0, count, rightCorres.get(0, bitIndex));</span>
-<span class="fc" id="L404">                sampleRight.set(1, count, rightCorres.get(1, bitIndex));</span>
-<span class="fc" id="L405">                count++;</span>
+<span class="fc" id="L402">                sampleLeft.set(0, count, leftCorres.get(0, bitIndex));</span>
+<span class="fc" id="L403">                sampleLeft.set(1, count, leftCorres.get(1, bitIndex));</span>
+<span class="fc" id="L404">                sampleRight.set(0, count, rightCorres.get(0, bitIndex));</span>
+<span class="fc" id="L405">                sampleRight.set(1, count, rightCorres.get(1, bitIndex));</span>
+<span class="fc" id="L406">                count++;</span>
             }
 
-<span class="fc bfc" id="L408" title="All 2 branches covered.">            if (MiscMath0.areColinear(MatrixUtil.convertToRowMajor(sampleLeft), eps)</span>
-<span class="fc bfc" id="L409" title="All 2 branches covered.">                    || MiscMath0.areColinear(MatrixUtil.convertToRowMajor(sampleRight), eps)) {</span>
-<span class="fc" id="L410">                ++nIter;</span>
-<span class="fc" id="L411">                continue;</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">            if (MiscMath0.areColinear(MatrixUtil.convertToRowMajor(sampleLeft), eps)</span>
+<span class="fc bfc" id="L410" title="All 2 branches covered.">                    || MiscMath0.areColinear(MatrixUtil.convertToRowMajor(sampleRight), eps)) {</span>
+<span class="fc" id="L411">                ++nIter;</span>
+<span class="fc" id="L412">                continue;</span>
             }
 
             // calculates 7-point solutions then filters using chirality checks.
-<span class="fc" id="L415">            List&lt;DenseMatrix&gt; fms = spTransformer</span>
-<span class="fc" id="L416">                .calculateEpipolarProjectionFor7Points(new DenseMatrix(sampleLeft), new DenseMatrix(sampleRight));</span>
+<span class="fc" id="L416">            List&lt;DenseMatrix&gt; fms = spTransformer</span>
+<span class="fc" id="L417">                .calculateEpipolarProjectionFor7Points(new DenseMatrix(sampleLeft), new DenseMatrix(sampleRight));</span>
 
             //TODO: finish transformation to using double[][] instead of DenseMatrix
             // calculates 7-point solutions then filters using chirality checks.
@@ -424,115 +425,115 @@ an important part of the algorithm to keep the runtime tractable.
                 fms = spTransformer.calculateEpipolarProjection2(sampleLeft, sampleRight, calibrated);
             }*/
 
-<span class="pc bpc" id="L427" title="1 of 4 branches missed.">            if (fms == null || fms.isEmpty()) {</span>
-<span class="fc" id="L428">                nIter++;</span>
-<span class="fc" id="L429">                continue;</span>
+<span class="pc bpc" id="L428" title="1 of 4 branches missed.">            if (fms == null || fms.isEmpty()) {</span>
+<span class="fc" id="L429">                nIter++;</span>
+<span class="fc" id="L430">                continue;</span>
             }
             
             // evaluate fms solutions on all points and keep best and compare
             // that to best overall solution
             
-<span class="fc" id="L435">            EpipolarTransformationFit fit = null;</span>
+<span class="fc" id="L436">            EpipolarTransformationFit fit = null;</span>
             
             // fit.isBetter() : comparison to other fit by the number of 
             //     inliers, else if tie, mean of errors, else if tie, 
             //     mean of standard deviation of mean of errors, else 
             //     returns false
-<span class="fc bfc" id="L441" title="All 2 branches covered.">            for (DenseMatrix fm : fms) {</span>
+<span class="fc bfc" id="L442" title="All 2 branches covered.">            for (DenseMatrix fm : fms) {</span>
                 
-<span class="fc" id="L443">                EpipolarTransformationFit fitI = null;</span>
+<span class="fc" id="L444">                EpipolarTransformationFit fitI = null;</span>
                 // evaluate all points using the solution from the sub-sample
-<span class="pc bpc" id="L445" title="1 of 2 branches missed.">                if (useToleranceAsStatFactor) {</span>
-<span class="fc" id="L446">                    fitI = distances.calculateError2(fm,</span>
+<span class="pc bpc" id="L446" title="1 of 2 branches missed.">                if (useToleranceAsStatFactor) {</span>
+<span class="fc" id="L447">                    fitI = distances.calculateError2(fm,</span>
                         leftCorres, rightCorres, errorType, tolerance);
                 } else {
-<span class="nc" id="L449">                    fitI = distances.calculateError(fm,</span>
+<span class="nc" id="L450">                    fitI = distances.calculateError(fm,</span>
                         leftCorres, rightCorres, errorType, tolerance);
                 }
                 
-<span class="fc" id="L453">                int nInliers = fitI.getInlierIndexes().size();</span>
-<span class="fc bfc" id="L454" title="All 4 branches covered.">                if (nInliers &gt;= nSet &amp;&amp; fitI.isBetter(fit)) {</span>
-<span class="pc bpc" id="L455" title="1 of 4 branches missed.">                    if (nInliers &gt; t &amp;&amp; nInliers &gt; nSet) {</span>
+<span class="fc" id="L454">                int nInliers = fitI.getInlierIndexes().size();</span>
+<span class="fc bfc" id="L455" title="All 4 branches covered.">                if (nInliers &gt;= nSet &amp;&amp; fitI.isBetter(fit)) {</span>
+<span class="fc bfc" id="L456" title="All 4 branches covered.">                    if (nInliers &gt; t &amp;&amp; nInliers &gt; nSet) {</span>
                         // redo the FM transformation with all inliers
-<span class="fc" id="L457">                        DenseMatrix inliersLeftXY = EpipolarTransformer</span>
-<span class="fc" id="L458">                            .extractIndices(leftCorres, fitI.getInlierIndexes());</span>
-<span class="fc" id="L459">                        DenseMatrix inliersRightXY = EpipolarTransformer</span>
-<span class="fc" id="L460">                            .extractIndices(rightCorres, fitI.getInlierIndexes());</span>
+<span class="fc" id="L458">                        DenseMatrix inliersLeftXY = EpipolarTransformer</span>
+<span class="fc" id="L459">                            .extractIndices(leftCorres, fitI.getInlierIndexes());</span>
+<span class="fc" id="L460">                        DenseMatrix inliersRightXY = EpipolarTransformer</span>
+<span class="fc" id="L461">                            .extractIndices(rightCorres, fitI.getInlierIndexes());</span>
                         
-<span class="fc" id="L462">                        DenseMatrix fm2 = spTransformer.calculateEpipolarProjection(</span>
+<span class="fc" id="L463">                        DenseMatrix fm2 = spTransformer.calculateEpipolarProjection(</span>
                             inliersLeftXY, inliersRightXY, calibrated);
                         
-<span class="pc bpc" id="L465" title="1 of 2 branches missed.">                        if (fm2 != null) {</span>
-<span class="fc" id="L466">                            EpipolarTransformationFit fit2 = null;</span>
-<span class="pc bpc" id="L467" title="1 of 2 branches missed.">                            if (useToleranceAsStatFactor) {</span>
-<span class="fc" id="L468">                                fit2 = distances.calculateError2(fm2,</span>
+<span class="pc bpc" id="L466" title="1 of 2 branches missed.">                        if (fm2 != null) {</span>
+<span class="fc" id="L467">                            EpipolarTransformationFit fit2 = null;</span>
+<span class="pc bpc" id="L468" title="1 of 2 branches missed.">                            if (useToleranceAsStatFactor) {</span>
+<span class="fc" id="L469">                                fit2 = distances.calculateError2(fm2,</span>
                                     leftCorres, rightCorres, errorType, tolerance);
                             } else {
-<span class="nc" id="L471">                                fit2 = distances.calculateError(fm2,</span>
+<span class="nc" id="L472">                                fit2 = distances.calculateError(fm2,</span>
                                     leftCorres, rightCorres, errorType, tolerance);
                             }
-<span class="pc bpc" id="L474" title="1 of 4 branches missed.">                            if (fit2 != null &amp;&amp; fit2.isBetter(fitI)) {</span>
-<span class="fc" id="L475">                                fitI = fit2;</span>
+<span class="pc bpc" id="L475" title="1 of 4 branches missed.">                            if (fit2 != null &amp;&amp; fit2.isBetter(fitI)) {</span>
+<span class="fc" id="L476">                                fitI = fit2;</span>
                             }
                         }
                     }
                     //System.out.println(&quot; new local best fit: &quot; + fitI.toString());
                     //System.out.flush();
-<span class="fc" id="L481">                    fit = fitI;</span>
+<span class="fc" id="L482">                    fit = fitI;</span>
                 }
-<span class="fc" id="L483">            }</span>
+<span class="fc" id="L484">            }</span>
                         
-<span class="pc bpc" id="L485" title="1 of 2 branches missed.">            if (fit == null) {</span>
-<span class="nc" id="L486">                nIter++;</span>
-<span class="nc" id="L487">                continue;</span>
+<span class="fc bfc" id="L486" title="All 2 branches covered.">            if (fit == null) {</span>
+<span class="fc" id="L487">                nIter++;</span>
+<span class="fc" id="L488">                continue;</span>
             }
                         
-<span class="fc bfc" id="L490" title="All 2 branches covered.">            if (fit.isBetter(bestFit)) {</span>
-<span class="fc bfc" id="L491" title="All 2 branches covered.">                int nb = (bestFit != null) ? bestFit.getInlierIndexes().size() : nSet+1;</span>
-<span class="fc" id="L492">                int nf = fit.getInlierIndexes().size();</span>
+<span class="fc bfc" id="L491" title="All 2 branches covered.">            if (fit.isBetter(bestFit)) {</span>
+<span class="fc bfc" id="L492" title="All 2 branches covered.">                int nb = (bestFit != null) ? bestFit.getInlierIndexes().size() : nSet+1;</span>
+<span class="fc" id="L493">                int nf = fit.getInlierIndexes().size();</span>
                 
-<span class="fc" id="L494">                bestFit = fit;</span>
+<span class="fc" id="L495">                bestFit = fit;</span>
                 
                 //System.out.println(&quot;**best fit: &quot; + bestFit.toString());
                 //System.out.flush();
                 
                 // recalculate nMaxIter
-<span class="pc bpc" id="L500" title="2 of 6 branches missed.">                if (reCalcIterations &amp;&amp; (nf &gt; nb) &amp;&amp; nMaxIter &gt; 1) {</span>
-<span class="fc" id="L501">                    double outlierPercentI = 100.*</span>
-<span class="fc" id="L502">                        (double)(nPoints - bestFit.getInlierIndexes().size()) / (double)nPoints;</span>
-<span class="pc bpc" id="L503" title="1 of 2 branches missed.">                    if (outlierPercentI &lt; outlierPercent) {</span>
-<span class="fc" id="L504">                        outlierPercent = (int)Math.ceil(outlierPercentI);</span>
-<span class="pc bpc" id="L505" title="1 of 2 branches missed.">                        if (outlierPercent &lt; 5) {</span>
-<span class="fc" id="L506">                            outlierPercent = 5;</span>
+<span class="pc bpc" id="L501" title="1 of 6 branches missed.">                if (reCalcIterations &amp;&amp; (nf &gt; nb) &amp;&amp; nMaxIter &gt; 1) {</span>
+<span class="fc" id="L502">                    double outlierPercentI = 100.*</span>
+<span class="fc" id="L503">                        (double)(nPoints - bestFit.getInlierIndexes().size()) / (double)nPoints;</span>
+<span class="pc bpc" id="L504" title="1 of 2 branches missed.">                    if (outlierPercentI &lt; outlierPercent) {</span>
+<span class="fc" id="L505">                        outlierPercent = (int)Math.ceil(outlierPercentI);</span>
+<span class="pc bpc" id="L506" title="1 of 2 branches missed.">                        if (outlierPercent &lt; 5) {</span>
+<span class="fc" id="L507">                            outlierPercent = 5;</span>
                         }
-<span class="pc bnc" id="L508" title="All 2 branches missed.">                        assert(outlierPercent &lt; 50);</span>
-<span class="fc" id="L509">                        nMaxIter = RANSACAlgorithmIterations</span>
-<span class="fc" id="L510">                            .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);</span>
+<span class="pc bnc" id="L509" title="All 2 branches missed.">                        assert(outlierPercent &lt; 50);</span>
+<span class="fc" id="L510">                        nMaxIter = RANSACAlgorithmIterations</span>
+<span class="fc" id="L511">                            .numberOfSubsamplesOfSize7For95PercentInliers(outlierPercent);</span>
                         // max iter for nSet=7 is 382 for 50%.  11!/(7!*(11-7)!)=330
-<span class="pc bpc" id="L512" title="1 of 2 branches missed.">                        if ((nSet==7 &amp;&amp; nPoints &lt; 12) || (nSet==8 &amp;&amp; nPoints &lt; 13)) {</span>
-<span class="nc" id="L513">                            nMaxIter = Math.min(nMaxIter, MiscMath0.computeNDivKTimesNMinusK(nPoints, nSet));</span>
-<span class="nc" id="L514">                            useAllSubsets = true;</span>
-<span class="nc bnc" id="L515" title="All 2 branches missed.">                            if (chooser == null) {</span>
-<span class="nc" id="L516">                                chooser = new SubsetChooser(nPoints, nSet);</span>
+<span class="pc bpc" id="L513" title="1 of 2 branches missed.">                        if ((nSet==7 &amp;&amp; nPoints &lt; 12) || (nSet==8 &amp;&amp; nPoints &lt; 13)) {</span>
+<span class="nc" id="L514">                            nMaxIter = Math.min(nMaxIter, MiscMath0.computeNDivKTimesNMinusK(nPoints, nSet));</span>
+<span class="nc" id="L515">                            useAllSubsets = true;</span>
+<span class="nc bnc" id="L516" title="All 2 branches missed.">                            if (chooser == null) {</span>
+<span class="nc" id="L517">                                chooser = new SubsetChooser(nPoints, nSet);</span>
                             }
                         }
                     }
                 }
             }                
             
-<span class="fc" id="L523">            nIter++;</span>
-<span class="fc" id="L524">        }</span>
+<span class="fc" id="L524">            nIter++;</span>
+<span class="fc" id="L525">        }</span>
         
-<span class="fc bfc" id="L526" title="All 2 branches covered.">        if (bestFit == null) {</span>
-<span class="fc" id="L527">            log.info(&quot;no solution.  nIter=&quot; + nIter);</span>
-<span class="fc" id="L528">            return null;</span>
+<span class="fc bfc" id="L527" title="All 2 branches covered.">        if (bestFit == null) {</span>
+<span class="fc" id="L528">            log.info(&quot;no solution.  nIter=&quot; + nIter);</span>
+<span class="fc" id="L529">            return null;</span>
         }
         
-<span class="fc" id="L531">        log.info(&quot;nIter=&quot; + nIter);</span>
+<span class="fc" id="L532">        log.info(&quot;nIter=&quot; + nIter);</span>
         
-<span class="fc" id="L533">        log.fine(&quot;final best fit to all points: &quot; + bestFit.toString());</span>
+<span class="fc" id="L534">        log.fine(&quot;final best fit to all points: &quot; + bestFit.toString());</span>
 
-<span class="fc" id="L535">        return bestFit;</span>
+<span class="fc" id="L536">        return bestFit;</span>
     }
     
 }

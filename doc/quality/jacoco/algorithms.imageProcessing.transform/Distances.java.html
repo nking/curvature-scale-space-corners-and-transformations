@@ -646,51 +646,52 @@ import no.uib.cipr.matrix.DenseMatrix;
         }
 
         // dist^2:
-<span class="fc" id="L649">        double[] dist = calculateEpipolarSampsonsDistanceSquared(fm, leftPoints, rightPoints);</span>
-        for (int i = 0; i &lt; dist.length; ++i) {
-<span class="fc bfc" id="L651" title="All 2 branches covered.">            dist[i] = Math.sqrt(dist[i]);</span>
-<span class="fc" id="L652">        }</span>
+<span class="fc" id="L649">        double[] dist = calculateEpipolarSampsonsDistanceSquared(fm, </span>
+            leftPoints, rightPoints);
+<span class="fc bfc" id="L651" title="All 2 branches covered.">        for (int i = 0; i &lt; dist.length; ++i) {</span>
+<span class="fc" id="L652">            dist[i] = Math.sqrt(dist[i]);</span>
+        }
         
-        double[] meanAndStDev = MiscMath.getAvgAndStDev(dist);
-<span class="fc" id="L655">        </span>
-        double t = chiSquaredStatFactor * meanAndStDev[1];
-<span class="fc" id="L657">        </span>
+<span class="fc" id="L655">        double[] meanAndStDev = MiscMath.getAvgAndStDev(dist);</span>
+        
+<span class="fc" id="L657">        double t = chiSquaredStatFactor * meanAndStDev[1];</span>
+        
         //System.out.printf(&quot;t=%.3e\n&quot;, t);
 
-        List&lt;Double&gt; errors = new ArrayList&lt;Double&gt;();
-<span class="fc" id="L661"></span>
-        List&lt;Integer&gt; inlierIndexes = new ArrayList&lt;Integer&gt;();
-<span class="fc" id="L663"></span>
+<span class="fc" id="L661">        List&lt;Double&gt; errors = new ArrayList&lt;Double&gt;();</span>
+
+<span class="fc" id="L663">        List&lt;Integer&gt; inlierIndexes = new ArrayList&lt;Integer&gt;();</span>
+
         double d;
-        for (int i = 0; i &lt; dist.length; ++i) {
-<span class="fc bfc" id="L666" title="All 2 branches covered."></span>
-            d = dist[i];
-<span class="fc" id="L668">            </span>
-            if (d &gt; t) {
-<span class="fc bfc" id="L670" title="All 2 branches covered.">                continue;</span>
-<span class="fc" id="L671">            }</span>
+<span class="fc bfc" id="L666" title="All 2 branches covered.">        for (int i = 0; i &lt; dist.length; ++i) {</span>
 
-            inlierIndexes.add(Integer.valueOf(i));
-<span class="fc" id="L674"></span>
-            errors.add(d);
-<span class="fc" id="L676">        }</span>
+<span class="fc" id="L668">            d = dist[i];</span>
+            
+<span class="fc bfc" id="L670" title="All 2 branches covered.">            if (d &gt; t) {</span>
+<span class="fc" id="L671">                continue;</span>
+            }
 
-        EpipolarTransformationFit fit = null;
-<span class="fc" id="L679"></span>
-        if (errors.size() &gt; 0) {
-<span class="pc bpc" id="L681" title="1 of 2 branches missed.">            fit = new EpipolarTransformationFit(fm, inlierIndexes,</span>
-<span class="fc" id="L682">                ErrorType.SAMPSONS, errors, t);</span>
-        } else {
-            fit = new EpipolarTransformationFit(fm, new ArrayList&lt;Integer&gt;(),
-<span class="nc" id="L685">                ErrorType.SAMPSONS, new ArrayList&lt;Double&gt;(), t);</span>
+<span class="fc" id="L674">            inlierIndexes.add(Integer.valueOf(i));</span>
+
+<span class="fc" id="L676">            errors.add(d);</span>
         }
 
-        fit.setNMaxMatchable(leftPoints.numColumns());
-<span class="fc" id="L689"></span>
-        fit.calculateErrorStatistics();
-<span class="fc" id="L691"></span>
-        return fit;
-<span class="fc" id="L693">    }</span>
+<span class="fc" id="L679">        EpipolarTransformationFit fit = null;</span>
+
+<span class="fc bfc" id="L681" title="All 2 branches covered.">        if (errors.size() &gt; 0) {</span>
+<span class="fc" id="L682">            fit = new EpipolarTransformationFit(fm, inlierIndexes,</span>
+                ErrorType.SAMPSONS, errors, t);
+        } else {
+<span class="fc" id="L685">            fit = new EpipolarTransformationFit(fm, new ArrayList&lt;Integer&gt;(),</span>
+                ErrorType.SAMPSONS, new ArrayList&lt;Double&gt;(), t);
+        }
+
+<span class="fc" id="L689">        fit.setNMaxMatchable(leftPoints.numColumns());</span>
+
+<span class="fc" id="L691">        fit.calculateErrorStatistics();</span>
+
+<span class="fc" id="L693">        return fit;</span>
+    }
 
     /**
      * For use upon data that have been unit normal standardized.
@@ -712,67 +713,67 @@ import no.uib.cipr.matrix.DenseMatrix;
             double[][] fm, double[][] leftPoints, double[][] rightPoints,
             double chiSquaredStatFactor) {
 
-        if (fm == null) {
-<span class="nc bnc" id="L716" title="All 2 branches missed.">            throw new IllegalArgumentException(&quot;fm cannot be null&quot;);</span>
-<span class="nc" id="L717">        }</span>
-        if (leftPoints == null) {
-<span class="nc bnc" id="L719" title="All 2 branches missed.">            throw new IllegalArgumentException(&quot;leftPoints cannot be null&quot;);</span>
-<span class="nc" id="L720">        }</span>
-        if (rightPoints == null) {
-<span class="nc bnc" id="L722" title="All 2 branches missed.">            throw new IllegalArgumentException(&quot;rightPoints cannot be null&quot;);</span>
-<span class="nc" id="L723">        }</span>
-        int nRows = leftPoints.length;
-<span class="nc" id="L725">        if (nRows != rightPoints.length) {</span>
-<span class="nc bnc" id="L726" title="All 2 branches missed.">            throw new IllegalArgumentException(&quot;matrices must have same number of rows&quot;);</span>
-<span class="nc" id="L727">        }</span>
-
-        // dist^2:
-        double[] dist = calculateEpipolarSampsonsDistanceSquared(fm,
-<span class="nc" id="L731">                leftPoints, rightPoints);</span>
-        for (int i = 0; i &lt; dist.length; ++i) {
-<span class="nc bnc" id="L733" title="All 2 branches missed.">            dist[i] = Math.sqrt(dist[i]);</span>
-<span class="nc" id="L734">        }</span>
-
-        double[] meanAndStDev = MiscMath.getAvgAndStDev(dist);
-<span class="nc" id="L737"></span>
-        double t = chiSquaredStatFactor * meanAndStDev[1];
-<span class="nc" id="L739"></span>
-        //System.out.printf(&quot;t=%.3e\n&quot;, t);
-
-        List&lt;Double&gt; errors = new ArrayList&lt;Double&gt;();
-<span class="nc" id="L743"></span>
-        List&lt;Integer&gt; inlierIndexes = new ArrayList&lt;Integer&gt;();
-<span class="nc" id="L745"></span>
-        double d;
-        for (int i = 0; i &lt; dist.length; ++i) {
-<span class="nc bnc" id="L748" title="All 2 branches missed."></span>
-            d = dist[i];
-<span class="nc" id="L750"></span>
-            if (d &gt; t) {
-<span class="nc bnc" id="L752" title="All 2 branches missed.">                continue;</span>
-<span class="nc" id="L753">            }</span>
-
-            inlierIndexes.add(Integer.valueOf(i));
-<span class="nc" id="L756"></span>
-            errors.add(d);
-<span class="nc" id="L758">        }</span>
-
-        EpipolarTransformationFit fit = null;
-<span class="nc" id="L761"></span>
-        if (errors.size() &gt; 0) {
-<span class="nc bnc" id="L763" title="All 2 branches missed.">            fit = new EpipolarTransformationFit(fm, inlierIndexes,</span>
-<span class="nc" id="L764">                    ErrorType.SAMPSONS, errors, t);</span>
-        } else {
-            fit = new EpipolarTransformationFit(fm, new ArrayList&lt;Integer&gt;(),
-<span class="nc" id="L767">                    ErrorType.SAMPSONS, new ArrayList&lt;Double&gt;(), t);</span>
+<span class="nc bnc" id="L716" title="All 2 branches missed.">        if (fm == null) {</span>
+<span class="nc" id="L717">            throw new IllegalArgumentException(&quot;fm cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L719" title="All 2 branches missed.">        if (leftPoints == null) {</span>
+<span class="nc" id="L720">            throw new IllegalArgumentException(&quot;leftPoints cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L722" title="All 2 branches missed.">        if (rightPoints == null) {</span>
+<span class="nc" id="L723">            throw new IllegalArgumentException(&quot;rightPoints cannot be null&quot;);</span>
+        }
+<span class="nc" id="L725">        int nRows = leftPoints.length;</span>
+<span class="nc bnc" id="L726" title="All 2 branches missed.">        if (nRows != rightPoints.length) {</span>
+<span class="nc" id="L727">            throw new IllegalArgumentException(&quot;matrices must have same number of rows&quot;);</span>
         }
 
-        fit.setNMaxMatchable(leftPoints[0].length);
-<span class="nc" id="L771"></span>
-        fit.calculateErrorStatistics();
-<span class="nc" id="L773"></span>
-        return fit;
-<span class="nc" id="L775">    }</span>
+        // dist^2:
+<span class="nc" id="L731">        double[] dist = calculateEpipolarSampsonsDistanceSquared(fm,</span>
+                leftPoints, rightPoints);
+<span class="nc bnc" id="L733" title="All 2 branches missed.">        for (int i = 0; i &lt; dist.length; ++i) {</span>
+<span class="nc" id="L734">            dist[i] = Math.sqrt(dist[i]);</span>
+        }
+
+<span class="nc" id="L737">        double[] meanAndStDev = MiscMath.getAvgAndStDev(dist);</span>
+
+<span class="nc" id="L739">        double t = chiSquaredStatFactor * meanAndStDev[1];</span>
+
+        //System.out.printf(&quot;t=%.3e\n&quot;, t);
+
+<span class="nc" id="L743">        List&lt;Double&gt; errors = new ArrayList&lt;Double&gt;();</span>
+
+<span class="nc" id="L745">        List&lt;Integer&gt; inlierIndexes = new ArrayList&lt;Integer&gt;();</span>
+
+        double d;
+<span class="nc bnc" id="L748" title="All 2 branches missed.">        for (int i = 0; i &lt; dist.length; ++i) {</span>
+
+<span class="nc" id="L750">            d = dist[i];</span>
+
+<span class="nc bnc" id="L752" title="All 2 branches missed.">            if (d &gt; t) {</span>
+<span class="nc" id="L753">                continue;</span>
+            }
+
+<span class="nc" id="L756">            inlierIndexes.add(Integer.valueOf(i));</span>
+
+<span class="nc" id="L758">            errors.add(d);</span>
+        }
+
+<span class="nc" id="L761">        EpipolarTransformationFit fit = null;</span>
+
+<span class="nc bnc" id="L763" title="All 2 branches missed.">        if (errors.size() &gt; 0) {</span>
+<span class="nc" id="L764">            fit = new EpipolarTransformationFit(fm, inlierIndexes,</span>
+                    ErrorType.SAMPSONS, errors, t);
+        } else {
+<span class="nc" id="L767">            fit = new EpipolarTransformationFit(fm, new ArrayList&lt;Integer&gt;(),</span>
+                    ErrorType.SAMPSONS, new ArrayList&lt;Double&gt;(), t);
+        }
+
+<span class="nc" id="L771">        fit.setNMaxMatchable(leftPoints[0].length);</span>
+
+<span class="nc" id="L773">        fit.calculateErrorStatistics();</span>
+
+<span class="nc" id="L775">        return fit;</span>
+    }
 
     /**
      * find the distance of the given points from their respective projected
@@ -791,53 +792,53 @@ import no.uib.cipr.matrix.DenseMatrix;
         DenseMatrix fm, DenseMatrix matchedLeftPoints,
         DenseMatrix matchedRightPoints) {
 
-        if (fm == null) {
-<span class="pc bpc" id="L795" title="1 of 2 branches missed.">            throw new IllegalArgumentException(&quot;fm cannot be null&quot;);</span>
-<span class="nc" id="L796">        }</span>
-        if (matchedLeftPoints == null) {
-<span class="pc bpc" id="L798" title="1 of 2 branches missed.">            throw new IllegalArgumentException(&quot;matchedLeftPoints cannot be null&quot;);</span>
-<span class="nc" id="L799">        }</span>
-        if (matchedRightPoints == null) {
-<span class="pc bpc" id="L801" title="1 of 2 branches missed.">            throw new IllegalArgumentException(&quot;rightPoints cannot be null&quot;);</span>
-<span class="nc" id="L802">        }</span>
-        int nRows = matchedLeftPoints.numRows();
-<span class="fc" id="L804">        if (nRows != matchedRightPoints.numRows()) {</span>
-<span class="pc bpc" id="L805" title="1 of 2 branches missed.">            throw new IllegalArgumentException(&quot;matrices must have same number of rows&quot;);</span>
-<span class="nc" id="L806">        }</span>
+<span class="pc bpc" id="L795" title="1 of 2 branches missed.">        if (fm == null) {</span>
+<span class="nc" id="L796">            throw new IllegalArgumentException(&quot;fm cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L798" title="1 of 2 branches missed.">        if (matchedLeftPoints == null) {</span>
+<span class="nc" id="L799">            throw new IllegalArgumentException(&quot;matchedLeftPoints cannot be null&quot;);</span>
+        }
+<span class="pc bpc" id="L801" title="1 of 2 branches missed.">        if (matchedRightPoints == null) {</span>
+<span class="nc" id="L802">            throw new IllegalArgumentException(&quot;rightPoints cannot be null&quot;);</span>
+        }
+<span class="fc" id="L804">        int nRows = matchedLeftPoints.numRows();</span>
+<span class="pc bpc" id="L805" title="1 of 2 branches missed.">        if (nRows != matchedRightPoints.numRows()) {</span>
+<span class="nc" id="L806">            throw new IllegalArgumentException(&quot;matrices must have same number of rows&quot;);</span>
+        }
 
         /*
         u_2^T * F * u_1 = 0  where u are the x,y points in images _1 and _2
         u_1 = (x_1, y_1, 1)^T
         u_2 = (x_2, y_2, 1)^T
          */
-        int n = matchedLeftPoints.numColumns();
-<span class="fc" id="L814"></span>
-        double[][] distances = new double[2][n];
-<span class="fc" id="L816">        distances[0] = new double[n];</span>
-<span class="fc" id="L817">        distances[1] = new double[n];</span>
-<span class="fc" id="L818"></span>
-        // F * u_1 = 3 x n
-        DenseMatrix rightEpipolarLines = MatrixUtil.multiply(fm, matchedLeftPoints);
-<span class="fc" id="L821"></span>
-        // F^T * u_2
-        DenseMatrix leftEpipolarLines = MatrixUtil.multiply(
-<span class="fc" id="L824">            algorithms.matrix.MatrixUtil.transpose(fm),</span>
-<span class="fc" id="L825">            matchedRightPoints);</span>
+<span class="fc" id="L814">        int n = matchedLeftPoints.numColumns();</span>
 
-        float[] output = new float[2];
-<span class="fc" id="L828"></span>
-        for (int i = 0; i &lt; matchedLeftPoints.numColumns(); i++) {
-<span class="fc bfc" id="L830" title="All 2 branches covered."></span>
-            calculatePerpDistFromLines(matchedLeftPoints, matchedRightPoints,
-<span class="fc" id="L832">                rightEpipolarLines, leftEpipolarLines,</span>
+<span class="fc" id="L816">        double[][] distances = new double[2][n];</span>
+<span class="fc" id="L817">        distances[0] = new double[n];</span>
+<span class="fc" id="L818">        distances[1] = new double[n];</span>
+
+        // F * u_1 = 3 x n
+<span class="fc" id="L821">        DenseMatrix rightEpipolarLines = MatrixUtil.multiply(fm, matchedLeftPoints);</span>
+
+        // F^T * u_2
+<span class="fc" id="L824">        DenseMatrix leftEpipolarLines = MatrixUtil.multiply(</span>
+<span class="fc" id="L825">            algorithms.matrix.MatrixUtil.transpose(fm),</span>
+            matchedRightPoints);
+
+<span class="fc" id="L828">        float[] output = new float[2];</span>
+
+<span class="fc bfc" id="L830" title="All 2 branches covered.">        for (int i = 0; i &lt; matchedLeftPoints.numColumns(); i++) {</span>
+
+<span class="fc" id="L832">            calculatePerpDistFromLines(matchedLeftPoints, matchedRightPoints,</span>
+                rightEpipolarLines, leftEpipolarLines,
                 i, i, output);
 
-            distances[0][i] = output[0];
-<span class="fc" id="L836">            distances[1][i] = output[1];</span>
-<span class="fc" id="L837">        }</span>
+<span class="fc" id="L836">            distances[0][i] = output[0];</span>
+<span class="fc" id="L837">            distances[1][i] = output[1];</span>
+        }
 
-        return distances;
-<span class="fc" id="L840">    }</span>
+<span class="fc" id="L840">        return distances;</span>
+    }
 
     /**
      * find the distance of the given points from their respective projected
@@ -856,53 +857,53 @@ import no.uib.cipr.matrix.DenseMatrix;
             double[][] fm, double[][] matchedLeftPoints,
             double[][] matchedRightPoints) {
 
-        if (fm == null) {
-<span class="nc bnc" id="L860" title="All 2 branches missed.">            throw new IllegalArgumentException(&quot;fm cannot be null&quot;);</span>
-<span class="nc" id="L861">        }</span>
-        if (matchedLeftPoints == null) {
-<span class="nc bnc" id="L863" title="All 2 branches missed.">            throw new IllegalArgumentException(&quot;matchedLeftPoints cannot be null&quot;);</span>
-<span class="nc" id="L864">        }</span>
-        if (matchedRightPoints == null) {
-<span class="nc bnc" id="L866" title="All 2 branches missed.">            throw new IllegalArgumentException(&quot;rightPoints cannot be null&quot;);</span>
-<span class="nc" id="L867">        }</span>
-        int nRows = matchedLeftPoints.length;
-<span class="nc" id="L869">        if (nRows != matchedRightPoints.length) {</span>
-<span class="nc bnc" id="L870" title="All 2 branches missed.">            throw new IllegalArgumentException(&quot;matrices must have same number of rows&quot;);</span>
-<span class="nc" id="L871">        }</span>
+<span class="nc bnc" id="L860" title="All 2 branches missed.">        if (fm == null) {</span>
+<span class="nc" id="L861">            throw new IllegalArgumentException(&quot;fm cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L863" title="All 2 branches missed.">        if (matchedLeftPoints == null) {</span>
+<span class="nc" id="L864">            throw new IllegalArgumentException(&quot;matchedLeftPoints cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L866" title="All 2 branches missed.">        if (matchedRightPoints == null) {</span>
+<span class="nc" id="L867">            throw new IllegalArgumentException(&quot;rightPoints cannot be null&quot;);</span>
+        }
+<span class="nc" id="L869">        int nRows = matchedLeftPoints.length;</span>
+<span class="nc bnc" id="L870" title="All 2 branches missed.">        if (nRows != matchedRightPoints.length) {</span>
+<span class="nc" id="L871">            throw new IllegalArgumentException(&quot;matrices must have same number of rows&quot;);</span>
+        }
 
         /*
         u_2^T * F * u_1 = 0  where u are the x,y points in images _1 and _2
         u_1 = (x_1, y_1, 1)^T
         u_2 = (x_2, y_2, 1)^T
          */
-        int n = matchedLeftPoints[0].length;
-<span class="nc" id="L879"></span>
-        double[][] distances = new double[2][n];
-<span class="nc" id="L881">        distances[0] = new double[n];</span>
-<span class="nc" id="L882">        distances[1] = new double[n];</span>
-<span class="nc" id="L883"></span>
-        // F * u_1 = 3 x n
-        double[][] rightEpipolarLines = MatrixUtil.multiply(fm, matchedLeftPoints);
-<span class="nc" id="L886"></span>
-        // F^T * u_2
-        double[][] leftEpipolarLines = MatrixUtil.multiply(
-<span class="nc" id="L889">                algorithms.matrix.MatrixUtil.transpose(fm),</span>
-<span class="nc" id="L890">                matchedRightPoints);</span>
+<span class="nc" id="L879">        int n = matchedLeftPoints[0].length;</span>
 
-        float[] output = new float[2];
-<span class="nc" id="L893"></span>
-        for (int i = 0; i &lt; matchedLeftPoints[0].length; i++) {
-<span class="nc bnc" id="L895" title="All 2 branches missed."></span>
-            calculatePerpDistFromLines(matchedLeftPoints, matchedRightPoints,
-<span class="nc" id="L897">                    rightEpipolarLines, leftEpipolarLines,</span>
+<span class="nc" id="L881">        double[][] distances = new double[2][n];</span>
+<span class="nc" id="L882">        distances[0] = new double[n];</span>
+<span class="nc" id="L883">        distances[1] = new double[n];</span>
+
+        // F * u_1 = 3 x n
+<span class="nc" id="L886">        double[][] rightEpipolarLines = MatrixUtil.multiply(fm, matchedLeftPoints);</span>
+
+        // F^T * u_2
+<span class="nc" id="L889">        double[][] leftEpipolarLines = MatrixUtil.multiply(</span>
+<span class="nc" id="L890">                algorithms.matrix.MatrixUtil.transpose(fm),</span>
+                matchedRightPoints);
+
+<span class="nc" id="L893">        float[] output = new float[2];</span>
+
+<span class="nc bnc" id="L895" title="All 2 branches missed.">        for (int i = 0; i &lt; matchedLeftPoints[0].length; i++) {</span>
+
+<span class="nc" id="L897">            calculatePerpDistFromLines(matchedLeftPoints, matchedRightPoints,</span>
+                    rightEpipolarLines, leftEpipolarLines,
                     i, i, output);
 
-            distances[0][i] = output[0];
-<span class="nc" id="L901">            distances[1][i] = output[1];</span>
-<span class="nc" id="L902">        }</span>
+<span class="nc" id="L901">            distances[0][i] = output[0];</span>
+<span class="nc" id="L902">            distances[1][i] = output[1];</span>
+        }
 
-        return distances;
-<span class="nc" id="L905">    }</span>
+<span class="nc" id="L905">        return distances;</span>
+    }
 
     /**
      * For use upon data that have been unit normal standardized.
@@ -935,17 +936,17 @@ import no.uib.cipr.matrix.DenseMatrix;
     public double[] calculateEpipolarSampsonsDistanceSquared(
         DenseMatrix fm, DenseMatrix x1, DenseMatrix x2) {
 
-        int m = fm.numRows();
-<span class="fc" id="L939">        int n = x1.numColumns();</span>
-<span class="fc" id="L940">        if (m != 3 || fm.numColumns() != 3) {</span>
-<span class="pc bpc" id="L941" title="2 of 4 branches missed.">            throw new IllegalArgumentException(&quot;fm must be 3x3&quot;);</span>
-<span class="nc" id="L942">        }</span>
-        if (x1.numRows() != 3 || x2.numRows() != 3) {
-<span class="pc bpc" id="L944" title="2 of 4 branches missed.">            throw new IllegalArgumentException(&quot;x1 and x2 must have 3 rows&quot;);</span>
-<span class="nc" id="L945">        }</span>
-        if (x2.numColumns() != n) {
-<span class="pc bpc" id="L947" title="1 of 2 branches missed.">            throw new IllegalArgumentException(&quot;x1 and x2 must have the same number of columns&quot;);</span>
-<span class="nc" id="L948">        }</span>
+<span class="fc" id="L939">        int m = fm.numRows();</span>
+<span class="fc" id="L940">        int n = x1.numColumns();</span>
+<span class="pc bpc" id="L941" title="2 of 4 branches missed.">        if (m != 3 || fm.numColumns() != 3) {</span>
+<span class="nc" id="L942">            throw new IllegalArgumentException(&quot;fm must be 3x3&quot;);</span>
+        }
+<span class="pc bpc" id="L944" title="2 of 4 branches missed.">        if (x1.numRows() != 3 || x2.numRows() != 3) {</span>
+<span class="nc" id="L945">            throw new IllegalArgumentException(&quot;x1 and x2 must have 3 rows&quot;);</span>
+        }
+<span class="pc bpc" id="L947" title="1 of 2 branches missed.">        if (x2.numColumns() != n) {</span>
+<span class="nc" id="L948">            throw new IllegalArgumentException(&quot;x1 and x2 must have the same number of columns&quot;);</span>
+        }
         
         /*
         R_i = u2_i^T * F * u1_i
@@ -957,14 +958,14 @@ import no.uib.cipr.matrix.DenseMatrix;
         (dist_i)^2 = (R_i)^2 / ( (a1_i)^2 + (b1_i)^2 + (a2_i)^2 + (b2_i)^2 ) 
         */
         
-        double[] distances = new double[n];
-<span class="fc" id="L961"></span>
+<span class="fc" id="L961">        double[] distances = new double[n];</span>
+
         // 3 x n.  left points projected onto right image
-        DenseMatrix fX1 = MatrixUtil.multiply(fm, x1);
-<span class="fc" id="L964"></span>
+<span class="fc" id="L964">        DenseMatrix fX1 = MatrixUtil.multiply(fm, x1);</span>
+
         // 3 X n.  right points projected onto left image
-        DenseMatrix fTX2 = MatrixUtil.multiply(algorithms.matrix.MatrixUtil.transpose(fm),
-<span class="fc" id="L967">            x2);</span>
+<span class="fc" id="L967">        DenseMatrix fTX2 = MatrixUtil.multiply(algorithms.matrix.MatrixUtil.transpose(fm),</span>
+            x2);
         
         /*R_i is found in (row i, col i) of the result of u2^T * F * u1                                          \\//
         &gt;&gt; x2_00  x2_10  x2_20   *  f00 f01 f02  *  x1_00  x1_01
@@ -975,31 +976,31 @@ import no.uib.cipr.matrix.DenseMatrix;
                     + (x2_00*f01 + x2_10*f11 + x2_20*f21) * x1_10
                     + (x2_00*f02 + x2_10*f12 + x2_20*f22) * x1_20
         */
-        DenseMatrix r = MatrixUtil.multiply(MatrixUtil.transpose(x2), fm);
-<span class="fc" id="L979">        r = MatrixUtil.multiply(r, x1);</span>
-<span class="fc" id="L980"></span>
-        double a1, b1, c1, a2, b2, c2, denom, ri;
-        for (int i = 0; i &lt; x1.numColumns(); i++) {
-<span class="fc bfc" id="L983" title="All 2 branches covered.">            </span>
-            a1 = fTX2.get(0, i);
-<span class="fc" id="L985">            b1 = fTX2.get(1, i);</span>
-<span class="fc" id="L986">            c1 = fTX2.get(2, i);</span>
-<span class="fc" id="L987">            </span>
-            a2 = fX1.get(0, i);
-<span class="fc" id="L989">            b2 = fX1.get(1, i);</span>
-<span class="fc" id="L990">            c2 = fX1.get(2, i);</span>
-<span class="fc" id="L991"></span>
-            denom = a1*a1 + b1*b1 + a2*a2 + b2*b2;
-<span class="fc" id="L993"></span>
-            ri = r.get(i, i);
-<span class="fc" id="L995">            ri *= ri;</span>
-<span class="fc" id="L996">            ri /= denom;</span>
-<span class="fc" id="L997">           </span>
-            distances[i] = ri;
-<span class="fc" id="L999">        }</span>
+<span class="fc" id="L979">        DenseMatrix r = MatrixUtil.multiply(MatrixUtil.transpose(x2), fm);</span>
+<span class="fc" id="L980">        r = MatrixUtil.multiply(r, x1);</span>
 
-        return distances;
-<span class="fc" id="L1002">    }</span>
+        double a1, b1, c1, a2, b2, c2, denom, ri;
+<span class="fc bfc" id="L983" title="All 2 branches covered.">        for (int i = 0; i &lt; x1.numColumns(); i++) {</span>
+            
+<span class="fc" id="L985">            a1 = fTX2.get(0, i);</span>
+<span class="fc" id="L986">            b1 = fTX2.get(1, i);</span>
+<span class="fc" id="L987">            c1 = fTX2.get(2, i);</span>
+            
+<span class="fc" id="L989">            a2 = fX1.get(0, i);</span>
+<span class="fc" id="L990">            b2 = fX1.get(1, i);</span>
+<span class="fc" id="L991">            c2 = fX1.get(2, i);</span>
+
+<span class="fc" id="L993">            denom = a1*a1 + b1*b1 + a2*a2 + b2*b2;</span>
+
+<span class="fc" id="L995">            ri = r.get(i, i);</span>
+<span class="fc" id="L996">            ri *= ri;</span>
+<span class="fc" id="L997">            ri /= denom;</span>
+           
+<span class="fc" id="L999">            distances[i] = ri;</span>
+        }
+
+<span class="fc" id="L1002">        return distances;</span>
+    }
 
     /**
      * For use upon data that have been unit normal standardized.
@@ -1032,17 +1033,17 @@ import no.uib.cipr.matrix.DenseMatrix;
     public double[] calculateEpipolarSampsonsDistanceSquared(
             double[][] fm, double[][] x1, double[][] x2) {
 
-        int m = fm.length;
-<span class="nc" id="L1036">        int n = x1[0].length;</span>
-<span class="nc" id="L1037">        if (m != 3 || fm[0].length != 3) {</span>
-<span class="nc bnc" id="L1038" title="All 4 branches missed.">            throw new IllegalArgumentException(&quot;fm must be 3x3&quot;);</span>
-<span class="nc" id="L1039">        }</span>
-        if (x1.length != 3 || x2.length != 3) {
-<span class="nc bnc" id="L1041" title="All 4 branches missed.">            throw new IllegalArgumentException(&quot;x1 and x2 must have 3 rows&quot;);</span>
-<span class="nc" id="L1042">        }</span>
-        if (x2[0].length != n) {
-<span class="nc bnc" id="L1044" title="All 2 branches missed.">            throw new IllegalArgumentException(&quot;x1 and x2 must have the same number of columns&quot;);</span>
-<span class="nc" id="L1045">        }</span>
+<span class="nc" id="L1036">        int m = fm.length;</span>
+<span class="nc" id="L1037">        int n = x1[0].length;</span>
+<span class="nc bnc" id="L1038" title="All 4 branches missed.">        if (m != 3 || fm[0].length != 3) {</span>
+<span class="nc" id="L1039">            throw new IllegalArgumentException(&quot;fm must be 3x3&quot;);</span>
+        }
+<span class="nc bnc" id="L1041" title="All 4 branches missed.">        if (x1.length != 3 || x2.length != 3) {</span>
+<span class="nc" id="L1042">            throw new IllegalArgumentException(&quot;x1 and x2 must have 3 rows&quot;);</span>
+        }
+<span class="nc bnc" id="L1044" title="All 2 branches missed.">        if (x2[0].length != n) {</span>
+<span class="nc" id="L1045">            throw new IllegalArgumentException(&quot;x1 and x2 must have the same number of columns&quot;);</span>
+        }
 
         /*
         R_i = u2_i^T * F * u1_i
@@ -1054,14 +1055,14 @@ import no.uib.cipr.matrix.DenseMatrix;
         (dist_i)^2 = (R_i)^2 / ( (a1_i)^2 + (b1_i)^2 + (a2_i)^2 + (b2_i)^2 )
         */
 
-        double[] distances = new double[n];
-<span class="nc" id="L1058"></span>
+<span class="nc" id="L1058">        double[] distances = new double[n];</span>
+
         // 3 x n.  left points projected onto right image
-        double[][] fX1 = MatrixUtil.multiply(fm, x1);
-<span class="nc" id="L1061"></span>
+<span class="nc" id="L1061">        double[][] fX1 = MatrixUtil.multiply(fm, x1);</span>
+
         // 3 X n.  right points projected onto left image
-        double[][] fTX2 = MatrixUtil.multiply(MatrixUtil.transpose(fm), x2);
-<span class="nc" id="L1064"></span>
+<span class="nc" id="L1064">        double[][] fTX2 = MatrixUtil.multiply(MatrixUtil.transpose(fm), x2);</span>
+
         /*R_i is found in (row i, col i) of the result of u2^T * F * u1                                          \\//
         &gt;&gt; x2_00  x2_10  x2_20   *  f00 f01 f02  *  x1_00  x1_01
            x2_01  x2_11  x2_21      f10 f11 f12     x1_10  x1_11
@@ -1071,31 +1072,31 @@ import no.uib.cipr.matrix.DenseMatrix;
                     + (x2_00*f01 + x2_10*f11 + x2_20*f21) * x1_10
                     + (x2_00*f02 + x2_10*f12 + x2_20*f22) * x1_20
         */
-        double[][] r = MatrixUtil.multiply(MatrixUtil.transpose(x2), fm);
-<span class="nc" id="L1075">        r = MatrixUtil.multiply(r, x1);</span>
-<span class="nc" id="L1076"></span>
-        double a1, b1, c1, a2, b2, c2, denom, ri;
-        for (int i = 0; i &lt; x1[0].length; i++) {
-<span class="nc bnc" id="L1079" title="All 2 branches missed."></span>
-            a1 = fTX2[0][i];
-<span class="nc" id="L1081">            b1 = fTX2[1][i];</span>
-<span class="nc" id="L1082">            c1 = fTX2[2][i];</span>
-<span class="nc" id="L1083"></span>
-            a2 = fX1[0][i];
-<span class="nc" id="L1085">            b2 = fX1[1][i];</span>
-<span class="nc" id="L1086">            c2 = fX1[2][i];</span>
-<span class="nc" id="L1087"></span>
-            denom = a1*a1 + b1*b1 + a2*a2 + b2*b2;
-<span class="nc" id="L1089"></span>
-            ri = r[i][i];
-<span class="nc" id="L1091">            ri *= ri;</span>
-<span class="nc" id="L1092">            ri /= denom;</span>
-<span class="nc" id="L1093"></span>
-            distances[i] = ri;
-<span class="nc" id="L1095">        }</span>
+<span class="nc" id="L1075">        double[][] r = MatrixUtil.multiply(MatrixUtil.transpose(x2), fm);</span>
+<span class="nc" id="L1076">        r = MatrixUtil.multiply(r, x1);</span>
 
-        return distances;
-<span class="nc" id="L1098">    }</span>
+        double a1, b1, c1, a2, b2, c2, denom, ri;
+<span class="nc bnc" id="L1079" title="All 2 branches missed.">        for (int i = 0; i &lt; x1[0].length; i++) {</span>
+
+<span class="nc" id="L1081">            a1 = fTX2[0][i];</span>
+<span class="nc" id="L1082">            b1 = fTX2[1][i];</span>
+<span class="nc" id="L1083">            c1 = fTX2[2][i];</span>
+
+<span class="nc" id="L1085">            a2 = fX1[0][i];</span>
+<span class="nc" id="L1086">            b2 = fX1[1][i];</span>
+<span class="nc" id="L1087">            c2 = fX1[2][i];</span>
+
+<span class="nc" id="L1089">            denom = a1*a1 + b1*b1 + a2*a2 + b2*b2;</span>
+
+<span class="nc" id="L1091">            ri = r[i][i];</span>
+<span class="nc" id="L1092">            ri *= ri;</span>
+<span class="nc" id="L1093">            ri /= denom;</span>
+
+<span class="nc" id="L1095">            distances[i] = ri;</span>
+        }
+
+<span class="nc" id="L1098">        return distances;</span>
+    }
 
     /**
      *
@@ -1118,33 +1119,33 @@ import no.uib.cipr.matrix.DenseMatrix;
 
         // see references for eqn (1) of within Fathy et al. 2017,
         // &quot;Fundamental Matrix Estimation: A Study of Error Criteria&quot;
-        double a = fu1.get(0, leftIdx);
-<span class="fc" id="L1122">        double b = fu1.get(1, leftIdx);</span>
-<span class="fc" id="L1123">        double c = fu1.get(2, leftIdx);</span>
-<span class="fc" id="L1124"></span>
-        double aplusb = Math.sqrt((a * a) + (b * b));
-<span class="fc" id="L1126"></span>
+<span class="fc" id="L1122">        double a = fu1.get(0, leftIdx);</span>
+<span class="fc" id="L1123">        double b = fu1.get(1, leftIdx);</span>
+<span class="fc" id="L1124">        double c = fu1.get(2, leftIdx);</span>
+
+<span class="fc" id="L1126">        double aplusb = Math.sqrt((a * a) + (b * b));</span>
+
         //dist = (a*x + b*y + c)/sqrt(a^2 + b^2)
-        double x = u2.get(0, rightIdx);
-<span class="fc" id="L1129">        double y = u2.get(1, rightIdx);</span>
-<span class="fc" id="L1130"></span>
-        double d = (a * x + b * y + c) / aplusb;
-<span class="fc" id="L1132"></span>
+<span class="fc" id="L1129">        double x = u2.get(0, rightIdx);</span>
+<span class="fc" id="L1130">        double y = u2.get(1, rightIdx);</span>
+
+<span class="fc" id="L1132">        double d = (a * x + b * y + c) / aplusb;</span>
+
         // find the reverse distance by projection:
-        double aRev = fTu2.get(0, rightIdx);
-<span class="fc" id="L1135">        double bRev = fTu2.get(1, rightIdx);</span>
-<span class="fc" id="L1136">        double cRev = fTu2.get(2, rightIdx);</span>
-<span class="fc" id="L1137"></span>
-        double xL = u1.get(0, leftIdx);
-<span class="fc" id="L1139">        double yL = u1.get(1, leftIdx);</span>
-<span class="fc" id="L1140"></span>
-        double dRev = (aRev * xL + bRev * yL + cRev)
-<span class="fc" id="L1142">                / Math.sqrt(aRev * aRev + bRev * bRev);</span>
-<span class="fc" id="L1143"></span>
-        output[0] = (float) dRev;
-<span class="fc" id="L1145">        output[1] = (float) d;</span>
-<span class="fc" id="L1146">    }</span>
-<span class="fc" id="L1147"></span>
+<span class="fc" id="L1135">        double aRev = fTu2.get(0, rightIdx);</span>
+<span class="fc" id="L1136">        double bRev = fTu2.get(1, rightIdx);</span>
+<span class="fc" id="L1137">        double cRev = fTu2.get(2, rightIdx);</span>
+
+<span class="fc" id="L1139">        double xL = u1.get(0, leftIdx);</span>
+<span class="fc" id="L1140">        double yL = u1.get(1, leftIdx);</span>
+
+<span class="fc" id="L1142">        double dRev = (aRev * xL + bRev * yL + cRev)</span>
+<span class="fc" id="L1143">                / Math.sqrt(aRev * aRev + bRev * bRev);</span>
+
+<span class="fc" id="L1145">        output[0] = (float) dRev;</span>
+<span class="fc" id="L1146">        output[1] = (float) d;</span>
+<span class="fc" id="L1147">    }</span>
+
     /**
      *
      * @param u1 points from left image in matrix of size 3 X nPoints. row 0 is
@@ -1166,51 +1167,51 @@ import no.uib.cipr.matrix.DenseMatrix;
 
         // see references for eqn (1) of within Fathy et al. 2017,
         // &quot;Fundamental Matrix Estimation: A Study of Error Criteria&quot;
-        double a = fu1[0][leftIdx];
-<span class="nc" id="L1170">        double b = fu1[1][leftIdx];</span>
-<span class="nc" id="L1171">        double c = fu1[2][leftIdx];</span>
-<span class="nc" id="L1172"></span>
-        double aplusb = Math.sqrt((a * a) + (b * b));
-<span class="nc" id="L1174"></span>
+<span class="nc" id="L1170">        double a = fu1[0][leftIdx];</span>
+<span class="nc" id="L1171">        double b = fu1[1][leftIdx];</span>
+<span class="nc" id="L1172">        double c = fu1[2][leftIdx];</span>
+
+<span class="nc" id="L1174">        double aplusb = Math.sqrt((a * a) + (b * b));</span>
+
         //dist = (a*x + b*y + c)/sqrt(a^2 + b^2)
-        double x = u2[0][rightIdx];
-<span class="nc" id="L1177">        double y = u2[1][rightIdx];</span>
-<span class="nc" id="L1178"></span>
-        double d = (a * x + b * y + c) / aplusb;
-<span class="nc" id="L1180"></span>
+<span class="nc" id="L1177">        double x = u2[0][rightIdx];</span>
+<span class="nc" id="L1178">        double y = u2[1][rightIdx];</span>
+
+<span class="nc" id="L1180">        double d = (a * x + b * y + c) / aplusb;</span>
+
         // find the reverse distance by projection:
-        double aRev = fTu2[0][rightIdx];
-<span class="nc" id="L1183">        double bRev = fTu2[1][rightIdx];</span>
-<span class="nc" id="L1184">        double cRev = fTu2[2][rightIdx];</span>
-<span class="nc" id="L1185"></span>
-        double xL = u1[0][leftIdx];
-<span class="nc" id="L1187">        double yL = u1[1][leftIdx];</span>
-<span class="nc" id="L1188"></span>
-        double dRev = (aRev * xL + bRev * yL + cRev)
-<span class="nc" id="L1190">                / Math.sqrt(aRev * aRev + bRev * bRev);</span>
-<span class="nc" id="L1191"></span>
-        output[0] = (float) dRev;
-<span class="nc" id="L1193">        output[1] = (float) d;</span>
-<span class="nc" id="L1194">    }</span>
-<span class="nc" id="L1195"></span>
+<span class="nc" id="L1183">        double aRev = fTu2[0][rightIdx];</span>
+<span class="nc" id="L1184">        double bRev = fTu2[1][rightIdx];</span>
+<span class="nc" id="L1185">        double cRev = fTu2[2][rightIdx];</span>
+
+<span class="nc" id="L1187">        double xL = u1[0][leftIdx];</span>
+<span class="nc" id="L1188">        double yL = u1[1][leftIdx];</span>
+
+<span class="nc" id="L1190">        double dRev = (aRev * xL + bRev * yL + cRev)</span>
+<span class="nc" id="L1191">                / Math.sqrt(aRev * aRev + bRev * bRev);</span>
+
+<span class="nc" id="L1193">        output[0] = (float) dRev;</span>
+<span class="nc" id="L1194">        output[1] = (float) d;</span>
+<span class="nc" id="L1195">    }</span>
+
     public EpipolarTransformationFit calculateError(DenseMatrix fm,
         DenseMatrix x1, DenseMatrix x2, ErrorType errorType, double threshhold) {
 
-        if (errorType.equals(ErrorType.SAMPSONS)) {
-<span class="nc bnc" id="L1200" title="All 2 branches missed.">            return calculateSampsonsError(fm, x1, x2, threshhold);</span>
-<span class="nc" id="L1201">        } else {</span>
-            return calculateEpipolarDistanceError(fm, x1, x2, threshhold);
-<span class="nc" id="L1203">        }</span>
+<span class="nc bnc" id="L1200" title="All 2 branches missed.">        if (errorType.equals(ErrorType.SAMPSONS)) {</span>
+<span class="nc" id="L1201">            return calculateSampsonsError(fm, x1, x2, threshhold);</span>
+        } else {
+<span class="nc" id="L1203">            return calculateEpipolarDistanceError(fm, x1, x2, threshhold);</span>
+        }
     }
 
     public EpipolarTransformationFit calculateError(double[][] fm,
                                                     double[][] x1, double[][] x2, ErrorType errorType, double threshhold) {
 
-        if (errorType.equals(ErrorType.SAMPSONS)) {
-<span class="nc bnc" id="L1210" title="All 2 branches missed.">            return calculateSampsonsError(fm, x1, x2, threshhold);</span>
-<span class="nc" id="L1211">        } else {</span>
-            return calculateEpipolarDistanceError(fm, x1, x2, threshhold);
-<span class="nc" id="L1213">        }</span>
+<span class="nc bnc" id="L1210" title="All 2 branches missed.">        if (errorType.equals(ErrorType.SAMPSONS)) {</span>
+<span class="nc" id="L1211">            return calculateSampsonsError(fm, x1, x2, threshhold);</span>
+        } else {
+<span class="nc" id="L1213">            return calculateEpipolarDistanceError(fm, x1, x2, threshhold);</span>
+        }
     }
     
     /**
@@ -1230,11 +1231,11 @@ import no.uib.cipr.matrix.DenseMatrix;
             DenseMatrix x1, DenseMatrix x2, ErrorType errorType, 
             double chiSqStatFactor) {
 
-        if (errorType.equals(ErrorType.SAMPSONS)) {
-<span class="fc bfc" id="L1234" title="All 2 branches covered.">            return calculateSampsonsError2(fm, x1, x2, chiSqStatFactor);</span>
-<span class="fc" id="L1235">        } else {</span>
-            return calculateEpipolarDistanceError2(fm, x1, x2, chiSqStatFactor);
-<span class="fc" id="L1237">        }</span>
+<span class="fc bfc" id="L1234" title="All 2 branches covered.">        if (errorType.equals(ErrorType.SAMPSONS)) {</span>
+<span class="fc" id="L1235">            return calculateSampsonsError2(fm, x1, x2, chiSqStatFactor);</span>
+        } else {
+<span class="fc" id="L1237">            return calculateEpipolarDistanceError2(fm, x1, x2, chiSqStatFactor);</span>
+        }
     }
 
     /**
@@ -1254,11 +1255,11 @@ import no.uib.cipr.matrix.DenseMatrix;
                                                      double[][] x1, double[][] x2, ErrorType errorType,
                                                      double chiSqStatFactor) {
 
-        if (errorType.equals(ErrorType.SAMPSONS)) {
-<span class="nc bnc" id="L1258" title="All 2 branches missed.">            return calculateSampsonsError2(fm, x1, x2, chiSqStatFactor);</span>
-<span class="nc" id="L1259">        } else {</span>
-            return calculateEpipolarDistanceError2(fm, x1, x2, chiSqStatFactor);
-<span class="nc" id="L1261">        }</span>
+<span class="nc bnc" id="L1258" title="All 2 branches missed.">        if (errorType.equals(ErrorType.SAMPSONS)) {</span>
+<span class="nc" id="L1259">            return calculateSampsonsError2(fm, x1, x2, chiSqStatFactor);</span>
+        } else {
+<span class="nc" id="L1261">            return calculateEpipolarDistanceError2(fm, x1, x2, chiSqStatFactor);</span>
+        }
     }
 
     /**
@@ -1268,16 +1269,16 @@ import no.uib.cipr.matrix.DenseMatrix;
      * @return matrix of size N X 3
      */
     private double[][] repmat3(double[][] x, int rowToTransposeAndReplicate) {
-        int n = x[0].length;
-<span class="nc" id="L1272">        double[][] out = new double[n][3];</span>
-<span class="nc" id="L1273">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="nc bnc" id="L1274" title="All 2 branches missed.">            out[i] = new double[3];</span>
-<span class="nc" id="L1275">            out[i][0] = x[rowToTransposeAndReplicate][i];</span>
-<span class="nc" id="L1276">            out[i][1] = x[rowToTransposeAndReplicate][i];</span>
-<span class="nc" id="L1277">            out[i][2] = x[rowToTransposeAndReplicate][i];</span>
-<span class="nc" id="L1278">        }</span>
-        return out;
-<span class="nc" id="L1280">    }</span>
+<span class="nc" id="L1272">        int n = x[0].length;</span>
+<span class="nc" id="L1273">        double[][] out = new double[n][3];</span>
+<span class="nc bnc" id="L1274" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc" id="L1275">            out[i] = new double[3];</span>
+<span class="nc" id="L1276">            out[i][0] = x[rowToTransposeAndReplicate][i];</span>
+<span class="nc" id="L1277">            out[i][1] = x[rowToTransposeAndReplicate][i];</span>
+<span class="nc" id="L1278">            out[i][2] = x[rowToTransposeAndReplicate][i];</span>
+        }
+<span class="nc" id="L1280">        return out;</span>
+    }
     
     /**
      * performs repmat(X(rowToReplicate,:),3,1)
@@ -1286,13 +1287,13 @@ import no.uib.cipr.matrix.DenseMatrix;
      * @return matrix of size 3 X N
      */
     private double[][] repmat_3(double[][] x, int rowToReplicate) {
-        int n = x[0].length;
-<span class="nc" id="L1290">        double[][] out = new double[3][n];</span>
-<span class="nc" id="L1291">        out[0] = Arrays.copyOf(x[rowToReplicate], x[rowToReplicate].length);</span>
-<span class="nc" id="L1292">        out[1] = Arrays.copyOf(out[0], out[0].length);</span>
-<span class="nc" id="L1293">        out[2] = Arrays.copyOf(out[0], out[0].length);</span>
-<span class="nc" id="L1294">        return out;</span>
-<span class="nc" id="L1295">    }</span>
+<span class="nc" id="L1290">        int n = x[0].length;</span>
+<span class="nc" id="L1291">        double[][] out = new double[3][n];</span>
+<span class="nc" id="L1292">        out[0] = Arrays.copyOf(x[rowToReplicate], x[rowToReplicate].length);</span>
+<span class="nc" id="L1293">        out[1] = Arrays.copyOf(out[0], out[0].length);</span>
+<span class="nc" id="L1294">        out[2] = Arrays.copyOf(out[0], out[0].length);</span>
+<span class="nc" id="L1295">        return out;</span>
+    }
     
     /**
      * make an array composed of the concatenation of a, b, and c horizontally
@@ -1303,34 +1304,34 @@ import no.uib.cipr.matrix.DenseMatrix;
      * @return concatenated array of size [a.length][a[0].length + b[0].length + c[0].length]
      */
     private double[][] concatenateAsColumnBlocks(double[][] a, double[][] b, double[][] c) {
-        int n0 = a[0].length;
-<span class="nc" id="L1307">        int n1 = b[0].length;</span>
-<span class="nc" id="L1308">        int n2 = c[0].length;</span>
-<span class="nc" id="L1309">        int m = a.length;</span>
-<span class="nc" id="L1310">        if (b.length != m || c.length != m) {</span>
-<span class="nc bnc" id="L1311" title="All 4 branches missed.">            throw new IllegalArgumentException(&quot;a, b, and c must have same number of rows&quot;);</span>
-<span class="nc" id="L1312">        }</span>
-        int n = n0 + n1 + n2;
-<span class="nc" id="L1314">        int j, nc;</span>
-        double[][] out = new double[m][n];
-<span class="nc" id="L1316">        for (int i = 0; i &lt; m; ++i) {</span>
-<span class="nc bnc" id="L1317" title="All 2 branches missed.">            out[i] = new double[n];</span>
-<span class="nc" id="L1318">            nc = 0;</span>
-<span class="nc" id="L1319">            for (j = 0; j &lt; n0; ++j) {</span>
-<span class="nc bnc" id="L1320" title="All 2 branches missed.">                out[i][nc] = a[i][j];</span>
-<span class="nc" id="L1321">                nc++;</span>
-<span class="nc" id="L1322">            }</span>
-            for (j = 0; j &lt; n1; ++j) {
-<span class="nc bnc" id="L1324" title="All 2 branches missed.">                out[i][nc] = b[i][j];</span>
-<span class="nc" id="L1325">                nc++;</span>
-<span class="nc" id="L1326">            }</span>
-            for (j = 0; j &lt; n2; ++j) {
-<span class="nc bnc" id="L1328" title="All 2 branches missed.">                out[i][nc] = c[i][j];</span>
-<span class="nc" id="L1329">                nc++;</span>
-<span class="nc" id="L1330">            }</span>
+<span class="nc" id="L1307">        int n0 = a[0].length;</span>
+<span class="nc" id="L1308">        int n1 = b[0].length;</span>
+<span class="nc" id="L1309">        int n2 = c[0].length;</span>
+<span class="nc" id="L1310">        int m = a.length;</span>
+<span class="nc bnc" id="L1311" title="All 4 branches missed.">        if (b.length != m || c.length != m) {</span>
+<span class="nc" id="L1312">            throw new IllegalArgumentException(&quot;a, b, and c must have same number of rows&quot;);</span>
         }
-        return out;
-<span class="nc" id="L1333">    }</span>
+<span class="nc" id="L1314">        int n = n0 + n1 + n2;</span>
+        int j, nc;
+<span class="nc" id="L1316">        double[][] out = new double[m][n];</span>
+<span class="nc bnc" id="L1317" title="All 2 branches missed.">        for (int i = 0; i &lt; m; ++i) {</span>
+<span class="nc" id="L1318">            out[i] = new double[n];</span>
+<span class="nc" id="L1319">            nc = 0;</span>
+<span class="nc bnc" id="L1320" title="All 2 branches missed.">            for (j = 0; j &lt; n0; ++j) {</span>
+<span class="nc" id="L1321">                out[i][nc] = a[i][j];</span>
+<span class="nc" id="L1322">                nc++;</span>
+            }
+<span class="nc bnc" id="L1324" title="All 2 branches missed.">            for (j = 0; j &lt; n1; ++j) {</span>
+<span class="nc" id="L1325">                out[i][nc] = b[i][j];</span>
+<span class="nc" id="L1326">                nc++;</span>
+            }
+<span class="nc bnc" id="L1328" title="All 2 branches missed.">            for (j = 0; j &lt; n2; ++j) {</span>
+<span class="nc" id="L1329">                out[i][nc] = c[i][j];</span>
+<span class="nc" id="L1330">                nc++;</span>
+            }
+        }
+<span class="nc" id="L1333">        return out;</span>
+    }
     
     /**
      * make an array composed of the concatenation of a, b, and c vertically
@@ -1341,37 +1342,37 @@ import no.uib.cipr.matrix.DenseMatrix;
      * @return concatenated array of size [a.length + b.length + c.length][a[0].length]
      */
     private double[][] concatenateAsRowBlocks(double[][] a, double[][] b, double[][] c, double[][] d) {
-        int m0 = a.length;
-<span class="nc" id="L1345">        int m1 = b.length;</span>
-<span class="nc" id="L1346">        int m2 = c.length;</span>
-<span class="nc" id="L1347">        int m3 = d.length;</span>
-<span class="nc" id="L1348">        int n = a[0].length;</span>
-<span class="nc" id="L1349">        if (b[0].length != n || c[0].length != n || d[0].length != n) {</span>
-<span class="nc bnc" id="L1350" title="All 6 branches missed.">            throw new IllegalArgumentException(&quot;a, b, c and d must have same number of columns&quot;);</span>
-<span class="nc" id="L1351">        }</span>
-        int m = m0 + m1 + m2 + m3;
-<span class="nc" id="L1353">        int i;</span>
-        double[][] out = new double[m][n];        
-<span class="nc" id="L1355">        int mc = 0;</span>
-<span class="nc" id="L1356">        for (i = 0; i &lt; m0; ++i) {</span>
-<span class="nc bnc" id="L1357" title="All 2 branches missed.">            out[mc] = Arrays.copyOf(a[i], n);</span>
-<span class="nc" id="L1358">            mc++;</span>
-<span class="nc" id="L1359">        }</span>
-        for (i = 0; i &lt; m1; ++i) {
-<span class="nc bnc" id="L1361" title="All 2 branches missed.">            out[mc] = Arrays.copyOf(b[i], n);</span>
-<span class="nc" id="L1362">            mc++;</span>
-<span class="nc" id="L1363">        }</span>
-        for (i = 0; i &lt; m2; ++i) {
-<span class="nc bnc" id="L1365" title="All 2 branches missed.">            out[mc] = Arrays.copyOf(c[i], n);</span>
-<span class="nc" id="L1366">            mc++;</span>
-<span class="nc" id="L1367">        }</span>
-        for (i = 0; i &lt; m3; ++i) {
-<span class="nc bnc" id="L1369" title="All 2 branches missed.">            out[mc] = Arrays.copyOf(d[i], n);</span>
-<span class="nc" id="L1370">            mc++;</span>
-<span class="nc" id="L1371">        }</span>
+<span class="nc" id="L1345">        int m0 = a.length;</span>
+<span class="nc" id="L1346">        int m1 = b.length;</span>
+<span class="nc" id="L1347">        int m2 = c.length;</span>
+<span class="nc" id="L1348">        int m3 = d.length;</span>
+<span class="nc" id="L1349">        int n = a[0].length;</span>
+<span class="nc bnc" id="L1350" title="All 6 branches missed.">        if (b[0].length != n || c[0].length != n || d[0].length != n) {</span>
+<span class="nc" id="L1351">            throw new IllegalArgumentException(&quot;a, b, c and d must have same number of columns&quot;);</span>
+        }
+<span class="nc" id="L1353">        int m = m0 + m1 + m2 + m3;</span>
+        int i;
+<span class="nc" id="L1355">        double[][] out = new double[m][n];        </span>
+<span class="nc" id="L1356">        int mc = 0;</span>
+<span class="nc bnc" id="L1357" title="All 2 branches missed.">        for (i = 0; i &lt; m0; ++i) {</span>
+<span class="nc" id="L1358">            out[mc] = Arrays.copyOf(a[i], n);</span>
+<span class="nc" id="L1359">            mc++;</span>
+        }
+<span class="nc bnc" id="L1361" title="All 2 branches missed.">        for (i = 0; i &lt; m1; ++i) {</span>
+<span class="nc" id="L1362">            out[mc] = Arrays.copyOf(b[i], n);</span>
+<span class="nc" id="L1363">            mc++;</span>
+        }
+<span class="nc bnc" id="L1365" title="All 2 branches missed.">        for (i = 0; i &lt; m2; ++i) {</span>
+<span class="nc" id="L1366">            out[mc] = Arrays.copyOf(c[i], n);</span>
+<span class="nc" id="L1367">            mc++;</span>
+        }
+<span class="nc bnc" id="L1369" title="All 2 branches missed.">        for (i = 0; i &lt; m3; ++i) {</span>
+<span class="nc" id="L1370">            out[mc] = Arrays.copyOf(d[i], n);</span>
+<span class="nc" id="L1371">            mc++;</span>
+        }
         
-        return out;
-<span class="nc" id="L1374">    }</span>
+<span class="nc" id="L1374">        return out;</span>
+    }
     
     /**
      * make an array composed of the concatenation of a, b, and c vertically
@@ -1382,30 +1383,30 @@ import no.uib.cipr.matrix.DenseMatrix;
      * @return concatenated array of size [4][a.length + b.length + c.length]
      */
     private double[][] concatenateAsRows(double[] a, double[] b, double[] c, double[] d) {
-        int m0 = a.length;
-<span class="nc" id="L1386">        int m1 = b.length;</span>
-<span class="nc" id="L1387">        int m2 = c.length;</span>
-<span class="nc" id="L1388">        int m3 = d.length;</span>
-<span class="nc" id="L1389">        if (m1 != m0 || m2 != m0 || m3 != m0) {</span>
-<span class="nc bnc" id="L1390" title="All 6 branches missed.">            throw new IllegalArgumentException(&quot;a, b, c and d must have same lengths&quot;);</span>
-<span class="nc" id="L1391">        }</span>
-        double[][] out = new double[4][m0];        
-<span class="nc" id="L1393">        out[0] = Arrays.copyOf(a, m0);</span>
-<span class="nc" id="L1394">        out[1] = Arrays.copyOf(b, m0);</span>
-<span class="nc" id="L1395">        out[2] = Arrays.copyOf(c, m0);</span>
-<span class="nc" id="L1396">        out[3] = Arrays.copyOf(d, m0);</span>
-<span class="nc" id="L1397">        </span>
-        return out;
-<span class="nc" id="L1399">    }</span>
+<span class="nc" id="L1386">        int m0 = a.length;</span>
+<span class="nc" id="L1387">        int m1 = b.length;</span>
+<span class="nc" id="L1388">        int m2 = c.length;</span>
+<span class="nc" id="L1389">        int m3 = d.length;</span>
+<span class="nc bnc" id="L1390" title="All 6 branches missed.">        if (m1 != m0 || m2 != m0 || m3 != m0) {</span>
+<span class="nc" id="L1391">            throw new IllegalArgumentException(&quot;a, b, c and d must have same lengths&quot;);</span>
+        }
+<span class="nc" id="L1393">        double[][] out = new double[4][m0];        </span>
+<span class="nc" id="L1394">        out[0] = Arrays.copyOf(a, m0);</span>
+<span class="nc" id="L1395">        out[1] = Arrays.copyOf(b, m0);</span>
+<span class="nc" id="L1396">        out[2] = Arrays.copyOf(c, m0);</span>
+<span class="nc" id="L1397">        out[3] = Arrays.copyOf(d, m0);</span>
+        
+<span class="nc" id="L1399">        return out;</span>
+    }
 
     private double[] combineDistances(double[][] distances) {
-        double[] c = new double[distances[0].length];
-<span class="fc" id="L1403">        double d;</span>
-        for (int i = 0; i &lt; distances[0].length; ++i) {
-<span class="fc bfc" id="L1405" title="All 2 branches covered.">            d = distances[0][i]*distances[0][i] + distances[1][i]*distances[1][i];</span>
-<span class="fc" id="L1406">            c[i] = Math.sqrt(d);</span>
-<span class="fc" id="L1407">        }</span>
-        return c;
-<span class="fc" id="L1409">    }</span>
+<span class="fc" id="L1403">        double[] c = new double[distances[0].length];</span>
+        double d;
+<span class="fc bfc" id="L1405" title="All 2 branches covered.">        for (int i = 0; i &lt; distances[0].length; ++i) {</span>
+<span class="fc" id="L1406">            d = distances[0][i]*distances[0][i] + distances[1][i]*distances[1][i];</span>
+<span class="fc" id="L1407">            c[i] = Math.sqrt(d);</span>
+        }
+<span class="fc" id="L1409">        return c;</span>
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

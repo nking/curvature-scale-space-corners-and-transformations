@@ -328,7 +328,7 @@ based upon algorithm in paper
 <span class="nc" id="L328">            storeQDp = dp;</span>
         }
         
-<span class="pc bpc" id="L331" title="1 of 2 branches missed.">        if (rSub.getTransformationParameters() != null) {</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">        if (rSub.getTransformationParameters() != null) {</span>
        
             /*
             transX = xt0 -
@@ -344,11 +344,11 @@ based upon algorithm in paper
             // rotation shouldn't change
             // scale changes by factor dp
             
-<span class="nc" id="L347">            TransformationParameters params = rSub.getTransformationParameters().copy();</span>
-<span class="nc" id="L348">            params.setScale(params.getScale());</span>
-<span class="nc" id="L349">            params.setTranslationX(params.getTranslationX());</span>
-<span class="nc" id="L350">            params.setTranslationY(params.getTranslationY());</span>
-<span class="nc" id="L351">            r.setTransformationParameters(params);</span>
+<span class="fc" id="L347">            TransformationParameters params = rSub.getTransformationParameters().copy();</span>
+<span class="fc" id="L348">            params.setScale(params.getScale());</span>
+<span class="fc" id="L349">            params.setTranslationX(params.getTranslationX());</span>
+<span class="fc" id="L350">            params.setTranslationY(params.getTranslationY());</span>
+<span class="fc" id="L351">            r.setTransformationParameters(params);</span>
             
         }
         
@@ -1314,26 +1314,26 @@ based upon algorithm in paper
         
 <span class="fc" id="L1315">        List&lt;Integer&gt; inliers = fit.getInlierIndexes();</span>
         
-<span class="pc bpc" id="L1317" title="1 of 2 branches missed.">        if (inliers.size() &lt; n) {</span>
-<span class="nc" id="L1318">            int nOut = inliers.size();</span>
-<span class="nc" id="L1319">            TIntSet present = new TIntHashSet();</span>
-<span class="nc bnc" id="L1320" title="All 2 branches missed.">            for (int i = 0; i &lt; nOut; ++i) {</span>
-<span class="nc" id="L1321">                int idx = inliers.get(i);</span>
-<span class="nc" id="L1322">                PairInt p1 = new PairInt(left[0][idx], left[1][idx]);</span>
-<span class="nc" id="L1323">                int lIdx = pPointIndexMap.get(p1);</span>
-<span class="nc" id="L1324">                present.add(lIdx);</span>
+<span class="fc bfc" id="L1317" title="All 2 branches covered.">        if (inliers.size() &lt; n) {</span>
+<span class="fc" id="L1318">            int nOut = inliers.size();</span>
+<span class="fc" id="L1319">            TIntSet present = new TIntHashSet();</span>
+<span class="fc bfc" id="L1320" title="All 2 branches covered.">            for (int i = 0; i &lt; nOut; ++i) {</span>
+<span class="fc" id="L1321">                int idx = inliers.get(i);</span>
+<span class="fc" id="L1322">                PairInt p1 = new PairInt(left[0][idx], left[1][idx]);</span>
+<span class="fc" id="L1323">                int lIdx = pPointIndexMap.get(p1);</span>
+<span class="fc" id="L1324">                present.add(lIdx);</span>
             }
             // remove best indexes not in final output
-<span class="nc bnc" id="L1327" title="All 2 branches missed.">            for (int ii = (n - 1); ii &gt; -1; --ii) {</span>
-<span class="nc bnc" id="L1328" title="All 2 branches missed.">                if (!present.contains(ii)) {</span>
-<span class="nc" id="L1329">                    best.idx1s.removeAt(ii);</span>
-<span class="nc" id="L1330">                    best.idx2s.removeAt(ii);</span>
+<span class="fc bfc" id="L1327" title="All 2 branches covered.">            for (int ii = (n - 1); ii &gt; -1; --ii) {</span>
+<span class="fc bfc" id="L1328" title="All 2 branches covered.">                if (!present.contains(ii)) {</span>
+<span class="fc" id="L1329">                    best.idx1s.removeAt(ii);</span>
+<span class="fc" id="L1330">                    best.idx2s.removeAt(ii);</span>
                 }
             }
             
             //TODO: consider adding nearest neighbor unmatched within bounds
             
-<span class="nc" id="L1336">            populateWithChordDiffs(best, md, n1, n2);</span>
+<span class="fc" id="L1336">            populateWithChordDiffs(best, md, n1, n2);</span>
         }       
 <span class="fc" id="L1338">    }</span>
 
