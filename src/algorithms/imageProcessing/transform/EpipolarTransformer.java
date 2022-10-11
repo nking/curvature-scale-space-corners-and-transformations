@@ -895,11 +895,9 @@ public class EpipolarTransformer {
         for (DenseMatrix solution : solutions) {
             //System.out.printf("validating FM=\n%s\n", FormatArray.toString(solution, "%.3e"));
             // chirality (cheirality) check
-            DenseMatrix validated = validateSolution(solution, leftXY, rightXY);
-            if (validated == null) {
-                continue;
+            if (validateSolution(solution, leftXY, rightXY)) {
+                validatedFM.add(solution);
             }
-            validatedFM.add(solution);
         }
 
         return validatedFM;
@@ -978,7 +976,7 @@ public class EpipolarTransformer {
     * note: alternate spelling is chirality.
     */
     @SuppressWarnings({"unchecked"})
-    DenseMatrix validateSolution(DenseMatrix solution, DenseMatrix leftXY,
+    boolean validateSolution(DenseMatrix fm, DenseMatrix leftXY,
         DenseMatrix rightXY) {
         
         /*
@@ -994,10 +992,12 @@ public class EpipolarTransformer {
                 
         function OK = signs_OK(F,x1,x2)
         [u,s,v] = svd(F'); where F' is the conjugate transpose of F
-        e1 = v(:,3); <== this is e2 of svd(F)
+        e1 = v(:,3);
         l1 = vgg_contreps(e1) * x1;
         s = sum( (F*x2) .* l1 );
         OK = all(s>0) | all(s<0);
+
+        NLK: note that SVD(F^T).VT = -transpose( SVD(F).U ) and so e1 = -1 * last row of SVD(F).U
 
         'sum' is a matlab function to sum for each column
 
@@ -1015,11 +1015,12 @@ public class EpipolarTransformer {
         */
 
         // 3X3 * 3X7 = 3 X 7
-        DenseMatrix fX2 = MatrixUtil.multiply(solution, rightXY);
+        DenseMatrix fX2 = MatrixUtil.multiply(fm, rightXY);
 
         // row 0 = e1 = right camera center projected into left image reference frame
         // row 1 = e2 = left camera center projected into right image reference frame
-        double[][] leftRightEpipoles = calculateEpipoles(solution);
+        double[][] leftRightEpipoles = calculateEpipoles(fm);
+        double[] e1 = leftRightEpipoles[0];
 
         // 3 columns (x,y,1):
         //vgg_contreps of a 3X1 vector e1 is
@@ -1028,7 +1029,8 @@ public class EpipolarTransformer {
         //         e1(2) -e1(1)  0];
         //  [x y ] [x0 x1 x2 x3 x4 x5 x6]
         //         [y0 y1 y2 y3 y4 y5 y6]
-        double[][] contrepsE2 = MatrixUtil.skewSymmetric(leftRightEpipoles[1]);
+
+        double[][] contrepsE2 = MatrixUtil.skewSymmetric(e1);
         MatrixUtil.multiply(contrepsE2, -1);
 
         // sum of ( (F * x2) .*  [e2]_x*x1 )
@@ -1062,7 +1064,7 @@ public class EpipolarTransformer {
         int nLTZ = 0;
         for (int i = 0; i < sum.length; ++i) {
             if (sum[i] == 0) {
-                return null;
+                return false;
             } else if (sum[i] > 0) {
                 nGTZ++;
             } else {
@@ -1070,10 +1072,7 @@ public class EpipolarTransformer {
             }
         }
 
-        if ((nGTZ > 0 && nLTZ == 0) || (nLTZ > 0 && nGTZ == 0)) {
-            return solution;
-        }
-        return null;
+        return ((nGTZ > 0 && nLTZ == 0) || (nLTZ > 0 && nGTZ == 0));
     }
 
     /**
