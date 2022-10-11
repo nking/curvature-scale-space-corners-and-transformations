@@ -271,7 +271,8 @@ public class BundleAdjustment {
 
         //TODO: as part of "fix the gauge", need to consider the first
         //    camera to have axes aligned with world axes, so that the
-        //    origin of the world scence is [0,0,0] or [0,0,0,1]
+        //    origin of the world scene is [0,0,0] or [0,0,0,1]
+        //    NLK: see MASKS Table 6.5.
                 
         /*
         RCM is the reduced camera matrix in the augmented normal equation.
@@ -1276,6 +1277,7 @@ public class BundleAdjustment {
            "Bundle Adjustment – A Modern Synthesis"
                "Section 9 returns to the theoretical issue of gauge freedom
                 (datum deficiency), including the theory of inner constraints."
+                NLK: see MASKS Table 6.5.
         
             Section 9.2.1, Up vector selection, of Szeliski 2010
         
