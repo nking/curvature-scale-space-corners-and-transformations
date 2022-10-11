@@ -405,13 +405,13 @@ public class RANSACSolver {
                 sampleRight.set(1, count, rightCorres.get(1, bitIndex));
                 count++;
             }
-
+/*
             if (MiscMath0.areColinear(MatrixUtil.convertToRowMajor(sampleLeft), eps)
                     || MiscMath0.areColinear(MatrixUtil.convertToRowMajor(sampleRight), eps)) {
                 ++nIter;
                 continue;
             }
-
+*/
             // calculates 7-point solutions then filters using chirality checks.
             List<DenseMatrix> fms = spTransformer
                 .calculateEpipolarProjectionFor7Points(new DenseMatrix(sampleLeft), new DenseMatrix(sampleRight));

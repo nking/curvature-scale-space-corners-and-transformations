@@ -807,7 +807,6 @@ public class EpipolarTransformer {
     */
 
     /**
-     * NOT READY FOR USE YET
      * calculate the epipolar projection for 7 correspondences and filter
      * with a chirality check.  returns a list of the filtered solutions.
      * NOTE that for best results, the method should be given unit standard

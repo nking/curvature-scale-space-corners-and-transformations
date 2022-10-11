@@ -89,11 +89,11 @@ public class ORBMatcherTest extends TestCase {
                 lbl = "rot90_";
                 tolerance = 4;
             } else {
-                tolerance = 2;
+                tolerance = 1;//2;
             }
  
             for (ii = 0; ii < filePairs.length; ++ii) {
-            //for (ii = 6; ii < 7; ++ii) {
+            //for (ii = 5; ii < 6; ++ii) {
 
                 String fileName1 = filePairs[ii][0];
                 String fileName2 = filePairs[ii][1];
@@ -147,7 +147,7 @@ public class ORBMatcherTest extends TestCase {
                 if (binImages) {
                     np = 300;
                 } else {
-                    np = 600;  
+                    np = 1500;//600;
                 }
 
                 ORB orb1 = new ORB(img1GS, np);
@@ -205,8 +205,8 @@ public class ORBMatcherTest extends TestCase {
                 int idx1, idx2;
                 CorrespondencePlotter plotter = new CorrespondencePlotter(tmp1, tmp2);
                 if (fitAndCorres.mIF != null) {
-                    System.out.printf("%d) %s, #matched=%d, #filtered=%d\n", ii,
-                            lbl + fileName1Root, fitAndCorres.mI.length,
+                    System.out.printf("%d) %s, #keypoints=(%d,%d) #matched=%d, #after filter=%d\n", ii,
+                            lbl + fileName1Root, xKP1n[0].length, xKP2n[0].length, fitAndCorres.mI.length,
                             fitAndCorres.mIF.length);
                     for (i = 0; i < fitAndCorres.mIF.length; ++i) {
                         idx1 = fitAndCorres.mIF[i][0];
@@ -218,8 +218,8 @@ public class ORBMatcherTest extends TestCase {
                         plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
                     }
                 } else {
-                    System.out.printf("%d) %s, #matched=%d, but RANSAC fits failed\n", ii,
-                            lbl + fileName1Root, fitAndCorres.mI.length);
+                    System.out.printf("%d) %s, #keypoints=(%d,%d)  #matched=%d, but RANSAC fits failed\n", ii,
+                            lbl + fileName1Root, xKP1n[0].length, xKP2n[0].length, fitAndCorres.mI.length);
                     for (i = 0; i < fitAndCorres.mI.length; ++i) {
                         idx1 = fitAndCorres.mI[i][0];
                         idx2 = fitAndCorres.mI[i][1];

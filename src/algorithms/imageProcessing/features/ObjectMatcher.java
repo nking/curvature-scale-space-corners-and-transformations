@@ -57,9 +57,7 @@ public class ObjectMatcher {
         debug = true;
     }
 
-    /**
-     * NOT READY FOR USE
-     * 
+    /***
      * 
      * @param img0
      * @param shape0

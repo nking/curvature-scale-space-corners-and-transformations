@@ -25,8 +25,6 @@ import gnu.trove.set.hash.TIntHashSet;
 import no.uib.cipr.matrix.DenseMatrix;
 
 /**
- * NOT READY FOR USE.  the matchDescriptor methods are not producing
- * reasonable results currently.
  *
  * a class to hold various methods related to matching
  * the descriptors of ORB.
