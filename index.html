@@ -56,14 +56,16 @@
             </table>
         </li>
         <li>
-             Stereo image matching can be done quickly with ORB keypoints and epipolar transformations,
-             and RANSAC outlier remover.
+             A correspondence list can be made quickly with 
+             keypoints (e.g. Harris corners, inflection points, peaks in aTrous wavelets) and
+             the rotationally invariant ORB descriptors.  RANSAC is also used to further remove outliers
+             through epipolar fits.
             <table>
             <tr>
             <td>
-            <a href="images/stereo_correspondence.png">
-            <img alt="snapshots of stereo image correspondence"
-                src="images/stereo_correspondence.png"
+            <a href="images/image_correspondence.png">
+            <img alt="snapshots of image correspondence"
+                src="images/image_correspondence.png"
                 width="30" height="30"/>
             </a>
             </td>
