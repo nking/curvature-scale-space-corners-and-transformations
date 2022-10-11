@@ -4,7 +4,9 @@ import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscMath0;
 import algorithms.util.FormatArray;
 import junit.framework.TestCase;
+import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
+import no.uib.cipr.matrix.SVD;
 
 import java.io.IOException;
 
@@ -179,5 +181,21 @@ public class EpipolarNormalizationHelperTest extends TestCase {
         System.out.printf("denorm x2 =\n%s\n", FormatArray.toString(x2cD, "%.6f"));
         System.out.printf("x2 =\n%s\n", FormatArray.toString(x2, "%.6f"));
         */
+
+        SVD svd0;
+        try {
+            svd0 = SVD.factorize(new DenseMatrix(eFM));
+            SVD svdT = SVD.factorize(new DenseMatrix(MatrixUtil.transpose(eFM)));
+
+            System.out.printf("SVD(F).U=\n%s\n", svd0.getU().toString());
+            System.out.printf("SVD(F).VT=\n%s\n", svd0.getVt().toString());
+            System.out.printf("SVD(F).S=\n%s\n", FormatArray.toString(svd0.getS(), "%.3e"));
+            System.out.printf("SVD(F^T).U=\n%s\n", svdT.getU().toString());
+            System.out.printf("SVD(F^T).VT=\n%s\n", svdT.getVt().toString());
+            System.out.printf("SVD(F^T).S=\n%s\n", FormatArray.toString(svdT.getS(), "%.3e"));
+
+        } catch (Exception e) {
+
+        }
     }
 }

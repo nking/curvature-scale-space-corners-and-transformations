@@ -136,13 +136,19 @@ public class TriangulationTest extends TestCase {
         x2[1] = new double[]{443.2278534824685};
         x2[2] = new double[]{1};
         
-        double[] xw = Triangulation.calculateWCSPoint(
+        Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(
             k1Intr, k1ExtrRot, k1ExtrTrans,
             k2Intr, k2ExtrRot, k2ExtrTrans,
             x1, x2);
-        
+
+        double[] xw = wcsPt.X;
+
+        // expecting Z values between about 310 and 500
+        //  can see that in their 3D diagram on page http://robots.stanford.edu/cs223b04/JeanYvesCalib/htmls/example5.html
+        // NOTE that the cameras are located at Z of about 150.
         System.out.printf("xw=%s", FormatArray.toString(xw, "%.3e"));
-            
+        System.out.println("expecting z values between 310 and 500. " +
+                "  The cameras are at Z ~ 150.");
             
     }
     
@@ -152,7 +158,8 @@ public class TriangulationTest extends TestCase {
     public void testCalculateWCSPoint2() {
         
         //test data from:
-        //http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example5.html        
+        //http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example5.html
+        // now at http://robots.stanford.edu/cs223b04/JeanYvesCalib/
         // "Fifth calibration example - Calibrating a stereo system, stereo image rectification and 3D stereo triangulation"
         // by Jean-Yves Bouguet
         // Camera Calibration Toolbox for Matlab
@@ -250,11 +257,13 @@ public class TriangulationTest extends TestCase {
             x2[0][i] *= distortion;
             x2[1][i] *= distortion;
         }*/
-        
-        double[] xw = Triangulation.calculateWCSPoint(
+
+        Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(
             k1Intr, k1ExtrRot, k1ExtrTrans,
             k2Intr, k2ExtrRot, k2ExtrTrans,
             x1, x2);
+
+        double[] xw = wcsPt.X;
         
         double[][] camera1 = Camera.createCamera(k1Intr, k1ExtrRot, k1ExtrTrans);
         double[][] camera2 = Camera.createCamera(k2Intr, k2ExtrRot, k2ExtrTrans);
@@ -319,11 +328,13 @@ public class TriangulationTest extends TestCase {
         System.out.printf("==> %s\n", FormatArray.toString(tmp, "%.4e"));
         MatrixUtil.multiply(tmp, 1./tmp[2]);
         System.out.printf("*?? %s\n", FormatArray.toString(tmp, "%.4e"));
-        
-        xw = Triangulation.calculateWCSPoint(
+
+        wcsPt = Triangulation.calculateWCSPoint(
             k1Intr, k1ExtrRot, k1ExtrTrans,
             k2Intr, k2ExtrRot, k2ExtrTrans,
             x1, x2);
+
+        xw = wcsPt.X;
         
         System.out.printf("xw=%s\n\n", FormatArray.toString(xw, "%.3e"));
         

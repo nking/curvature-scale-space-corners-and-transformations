@@ -340,12 +340,13 @@ public class NeurochemistryBookData {
                 x0[k][0] = xi0[k][i];
                 x1[k][0] = xi1[k][i];
             }
-            
-            double[] xw = Triangulation.calculateWCSPoint(
+
+            Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(
             intr, r0, t0,
             intr, r1, t1,
             x0, x1);
-            
+
+            double[] xw = wcsPt.X;
             for (k = 0; k < 4; ++k) {
                 xw[k] /= xw[3];
             }

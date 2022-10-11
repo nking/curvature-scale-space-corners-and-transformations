@@ -236,7 +236,9 @@ public class Reconstruction {
                 x2Pt[ii][0] = x2[ii][i];
             }
             //length is 4
-            XWPt = Triangulation.calculateWCSPoint(camera1, camera2, x1Pt, x2Pt);
+
+            Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(camera1, camera2, x1Pt, x2Pt);
+            XWPt = wcsPt.X;
             for (ii = 0; ii < 4; ++ii) {
                 XW[ii][i] = XWPt[ii];
             } 
@@ -455,7 +457,8 @@ public class Reconstruction {
                 x1Pt[j][0] = x1[j][i];
                 x2Pt[j][0] = x2[j][i];
             }
-            XWPt = Triangulation.calculateWCSPoint(P1, P2, x1Pt, x2Pt);
+            Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(P1, P2, x1Pt, x2Pt);
+            XWPt = wcsPt.X;
             for (j = 0; j < 4; ++j) {
                 XW[j][i] = XWPt[j];
             }
@@ -3131,11 +3134,12 @@ public class Reconstruction {
                     x1Pt[ii][0] = x1[ii][i];
                     x2Pt[ii][0] = x2[ii][i];
                 }
-                //
-                XWPt = Triangulation.calculateWCSPoint(
+
+                Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(
                     k1, k1ExtrRot, k1ExtrTrans, 
                     k2, rTst, tTst, 
                     x1Pt, x2Pt);
+                XWPt = wcsPt.X;
                 if (XWPt[2] >= 0) {
                     nPosZ++;
                 }
