@@ -1,11 +1,8 @@
 package algorithms.imageProcessing.transform;
 
-import algorithms.SubsetChooser;
 import algorithms.misc.PolynomialRootSolver;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscMath;
-import algorithms.misc.MiscMath0;
-import algorithms.statistics.Standardization;
 import algorithms.util.PairIntArray;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,7 +11,6 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import no.uib.cipr.matrix.DenseMatrix;
-import no.uib.cipr.matrix.Matrices;
 import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.SVD;
 import algorithms.matrix.MatrixUtil.SVDProducts;
@@ -624,7 +620,7 @@ public class EpipolarTransformer {
                 "the algorithms requires 8 or more points.");
         }
         
-        double[][] m = createFundamentalMatrix(leftXY, rightXY);
+        double[][] m = createKroneckerDesignMatrix(leftXY, rightXY);
         
         /*
         compute linear least square solution:
@@ -842,7 +838,7 @@ public class EpipolarTransformer {
         }
 
         // m is [nData X 9]
-        double[][] m = createFundamentalMatrix(leftXY, rightXY);
+        double[][] m = createKroneckerDesignMatrix(leftXY, rightXY);
 
         // [9X9]
         double[][] aTa = MatrixUtil.multiply(MatrixUtil.transpose(m), m);
@@ -1662,8 +1658,8 @@ public class EpipolarTransformer {
      * second is y.
      * @return fundamental matrix of size [nPoints x 9]
      */
-    double[][] createFundamentalMatrix(DenseMatrix normXY1,
-        DenseMatrix normXY2) {
+    public static double[][] createKroneckerDesignMatrix(DenseMatrix normXY1,
+                                           DenseMatrix normXY2) {
 
         if (normXY1 == null) {
             throw new IllegalArgumentException("normXY1 cannot be null");
