@@ -87,9 +87,9 @@ public class ORBMatcherTest extends TestCase {
             String lbl = "_";
             if (rotate == 1) {
                 lbl = "rot90_";
-                tolerance = 4;
+                tolerance = 2;
             } else {
-                tolerance = 1;//2;
+                tolerance = 2;//2;
             }
  
             for (ii = 0; ii < filePairs.length; ++ii) {

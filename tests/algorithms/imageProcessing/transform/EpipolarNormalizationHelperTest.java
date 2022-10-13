@@ -102,14 +102,39 @@ public class EpipolarNormalizationHelperTest extends TestCase {
         EpipolarTransformer tr = new EpipolarTransformer();
         double[][] fm0 = tr.calculateEpipolarProjection2(x1, x2, false);
         double[][] fmN = tr.calculateEpipolarProjection2(x1c, x2c, false);
-
-        double[][] em0 = tr.calculateEpipolarProjection2(x1, x2, true);
-        //double[][] emN = tr.calculateEpipolarProjection2(x1c, x2c, true);
-
+        double[][] fmD = MatrixUtil.copy(fmN);
+        EpipolarNormalizationHelper.denormalizeFM(fmD, t1, t2);
         // fm0 resembles eFM, but scaled.
         double[][] fm0c = MatrixUtil.copy(fm0);
         double c = eFM[0][0]/fm0c[0][0];
         MatrixUtil.multiply(fm0c, c);
+        double frF0 = MatrixUtil.frobeniusNorm(fm0);
+        double frExpF0 = MatrixUtil.frobeniusNorm(eEM);
+        double c1 = frExpF0/frF0;
+
+        System.out.printf("fm0 =\n%s\n", FormatArray.toString(fm0, "%.6f"));
+        System.out.printf("fmN =\n%s\n", FormatArray.toString(fmN, "%.6f"));
+        System.out.printf("denormalized fm=\n%s\n", FormatArray.toString(fmD, "%.6f"));
+        System.out.printf("%.3e * fm0 =\n%s\n", c, FormatArray.toString(fm0c, "%.6f"));
+        System.out.printf("expected FM =\n%s\n", FormatArray.toString(eFM, "%.6f"));
+
+        EpipolarTransformer.NormalizedXY norm1 = EpipolarTransformer.normalizeUsingUnitStandard(new DenseMatrix(x1));
+        EpipolarTransformer.NormalizedXY norm2 = EpipolarTransformer.normalizeUsingUnitStandard(new DenseMatrix(x2));
+        DenseMatrix fm0MN = tr.calculateEpipolarProjection(norm1.getXy(), norm2.getXy(), false);
+        DenseMatrix fm0MND = EpipolarTransformer.denormalizeTheFundamentalMatrix(
+                fm0MN, norm1.getNormalizationMatrices(),norm2.getNormalizationMatrices());
+        DenseMatrix fm0M = tr.calculateEpipolarProjection(new DenseMatrix(x1), new DenseMatrix(x2), false);
+
+        System.out.printf("Dense fm0 =\n%s\n", fm0M.toString());
+        System.out.printf("Dense fm0 normalized =\n%s\n", fm0MN.toString());
+        System.out.printf("denormalized Dense fm0 =\n%s\n", fm0MND.toString());
+        //System.out.printf("%.3e * fm0 =\n%s\n", c, FormatArray.toString(fm0c, "%.6f"));
+        System.out.printf("expected FM =\n%s\n", FormatArray.toString(eFM, "%.6f"));
+
+        //-----
+
+        double[][] em0 = tr.calculateEpipolarProjection2(x1, x2, true);
+        //double[][] emN = tr.calculateEpipolarProjection2(x1c, x2c, true);
 
         // frobenius norm of em0
         double frE0 = MatrixUtil.frobeniusNorm(em0);
@@ -132,22 +157,11 @@ public class EpipolarNormalizationHelperTest extends TestCase {
             System.out.printf("c%d: %s\n", i, FormatArray.toString(ms, "%.3e"));
         }
         */
-        double[][] fmD = MatrixUtil.copy(fmN);
-        EpipolarNormalizationHelper.denormalizeFM(fmD, t1, t2);
 
         /*
         System.out.printf("em0 =\n%s\n", FormatArray.toString(em0, "%.6f"));
         System.out.printf("expected EM =\n%s\n", FormatArray.toString(eEM, "%.6f"));
         System.out.printf("em0c =\n%s\n", FormatArray.toString(em0c, "%.6f"));
-        */
-
-        /*
-        System.out.printf("fm0 =\n%s\n", FormatArray.toString(fm0, "%.6f"));
-        System.out.printf("fmN =\n%s\n", FormatArray.toString(fmN, "%.6f"));
-        System.out.printf("denormalized fm=\n%s\n", FormatArray.toString(fmD, "%.6f"));
-
-        System.out.printf("%.3e * fm0 =\n%s\n", c, FormatArray.toString(fm0c, "%.6f"));
-        System.out.printf("expected FM =\n%s\n", FormatArray.toString(eFM, "%.6f"));
         */
 
         int j;
@@ -182,20 +196,5 @@ public class EpipolarNormalizationHelperTest extends TestCase {
         System.out.printf("x2 =\n%s\n", FormatArray.toString(x2, "%.6f"));
         */
 
-        SVD svd0;
-        try {
-            svd0 = SVD.factorize(new DenseMatrix(eFM));
-            SVD svdT = SVD.factorize(new DenseMatrix(MatrixUtil.transpose(eFM)));
-
-            System.out.printf("SVD(F).U=\n%s\n", svd0.getU().toString());
-            System.out.printf("SVD(F).VT=\n%s\n", svd0.getVt().toString());
-            System.out.printf("SVD(F).S=\n%s\n", FormatArray.toString(svd0.getS(), "%.3e"));
-            System.out.printf("SVD(F^T).U=\n%s\n", svdT.getU().toString());
-            System.out.printf("SVD(F^T).VT=\n%s\n", svdT.getVt().toString());
-            System.out.printf("SVD(F^T).S=\n%s\n", FormatArray.toString(svdT.getS(), "%.3e"));
-
-        } catch (Exception e) {
-
-        }
     }
 }

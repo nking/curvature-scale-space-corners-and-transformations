@@ -384,7 +384,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
         
         System.out.printf("de-normalized FM=\n%s\n", 
             FormatArray.toString(fm, "%.4e"));
-        double[][] fEpipoles = tr.calculateEpipoles(fm);
+        double[][] fEpipoles = EpipolarTransformer.calculateEpipoles(fm);
 
         //nPoints X nPoints
         double[][] x2TFx1 = MatrixUtil.multiply(MatrixUtil.transpose(x2), _fm);
@@ -682,7 +682,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             FormatArray.toString(evd_fTF.getRealEigenvalues(), "%.4f"));
         
         EpipolarTransformer tr = new EpipolarTransformer();
-        double[][] leftRightE = tr.calculateEpipoles(new DenseMatrix(F));
+        double[][] leftRightE = EpipolarTransformer.calculateEpipoles(new DenseMatrix(F));
 
         System.out.printf("e1 from F = \n%s\n", FormatArray.toString(leftRightE[0], "%.4f"));
         System.out.printf("e2 from F = \n%s\n", FormatArray.toString(leftRightE[1], "%.4f"));
@@ -1476,7 +1476,7 @@ public class SVDAndEpipolarGeometryTest extends TestCase {
             FormatArray.toString(_fm, "%.4e"));
         
         EpipolarTransformer tr = new EpipolarTransformer();
-        double[][] fCheckEpipoles = tr.calculateEpipoles(new DenseMatrix(fCheck));
+        double[][] fCheckEpipoles = EpipolarTransformer.calculateEpipoles(new DenseMatrix(fCheck));
 
         System.out.printf("check left epipole = \n  %s\n",
             FormatArray.toString(fCheckEpipoles[0], "%.4e"));

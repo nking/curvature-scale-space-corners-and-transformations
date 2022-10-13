@@ -89,10 +89,11 @@ public class CameraPose {
             ell[2*i + 1] = new double[]{0, 0, 0, 0, Xi, Yi, Zi, 1, -yi*Xi, -yi*Yi, -yi*Zi, -yi};
         }
 
+        // SVD.V is 12 X 12.  SVD.U is 2n X 2n
         MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(ell);
         
-        //SVD(A).V == SVD(A^TA).V == SVD(A^TA).U
         // vT is 12X12.  last row in vT is the eigenvector for the smallest eigenvalue
+        // it is also the epipole, defined as the right nullspace
         double[] xOrth = svd.vT[svd.vT.length - 1];
                 
         // reshape into 3 X 4
@@ -100,8 +101,9 @@ public class CameraPose {
         System.arraycopy(xOrth, 0, P2[0], 0, 4);
         System.arraycopy(xOrth, 4, P2[1], 0, 4);
         System.arraycopy(xOrth, 8, P2[2], 0, 4);
-        
+
         MatrixUtil.SVDProducts svdP2 = MatrixUtil.performSVD(P2);
+
         double[] c = MatrixUtil.extractColumn(svdP2.u, 2);
         
         // assert P2*c = 0
@@ -115,7 +117,8 @@ public class CameraPose {
         from the front 3 ⇥ 3 sub-matrix of P using RQ factorization 
         (Golub and Van Loan 1996)
         */
-        
+
+        // [3X3]
         double[][] M = MatrixUtil.copySubMatrix(P2, 0, 2, 0, 2);
         RQ rq = RQ.factorize(new DenseMatrix(M));
         
@@ -126,13 +129,24 @@ public class CameraPose {
         
         double[][] kIntr = MatrixUtil.convertToRowMajor(rq.getR());
         MatrixUtil.multiply(kIntr, 1./kIntr[2][2]);
-            
+
         double[][] kExtrRot = MatrixUtil.convertToRowMajor(rq.getQ());
         System.out.printf("  decomposed into intrinsic=\n   %s\n", FormatArray.toString(kIntr, "%.3e"));
         System.out.printf("  decomposed into extrinsic rotation=\n   %s\n", FormatArray.toString(kExtrRot, "%.3e"));
-            
         System.out.printf("  decomposed into extrinsic translation=\n   %s\n", FormatArray.toString(c, "%.3e"));
-        
+
+        if (kIntr[0][0] < 0) {
+            // from vgg_multiview/vgg_KR_from_P.m
+            // TODO: put copyright information here
+            double[][] diag = MatrixUtil.createIdentityMatrix(3);
+            diag[0][0] = -1;
+            diag[1][1] = -1;
+            kIntr = MatrixUtil.multiply(kIntr, diag);
+            kExtrRot = MatrixUtil.multiply(diag, kExtrRot);
+            System.out.printf("  decomposed into intrinsic=\n   %s\n", FormatArray.toString(kIntr, "%.3e"));
+            System.out.printf("  decomposed into extrinsic rotation=\n   %s\n", FormatArray.toString(kExtrRot, "%.3e"));
+        }
+
         CameraExtrinsicParameters extrinsics = new CameraExtrinsicParameters();
         extrinsics.setRotation(kExtrRot);
         extrinsics.setTranslation(c);

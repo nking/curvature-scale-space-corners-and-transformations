@@ -10,12 +10,16 @@ import static algorithms.imageProcessing.transform.CameraPose.eps;
 import algorithms.matrix.LinearEquations;
 import algorithms.matrix.MatrixUtil;
 import algorithms.matrix.MatrixUtil.SVDProducts;
+import algorithms.sort.MiscSorter;
 import algorithms.util.FormatArray;
 import java.util.Arrays;
 import java.util.List;
+import java.util.TreeMap;
+
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.EVD;
 import no.uib.cipr.matrix.NotConvergedException;
+import no.uib.cipr.matrix.SVD;
 
 /**
  * given correspondence between two images calculate the camera
@@ -251,6 +255,8 @@ public class Reconstruction {
     }
     
     /**
+     * estimate the projection matrices P1 and P2 and triangulate the points x1 and x2 into the WCS object
+     * using epipolar geometry.
      * This is also called Projective Structure From Motion for the
      * Two-camera case.   it's a distorted version of euclidean 3d.
      * 
@@ -281,16 +287,19 @@ public class Reconstruction {
      * N is the number of points.
      * NOTE: since intrinsic parameters are not known, users of this method should 
      * presumably center the coordinates in some manner 
-     * (e.g. subtract the image center or centroid of points) since internally
+     * (e.g. unit standard normalization) since internally
      * an identity matrix is used for K.  
-     * @param x2 the image 2 set of correspondence points.  format is 3 x N where
-     * N is the number of points.
-     * NOTE: since intrinsic parameters are not known, users of this method should 
-     * presumably center the coordinates in some manner 
-     * (e.g. subtract the image center or centroid of points).
-     * @return the estimated projections P1 and P2 and the objects locations as 3-D points;
+     * @param x2 the image 1 set of correspondence points.  format is 3 x N where
+     *      * N is the number of points.
+     *      * NOTE: since intrinsic parameters are not known, users of this method should
+     *      * presumably center the coordinates in some manner
+     *      * (e.g. unit standard normalization) since internally
+     *      * an identity matrix is used for K.
+     * @return the estimated projections P1 and P2 and the objects locations as 3-D points.
+     * Note that if normalization was performed on x1, and x2, you maywant to
+     * denormalize the translation column of P2 which is the last column of P2.
      */
-    public static ProjectionResults calculateProjectiveReconstruction(
+    public static ProjectionResults calculateProjectiveReconstruction0(
         double[][] x1, double[][] x2) throws NotConvergedException {
                         
         if (x1.length != 3 || x2.length != 3) {
@@ -307,7 +316,7 @@ public class Reconstruction {
         /*
         Similar to CameraPose.calculateUsingEssentialMatrix()
         except for use of uncalibrated points and use of a different diagonal
-        in constrcting the fundamental matrix.
+        in constructing the fundamental matrix.
                         
         http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
         
@@ -315,54 +324,29 @@ public class Reconstruction {
         (2) compute the camera matrices P1, P2 from FM.
         (3) For each point correspondence, compute the point X in 3D space (triangularization)
         
-        see also notes above from notes from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
+        see also notes above from notes from Serge Belongie/Kris Katani lectures from Computer Vision II, CSE 252B, USSD
         */
-        
+
         DenseMatrix x1M = new DenseMatrix(x1);
         DenseMatrix x2M = new DenseMatrix(x2);
-        
-        EpipolarTransformer.NormalizedXY normXY1 = EpipolarTransformer.normalize(x1M);
-        EpipolarTransformer.NormalizedXY normXY2 = EpipolarTransformer.normalize(x2M);
-        DenseMatrix leftM = normXY1.getXy();
-        DenseMatrix rightM = normXY2.getXy();
-        
+
         double tolerance = 3.84; //3.84 5.99 7.82        
         boolean useToleranceAsStatFactor = true;
         ErrorType errorType = ErrorType.SAMPSONS;
-        EpipolarTransformationFit fitR = null;
-        
         boolean reCalcIterations = true;
-        
-        //EpipolarTransformer tr = new EpipolarTransformer();
-        
-        /*
-        DenseMatrix normalizedFM = tr.calculateEpipolarProjection(leftM, rightM);
-        DenseMatrix vNFM = tr.validateSolution(normalizedFM, leftM, rightM);
-        
-        Distances distances = new Distances();
-        if (useToleranceAsStatFactor) {
-            fitR = distances.calculateError2(normalizedFM, leftM, rightM,
-                    errorType, tolerance);
-        } else {
-            fitR = distances.calculateError(normalizedFM, leftM, rightM,
-                    errorType, tolerance);
-        }
-        */
-        
         boolean calibrated = false;
-                
+
+        EpipolarTransformationFit fitR = null;
         RANSACSolver solver = new RANSACSolver();
+
         fitR = solver.calculateEpipolarProjection(
-            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
+            x1M, x2M, errorType, useToleranceAsStatFactor, tolerance,
                 reCalcIterations, calibrated);
-        
-        DenseMatrix fm = EpipolarTransformer.denormalizeTheFundamentalMatrix(
-            fitR.getFundamentalMatrix(), 
-            normXY1.getNormalizationMatrices(),
-            normXY2.getNormalizationMatrices());
-        
-        double[][] _fm = MatrixUtil.convertToRowMajor(fm);
-        
+
+        if (fitR == null) {
+            return null;
+        }
+
         x1M = extractIndices(x1M, fitR.inlierIndexes);
         x2M = extractIndices(x2M, fitR.inlierIndexes);
         x1 = MatrixUtil.convertToRowMajor(x1M);
@@ -373,17 +357,13 @@ public class Reconstruction {
         System.out.println("RANSAC fit=" + fitR.toString());
         
         //(2) compute the camera matrices P1, P2 from FM.
+        SVD svd = SVD.factorize(fitR.getFundamentalMatrix());
+        double detU = MatrixUtil.determinant(svd.getU());
+        double detV = MatrixUtil.determinant(svd.getVt());
         
-        MatrixUtil.SVDProducts svdF = MatrixUtil.performSVD(_fm);
-        
-        assert(svdF.u[0].length == 3 && svdF.u.length == 3);
-        
-        double detU = MatrixUtil.determinant(svdF.u);
-        double detV = MatrixUtil.determinant(svdF.vT);
-        
-        System.out.printf("SVD.u=\n%s\n", FormatArray.toString(svdF.u, "%.3e"));
-        System.out.printf("SVD.s=\n%s\n", FormatArray.toString(svdF.s, "%.3e"));
-        System.out.printf("SVD.vT=\n%s\n", FormatArray.toString(svdF.vT, "%.3e"));
+        System.out.printf("SVD.u=\n%s\n", svd.getU().toString());
+        System.out.printf("SVD.s=\n%s\n", FormatArray.toString(svd.getS(), "%.3e"));
+        System.out.printf("SVD.vT=\n%s\n", svd.getVt().toString());
         System.out.printf("det(SVD.u)=%.2f\n", detU);
         System.out.printf("det(SVD.vT)=%.2f\n", detV);
         
@@ -392,17 +372,20 @@ public class Reconstruction {
         r90T[0] = new double[]{0, 1, 0};
         r90T[1] = new double[]{-1, 0, 0};
         r90T[2] = new double[]{0, 0, 1};
-        
+
+        double[][] vT = MatrixUtil.convertToRowMajor(svd.getVt());
+        double[][] u = MatrixUtil.convertToRowMajor(svd.getU());
         double[][] h = MatrixUtil.multiply(
-            MatrixUtil.multiplyByDiagonal(
-                MatrixUtil.multiply(svdF.u, r90T),
-                new double[]{svdF.s[0], svdF.s[1], svdF.s[2]}),
-            svdF.vT);
+            MatrixUtil.multiplyByDiagonal(MatrixUtil.multiply(u, r90T), svd.getS()),
+            vT);
         
         // last column in u is the second epipole and is the direction of vector t
-        double[] t1 = MatrixUtil.extractColumn(svdF.u, 2);
+        //double[] leftNullspace = MatrixUtil.extractColumn(svdF.u, 2);
+        //double[] rightNullspace = Arrays.copyOf(svdF.vT[2], 3);
+
+        double[] t1 = MatrixUtil.extractColumn(u, 2);
         double[] e2 = t1;
-        double[] e1 = svdF.vT[2];
+        double[] e1 = vT[2];
         
         System.out.printf("e1=%s\n", FormatArray.toString(e1, "%.3e"));
         System.out.printf("e2=%s\n", FormatArray.toString(e2, "%.3e"));
@@ -420,38 +403,32 @@ public class Reconstruction {
         //    note that slide 59 of http://16720.courses.cs.cmu.edu/lec/sfm.pdf
         //    also uses the Hartley & Zisserman: version of P2 and refers to proof in 
         //    Forsyth & Ponce Sec 8.3
-        // Belongie uses P2 = [ [e2]_x^T * F | e2 ] and so does Ma et al. textbook (msks, "Invitation to 3D"
+        //
+        // vgg_multiview/vgg_P_from_F.m
+        //     P = -[e’]_x * F * e'
+        //     where e’ is the left null space of F, that is,
+        //     e’ = SVD(F).U(:,3);
+        //
+        // Belongie uses P2 = [ [e2]_x^T * F | e2 ]
         // 
-        
-        // NOTE: not necessary to normalize the epipoles by the last value
-        
+
         double[][] camera2 = MatrixUtil.zeros(3, 4);
         for (int i = 0; i < 3; ++i) {
-            camera2[i] = new double[4];
             System.arraycopy(h[i], 0, camera2[i], 0, 3);
-            camera2[i][3] = e2[i];
+            camera2[i][3] = e2[i]; // Katani doesn't normalize this by e[2], nor does Hartley
         }
         
         System.out.printf("Szeliski P2\n%s\n", FormatArray.toString(camera2, "%.3e"));
         
         CameraProjection P1 = new CameraProjection(camera1);
         CameraProjection P2 = new CameraProjection(camera2);
-        
-        double[][] XW;
+
+        double[][] XW = MatrixUtil.zeros(4, n);
         double[] XWPt;
-        XW = new double[4][n];
-        for (int i = 0; i < 4; ++i) {
-            XW[i] = new double[n];
-        }
-        
-        double[][] x1Pt = new double[3][1];
-        double[][] x2Pt = new double[3][1];
+        double[][] x1Pt = MatrixUtil.zeros(3, 1);
+        double[][] x2Pt = MatrixUtil.zeros(3, 1);
+
         int i, j;
-        for (i = 0; i < 3; ++i) {
-            x1Pt[i] = new double[1];
-            x2Pt[i] = new double[1];
-        }
-        
         for (i = 0; i < n; ++i) {
             for (j = 0; j < 3; ++j) {
                 x1Pt[j][0] = x1[j][i];
@@ -464,7 +441,7 @@ public class Reconstruction {
             }
         }
         
-        System.out.printf("Szeliski reconstruction\n%s\n", FormatArray.toString(XW, "%.3e"));
+        //System.out.printf("Szeliski reconstruction\n%s\n", FormatArray.toString(XW, "%.3e"));
         
         ProjectionResults rr = new ProjectionResults();
         rr.XW = XW;
@@ -477,7 +454,312 @@ public class Reconstruction {
         }
         return rr;
     }
-   
+
+    /**
+     * estimate the projection matrices P1 and P2 and triangulate the points x1 and x2 into the WCS object
+     * using planar homography.
+     * This is also called Projective Structure From Motion for the
+     * Two-camera case.   it's a distorted version of euclidean 3d.
+     *
+     * NOTE that because the camera calibration, that is, intrinsic parameters,
+     * are not known, only the projective reconstruction is possible,
+     * but this can be upgraded to
+     affine (parallelism preserved) and Euclidean (parallelism and orthogonality preserved)
+     reconstructions.
+     To upgrade to an affine projection, need 3 vanishing points
+     (see Example 6.5 of MASKS).
+     To directly upgrade from projective to euclidean projection, need
+     5 ground truth points in general position, that is, no 4 points
+     are coplanar (see Section 9.3 of Belongie lec 9. and MASKS chap 5 "Historical Notes" and Algorithm 11.7).
+
+     * <pre>
+     * following "An Invitation to 3-D Vision" by Ma,  Soatto,  Kosecká, and Sastry
+     * noted as MASKS.
+     * Algorithm 5.2 in Chapter 5 and their code homography2Motion.m from
+     * https://cs.gmu.edu/~kosecka/bookcode.html
+     * which is free for non-commercial use.
+     * </pre>
+     * @param x1 the image 1 set of correspondence points.  format is 3 x N where
+     * N is the number of points.
+     * NOTE: since intrinsic parameters are not known, users of this method should
+     * presumably center the coordinates in some manner
+     * (e.g. unit standard normalization) since internally
+     * an identity matrix is used for K.
+     * @param x2 the image 1 set of correspondence points.  format is 3 x N where
+     *      * N is the number of points.
+     *      * NOTE: since intrinsic parameters are not known, users of this method should
+     *      * presumably center the coordinates in some manner
+     *      * (e.g. unit standard normalization) since internally
+     *      * an identity matrix is used for K.
+     * @return the top 2 solutions for the set of {estimated projections P1 and P2, and the triangulation of x1 and x2 in WCS}
+     * Note that if normalization was performed on x1, and x2, you may want to
+     * denormalize the results such as the translation column of P2 which is the last column of P2.
+     */
+    public static ProjectionResults[] calculateProjectiveReconstruction1(
+            double[][] x1, double[][] x2) throws NotConvergedException {
+
+        if (x1.length != 3 || x2.length != 3) {
+            throw new IllegalArgumentException("x1.length must be 3 and so must x2.length");
+        }
+        int n0 = x1[0].length;
+        if (x2[0].length != n0) {
+            throw new IllegalArgumentException("x1 and x2 must be same dimensions");
+        }
+        if (n0 < 4) {
+            throw new IllegalArgumentException("need at least 4 points to solve for the homography");
+        }
+
+        int n = x1[0].length;
+        int i, j;
+
+        // just in case, normalize so that z=1
+        x1 = MatrixUtil.copy(x1);
+        x2 = MatrixUtil.copy(x2);
+        for (i = 0; i < n; ++i) {
+            for (j = 0; j < 3; ++j) {
+                x1[j][i] /= x1[2][i];
+                x2[j][i] /= x2[2][i];
+            }
+        }
+
+        // camera matrix P for left image = [I | 0 ]
+        double[][] camera1 = MatrixUtil.zeros(3, 4);
+        for (i = 0; i < 3; ++i) {
+            camera1[i][i] = 1;
+        }
+
+        /*
+        MASKS Chapter 5 and homography2Motion.m
+
+        4 - point pairs homography with constraint that no 3 of the 4 are collinear.
+        (1) normalize the homography Lemma 5.18 of Masks, end of Section 5.3.2.
+        (2) decompose the planar homography into motion and structure parameters
+             (R, (1/d)*T, N) where R is the rotation matrix transforming frame 1 to frame 2,
+             T is the translation vector transforming frame 1 into frame 2,
+             d is the distance from the world coordinate plane P to the optical center of the first camera,
+             d > 0, and N is the unit normal vector of the plane P with respect to
+             the first camera frame.
+        see Figure 5.10 of MASKS.
+         */
+
+        double[][] ell = new double[2*n][12];
+        for (i = 0; i < n; ++i) {
+            ell[2*i] = new double[]{0, 0, 0, -x1[0][i], -x1[1][i], -1, -x2[1][i]*x1[0][i], -x2[1][i]*x1[1][i], -x2[1][i]};
+            ell[2*i + 1] = new double[]{x1[0][i], x1[1][i], 1, 0, 0, 0, -x2[0][i]*x1[0][i], -x2[0][i]*x1[1][i], -x2[0][i]};
+        }
+
+        SVD svd = SVD.factorize(new DenseMatrix(ell));
+        double[][] vT = MatrixUtil.convertToRowMajor(svd.getVt());
+        double[][] u;
+        // 1
+        // 2
+        // 3
+        int n2 = vT.length;//9
+        double[][] hEst = new double[3][3];
+        for (i = 0; i < 3; i++) {
+            hEst[i] = new double[3];
+            hEst[i][0] = vT[n2 - 1][(i * 3) + 0];
+            hEst[i][1] = vT[n2 - 1][(i * 3) + 1];
+            hEst[i][2] = vT[n2 - 1][(i * 3) + 2];
+        }
+
+        //decomposition of H into motion and structure in case of calibration case
+        svd = SVD.factorize(new DenseMatrix(hEst));
+        //System.out.printf("SVD(hEst).U=\n%s\n", svd.getU().toString());
+        //System.out.printf("SVD(hEst).VT=\n%s\n", svd.getVt().toString());
+        //System.out.printf("SVD(hEst).s=\n%s\n", Arrays.toString(svd.getS()));
+
+        double[][] h = MatrixUtil.copy(hEst);
+        MatrixUtil.multiply(h, 1./svd.getS()[1]);
+
+        // U and V here are equal SVD(hEst).V because SVD(A^T*A).VT == SVD(A^T*A).U == SVD(A).VT
+        svd = SVD.factorize(new DenseMatrix(MatrixUtil.createATransposedTimesA(h)));
+        //System.out.printf("SVD(const* hEst^T * hEst ).U=\n%s\n", svd.getU().toString());
+        //System.out.printf("SVD(const* hEst^T * hEst ).VT=\n%s\n", svd.getVt().toString());
+        //System.out.printf("SVD(const* hEst^T * hEst ).s=\n%s\n", Arrays.toString(svd.getS()));
+
+        u = MatrixUtil.convertToRowMajor(svd.getU());
+        // check that the 2nd singular value of H^T*H is "1"
+        assert(Math.abs(svd.getS()[1] - 1) < 1E-3);
+        if (MatrixUtil.determinant(u) < 0) {
+            MatrixUtil.multiply(u, -1);
+        }
+        // V1, V2, V3 are the e2 from SVD(H^T*H), which is V from SVD(H)
+        double[][] uT = MatrixUtil.transpose(u);
+        double[] v1 = uT[0];
+        double[] v2 = uT[1];
+        double[] v3 = uT[2];
+
+        //v1*sqrt(1-s3)
+        double[] v1t0 = Arrays.copyOf(v1, v1.length);
+        MatrixUtil.multiply(v1t0, Math.sqrt(1.-svd.getS()[2]));
+
+        //v3*sqrt(s1 -1)
+        double[] v3t0 = Arrays.copyOf(v3, v3.length);
+        MatrixUtil.multiply(v3t0, Math.sqrt(svd.getS()[0] - 1.));
+
+        double s1s3 = 1./Math.sqrt(svd.getS()[0] - svd.getS()[2]);
+
+        if (Double.isNaN(s1s3)) {
+            // should not happen
+            return null;
+        }
+
+        double[] u1 = Arrays.copyOf(v1t0, v1t0.length);
+        u1 = MatrixUtil.add(u1, v3t0);
+        MatrixUtil.multiply(u1, s1s3);
+
+        double[] u2 = Arrays.copyOf(v1t0, v1t0.length);
+        u2 = MatrixUtil.subtract(u2, v3t0);
+        MatrixUtil.multiply(u2, s1s3);
+
+        double[] sv2u1 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.skewSymmetric(v2), u1);
+        double[] sv2u2 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.skewSymmetric(v2), u2);
+        double[] hv2 = MatrixUtil.multiplyMatrixByColumnVector(h, v2);
+        double[] hu1 = MatrixUtil.multiplyMatrixByColumnVector(h, u1);
+        double[] hu2 = MatrixUtil.multiplyMatrixByColumnVector(h, u2);
+        double[][] shv2 = MatrixUtil.skewSymmetric(hv2);
+        double[] shv2hu1 = MatrixUtil.multiplyMatrixByColumnVector(shv2, hu1);
+        double[] shv2hu2 = MatrixUtil.multiplyMatrixByColumnVector(shv2, hu2);
+
+        double[][] U1 = new double[3][3];
+        U1[0] = Arrays.copyOf(v2, v2.length);
+        U1[1] = Arrays.copyOf(u1, u1.length);
+        U1[2] = Arrays.copyOf(sv2u1, sv2u1.length);
+
+        double[][] U2 = new double[3][3];
+        U2[0] = Arrays.copyOf(v2, v2.length);
+        U2[1] = Arrays.copyOf(u2, u2.length);
+        U2[2] = Arrays.copyOf(sv2u2, sv2u2.length);
+
+        double[][] W1 = new double[3][3];
+        W1[0] = Arrays.copyOf(hv2, hv2.length);
+        W1[1] = Arrays.copyOf(hu1, hu1.length);
+        W1[2] = Arrays.copyOf(shv2hu1, shv2hu1.length);
+
+        double[][] W2 = new double[3][3];
+        W2[0] = Arrays.copyOf(hv2, hv2.length);
+        W2[1] = Arrays.copyOf(hu2, hu2.length);
+        W2[2] = Arrays.copyOf(shv2hu2, shv2hu2.length);
+
+        double[] N1 = Arrays.copyOf(sv2u1, sv2u1.length);
+        double[] N2 = Arrays.copyOf(sv2u2, sv2u2.length);
+
+        //the 2 which have N^T*e3 = n3 > 0 pass the positive depth constraint.
+        // that is, solutions with n1[2] > 0 or n2[2] > 0 are in front of the camera.
+
+        //H = +- (R + (1/d)T*N^T).
+        /*
+        (R, (1/d)*T, N) where R is the rotation matrix transforming frame 1 to frame 2,
+             T is the translation vector transforming frame 1 into frame 2,
+             d is the distance from the world coordinate plane P to the optical center of the first camera,
+             d > 0, and N is the unit normal vector of the plane P with respect to
+             the first camera frame.
+         */
+        double[][] W1U1T = MatrixUtil.multiply(W1, MatrixUtil.transpose(U1));
+        double[][] W2U2T = MatrixUtil.multiply(W2, MatrixUtil.transpose(U2));
+
+        MotionAndStructure[] ms = new MotionAndStructure[4];
+        ms[0] = new MotionAndStructure();
+        ms[0].r = MatrixUtil.copy(W1U1T);
+        ms[0].tDivD = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.pointwiseSubtract(h, W1U1T), N1);
+        ms[0].nHat = Arrays.copyOf(N1, N1.length);
+
+        ms[1] = new MotionAndStructure();
+        ms[1].r = MatrixUtil.copy(W2U2T);
+        ms[1].tDivD = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.pointwiseSubtract(h, W2U2T), N2);
+        ms[1].nHat = Arrays.copyOf(N2, N2.length);
+
+        ms[2] = new MotionAndStructure();
+        ms[2].r = MatrixUtil.copy(W1U1T);
+        ms[2].tDivD = Arrays.copyOf(ms[0].tDivD, ms[0].tDivD.length);
+        MatrixUtil.multiply(ms[2].tDivD, -1);
+        ms[2].nHat = Arrays.copyOf(N1, N1.length);
+        MatrixUtil.multiply(ms[2].nHat, -1);
+
+        ms[3] = new MotionAndStructure();
+        ms[3].r = MatrixUtil.copy(W2U2T);
+        ms[3].tDivD = Arrays.copyOf(ms[1].tDivD, ms[1].tDivD.length);
+        MatrixUtil.multiply(ms[3].tDivD, -1);
+        ms[3].nHat = Arrays.copyOf(N2, N2.length);
+        MatrixUtil.multiply(ms[3].nHat, -1);
+
+        //H = +- (R+ (1/d)T*N^T)
+        //x2 ~ H * x1
+        // and [x2]_x * H * x1 = 0
+
+        // find the 2 solutions which project points in front of the cameras
+
+        ProjectionResults[] results = new ProjectionResults[4];
+
+        double[][] x1Pt = MatrixUtil.zeros(3, 1);
+        double[][] x2Pt = MatrixUtil.zeros(3, 1);
+
+        double[][] camera2 = MatrixUtil.zeros(3, 4);
+        double[][] h2;
+        int[] countZ = new int[4];
+        int[] idxs = new int[4];
+        for (i = 0; i < ms.length; ++i) {
+            System.out.printf("%d) N=%s\n", i, FormatArray.toString(ms[i].nHat, "%.3e"));
+            // form projection matrix for camera2 from ms[i].   H = (R+ (1/d)T*N^T)
+            h2 = MatrixUtil.outerProduct(ms[i].tDivD, ms[i].nHat);
+            h2 = MatrixUtil.pointwiseAdd(ms[i].r, h2);
+            for (j = 0; j < 3; ++j) {
+                System.arraycopy(h2[j], 0, camera2[j], 0, 3);
+                // camera2_2[j][3] = e2[j];
+                camera2[j][3] = v3[j];
+            }
+            results[i] = new ProjectionResults();
+            results[i].XW = MatrixUtil.zeros(4, n);
+            results[i].projectionMatrices = MatrixUtil.zeros(3*2, 4);
+            for (j = 0; j < 3; ++j) {
+                System.arraycopy(camera1[j], 0, results[i].projectionMatrices[j], 0, 4);
+                System.arraycopy(camera2[j], 0, results[i].projectionMatrices[3 + j], 0, 4);
+            }
+            System.out.printf("Solution %d) camera2_2=\n%s\n", i, FormatArray.toString(camera2, "%.3e"));
+
+            //triangulation to look at depth
+            for (int ii = 0; ii < n; ++ii) {
+                for (j = 0; j < 3; ++j) {
+                    x1Pt[j][0] = x1[j][ii];
+                    x2Pt[j][0] = x2[j][ii];
+                }
+                Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(camera1, camera2, x1Pt, x2Pt);
+                if (wcsPt == null) {
+                    continue;
+                }
+                MatrixUtil.multiply(wcsPt.X, 1./wcsPt.X[3]);
+                if (wcsPt.X[2] > 0) {
+                    ++countZ[i];
+                }
+                for (j = 0; j < 4; ++j) {
+                    results[i].XW[j][ii] = wcsPt.X[j];
+                }
+            }
+            idxs[i] = i;
+            System.out.printf("%d) count(z>0)=%d out of %d\n\n", i, countZ[i], n);
+        }
+
+        // ascending sort, so take the last 2
+        MiscSorter.sortBy1stArg(countZ, idxs);
+        ProjectionResults[] r2 = new ProjectionResults[2];
+        r2[0] = new ProjectionResults();
+        r2[0].projectionMatrices = MatrixUtil.copy(results[idxs[3]].projectionMatrices);
+        r2[0].XW = MatrixUtil.copy(results[idxs[3]].XW);
+        r2[1] = new ProjectionResults();
+        r2[1].projectionMatrices = MatrixUtil.copy(results[idxs[2]].projectionMatrices);
+        r2[1].XW = MatrixUtil.copy(results[idxs[2]].XW);
+
+        /*
+        Sol(:,:,1) = [W1*U1', (H - W1*U1')*N1, N1];
+ Sol(:,:,2) = [W2*U2', (H - W2*U2')*N2, N2];
+ Sol(:,:,3) = [W1*U1', -(H - W1*U1')*N1, -N1];
+ Sol(:,:,4) = [W2*U2', -(H - W2*U2')*N2, -N2];
+         */
+
+        return r2;
+    }
+
     /**
      * TODO: proof read the algorithm and write test for this.
      * for the case of un-calibrated cameras viewing the same scene features,
@@ -529,7 +811,11 @@ public class Reconstruction {
      */
     public static ProjectionResults calculateProjectiveReconstruction(
         double[][] x, int mImages) throws NotConvergedException {
-                        
+
+        //TODO: fix this.
+        // normalization should be performed by caller of the method and advice to denormalize translation results.
+        //
+
         if (x.length != 2) {
             throw new IllegalArgumentException("x.length must be 2");
         }
@@ -627,9 +913,9 @@ public class Reconstruction {
             int nFeaturesI = x1[0].length;
             */
             
-            // note: e12 is not normalized by last component
-            calculateLeftEpipole(fit.getFundamentalMatrix(), e12);
-            
+            // calc left epipole
+            e12 = EpipolarTransformer.calculateEpipoles(fit.getFundamentalMatrix())[1];
+
             for (j = 0; j < nFeatures; ++j) {
                 extractColumn(x1, j, x1p);
                 extractColumn(x2, j, x2p);
@@ -2421,33 +2707,6 @@ public class Reconstruction {
         return xN;
     }
 
-    private static void calculateLeftEpipole(DenseMatrix fundamentalMatrix,
-        double[] outputE01) throws NotConvergedException {
-        
-        if (outputE01.length != 3) {
-            throw new IllegalArgumentException("outputE01 length must be 3");
-        }
-        
-        SVDProducts svdE = MatrixUtil.performSVD(fundamentalMatrix);
-        
-        /*
-         The left epipole is e1 = last column of U / last item of that column
-         It is  the left image position of the epipolar projection of the right camera center
-         The right epipole e2 = last row of V / last item of that row
-         It is the right image position of the epipolar projection of the left camera center
-        */
-        
-        assert(svdE.u[0].length == 3);
-        assert(svdE.u.length == 3);
-        assert(svdE.vT[0].length == 3);
-        assert(svdE.vT.length == 3);
-        
-        //double e1Div = svdE.vT[2][2];
-        for (int i = 0; i < 3; i++) {
-            outputE01[i] = svdE.vT[2][i];///e1Div;
-        }
-    }
-
     private static void extractColumn(double[][] x, int idx, double[] outputPoint) {
         outputPoint[0] = x[0][idx];
         outputPoint[1] = x[1][idx];
@@ -2720,7 +2979,10 @@ public class Reconstruction {
         /*
         Compute the least-squares solution v from equation (11.30) using the
         set of matched feature points, and determine the matching homography
-        
+
+        e1 = right nullspace of FM = SVD(fm).V[*,2]
+        e2 = left nullspace of FM = SVD(fm).U[*,2]
+
             [x2]_x*H*x1 = [x2]_x*( ([e2]_x)^T * F + e2*v^T)*x1 ~ 0
             fit for v=[v0,v1,v2]^T w/ total least squares
         that is minarg_v( summation_over_j( || [x2]_x*( ([e2]_x)^T * F + e2*v^T)*x1 ||^2)
@@ -2979,6 +3241,26 @@ public class Reconstruction {
             }
             return p;
         }
+    }
+
+    public static class MotionAndStructure {
+
+        /**
+         r is the rotation matrix transforming frame 1 to frame 2,
+         */
+        public double[][] r;
+        /**
+         tDivD is t / d where
+         t is the translation vector transforming frame 1 into frame 2.
+         d is the distance from the world coordinate plane P to the optical center of the first camera and is > 0.
+         */
+        public double[] tDivD;
+
+        /**
+         * nHat is the unit normal vector of the plane P with respect to the first camera frame.
+         */
+        public double[] nHat;
+
     }
 
     public static class ReconstructionResults {

@@ -33,11 +33,36 @@ public class ReconstructionTest extends TestCase {
     
     public ReconstructionTest() {
     }
-    
-      /**
-     * Test of calculateUsingEssentialMatrix method, of class CameraPose.
-     */
-    public void testCalculateUsingEssentialMatrix() throws Exception {
+
+    public void testCalculateProjectiveReconstruction() throws Exception {
+        System.out.println("testCalculateProjectiveReconstruction");
+
+        double[][] k1 = Zhang98Data.getIntrinsicCameraMatrix();
+        double[][] k2 = MatrixUtil.copy(k1);
+        //x1, x2 size is 3 X 256
+        double[][] x1 = Zhang98Data.getObservedFeaturesInImage(1);
+        double[][] x2 = Zhang98Data.getObservedFeaturesInImage(5);
+
+        double[][] x1C = Camera.pixelToCameraCoordinates(x1, k1,
+                Zhang98Data.getRadialDistortionR2R4(), true);
+        double[][] x2C = Camera.pixelToCameraCoordinates(x2, k2,
+                Zhang98Data.getRadialDistortionR2R4(), true);
+
+        // should be 2 solutions
+        Reconstruction.ProjectionResults[] results =
+                Reconstruction.calculateProjectiveReconstruction1(x1C, x2C);
+
+        /*System.out.printf("projection matrices=\n%s\n",
+                FormatArray.toString(result.projectionMatrices, "%.3e"));
+        System.out.printf("XW=\n%s\n",
+                FormatArray.toString(result.XW, "%.3e"));*/
+    }
+
+
+        /**
+       * Test of calculateUsingEssentialMatrix method, of class CameraPose.
+       */
+    public void estCalculateUsingEssentialMatrix() throws Exception {
         System.out.println("calculateUsingEssentialMatrix");
        
         double[][] k1 = Zhang98Data.getIntrinsicCameraMatrix();
@@ -45,7 +70,7 @@ public class ReconstructionTest extends TestCase {
         //x1, x2 size is 3 X 256
         double[][] x1 = Zhang98Data.getObservedFeaturesInImage(1);
         double[][] x2 = Zhang98Data.getObservedFeaturesInImage(5);
-                
+
         Reconstruction.ReconstructionResults result = 
             Reconstruction.calculateUsingEssentialMatrix(k1, k2, x1, x2);
         
@@ -88,7 +113,7 @@ public class ReconstructionTest extends TestCase {
     /**
      * Test of calculateReconstruction method, of class Reconstruction.
      */
-    public void testCalculateReconstructionWithIntrinsicCamera() throws NotConvergedException {
+    public void estCalculateReconstructionWithIntrinsicCamera() throws NotConvergedException {
         
         //test data from:
         //http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example5.html        
@@ -172,7 +197,7 @@ public class ReconstructionTest extends TestCase {
 
     }
 
-    public void testParaperspective() throws IOException, NotConvergedException {
+    public void estParaperspective() throws IOException, NotConvergedException {
         double[][] xIn = loadNCBook(false);
 
         Reconstruction.ParaperspectiveProjectionResults paraProj

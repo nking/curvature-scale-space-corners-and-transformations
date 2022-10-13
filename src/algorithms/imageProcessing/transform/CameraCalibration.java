@@ -470,7 +470,7 @@ public class CameraCalibration {
         double[] h2 = MatrixUtil.extractColumn(h, 1);
         double[] h3 = MatrixUtil.extractColumn(h, 2);
         
-        //λ = 1/||A−1h1||2 = 1/||A−1h2||2
+        //λ = 1/||(A^−1)*(h1)||_2 = 1/||(A^−1)*(h2)||_2
         double lambda = 1./sumOfSquares(MatrixUtil.multiplyMatrixByColumnVector(aInv, h1));
         double lambda2 = 1./sumOfSquares(MatrixUtil.multiplyMatrixByColumnVector(aInv, h2));
         //double scaleFactor = 2./(Math.sqrt(sumOfSquares(h1)) + Math.sqrt(sumOfSquares(h1)));

@@ -188,10 +188,10 @@ public class Rectification {
           Reconstruction.calculateProjectiveReconstruction
        and the epipoles e1, e2
          e1 is the last row of svd.vt
-            e1 is the right null space (in right singular vector) of F 
+            e1 is the right nullspace (in right singular vector) of F
                (F*e1 = 0 or E*e1 = 0)
         e2 is the last column of svd.u
-            e2 is the left null space (in left singular vector) of F 
+            e2 is the left nullspace (in left singular vector) of F
                 (e2^T*F = 0  or e2^T*E = 0)
             e2 when normalized by 3rd coord is in coord space of left image and
                it is the location of the right camera center.
@@ -206,9 +206,9 @@ public class Rectification {
        double[] t = Arrays.copyOf(re.k2ExtrTrans, re.k2ExtrTrans.length);
        double[][] r = MatrixUtil.copy(re.k2ExtrRot);
        
-       // right null space of F:
+       // right nullspace of F:
        double[] e1 = Arrays.copyOf(re.svd.vT[2], re.svd.vT[2].length);
-       // left null space of F:
+       // left nullspace of F:
        double[] e2 = MatrixUtil.transpose(re.svd.u)[2];
        //MatrixUtil.multiply(e1, 1./e1[2]);
        //MatrixUtil.multiply(e2, 1./e2[2]);
@@ -410,8 +410,7 @@ public class Rectification {
 
         System.out.println("RANSAC fit=" + fitR.toString());
 
-        EpipolarTransformer tr = new EpipolarTransformer();
-        double[][] e1e2 = tr.calculateEpipoles(fm);
+        double[][] e1e2 = EpipolarTransformer.calculateEpipoles(fm);
         double[] e2 = e1e2[1];
         double[] e1 = e1e2[0];
 
@@ -628,7 +627,7 @@ public class Rectification {
         return out;        
     }
    
-    /**
+    /*
      use the homography from rectify(...) to warp the image img such that
      epipolar lines correspond to scan lines.
      
@@ -641,6 +640,8 @@ public class Rectification {
         throw new UnsupportedOperationException("unfinished");
     }
     */
+
+
     private static DenseMatrix extractIndices(DenseMatrix m, List<Integer> inlierIndexes) {
         DenseMatrix out = new DenseMatrix(m.numRows(), inlierIndexes.size());
         int r = 0;

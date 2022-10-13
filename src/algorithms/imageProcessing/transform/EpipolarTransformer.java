@@ -59,11 +59,11 @@ import algorithms.util.FormatArray;
          The projection of one camera center onto the other camera's image plane is an epipole.
          (the epipole can lie outside the image boundaries)
          in the Essential Matrix: e2 ~ T and e1 ~ R*T up to a scalar factor.
-         in general: e1 is the left null space of E and e2 is the right null space of E.
+         in general:
+             e1 = right nullspace of FM = SVD(fm).V[*,2]
+             e2 = left nullspace of FM = SVD(fm).U[*,2]
          e2^T*E = 0
          E*e1 = 0
-         and e1 = SVD(E).u <-- last column, then divided by last item
-         e2 = SVD(E).v <-- last row, then divided by last item
      Epipolar line of p:
          intersection of the epipolar place of p with an image place is the epipolar line of p.
          l2 ~ E*x1
@@ -309,12 +309,12 @@ fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
     e2 when normalized by 3rd coord is in coord space of left image and
        it is the location of the right camera center.
     e2 is the last column of svd.u
-    e2 is the left null space of F
+    e2 is the left nullspace of F
     (e2^T*F = 0  e2^T*E = 0)
       ==> e2~T  where T is translation and ~ is equality up to a scale factor
 
     e1 is the last row of svd.vt
-    e1 is the right null space of F
+    e1 is the right nullspace of F
     (F*e1 = 0  E*e1 = 0)
       ==> e1~R^T*T  where R is rotation and T is translation
     l2 = E*x1
@@ -1003,22 +1003,12 @@ public class EpipolarTransformer {
 
         'all' is a function that returns '1' is all items are non-zero, else
             returns 0
-        
-        //NLK: without having transposed F:
-         // e2^T*F = 0  and F*e1 = 0
-         // F^T * x2 = leftEpipolarLines, that is lines in left image 
-                       due to epipolar projection of right points
-         // F * x1 = rightEpipolarLines, that is lines in right image 
-                       due to epipolar projection of left points
-         // e1 = last column of U / last item of that column
-         // e2 = last row of V / last item of that row
         */
 
         // 3X3 * 3X7 = 3 X 7
         DenseMatrix fX2 = MatrixUtil.multiply(fm, rightXY);
 
-        // row 0 = e1 = right camera center projected into left image reference frame
-        // row 1 = e2 = left camera center projected into right image reference frame
+        //SVD(F^T).VT = -transpose( SVD(F).U ) and so e1 = -1 * last row of U
         double[][] leftRightEpipoles = calculateEpipoles(fm);
         double[] e1 = leftRightEpipoles[0];
 
@@ -1030,8 +1020,8 @@ public class EpipolarTransformer {
         //  [x y ] [x0 x1 x2 x3 x4 x5 x6]
         //         [y0 y1 y2 y3 y4 y5 y6]
 
-        double[][] contrepsE2 = MatrixUtil.skewSymmetric(e1);
-        MatrixUtil.multiply(contrepsE2, -1);
+        double[][] contreps = MatrixUtil.skewSymmetric(e1);
+        MatrixUtil.multiply(contreps, -1);
 
         // sum of ( (F * x2) .*  [e2]_x*x1 )
         // =      ( l2 .*  [e2]_x*x1 )
@@ -1043,7 +1033,7 @@ public class EpipolarTransformer {
         // and l*e=0 for (l1,e1) and also (l2,e2)
 
         // 3 X 7
-        double[][] l1 = MatrixUtil.multiply(contrepsE2, MatrixUtil.convertToRowMajor(leftXY));
+        double[][] l1 = MatrixUtil.multiply(contreps, MatrixUtil.convertToRowMajor(leftXY));
 
         // 3 x 7
         double[][] fX2l1 = MatrixUtil.pointwiseMultiplication(MatrixUtil.convertToRowMajor(fX2), l1);
@@ -1435,78 +1425,21 @@ public class EpipolarTransformer {
     }
 
     /**
-     normalize the x,y coordinates as recommended by Hartley 1997 and return
-     the matrix and coordinates.
-     does not modify the state of this transformer instance.
-
-     the normalized coordinates have an origin = centroid of
-     the points.
-     the mean square distance of the normalized points from the
-     origin is sqrt(2) pixels.
-
-     normalized xy = T * xy
-
-     * @param xy
-     * @return
+     Unit standard normalize the x,y coordinates so that mean=0 and standard deviation = 1.
+     returns the transformation matrix and the normalized coordinates.
+     * @param xy the data to normalize
+     * @return the transformation matrix and the normalized coordinates
      */
     @SuppressWarnings({"unchecked"})
     public static NormalizedXY normalize(DenseMatrix xy) {
-
-        /*
-        format points such that the applied translation
-        and scaling have the effect of:
-
-        a) points are translated so that their centroid is at the origin.
-        b) points are then scaled so that the average distance from the
-           origin is sqrt(2)
-        c) the transformation is applied to each of the 2 images separately.
-        */
-
-        int n = xy.numColumns();
-
-        //x is xy[0], y is xy[1], xy[2] is all 1's
-        double cen0 = 0;
-        double cen1 = 0;
-        for (int i = 0; i < n; ++i) {
-            cen0 += xy.get(0, i);
-            cen1 += xy.get(1, i);
-        }
-        cen0 /= (double)n;
-        cen1 /= (double)n;
-
-        double scale = 0;
-        double diffX, diffY;
-        for (int i = 0; i < n; i++) {
-            diffX = xy.get(0, i) - cen0;
-            diffY = xy.get(1, i) - cen1;
-            scale += (diffX*diffX + diffY*diffY);
-        }
-        //scale: root mean square distance of (x,y) to origin is sqrt(2)
-        scale = Math.sqrt(scale/(2.*(n-1)));
-        
-        NormalizationTransformations tMatrices = createScaleTranslationMatrices(
-            scale, cen0, cen1);
-       
-        DenseMatrix normXY = MatrixUtil.multiply(new DenseMatrix(tMatrices.t), xy);
-        
-        NormalizedXY normalizedXY = new NormalizedXY();
-        normalizedXY.setNormMatrices(tMatrices);
-        normalizedXY.setXy(normXY);
-
-        return normalizedXY;
+        return normalizeUsingUnitStandard(xy);
     }
     
    /**
-     normalize the x,y coordinates as recommended by Hartley 1997 and return
-     the matrix and coordinates.
-     does not modify the state of this transformer instance.
-
-     the normalized coordinates have an origin = centroid of
-     the points and a scale equal to the standard deviation of the
-     mean subtracted coordinates.
-
-     * @param xy
-     * @return
+    Unit standard normalize the x,y coordinates so that mean=0 and standard deviation = 1.
+     returns the transformation matrix and the normalized coordinates.
+     * @param xy the data to normalize
+     * @return the transformation matrix and the normalized coordinates
      */
     @SuppressWarnings({"unchecked"})
     public static NormalizedXY normalizeUsingUnitStandard(DenseMatrix xy) {
@@ -1669,22 +1602,6 @@ public class EpipolarTransformer {
                 | 1/s   0  0 |   | 1  0  -xc |
             T = |  0  1/s  0 | * | 0  1  -yc |
                 |  0    0  1 |   | 0  0   1  |
-
-                   | 1  0  xc |   | s  0   0 | = | s  0  xc |
-            T^-1 = | 0  1  yc | * | 0  s   0 |   | 0  s  yc |
-                   | 0  0   1 |   | 0  0   1 |   | 0  0  1  |
-
-            transposed(T^-1) = | s   0    0 |
-                               | 0   s    0 |
-                               | xc  yc   1 |
-
-                          | 1  0  xc |   | s^2  0    0 |   | 1  0  0 |
-            T^-1 * T^-T = | 0  1  yc | * | 0   s^2   0 | * | 0  1  0 |
-                          | 0  0   1 |   | 0    0    1 |   | xc yc 1 |
-
-                          | s^2 + xc^2   xc*yc       xc |
-                        = | yc*xc        s^2 + yc^2  yc |
-                          | xc           yc          1  |
         */
         
         double[][] t = new double[3][];
@@ -1722,7 +1639,7 @@ public class EpipolarTransformer {
         //NOTE: denormalized x2 = transpose(normalized x2) * transpose(T2^1)
         //      denormalized x1 = (T1^-1) * (normalized x1)
         //      denormalized FM = transpose(T2) * FM_normalized * T1
-        
+
         DenseMatrix t2T = new DenseMatrix(MatrixUtil.transpose(rightNT.t));
 
         DenseMatrix t1 = new DenseMatrix(leftNT.t);
@@ -1846,18 +1763,18 @@ public class EpipolarTransformer {
      *       epipole.  The location of the epipole in the other image can be thought of as the projection
      *       of the other camera center onto its image.
      *       (the epipole can lie outside the image boundaries)
-     *       e1 is the left null space of E and e2 is the right null space of E.
+     *       e2 is the left nullspace of E and e2 is the right nullspace of E.
      *         e2^T*E = 0
      *         E*e1 = 0
-     *         and e1 = SVD(E).u <-- last column, then divided by last item
-     *             e2 = SVD(E).v <-- last row, then divided by last item
+     *         and e2 = SVD(E).u <-- last column, then divided by last item
+     *             e1 = SVD(E).v <-- last row, then divided by last item
      *         for the essential matrix: e2 ~ T and e1 ~ R*T up to a scalar factor.
 
      * @param fundamentalMatrix
      * @return a matrix holding whose first row holds e1 and 2nd row holds e2
      */
     @SuppressWarnings({"unchecked"})
-    double[][] calculateEpipoles(DenseMatrix fundamentalMatrix) {
+    public static double[][] calculateEpipoles(DenseMatrix fundamentalMatrix) {
 
         /*
         NOTE:
@@ -1881,18 +1798,16 @@ public class EpipolarTransformer {
             return null;
         }
 
-        // e1 = last column of U / last item of that column
-        // e2 = last row of V / last item of that row
-        double[] e1 = new double[3];
-        double e1Div = svdE.getU().get(2, 2);
-        for (int i = 0; i < e1.length; i++) {
-            e1[i] = svdE.getU().get(i, 2)/e1Div;
+        double[] e2 = new double[3];
+        double e2Div = svdE.getU().get(2, 2);
+        for (int i = 0; i < e2.length; i++) {
+            e2[i] = svdE.getU().get(i, 2)/e2Div;
         }
         
-        double[] e2 = new double[3];
-        double e2Div = svdE.getVt().get(2, 2);
-        for (int i = 0; i < e2.length; i++) {
-            e2[i] = svdE.getVt().get(2, i)/e2Div;
+        double[] e1 = new double[3];
+        double e1Div = svdE.getVt().get(2, 2);
+        for (int i = 0; i < e1.length; i++) {
+            e1[i] = svdE.getVt().get(2, i)/e1Div;
         }
 
         double[][] e = new double[2][];
