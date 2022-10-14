@@ -7,6 +7,9 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
 import algorithms.imageProcessing.features.orb.ORB;
+import algorithms.imageProcessing.matching.CorrespondenceMaker;
+import algorithms.imageProcessing.matching.CorrespondenceMaker.CorrespondenceList;
+import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.matching.ORBMatcher;
 import static algorithms.imageProcessing.transform.Rotation.extractThetaFromZYX;
 import algorithms.matrix.MatrixUtil;
@@ -34,7 +37,26 @@ public class ReconstructionTest extends TestCase {
     public ReconstructionTest() {
     }
 
-    public void testCalculateProjectiveReconstruction() throws Exception {
+    public void testProjectiveWithBouget() throws IOException {
+
+        String sep = System.getProperty("file.separator");
+        String path = ResourceFinder.findTestResourcesDirectory() + sep + "bouget_stereo" + sep;
+        String filePath1 = path + "left02_masked.png";
+        String filePath2 = path + "right02_masked.png";
+
+        int nCorners = 500;
+        boolean debug = true;
+        boolean useToleranceAsStatFactor = true;
+        boolean recalcIterations = false;// possibly faster if set to true
+        double tol = 1.;
+        ErrorType errorType = ErrorType.SAMPSONS;
+
+        CorrespondenceList corres = CorrespondenceMaker.findUsingORB(filePath1, filePath2, nCorners, useToleranceAsStatFactor,
+                recalcIterations, tol, errorType, debug);
+        assertNotNull(corres);
+    }
+
+    public void estCalculateProjectiveReconstruction() throws Exception {
         System.out.println("testCalculateProjectiveReconstruction");
 
         double[][] k1 = Zhang98Data.getIntrinsicCameraMatrix();
@@ -50,12 +72,24 @@ public class ReconstructionTest extends TestCase {
 
         // should be 2 solutions
         Reconstruction.ProjectionResults[] results =
-                Reconstruction.calculateProjectiveReconstruction1(x1C, x2C);
+                Reconstruction.calculateProjectiveReconstruction(x1C, x2C);
 
-        /*System.out.printf("projection matrices=\n%s\n",
-                FormatArray.toString(result.projectionMatrices, "%.3e"));
-        System.out.printf("XW=\n%s\n",
-                FormatArray.toString(result.XW, "%.3e"));*/
+        Camera.CameraExtrinsicParameters kExtr2 = Reconstruction.calculateProjectiveMotion(x1C, x2C);
+
+        System.out.printf("camera2 R from projective motion =\n%s\n",
+                FormatArray.toString(kExtr2.getRotation(), "%.3e"));
+        System.out.printf("camera2 T from projective motion =\n%s\n",
+                FormatArray.toString(kExtr2.getTranslation(), "%.3e"));
+
+        System.out.printf("0) projection matrices=\n%s\n",
+                FormatArray.toString(results[0].projectionMatrices, "%.3e"));
+        System.out.printf("0) XW=\n%s\n",
+                FormatArray.toString(MatrixUtil.transpose(results[0].XW), "%.3e"));
+
+        System.out.printf("1) projection matrices=\n%s\n",
+                FormatArray.toString(results[1].projectionMatrices, "%.3e"));
+        System.out.printf("1) XW=\n%s\n",
+                FormatArray.toString(MatrixUtil.transpose(results[1].XW), "%.3e"));
     }
 
 
@@ -188,7 +222,7 @@ public class ReconstructionTest extends TestCase {
         */
     }
     
-    public void testAffine() throws NotConvergedException, IOException {
+    public void estAffine() throws NotConvergedException, IOException {
     
         double[][] xIn = loadNCBook(false);
 
