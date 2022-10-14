@@ -174,10 +174,10 @@ public class Camera {
     }
    
     /**
-     * 
+     * create the camera projection matrix as P = K * [R | t].
      * @param k camera intrinsics matrix of size 3 x 3.
      * @param r camera extrinsic rotation matrix of size 3 x 3.
-     * @param t camera extrinsic translation vector of length 2.
+     * @param t camera extrinsic translation vector of length 3 in homogeneous coordinates (z-axis has value 1).
      * @return the camera matrix resulting from intrinsic and extrinsic parameters.
      * the size is 3 x 4.
      */
@@ -192,30 +192,41 @@ public class Camera {
             throw new IllegalArgumentException("t must be length 3");
         }
 
-        /*
-            4x4     
-        [ R  -R*t ]
-        [ 0   1   ]
-        
-        P = K * R * [I | -t]
-        
-        alternately, can write as P = K * [ R | -R*t]
-        */
-        double[] rt = MatrixUtil.multiplyMatrixByColumnVector(r, t);
-        
-        double[][] kExtr = new double[3][4];
-        for (int i = 0; i < 3; ++i) {
-            kExtr[i] = new double[4];
-            System.arraycopy(r[i], 0, kExtr[i], 0, 3);
-            kExtr[i][3] = rt[i];
-        }
-        
-        double[][] p = MatrixUtil.multiply(k, kExtr);
+        double[][] rt = createExtrinsicCameraMatrix(r, t);
+
+        double[][] p = MatrixUtil.multiply(k, rt);
         
         return p;
     }
 
     /**
+     * create extrinsic camera matrix assuming the relation x = R * XW + t.
+     * the resulting matrix is [R | t]
+     * @param r camera extrinsic rotation matrix of size 3 x 3.
+     * @param t camera extrinsic translation vector of length 3 in homogenous coordinates (the
+     *          z-axis holds value 1).
+     * @return the extrinsic camera matrix. the size is 3 x 4.
+     */
+    public static double[][] createExtrinsicCameraMatrix(double[][] r, double[] t) {
+
+        if (r.length != 3 || r[0].length != 3) {
+            throw new IllegalArgumentException("r must be 3 x 3");
+        }
+        if (t.length != 3) {
+            throw new IllegalArgumentException("t must be length 3");
+        }
+
+        //P = [R | t]
+        double[][] kExtr = new double[3][4];
+        for (int i = 0; i < 3; ++i) {
+            kExtr[i] = new double[] {r[i][0], r[i][1], r[i][2], t[i]};
+        }
+
+        return kExtr;
+    }
+
+    /**
+     * TODO: revise and test.
      * not ready for use.  a quick rough method to estimate the 3D homogeneous point
      * from the 2D-homogenous point and this inverse camera matrix, with caveat 
      * about missing information on the last dimension.  

@@ -2,8 +2,11 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
+
+import java.io.IOException;
 import java.util.Arrays;
 import junit.framework.TestCase;
+import no.uib.cipr.matrix.NotConvergedException;
 import org.junit.Test;
 
 /**
@@ -155,7 +158,7 @@ public class TriangulationTest extends TestCase {
     /**
      * Test of calculateWCSPoint method, of class Triangulation.
      */
-    public void testCalculateWCSPoint2() {
+    public void testCalculateWCSPoint2() throws IOException, NotConvergedException {
         
         //test data from:
         //http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example5.html
@@ -218,32 +221,7 @@ public class TriangulationTest extends TestCase {
         x2[0] = new double[]{184};
         x2[1] = new double[]{172};
         x2[2] = new double[]{1};
-          
-        double[] x1c, x2c;
-        
-        x1c = MatrixUtil.extractColumn(x1, 0);
-        x1c = MatrixUtil.add(x1c, k1IntrTrans);
-        x2c = MatrixUtil.extractColumn(x2, 0);
-        x2c = MatrixUtil.add(x2c, k2IntrTrans);
-        System.out.printf("x1c=%s\n", FormatArray.toString(x1c, "%.3e"));
-        System.out.printf("x2c=%s\n", FormatArray.toString(x2c, "%.3e"));
-        
-        double[] tmp;
-        //check: Xc_1_right = R * Xc_1_left + T
-        // can see need to subtract center of image 1 from coords then add center of image 2.
-        // can also see that the extrinsic translation is in units of image pixels,
-        tmp = MatrixUtil.multiplyMatrixByColumnVector(k2ExtrRot, x1c);
-        tmp = MatrixUtil.add(tmp, k2ExtrTrans);
-        System.out.printf("?? %s\n", FormatArray.toString(tmp, "%.4e"));
-        tmp = MatrixUtil.add(tmp, k2IntrTransInv);
-        System.out.printf("==> %s\n", FormatArray.toString(tmp, "%.4e")); //1.9179e+02, 1.7495e+02, 2.0417e+00
-        MatrixUtil.multiply(tmp, 1./tmp[2]);
-        System.out.printf("*?? %s\n", FormatArray.toString(tmp, "%.4e"));
-        
-        double[] trans = MatrixUtil.subtract(x2c, x1c);            
-        System.out.printf("?? trans = %s\n", FormatArray.toString(trans, "%.4e"));
-        //  result = -1.0790e+02, -2.0000e+00, 0.0000e+00
-        
+
         // correct for radial distortions:
         /*double r2, distortion;
         for (int i = 0; i < x1[0].length; ++i) {
@@ -312,22 +290,6 @@ public class TriangulationTest extends TestCase {
         x2[0] = new double[]{215};
         x2[1] = new double[]{238};
         x2[2] = new double[]{1};
-                  
-        x1c = MatrixUtil.extractColumn(x1, 0);
-        x1c = MatrixUtil.add(x1c, k1IntrTrans);
-        x2c = MatrixUtil.extractColumn(x2, 0);
-        x2c = MatrixUtil.add(x2c, k2IntrTrans);
-        System.out.printf("x1c=%s\n", FormatArray.toString(x1c, "%.3e"));
-        System.out.printf("x2c=%s\n", FormatArray.toString(x2c, "%.3e"));
-        
-        //check: Xc_1_right = R * Xc_1_left + T
-        tmp = MatrixUtil.multiplyMatrixByColumnVector(k2ExtrRot, x1c);
-        tmp = MatrixUtil.add(tmp, k2ExtrTrans);
-        System.out.printf("?? %s\n", FormatArray.toString(tmp, "%.4e"));
-        tmp = MatrixUtil.add(tmp, k2IntrTransInv);
-        System.out.printf("==> %s\n", FormatArray.toString(tmp, "%.4e"));
-        MatrixUtil.multiply(tmp, 1./tmp[2]);
-        System.out.printf("*?? %s\n", FormatArray.toString(tmp, "%.4e"));
 
         wcsPt = Triangulation.calculateWCSPoint(
             k1Intr, k1ExtrRot, k1ExtrTrans,
@@ -343,7 +305,44 @@ public class TriangulationTest extends TestCase {
     
         MatrixUtil.multiply(xw, 1./xw[xw.length - 1]);
         System.out.printf("   =%s\n\n", FormatArray.toString(xw, "%.3e"));
-        
+
+        { // use camera coordinates and extrinsic cameras
+            // camera2 as P = [ R | t] not P = [ R | -R*t]
+            // the authors used XXc = Rc_1 * XX + Tc_1
+            // (see http://robots.stanford.edu/cs223b04/JeanYvesCalib/htmls/parameters.html)
+            /*
+            // left camera:
+        //    focal length = 533.5, 533.5
+        //    cc = 341.6, 235.2
+        //    skew = 0, 0
+        //    radial distortion k = -0.288, 0.097, 0.001, -0.0003, 0
+        //
+        // right camera:
+        //    focal length = 536.8, 536.5
+        //    cc = 326.3, 250.1
+        //    skew = 0, 0
+        //    radial distortion k = -0.289, 0.107, 0.001, -0.0001, 0
+             */
+            double[] r1 = new double[]{-0.288, 0.097};
+            double[] r2 = new double[]{-0.289, 0.107};
+            double[][] p1 = Camera.createExtrinsicCameraMatrix(k1ExtrRot, k1ExtrTrans);
+            double[][] p2 = Camera.createExtrinsicCameraMatrix(k2ExtrRot, k2ExtrTrans);
+
+            double[][] x1C = Camera.pixelToCameraCoordinates(x1, k1Intr, r1, true);
+            double[][] x2C = Camera.pixelToCameraCoordinates(x2, k2Intr, r2, true);
+
+            Triangulation.WCSPt wcsPt2 = Triangulation.calculateWCSPoint(p1, p2, x1C, x2C);
+
+            xw = wcsPt.X;
+            System.out.printf("c: xw=%s\n", FormatArray.toString(xw, "%.3e"));
+            //xw=6.670e-03, -5.187e-02, -9.986e-01, 2.102e-03
+            // xw[0]/xw[3], xw[1]/xw[3], xw[2]/xw[3] = (3.173168411037107, -24.676498572787818, -475.07136060894385)
+
+            MatrixUtil.multiply(xw, 1./xw[xw.length - 1]);
+            System.out.printf("      =%s\n", FormatArray.toString(xw, "%.3e"));
+
+        }
+
         expectedX1 = MatrixUtil.multiply(camera1Inv, x1);
         expectedX2 = MatrixUtil.multiply(camera2Inv, x2);
         

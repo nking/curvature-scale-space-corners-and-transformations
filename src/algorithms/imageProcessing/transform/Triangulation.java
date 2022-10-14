@@ -20,11 +20,7 @@ import no.uib.cipr.matrix.SVD;
  * http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
  * add other references here
  * </pre>
- * 
- * TODO: construct a method that might be better placed in reconstruction:
- * given camera intrinsic parameters and 2-view correspondences: first calculate
- * the essential matrix, then extract the cameras extrinsic parameters from
- * them, then use triangulation to get the WCS coordinates.
+ *
  * @author nichole
  */
 public class Triangulation {
@@ -61,10 +57,10 @@ public class Triangulation {
      * @param t2 the translation vector for the extrinsic camera matrix for image 2.
      * @param x1 the image 1 set of correspondence points.  format is 3 x N where
      * N is the number of points.  all points are observations of real world point X
-     *           and should be in camera coordinates.
+     *           and should be in image coordinates (pixels).
      * @param x2 the image 2 set of correspondence points.  format is 3 x N where
      * N is the number of points. .  all points are observations of real world point X
-     *           and should be in camera coordinates.
+     *           and should be in image coordinates (pixels).
      * @return the point coordinates in world coordinate reference frame
      */
     public static WCSPt calculateWCSPoint(
@@ -112,35 +108,24 @@ public class Triangulation {
      * coordinate of the observations.
      *
      * <pre>
-     *     NOTE that if the camera matrices are in format:
-     *     if P = [ R | t ], then x1 and x2 must be in image coordinates.
-     *     else if P = K * [ R | t ], then x1 and x2 must be in camera coordinates.
-     *
-     *     x = alpha * P * X
-     *     x_c = K * x_im
+     *     NOTE the projection matrix is formed using P = K * [ R | t ]
+     *     and x = alpha * P * X
+     *     so x1 and x2 should be in image coordinates (pixels).
      *
      * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
      * </pre>
      * @param camera1 camera matrix for image 1.   the size is 3X4.
-     *                P = [ R | t ] or P = K * [ R | t ] and must be consistent with camera2.
+     *                the data are used to construct P = K * [ R | t ].
      * @param camera2 camera matrix for image 2. the size is 3X4.
-     *                 P = [ R | t ] or P = K * [ R | t ] and must be consistent with camera1.
-     * @param x1 the set of measurements of 1 real world point X from image 1.
+     *                the data are used to construct P = K * [ R | t ].
+     * @param x1 the set of measurements of 1 real world point X from image 1 in images coordinates (pixels).
      * The corresponding measurements of the same point in image 2 are in x2.
      * format is 3 x N where N is the number of measurements.
-     * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
-     * If the data are not perfect, need more than 1 pair for best fit.
-     * NOTE that x1 must be in image coordinate frame (units are pixels) if the camera matrix P = [ R | t ]
-     * where R is the rotation between camera1 and camera2 and t is the translation between them,
-     * else if  P = K * [ R | t ], then x1 has to be in camera coordinates.
-     * @param x2 the set of measurements of 1 real world point X from image 2.
+     *
+     * @param x2 the set of measurements of 1 real world point X from image 2 in iamge coordinates (pixels).
      * The corresponding measurements of the same point in image 1 are in x1.
      * format is 3 x N where N is the number of measurements.
-     * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
-     * If the data are not perfect, need more than 1 pair for best fit.
-     * NOTE that x2 must be in image coordinate frame (units are pixels) if the camera matrix P = [ R | t ]
-     * where R is the rotation between camera1 and camera2 and t is the translation between them,
-     * else if  P = K * [ R | t ], then x2 has to be in camera coordinates.
+     *
      * @return the 3D coordinate of the point in world scene.  note that
      * the entire array can be normalized by the last element.
      */
@@ -164,8 +149,8 @@ public class Triangulation {
      *
      * <pre>
      *     NOTE that if the camera matrices are in format:
-     *     if P = [ R | t ], then x1 and x2 must be in image coordinates.
-     *     else if P = K * [ R | t ], then x1 and x2 must be in camera coordinates.
+     *     if P = [ R | t ], then x1 and x2 must be in camera coordinates.
+     *     else if P = K * [ R | t ], then x1 and x2 must be in image coordinates.
      *
      *     x = alpha * P * X
      *     x_c = K * x_im
@@ -181,17 +166,17 @@ public class Triangulation {
      * format is 3 x N where N is the number of measurements.
      * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
      * If the data are not perfect, need more than 1 pair for best fit.
-     * NOTE that x1 must be in image coordinate frame (units are pixels) if the camera matrix P = [ R | t ]
+     * NOTE that x1 must be in camera coordinate frame if the camera matrix P = [ R | t ]
      * where R is the rotation between camera1 and camera2 and t is the translation between them,
-     * else if  P = K * [ R | t ], then x1 has to be in camera coordinates.
+     * else if  P = K * [ R | t ], then x1 has to be in image coordinates (pixels).
      * @param x2 the set of measurements of 1 real world point X from image 2.
      * The corresponding measurements of the same point in image 1 are in x1.
      * format is 3 x N where N is the number of measurements.
      * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
      * If the data are not perfect, need more than 1 pair for best fit.
-     * NOTE that x2 must be in image coordinate frame (units are pixels) if the camera matrix P = [ R | t ]
+     * NOTE that x2 must be in camera coordinate frame if the camera matrix P = [ R | t ]
      * where R is the rotation between camera1 and camera2 and t is the translation between them,
-     * else if  P = K * [ R | t ], then x2 has to be in camera coordinates.
+     * else if  P = K * [ R | t ], then x2 has to be in image coordinates (pixels).
      * @return the 3D coordinate of the point in world scene.  note that
      * the entire array can be normalized by the last element.
      */
@@ -209,8 +194,8 @@ public class Triangulation {
      *
      * <pre>
       *     NOTE that if the camera matrices are in format:
-      *     if P = [ R | t ], then x1 and x2 must be in image coordinates.
-      *     else if P = K * [ R | t ], then x1 and x2 must be in camera coordinates.
+      *     if P = [ R | t ], then x1 and x2 must be in camera coordinates.
+      *     else if P = K * [ R | t ], then x1 and x2 must be in iamge coordinates(pixels).
       *
       *     x = alpha * P * X
       *     x_c = K * x_im
@@ -226,17 +211,17 @@ public class Triangulation {
      * format is 3 x N where N is the number of measurements.
      * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
      * If the data are not perfect, need more than 1 pair for best fit.
-      * NOTE that x1 must be in image coordinate frame (units are pixels) if the camera matrix P = [ R | t ]
+      * NOTE that x1 must be in camera coordinate frame if the camera matrix P = [ R | t ]
       * where R is the rotation between camera1 and camera2 and t is the translation between them,
-      * else if  P = K * [ R | t ], then x1 has to be in camera coordinates.
+      * else if  P = K * [ R | t ], then x1 has to be in iamge coordinates (pixels).
      * @param x2 the set of measurements of 1 real world point X from image 2.
       * The corresponding measurements of the same point in image 1 are in x1.
       * format is 3 x N where N is the number of measurements.
       * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
       * If the data are not perfect, need more than 1 pair for best fit.
-      * NOTE that x2 must be in image coordinate frame (units are pixels) if the camera matrix P = [ R | t ]
+      * NOTE that x2 must be in camera coordinate frame if the camera matrix P = [ R | t ]
       * where R is the rotation between camera1 and camera2 and t is the translation between them,
-      * else if  P = K * [ R | t ], then x2 has to be in camera coordinates.
+      * else if  P = K * [ R | t ], then x2 has to be in image coordinates (pixels).
      * @return the 3D coordinate of the point in world scene.  note that
      * the entire array can be normalized by the last element.
      */
