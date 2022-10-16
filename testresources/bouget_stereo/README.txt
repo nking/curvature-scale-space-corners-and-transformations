@@ -9,3 +9,8 @@ the web page is saved in pdf format in miscNotes/bouguetj_5th_calibration_exampl
 
 There are 14 images from the left and right cameras each, but only the first
 pair are in this directory to use in tests.
+
+There is a python load script that can be used to read the .mat files
+at https://github.com/malcolmreynolds/calib_bouguet
+The output to that is here as left_summary.txt and right_summary.txt
+

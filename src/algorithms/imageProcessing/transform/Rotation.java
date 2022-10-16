@@ -425,7 +425,7 @@ public class Rotation {
     }
 
     /**
-     * calculate the rotation needed to tranform direction v1 to direction v2 using
+     * calculate the rotation needed to transform direction v1 to direction v2 using
      * a quaternion.
      * @param v1
      * @param v2

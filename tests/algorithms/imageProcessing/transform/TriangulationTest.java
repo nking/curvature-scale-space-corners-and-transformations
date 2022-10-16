@@ -50,18 +50,10 @@ public class TriangulationTest extends TestCase {
         //
         // note: radial distortion should be corrected:  use on the original coordinates:
         //     x_corrected = x*(1 + k1*r^2 + k2r^4) where r is distance of point from cc.
-        
-        double[] k1IntrTrans = new double[]{-341.6, -234.3, 0};
-        double[] k2IntrTrans = new double[]{-326.5, -249.3, 0};
-        double[] k1IntrTransInv = Arrays.copyOf(k1IntrTrans, k1IntrTrans.length);
-        MatrixUtil.multiply(k1IntrTransInv, -1);
-        double[] k2IntrTransInv = Arrays.copyOf(k2IntrTrans, k2IntrTrans.length);
-        MatrixUtil.multiply(k2IntrTransInv, -1);
-        
-        double[][] k1Intr = Camera.createIntrinsicCameraMatrix(533.07, k1IntrTrans[0], k1IntrTrans[1]);
-        double[][] k2Intr = Camera.createIntrinsicCameraMatrix(536.7, k2IntrTrans[0], k2IntrTrans[1]);
-        double[][] k2IntrInv = Camera.createIntrinsicCameraMatrixInverse(536.7, k2IntrTrans[0], k2IntrTrans[1]);
-        
+
+        double[][] k1Intr = Camera.createIntrinsicCameraMatrix(533.5, 341.6, 235.2);
+        double[][] k2Intr = Camera.createIntrinsicCameraMatrix(536.6, 326.3, 250.1);
+
         double[][] k1ExtrRot = MatrixUtil.createIdentityMatrix(3);
         double[] k1ExtrTrans = new double[]{0, 0, 0};
         
@@ -151,6 +143,11 @@ public class TriangulationTest extends TestCase {
         double[][] x1C = Camera.pixelToCameraCoordinates(x1, k1Intr, r1, true);
         double[][] x2C = Camera.pixelToCameraCoordinates(x2, k2Intr, r2, true);
 
+        /*
+        x_c = R * xw + t
+            = [R | t] xw
+        x_im = K*x_c = K*[R|t]*xw
+         */
         Triangulation.WCSPt wcsPt2 = Triangulation.calculateWCSPoint(p1, p2, x1C, x2C);
 
         xw = wcsPt.X;

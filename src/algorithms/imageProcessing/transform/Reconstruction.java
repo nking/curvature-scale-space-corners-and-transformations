@@ -596,7 +596,7 @@ public class Reconstruction {
         // (T, R*x1, R*K^-1*x2)
 
         int j;
-        int index = 0;
+        int index = -1;
         int[] posdepth = new int[4];
         for (i = 0; i < 4; ++i) {
             switch(i) {
@@ -674,7 +674,11 @@ public class Reconstruction {
             System.out.printf("%d) sum(sign(vol))=%d, sum(sign(alpha1))=%d, sum(sign(alpha2))=%d\n",
                     i, volSumSign, depth1SumSign, depth2SumSign);
             posdepth[i] = volSumSign + depth1SumSign;
-            if (i > 0 && posdepth[i] > posdepth[index]) {
+            if (index == -1) {
+                if ((posdepth[i] > 0) && (depth1SumSign > 0 || depth2SumSign > 0)) {
+                    index = i;
+                }
+            } else if ((posdepth[i] > posdepth[index]) && (depth1SumSign > 0 || depth2SumSign > 0)) {
                 index = i;
             }
         }
@@ -704,7 +708,7 @@ public class Reconstruction {
     }
 
     /**
-     * estimate the projection matrices P1 and P2 and triangulate the points x1 and x2 into the WCS object
+     * estimate the projection matrices P1 and P2 and triangulate the points x1 and x2 to derive the location of the WCS object
      * using planar homography.
      * This is also called Projective Structure From Motion for the
      * Two-camera case.   it's a distorted version of euclidean 3d.

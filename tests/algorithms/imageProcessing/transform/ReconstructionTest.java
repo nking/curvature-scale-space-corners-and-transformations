@@ -6,6 +6,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
+import algorithms.imageProcessing.features.RANSACEuclideanSolver;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.matching.CorrespondenceMaker;
 import algorithms.imageProcessing.matching.CorrespondenceMaker.CorrespondenceList;
@@ -15,13 +16,13 @@ import static algorithms.imageProcessing.transform.Rotation.extractThetaFromZYX;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
-import algorithms.util.CorrespondencePlotter;
-import algorithms.util.FormatArray;
-import algorithms.util.PairInt;
-import algorithms.util.QuadInt;
-import algorithms.util.ResourceFinder;
+import algorithms.util.*;
+
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import junit.framework.TestCase;
 import static junit.framework.TestCase.assertNotNull;
@@ -37,23 +38,394 @@ public class ReconstructionTest extends TestCase {
     public ReconstructionTest() {
     }
 
-    public void testProjectiveWithBouget() throws IOException {
+    public void testProjectiveWithBouguet0() throws IOException, NotConvergedException {
+
+        //test data from:
+        //http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example5.html
+        // now at http://robots.stanford.edu/cs223b04/JeanYvesCalib/
+        // "Fifth calibration example - Calibrating a stereo system, stereo image rectification and 3D stereo triangulation"
+        // by Jean-Yves Bouguet
+        // Camera Calibration Toolbox for Matlab
+        //    saved as pdf in miscNotes/bouguetj_5th_calibration_example.pdf
+        // see testresources/bouget_stereo
+        //
+        // this is left02.jpg and right02.jpg
+        //
+        //
+        // note: the checkerboard squares are 30mm in WCS metric
+        //
+        // note: radial distortion should be corrected:  use on the original coordinates:
+        //     x_corrected = x*(1 + k1*r^2 + k2r^4) where r is distance of point from cc.
+
+        double[][] k1Intr = Camera.createIntrinsicCameraMatrix(533.5, 341.6, 235.2);
+        double[][] k2Intr = Camera.createIntrinsicCameraMatrix(536.6, 326.3, 250.1);
+        boolean useR2R4 = true;
+        double[] radial1 = new double[]{-0.288, 0.097, 0.001};
+        double[] radial2 = new double[]{-0.289,0.107, -0.001};
+
+        // ===================================================================================
+        /* for the 2nd image pair:
+        left extrinsic matrix:
+        [[-9.48402795e-02  9.75707586e-01 -1.97484246e-01 -4.67064408e+01]
+         [ 7.52568521e-01  2.00130415e-01  6.27366272e-01 -8.09188900e+01]
+         [ 6.51648635e-01 -8.91208345e-02 -7.53267239e-01  2.66643941e+02]
+         [ 0.00000000e+00  0.00000000e+00  0.00000000e+00  1.00000000e+00]]
+
+         right extrinsic matrix:
+         [[-9.03220351e-02  9.76271959e-01 -1.96812071e-01 -1.45613832e+02]
+         [ 7.48996521e-01  1.96836697e-01  6.32660673e-01 -8.15340647e+01]
+         [ 6.56388713e-01 -9.02683572e-02 -7.49002992e-01  2.66971558e+02]
+         [ 0.00000000e+00  0.00000000e+00  0.00000000e+00  1.00000000e+00]]
+         */
+        double[][] camera1RT = new double[3][];
+        camera1RT[0] = new double[]{9.48402795e-02,  9.75707586e-01, -1.97484246e-01, -4.67064408e+01};
+        camera1RT[1] = new double[]{7.52568521e-01,  2.00130415e-01,  6.27366272e-01, -8.09188900e+01};
+        camera1RT[2] = new double[]{6.51648635e-01, -8.91208345e-02, -7.53267239e-01,  2.66643941e+02};
+        double[][] camera2RT = new double[3][];
+        camera2RT[0] = new double[]{-9.03220351e-02,  9.76271959e-01, -1.96812071e-01, -1.45613832e+02};
+        camera2RT[1] = new double[]{7.48996521e-01,  1.96836697e-01,  6.32660673e-01, -8.15340647e+01};
+        camera2RT[2] = new double[]{6.56388713e-01, -9.02683572e-02, -7.49002992e-01,  2.66971558e+02};
+
+        double[][] camera1KRT = MatrixUtil.multiply(k1Intr, camera1RT);
+        double[][] camera2KRT = MatrixUtil.multiply(k2Intr, camera2RT);
+
+        double[][] x1 = MatrixUtil.zeros(3, 13);
+        double[][] x2 = MatrixUtil.zeros(3, 13);
+        Arrays.fill(x1[2], 1);
+        Arrays.fill(x2[2], 1);
+        x1[0][0]=5.8400e+02;  x1[1][0]=1.4800e+02;  x2[0][0]=3.8000e+02;  x2[1][0]=1.5200e+02;
+        x1[0][1]=3.9600e+02;  x1[1][1]=3.9800e+02;  x2[0][1]=2.6200e+02;  x2[1][1]=4.1000e+02;
+        x1[0][2]=5.9000e+02;  x1[1][2]=1.4700e+02;  x2[0][2]=3.8500e+02;  x2[1][2]=1.5400e+02;
+        x1[0][3]=2.5400e+02;  x1[1][3]=3.5400e+02;  x2[0][3]=1.2400e+02;  x2[1][3]=3.6400e+02;
+        x1[0][4]=5.4600e+02;  x1[1][4]=2.3200e+02;  x2[0][4]=3.6700e+02;  x2[1][4]=2.4600e+02;
+        x1[0][4]=4.9000e+02;  x1[1][5]=9.6000e+01;  x2[0][5]=2.7000e+02;  x2[1][5]=1.0400e+02;
+        x1[0][6]=4.8000e+02;  x1[1][6]=3.8000e+02;  x2[0][6]=3.3600e+02;  x2[1][7]=3.9600e+02;
+        x1[0][7]=2.5300e+02;  x1[1][7]=7.9000e+01;  x2[0][7]=6.5000e+01;  x2[1][7]=1.0400e+02;
+        x1[0][8]=3.6100e+02;  x1[1][8]=3.8300e+02;  x2[0][8]=2.2800e+02;  x2[1][8]=3.9600e+02;
+        x1[0][9]=4.0200e+02;  x1[1][9]=3.8800e+02;  x2[0][9]=2.6000e+02;  x2[1][9]=4.0000e+02;
+        x1[0][10]=2.0800e+02;  x1[1][10]=1.6400e+02;  x2[0][10]=4.8000e+01;  x2[1][10]=1.8400e+02;
+        x1[0][11]=4.0400e+02;  x1[1][11]=3.8800e+02;  x2[0][11]=2.6400e+02;  x2[1][11]=4.0400e+02;
+        x1[0][12]=4.4800e+02;  x1[1][12]=2.4800e+02;  x2[0][12]=2.6400e+02;  x2[1][12]=2.6400e+02;
+        double[][] x1c = Camera.pixelToCameraCoordinates(x1, k1Intr, radial1, useR2R4);
+        double[][] x2c = Camera.pixelToCameraCoordinates(x1, k1Intr, radial1, useR2R4);
+
+        double[][] left1 = new double[3][];
+        left1[0] = new double[]{9.48402795e-02,  9.75707586e-01, -1.97484246e-01};
+        left1[1] = new double[]{7.52568521e-01,  2.00130415e-01,  6.27366272e-01};
+        left1[2] = new double[]{6.51648635e-01, -8.91208345e-02, -7.53267239e-01};
+        double[][] right1 = new double[3][];
+        right1[0] = new double[]{-9.03220351e-02,  9.76271959e-01, -1.96812071e-01};
+        right1[1] = new double[]{7.48996521e-01,  1.96836697e-01,  6.32660673e-01};
+        right1[2] = new double[]{6.56388713e-01, -9.02683572e-02, -7.49002992e-01};
+
+        double[][] leftInv = MatrixUtil.transpose(left1);
+        // apply inv(left) to left to see that the result is the identity matrix
+        double[][] leftTleft = MatrixUtil.createATransposedTimesA(left1);
+        // then apply inv(left) to right to be able to compare the result with the identity matrix,
+        //    that is, the rotation of right with respect to left.
+        double[][] leftTright = MatrixUtil.multiply(leftInv, right1);
+        double[] thetasLeftToRight = Rotation.extractThetaFromZYX(leftTright);
+
+        double[][] k2ExtrRot = leftTright;
+        double[] k2ExtrTrans = new double[]{-4.67064408e+01- -1.45613832e+02, -8.09188900e+01 - -8.15340647e+01,
+                2.66643941e+02 - 2.66971558e+02};
+
+        double[] thetas = thetasLeftToRight;
+        double[] thetaDegrees = Arrays.copyOf(thetas, thetas.length);
+        MatrixUtil.multiply(thetaDegrees, 180./Math.PI);
+
+        Camera.CameraExtrinsicParameters extrCalc = Reconstruction.calculateProjectiveMotion(x1c, x2c);
+
+        double[] ti = Arrays.copyOf(extrCalc.getTranslation(), 3);
+        //xim = K * xc.  xc = K^-1*xim
+        //double[][] k2IntrInv = Camera.createIntrinsicCameraMatrixInverse(k2Intr);
+        double[] ti0 = MatrixUtil.multiplyMatrixByColumnVector(k2Intr, ti);
+        MatrixUtil.multiply(ti, 1./ti[2]);
+        double[] ti00 = MatrixUtil.multiplyMatrixByColumnVector(k2Intr, ti);
+        System.out.printf("transformed translation=\n%s\n    =%s\n", FormatArray.toString(ti0, "%.3e"),
+                FormatArray.toString(ti00, "%.3e"));
+
+        assertNotNull(extrCalc);
+        assertNotNull(extrCalc.getRotation());
+        double[][] extrCalcRot = extrCalc.getRotation();
+        double[] extrCalcThetas = new double[3];
+        Rotation.extractThetaFromZYX(extrCalcRot, extrCalcThetas);
+        double[] extrCalcThetaDegrees = Arrays.copyOf(extrCalcThetas, extrCalcThetas.length);
+        MatrixUtil.multiply(extrCalcThetaDegrees, 180./Math.PI);
+
+        System.out.printf("1: derived rot=\n%s\ndegrees=\n%s\ntrans=\n%s\n",
+                FormatArray.toString(extrCalcRot, "%.3e"),
+                FormatArray.toString(extrCalcThetaDegrees, "%.3e"),
+                FormatArray.toString(extrCalc.getTranslation(), "%.3e"));
+
+        System.out.printf("1: expected rot=\n%s\nexpected degrees=\n%s\nexpected trans=\n%s\n",
+                FormatArray.toString(k2ExtrRot, "%.3e"),
+                FormatArray.toString(thetaDegrees, "%.3e"),
+                FormatArray.toString(k2ExtrTrans, "%.3e"));
+
+        // test triangulation, given the values that Bouguet found for R and T
+        System.out.printf("\ngiven Bouguet P1, P2, check triangulation:\n");
+        // the triangulation results agree with the figure displaying the cameras and the checkerboards in WCS
+        int n = x1[0].length;
+        int j, ii;
+        /*
+        x_c = R * xw + t
+            = [R | t] xw
+        x_im = K*x_c = K*[R|t]*xw
+         */
+        double[][] x1Pt = MatrixUtil.zeros(3, 1);
+        double[][] x2Pt = MatrixUtil.zeros(3, 1);
+        for (ii = 0; ii < n; ++ii) {
+            for (j = 0; j < 3; ++j) {
+                x1Pt[j][0] = x1[j][ii]; // use image coordinates
+                x2Pt[j][0] = x2[j][ii];
+            }
+            Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(camera1KRT, camera2KRT, x1Pt, x2Pt);
+            if (wcsPt == null) {
+                continue;
+            }
+            MatrixUtil.multiply(wcsPt.X, 1. / wcsPt.X[3]);
+            System.out.printf("WCS[%d]=%s,\t alpha=%.3e\n", ii, FormatArray.toString(wcsPt.X, "%.3e"),
+               wcsPt.alpha);
+        }
+
+        Reconstruction.ProjectionResults[] results = Reconstruction.calculateProjectiveReconstruction(x1c, x2c);
+        for (Reconstruction.ProjectionResults result : results) {
+            System.out.printf("projectionMatrix: \n%s\n", FormatArray.toString(result.projectionMatrices, "%.3e"));
+            System.out.printf("XM=\n%s\n", FormatArray.toString(MatrixUtil.transpose(result.XW), "%.3e"));
+        }
+    }
+
+    public void estProjectiveWithBouguet() throws IOException, NotConvergedException {
 
         String sep = System.getProperty("file.separator");
         String path = ResourceFinder.findTestResourcesDirectory() + sep + "bouget_stereo" + sep;
-        String filePath1 = path + "left02_masked.png";
-        String filePath2 = path + "right02_masked.png";
+        String filePath1 = path + "left01_masked.png";
+        String filePath2 = path + "right01_masked.png";
 
         int nCorners = 500;
-        boolean debug = true;
+        boolean debug = false;
         boolean useToleranceAsStatFactor = true;
         boolean recalcIterations = false;// possibly faster if set to true
-        double tol = 1.;
+        double tol = 0.5;
         ErrorType errorType = ErrorType.SAMPSONS;
 
         CorrespondenceList corres = CorrespondenceMaker.findUsingORB(filePath1, filePath2, nCorners, useToleranceAsStatFactor,
                 recalcIterations, tol, errorType, debug);
         assertNotNull(corres);
+
+        /*
+        int i, j;
+        PairIntArray x1E = new PairIntArray();
+        PairIntArray x2E = new PairIntArray();
+        for (i = 0; i < corres.x1[0].length; ++i) {
+            x1E.add(new PairInt(corres.x1[0][i], corres.x1[1][i]));
+            x2E.add(new PairInt(corres.x2[0][i], corres.x2[1][i]));
+        }
+        PairIntArray x1EOut = new PairIntArray();
+        PairIntArray x2EOut = new PairIntArray();
+        RANSACEuclideanSolver solver = new RANSACEuclideanSolver();
+        EuclideanTransformationFit fitE = solver.calculateEuclideanTransformation(x1E, x2E, x1EOut, x2EOut, 1E-6);
+        assertNotNull(fitE);
+
+        // plot
+        ImageExt image1 = ImageIOHelper.readImageExt(filePath1);
+        ImageExt image2 = ImageIOHelper.readImageExt(filePath2);
+        CorrespondencePlotter plotter = new CorrespondencePlotter(image1, image2);
+        int nM = x1EOut.getN();
+        for (i = 0; i < nM; ++i) {
+            plotter.drawLineInAlternatingColors(x1EOut.getX(i), x1EOut.getY(i),
+                    x2EOut.getX(i), x2EOut.getY(i), 1);
+        }
+        String ts = (new SimpleDateFormat("yyyyddMMHHmmss")).format(new Date());
+        plotter.writeImage("_" + ts + "_corres");
+        */
+
+        double[][] x1 = corres.x1;
+        double[][] x2 = corres.x2;
+
+        //test data from:
+        //http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example5.html
+        // now at http://robots.stanford.edu/cs223b04/JeanYvesCalib/
+        // "Fifth calibration example - Calibrating a stereo system, stereo image rectification and 3D stereo triangulation"
+        // by Jean-Yves Bouguet
+        // Camera Calibration Toolbox for Matlab
+        //    saved as pdf in miscNotes/bouguetj_5th_calibration_example.pdf
+        //
+        // left camera:
+        //    focal length = 533.5, 533.5
+        //    cc = 341.6, 235.2
+        //    skew = 0, 0
+        //    radial distortion k = -0.288, 0.097, 0.001, -0.0003, 0
+        //
+        // right camera:
+        //    focal length = 536.8, 536.5
+        //    cc = 326.3, 250.1
+        //    skew = 0, 0
+        //    radial distortion k = -0.289, 0.107, 0.001, -0.0001, 0
+        //
+        // rotation vector om=0.00669, 0.00452, -0.0035
+        // translation vector t = -99.80198, 1.12443, 0.05041
+        //
+        // note: the checkerboard squares are 30mm in WCS metric
+        //
+        // note: radial distortion should be corrected:  use on the original coordinates:
+        //     x_corrected = x*(1 + k1*r^2 + k2r^4) where r is distance of point from cc.
+        double[][] left1 = new double[3][];
+        left1[0] = new double[]{9.91272809e-03,  9.62212583e-01, -2.72118876e-01};
+        left1[1] = new double[]{9.86085734e-01,  3.57539594e-02,  1.62347096e-01};
+        left1[2] = new double[]{1.65941746e-01, -2.69941844e-01, -9.48469682e-01};
+        double[][] right1 = new double[3][];
+        right1[0] = new double[]{1.35496246e-02,  9.61601043e-01, -2.74116476e-01};
+        right1[1] = new double[]{9.85091244e-01,  3.41816887e-02,  1.68602649e-01};
+        right1[2] = new double[]{1.71498247e-01, -2.72314243e-01, -9.46801618e-01};
+
+        // inverse of the rotation matrix is the transpose
+        double[][] leftInv = MatrixUtil.transpose(left1);
+        // apply inv(left) to left to see that the result is the identity matrix
+        double[][] leftTleft = MatrixUtil.createATransposedTimesA(left1);
+        // then apply inv(left) to right to be able to compare the result with the identity matrix,
+        //    that is, the rotation of right with respect to left.
+        double[][] leftTright = MatrixUtil.multiply(leftInv, right1);
+        double[] thetasLeftToRight = Rotation.extractThetaFromZYX(leftTright);
+        //thetas000  is 0.002, 0.006, 0.002.   note that (0.002-0.007) radians is 0.29 degrees.
+        // expecting om=0.00669, 0.00452, -0.0035
+
+        double[] rodriguesL1 = Rotation.extractRodriguesRotationVector(left1);
+        double[] rodriguesL2 = Rotation.extractRodriguesRotationVector(right1);
+        // diffRodrigues ix [-0.0014421799439685579, -0.006811388962245868, 0.003946526358523994]
+        double[] diffRodrigues = MatrixUtil.subtract(rodriguesL1, rodriguesL2);
+        double[][] r120 = Rotation.rotationBetweenTwoDirections0(rodriguesL1, rodriguesL2);
+        double[][] r121 = Rotation.rotationBetweenTwoDirections1(rodriguesL1, rodriguesL2);
+
+        //what rotation
+        double[][] diffRSameCenter = Rotation.procrustesAlgorithmForRotation(left1, right1);
+        // expecting: 0.00669, 0.00452, -0.0035.  not a bad approximation for the first image set.
+
+        double[][] k1Intr = Camera.createIntrinsicCameraMatrix(533.5, 341.6, 235.2);
+        double[][] k2Intr = Camera.createIntrinsicCameraMatrix(536.6, 326.3, 250.1);
+
+        double[][] k1ExtrRot = MatrixUtil.createIdentityMatrix(3);
+        double[] k1ExtrTrans = new double[]{0, 0, 0};
+        double[][] k2ExtrRot = Rotation.createRodriguesFormulaRotationMatrix(
+                new double[]{0.00611, 0.00409, -0.00359});
+        double[] k2ExtrTrans = new double[]{-99.85, 0.82, 0.44};
+
+        double[] thetas = new double[3];
+        Rotation.extractThetaFromZYX(k2ExtrRot, thetas);
+        double[] thetaDegrees = Arrays.copyOf(thetas, thetas.length);
+        MatrixUtil.multiply(thetaDegrees, 180./Math.PI);
+
+        boolean useR2R4 = true;
+        double[] radial1 = new double[]{-0.288, 0.097, 0.001};
+        double[] radial2 = new double[]{-0.289,0.107, -0.001};
+
+        double[][] x1c = Camera.pixelToCameraCoordinates(x1, k1Intr, radial1, useR2R4);
+        double[][] x2c = Camera.pixelToCameraCoordinates(x1, k1Intr, radial1, useR2R4);
+
+        // calculate the rotation and translation from the correspondence
+        Camera.CameraExtrinsicParameters extrCalc = Reconstruction.calculateProjectiveMotion(x1, x2);
+        assertNotNull(extrCalc);
+        assertNotNull(extrCalc.getRotation());
+        double[][] extrCalcRot = extrCalc.getRotation();
+        double[] extrCalcThetas = new double[3];
+        Rotation.extractThetaFromZYX(extrCalcRot, extrCalcThetas);
+        double[] extrCalcThetaDegrees = Arrays.copyOf(extrCalcThetas, extrCalcThetas.length);
+        MatrixUtil.multiply(extrCalcThetaDegrees, 180./Math.PI);
+
+        System.out.printf("0: derived rot=\n%s\ndegrees=\n%s\ntrans=\n%s\n",
+                FormatArray.toString(extrCalcRot, "%.3e"),
+                FormatArray.toString(extrCalcThetaDegrees, "%.3e"),
+                FormatArray.toString(extrCalc.getTranslation(), "%.3e"));
+
+        System.out.printf("0: expected rot=\n%s\nexpected degrees=\n%s\nexpected trans=\n%s\n",
+                FormatArray.toString(k2ExtrRot, "%.3e"),
+                FormatArray.toString(thetaDegrees, "%.3e"),
+                FormatArray.toString(k2ExtrTrans, "%.3e"));
+
+        // ===================================================================================
+        /* for the 2nd image pair:
+        left extrinsic matrix:
+        [[-9.48402795e-02  9.75707586e-01 -1.97484246e-01 -4.67064408e+01]
+         [ 7.52568521e-01  2.00130415e-01  6.27366272e-01 -8.09188900e+01]
+         [ 6.51648635e-01 -8.91208345e-02 -7.53267239e-01  2.66643941e+02]
+         [ 0.00000000e+00  0.00000000e+00  0.00000000e+00  1.00000000e+00]]
+
+         right extrinsic matrix:
+         [[-9.03220351e-02  9.76271959e-01 -1.96812071e-01 -1.45613832e+02]
+         [ 7.48996521e-01  1.96836697e-01  6.32660673e-01 -8.15340647e+01]
+         [ 6.56388713e-01 -9.02683572e-02 -7.49002992e-01  2.66971558e+02]
+         [ 0.00000000e+00  0.00000000e+00  0.00000000e+00  1.00000000e+00]]
+         */
+        filePath1 = path + "left02_masked.png";
+        filePath2 = path + "right02_masked.png";
+
+        corres = CorrespondenceMaker.findUsingORB(filePath1, filePath2, nCorners, useToleranceAsStatFactor,
+                recalcIterations, tol, errorType, debug);
+        assertNotNull(corres);
+        x1 = corres.x1;
+        x2 = corres.x2;
+
+        x1c = Camera.pixelToCameraCoordinates(x1, k1Intr, radial1, useR2R4);
+        x2c = Camera.pixelToCameraCoordinates(x1, k1Intr, radial1, useR2R4);
+
+        for (int i = 0; i < x1[0].length; ++i) {
+            System.out.printf("x1[0][%d]=%.4e;  x1[1][%d]=%.4e;  x2[0][%d]=%.4e;  x2[1][%d]=%.4e;\n",
+                    i, x1[0][i], i, x1[1][i], i, x2[0][i], i, x2[1][i]);
+        }
+
+        left1[0] = new double[]{9.48402795e-02,  9.75707586e-01, -1.97484246e-01};
+        left1[1] = new double[]{7.52568521e-01,  2.00130415e-01,  6.27366272e-01};
+        left1[2] = new double[]{6.51648635e-01, -8.91208345e-02, -7.53267239e-01};
+        right1[0] = new double[]{-9.03220351e-02,  9.76271959e-01, -1.96812071e-01};
+        right1[1] = new double[]{7.48996521e-01,  1.96836697e-01,  6.32660673e-01};
+        right1[2] = new double[]{6.56388713e-01, -9.02683572e-02, -7.49002992e-01};
+
+        leftInv = MatrixUtil.transpose(left1);
+        // apply inv(left) to left to see that the result is the identity matrix
+        leftTleft = MatrixUtil.createATransposedTimesA(left1);
+        // then apply inv(left) to right to be able to compare the result with the identity matrix,
+        //    that is, the rotation of right with respect to left.
+        leftTright = MatrixUtil.multiply(leftInv, right1);
+        thetasLeftToRight = Rotation.extractThetaFromZYX(leftTright);
+
+        k2ExtrRot = leftTright;
+        k2ExtrTrans = new double[]{-4.67064408e+01- -1.45613832e+02, -8.09188900e+01 - -8.15340647e+01,
+                2.66643941e+02 - 2.66971558e+02};
+
+        thetas = thetasLeftToRight;
+        thetaDegrees = Arrays.copyOf(thetas, thetas.length);
+        MatrixUtil.multiply(thetaDegrees, 180./Math.PI);
+
+        extrCalc = Reconstruction.calculateProjectiveMotion(x1c, x2c);
+
+        double[] ti = Arrays.copyOf(extrCalc.getTranslation(), 3);
+        //xim = K * xc.  xc = K^-1*xim
+        //double[][] k2IntrInv = Camera.createIntrinsicCameraMatrixInverse(k2Intr);
+        double[] ti0 = MatrixUtil.multiplyMatrixByColumnVector(k2Intr, ti);
+        MatrixUtil.multiply(ti, 1./ti[2]);
+        double[] ti00 = MatrixUtil.multiplyMatrixByColumnVector(k2Intr, ti);
+        System.out.printf("transformed translation=\n%s\n    =%s\n", FormatArray.toString(ti0, "%.3e"),
+                FormatArray.toString(ti00, "%.3e"));
+
+        assertNotNull(extrCalc);
+        assertNotNull(extrCalc.getRotation());
+        extrCalcRot = extrCalc.getRotation();
+        extrCalcThetas = new double[3];
+        Rotation.extractThetaFromZYX(extrCalcRot, extrCalcThetas);
+        extrCalcThetaDegrees = Arrays.copyOf(extrCalcThetas, extrCalcThetas.length);
+        MatrixUtil.multiply(extrCalcThetaDegrees, 180./Math.PI);
+
+        System.out.printf("1: derived rot=\n%s\ndegrees=\n%s\ntrans=\n%s\n",
+                FormatArray.toString(extrCalcRot, "%.3e"),
+                FormatArray.toString(extrCalcThetaDegrees, "%.3e"),
+                FormatArray.toString(extrCalc.getTranslation(), "%.3e"));
+
+        System.out.printf("1: expected rot=\n%s\nexpected degrees=\n%s\nexpected trans=\n%s\n",
+                FormatArray.toString(k2ExtrRot, "%.3e"),
+                FormatArray.toString(thetaDegrees, "%.3e"),
+                FormatArray.toString(k2ExtrTrans, "%.3e"));
+
     }
 
     public void estCalculateProjectiveReconstruction() throws Exception {
