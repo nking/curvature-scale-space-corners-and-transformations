@@ -122,7 +122,7 @@ public class Triangulation {
      * The corresponding measurements of the same point in image 2 are in x2.
      * format is 3 x N where N is the number of measurements.
      *
-     * @param x2 the set of measurements of 1 real world point X from image 2 in iamge coordinates (pixels).
+     * @param x2 the set of measurements of 1 real world point X from image 2 in image coordinates (pixels).
      * The corresponding measurements of the same point in image 1 are in x1.
      * format is 3 x N where N is the number of measurements.
      *
@@ -197,8 +197,9 @@ public class Triangulation {
       *     if P = [ R | t ], then x1 and x2 must be in camera coordinates.
       *     else if P = K * [ R | t ], then x1 and x2 must be in iamge coordinates(pixels).
       *
-      *     x = alpha * P * X
-      *     x_c = K * x_im
+      *     x_c = R * xw + t
+      *         = [R | t] xw
+      *     x_im = K*x_c = K*[R|t]*xw
       *
      * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
      * </pre>
@@ -213,7 +214,7 @@ public class Triangulation {
      * If the data are not perfect, need more than 1 pair for best fit.
       * NOTE that x1 must be in camera coordinate frame if the camera matrix P = [ R | t ]
       * where R is the rotation between camera1 and camera2 and t is the translation between them,
-      * else if  P = K * [ R | t ], then x1 has to be in iamge coordinates (pixels).
+      * else if  P = K * [ R | t ], then x1 has to be in image coordinates (pixels).
      * @param x2 the set of measurements of 1 real world point X from image 2.
       * The corresponding measurements of the same point in image 1 are in x1.
       * format is 3 x N where N is the number of measurements.

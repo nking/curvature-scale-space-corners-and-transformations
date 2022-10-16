@@ -126,8 +126,7 @@ public class CorrespondenceMaker {
 
         if (debug) {
             // print the corners lists onto images
-            SimpleDateFormat fmt = new SimpleDateFormat("yyyyddMMHHmmss");
-            ts = fmt.format(new Date());
+            ts = (new SimpleDateFormat("yyyyddMMHHmmss")).format(new Date());
 
             Image tmp1 = image1.copyToColorGreyscale();
             for (i = 0; i < xKP1[0].length; ++i) {
@@ -157,6 +156,7 @@ public class CorrespondenceMaker {
         CorrespondencePlotter plotter = debug ?
                 new CorrespondencePlotter(image1.copyToColorGreyscale(), image2.copyToColorGreyscale()) : null;
         if (fitAndCorres.mIF != null) {
+            System.out.printf("%s) #Matched = %d\n", ts, fitAndCorres.mI.length);
             nM = fitAndCorres.mIF.length;
             x1M = MatrixUtil.zeros(3, nM);
             x2M = MatrixUtil.zeros(3, nM);
@@ -176,6 +176,7 @@ public class CorrespondenceMaker {
                             (int)x2M[0][i], (int)x2M[1][i], 1);
                 }
             }
+            System.out.printf("%s) #outlierRemovedMatched = %d\n", ts, nM);
         } else {
             // fit failed, but we have the ORBMatcher greedy matching points as the 'mI' array.
             nM = fitAndCorres.mI.length;
@@ -199,8 +200,8 @@ public class CorrespondenceMaker {
         }
 
         CorrespondenceList c = new CorrespondenceList();
-        c.x1 = x1;
-        c.x2 = x2;
+        c.x1 = x1M;
+        c.x2 = x2M;
         c.fm = fm;
         c.errors = errors;
         return c;
