@@ -189,11 +189,15 @@ public class ReconstructionTest extends TestCase {
                wcsPt.alpha);
         }
 
+        // need to implement the pure translation method for this case
         Reconstruction.ProjectionResults[] results = Reconstruction.calculateProjectiveReconstruction(x1c, x2c);
         for (Reconstruction.ProjectionResults result : results) {
             System.out.printf("projectionMatrix: \n%s\n", FormatArray.toString(result.projectionMatrices, "%.3e"));
             System.out.printf("XM=\n%s\n", FormatArray.toString(MatrixUtil.transpose(result.XW), "%.3e"));
         }
+
+        //TODO: use calculateProjectiveReconstruction on left image 0 and left image 1 pairs of correspondence
+        
     }
 
     public void estProjectiveWithBouguet() throws IOException, NotConvergedException {
