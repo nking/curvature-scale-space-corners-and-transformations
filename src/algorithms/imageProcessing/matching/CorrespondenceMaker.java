@@ -15,6 +15,13 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+/**
+ * a class to use harris corners filtered to local maxima and ORB descriptors to find matching
+ * keypoints between 2 images.  Not that the images may need pre-processing so that at least
+ * 50% of the potential features are common to both.
+ * Texture matching with HOGs may return better results.
+ * Also note that alternative means may be necessary for extremely repetetive patterns.
+ */
 public class CorrespondenceMaker {
 
     public static class CorrespondenceList {
@@ -131,11 +138,15 @@ public class CorrespondenceMaker {
             Image tmp1 = image1.copyToColorGreyscale();
             for (i = 0; i < xKP1[0].length; ++i) {
                 ImageIOHelper.addPointToImage((int)xKP1[0][i], (int)xKP1[1][i], tmp1, 2, 255, 0, 0);
+                //System.out.printf("x1[0][%d]=%d;  x1[1][%d]=%d;\n",
+                //        i, (int)xKP1[0][i], i, (int)xKP1[1][i]);
             }
             MiscDebug.writeImage(tmp1, "_" + ts + "_corners_im1");
             tmp1 = image2.copyToColorGreyscale();
             for (i = 0; i < xKP2[0].length; ++i) {
                 ImageIOHelper.addPointToImage((int)xKP2[0][i], (int)xKP2[1][i], tmp1, 2, 255, 0, 0);
+                //System.out.printf("x2[0][%d]=%d;  x2[1][%d]=%d;\n",
+                //        i, (int)xKP2[0][i], i, (int)xKP2[1][i]);
             }
             MiscDebug.writeImage(tmp1, "_" + ts + "_corners_im2");
         }

@@ -22,10 +22,11 @@ import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.SVD;
 
 /**
+ *  This class has/will have methods for Structure from Motion and 3-D point reconstruction.
  * given correspondence between two images calculate the camera
  * parameters as intrinsic and extrinsic parameters,
  * and the real world position.
- * 
+ *
  * Euler rotations:
         
         about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
@@ -427,6 +428,8 @@ public class Reconstruction {
             em[i][1] = e1[(i * 3) + 1];
             em[i][2] = e1[(i * 3) + 2];
         }
+
+        System.out.printf("EM=\n%s\n", FormatArray.toString(em, "%.4e"));
 
         //(2) compute the camera matrices P1, P2 from FM.
         svd = SVD.factorize(new DenseMatrix(em));
@@ -1011,6 +1014,7 @@ public class Reconstruction {
     }
 
     /**
+     * NOT READY FOR USE
      * TODO: proof read the algorithm and write test for this.
      * for the case of un-calibrated cameras viewing the same scene features,
      * recover the 3-D coordinates in WCS and the projection matrices 
@@ -1329,8 +1333,10 @@ public class Reconstruction {
         
         return rr;
     }
-    
+
      /**
+      * NOTE: the method needs improvement to choose the best 2 solutions, meanwhile prefer to use
+      * calculateProjectiveReconstruction(double[][] x1c, double[][] x2c).
      * given correspondence between two images in image coordinates calculate 
      * the extrinsic camera parameters and the 3-D points.
      * 
@@ -1381,42 +1387,18 @@ public class Reconstruction {
         double[][] k2IntrInv = Camera.createIntrinsicCameraMatrixInverse(k2);
         
         // the direction of the points is calculated by K^-1 * x
-        double[][] x1Direction = MatrixUtil.multiply(k1IntrInv, x1);
-        double[][] x2Direction = MatrixUtil.multiply(k2IntrInv, x2);
+        double[][] x1C = MatrixUtil.multiply(k1IntrInv, x1);
+        double[][] x2C = MatrixUtil.multiply(k2IntrInv, x2);
                 
-        DenseMatrix x1M = new DenseMatrix(x1Direction);
-        DenseMatrix x2M = new DenseMatrix(x2Direction);
-        
-        // normalizing by unit standard to improve results of epipolar solution:
-        EpipolarTransformer.NormalizedXY normXY1 
-            = EpipolarTransformer.normalizeUsingUnitStandard(x1M);
-        EpipolarTransformer.NormalizedXY normXY2 
-            = EpipolarTransformer.normalizeUsingUnitStandard(x2M);
-        
-        DenseMatrix leftM = normXY1.getXy();
-        DenseMatrix rightM = normXY2.getXy();
-        
-        double tolerance = 3.84; //3.84 5.99 7.82        
+        DenseMatrix x1M = new DenseMatrix(x1C);
+        DenseMatrix x2M = new DenseMatrix(x2C);
+
+        double tolerance = 3; //3.84 5.99 7.82
         boolean useToleranceAsStatFactor = true;
         ErrorType errorType = ErrorType.SAMPSONS;
         EpipolarTransformationFit fitR = null;
         boolean reCalcIterations = true;
-        
-        DenseMatrix normalizedE;
-        
-        /*EpipolarTransformer tr = new EpipolarTransformer();        
-        normalizedE = tr.calculateEpipolarProjection(leftM, rightM);
-        DenseMatrix vNFM = tr.validateSolution(normalizedFM, leftM, rightM);
-        
-        Distances distances = new Distances();
-        if (useToleranceAsStatFactor) {
-            fitR = distances.calculateError2(vNFM, leftM, rightM,
-                    errorType, tolerance);
-        } else {
-            fitR = distances.calculateError(vNFM, leftM, rightM,
-                    errorType, tolerance);
-        }*/
-        
+
         //if true, solves for the Essential Matrix, else solves
         //for the Fundamental Matrix.  The difference is in the diagonal used for
         //dimension reduction.
@@ -1424,31 +1406,24 @@ public class Reconstruction {
         
         RANSACSolver solver = new RANSACSolver();
         fitR = solver.calculateEpipolarProjection(
-            leftM, rightM, errorType, useToleranceAsStatFactor, tolerance,
+            x1M, x2M, errorType, useToleranceAsStatFactor, tolerance,
                 reCalcIterations, coordsAreInCameraRefFrame);
         
         System.out.println("RANSAC fit=" + fitR.toString());
         
-        normalizedE = fitR.getFundamentalMatrix();
+        DenseMatrix em = fitR.getFundamentalMatrix();
+
+        SVD svdE = SVD.factorize(em);
+
+        double[][] u = MatrixUtil.convertToRowMajor(svdE.getU());
+        double[][] vT = MatrixUtil.convertToRowMajor(svdE.getVt());
+
+        double detU = MatrixUtil.determinant(u);
+        double detV = MatrixUtil.determinant(vT);
         
-        // this is now back in the reference frame of the x1Direction and x2Direction
-        DenseMatrix essentialM = EpipolarTransformer.denormalizeTheFundamentalMatrix(
-            normalizedE, normXY1.getNormalizationMatrices(),
-            normXY2.getNormalizationMatrices());
-        
-        //=========
-        double[][] _essentialMatrix = MatrixUtil.convertToRowMajor(essentialM);
-        
-        MatrixUtil.SVDProducts svdE = MatrixUtil.performSVD(_essentialMatrix);
-        
-        assert(svdE.u[0].length == 3 && svdE.u.length == 3);
-        
-        double detU = MatrixUtil.determinant(svdE.u);
-        double detV = MatrixUtil.determinant(svdE.vT);
-        
-        System.out.printf("SVD.u=\n%s\n", FormatArray.toString(svdE.u, "%.3e"));
-        System.out.printf("SVD.s=\n%s\n", FormatArray.toString(svdE.s, "%.3e"));
-        System.out.printf("SVD.vT=\n%s\n", FormatArray.toString(svdE.vT, "%.3e"));
+        System.out.printf("SVD.u=\n%s\n", FormatArray.toString(u, "%.3e"));
+        System.out.printf("SVD.s=\n%s\n", FormatArray.toString(svdE.getS(), "%.3e"));
+        System.out.printf("SVD.vT=\n%s\n", FormatArray.toString(vT, "%.3e"));
         System.out.printf("det(SVD.u)=%.2f\n", detU);
         System.out.printf("det(SVD.vT)=%.2f\n", detV);
         
@@ -1489,8 +1464,7 @@ public class Reconstruction {
         */
         double[][] r1 = MatrixUtil.zeros(3, 3);
         double[][] r2 = MatrixUtil.zeros(3, 3);
-        double[][] u = MatrixUtil.zeros(3, 3);
-        populateWithDet1Rs(svdE, r1, r2, u);
+        populateWithDet1Rs(u, vT, r1, r2, u);
         
         // last column in u is the second epipole and is the direction of vector t
         double[] t1 = MatrixUtil.extractColumn(u, 2);
@@ -1508,15 +1482,17 @@ public class Reconstruction {
         //    eigenvector.  it is epipole2, that is, the right image position 
         //    of the epipolar projection of the left camera center.
         //    it's int the left null space of E.
-                        
-        x1M = extractIndices(new DenseMatrix(x1Direction), fitR.inlierIndexes);
-        x2M = extractIndices(new DenseMatrix(x2Direction), fitR.inlierIndexes);
+
+        // reset the image coordinate list to the inliers only
+        x1M = extractIndices(new DenseMatrix(x1), fitR.inlierIndexes);
+        x2M = extractIndices(new DenseMatrix(x2), fitR.inlierIndexes);
         x1 = MatrixUtil.convertToRowMajor(x1M);
         x2 = MatrixUtil.convertToRowMajor(x2M);
         
         double[][] rSelected = MatrixUtil.zeros(3, 3);
         double[] tSelected = new double[3];
         double[][] XW = MatrixUtil.zeros(4, x1[0].length);
+        // this method needs x1 and x2 in image coordinates (pixels)
         bestInCheiralityTest(x1, x2, k1, k2, r1, r2, t1, t2, rSelected, tSelected, XW);  
         
         ReconstructionResults rr = new ReconstructionResults();
@@ -1527,8 +1503,7 @@ public class Reconstruction {
         rr.k2ExtrRot = rSelected;
         rr.k2ExtrTrans = tSelected;
         rr.k2Intr = k2;
-        rr.essentialMatrix = _essentialMatrix;
-        rr.svd = svdE;
+        rr.essentialMatrix = MatrixUtil.convertToRowMajor(em);
         rr.fundamentalMatrix = null;
 
         return rr;        
@@ -1839,6 +1814,7 @@ public class Reconstruction {
     }
     
     /**
+     * NOT READY FOR USE.
      * a look at enforcing orthonormal rotation
      * 
      * @param x
@@ -2128,6 +2104,7 @@ public class Reconstruction {
     */
           
     /**
+     * NOT READY FOR USE.
      * for the case where the cameras are viewing small, distant scenes,
      * recover the 3-D coordinates in WCS and the projection matrices 
      * from pairs of corresponding
@@ -3523,7 +3500,6 @@ public class Reconstruction {
         double[][] k2ExtrRot;
         double[] k2ExtrTrans;
         double[][] essentialMatrix;
-        SVDProducts svd;
         double[][] fundamentalMatrix;
         
         @Override
@@ -3570,8 +3546,8 @@ public class Reconstruction {
      * NOTE that inaccuracies in this chirality are larger for points further 
      * away from the cameras and closer to the plane at infinity.
      * NOTE that the determinants of R1 and R2 should have already been checked to be +1.
-     * @param x1 image 1 portion of the correspondence pairs.
-     * @param x2 image 2 portion of the correspondence pairs.
+     * @param x1 image 1 portion of the correspondence pairs in pixels.
+     * @param x2 image 2 portion of the correspondence pairs in pixels.
      * @param k1 intrinsic camera matrix for camera 1
      * @param k2 intrinsic camera matrix for camera 2
      * @param R1 rotation matrix whose determinant is +1
@@ -3664,7 +3640,7 @@ public class Reconstruction {
             nPosZ = 0;
             for (i = 0; i < n; ++i) {
                 for (ii = 0; ii < 3; ++ii) {
-                    x1Pt[ii][0] = x1[ii][i];
+                    x1Pt[ii][0] = x1[ii][i]; // use image coordinates
                     x2Pt[ii][0] = x2[ii][i];
                 }
 
@@ -3712,7 +3688,7 @@ public class Reconstruction {
         
     }
 
-    static void populateWithDet1Rs(MatrixUtil.SVDProducts svdE, 
+    static void populateWithDet1Rs(double[][] u, double[][] vT,
         double[][] r1Out, double[][] r2Out, double[][] uOut) {
         
         //Szeliski 2010, eqn (7.25)
@@ -3730,14 +3706,13 @@ public class Reconstruction {
         r90T[2] = new double[]{0, 0, 1};
         double[][] r90NegT = MatrixUtil.transpose(r90T);
         
-        double[][] u = svdE.u;
         double[][] uNeg = MatrixUtil.copy(u);
         MatrixUtil.multiply(uNeg, -1);
         
-        double[][] rr1 = MatrixUtil.multiply(MatrixUtil.multiply(u, r90T), svdE.vT);
-        double[][] rr2 = MatrixUtil.multiply(MatrixUtil.multiply(uNeg, r90T), svdE.vT);
-        double[][] rr3 = MatrixUtil.multiply(MatrixUtil.multiply(u, r90NegT), svdE.vT);
-        double[][] rr4 = MatrixUtil.multiply(MatrixUtil.multiply(uNeg, r90NegT), svdE.vT);
+        double[][] rr1 = MatrixUtil.multiply(MatrixUtil.multiply(u, r90T), vT);
+        double[][] rr2 = MatrixUtil.multiply(MatrixUtil.multiply(uNeg, r90T), vT);
+        double[][] rr3 = MatrixUtil.multiply(MatrixUtil.multiply(u, r90NegT), vT);
+        double[][] rr4 = MatrixUtil.multiply(MatrixUtil.multiply(uNeg, r90NegT), vT);
         
         double det1 = MatrixUtil.determinant(rr1);
         double det2 = MatrixUtil.determinant(rr2);
