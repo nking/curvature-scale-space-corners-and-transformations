@@ -27,6 +27,10 @@ import no.uib.cipr.matrix.SVD;
  * parameters as intrinsic and extrinsic parameters,
  * and the real world position.
  *
+ * TODO: implement affine reconstruction for the case of pure translation,
+ *     see Example 6.6 of Ma, Soatto, Kosecká, and Sastry 2012, "An Invitation to 3-D Vision"".
+ *     For the case of pure rotation, see Example 6.10.
+ *
  * Euler rotations:
         
         about z-axis (yaw):           about x-axis (roll):       about the y-axis (pitch):
