@@ -1509,6 +1509,9 @@ public class Reconstruction {
         rr.k2Intr = k2;
         rr.essentialMatrix = MatrixUtil.convertToRowMajor(em);
         rr.fundamentalMatrix = null;
+        rr.svdU = u;
+        rr.svdVt = vT;
+        rr.svdS = Arrays.copyOf(svdE.getS(), svdE.getS().length);
 
         return rr;        
     }
@@ -3505,6 +3508,9 @@ public class Reconstruction {
         double[] k2ExtrTrans;
         double[][] essentialMatrix;
         double[][] fundamentalMatrix;
+        double[][] svdU;
+        double[][] svdVt;
+        double[] svdS;
         
         @Override
         public String toString() {

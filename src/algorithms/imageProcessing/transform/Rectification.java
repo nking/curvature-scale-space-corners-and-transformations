@@ -205,11 +205,11 @@ public class Rectification {
        
        double[] t = Arrays.copyOf(re.k2ExtrTrans, re.k2ExtrTrans.length);
        double[][] r = MatrixUtil.copy(re.k2ExtrRot);
-       
+
        // right nullspace of F:
-       double[] e1 = Arrays.copyOf(re.svd.vT[2], re.svd.vT[2].length);
+       double[] e1 = Arrays.copyOf(re.svdVt[2], re.svdVt[2].length);
        // left nullspace of F:
-       double[] e2 = MatrixUtil.transpose(re.svd.u)[2];
+       double[] e2 = MatrixUtil.transpose(re.svdU)[2];
        //MatrixUtil.multiply(e1, 1./e1[2]);
        //MatrixUtil.multiply(e2, 1./e2[2]);
        e1 =  MatrixUtil.normalizeL2(e1);
