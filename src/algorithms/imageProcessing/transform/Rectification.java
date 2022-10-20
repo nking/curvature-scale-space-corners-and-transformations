@@ -914,8 +914,8 @@ public class Rectification {
         // iterate over the rectified image pixel coordinates
         for (j = 0; j < xDimR; ++j) {
             for (i = 0; i < yDimR; ++i) {
-                xy[0] = j - yOffsetR;
-                xy[1] = i - xOffsetR;
+                xy[0] = j - xOffsetR;
+                xy[1] = i - yOffsetR;
                 xy[2] = 1;
                 // transform to the original image coordinate frame
                 xy0 = MatrixUtil.multiplyMatrixByColumnVector(invH, xy);
