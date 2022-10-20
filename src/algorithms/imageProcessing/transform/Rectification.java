@@ -406,16 +406,30 @@ public class Rectification {
         SVD svd = SVD.factorize(fmM);
 
         double[][] uF = MatrixUtil.convertToRowMajor(svd.getU());
-        //double[][] vTF = MatrixUtil.convertToRowMajor(svd.getVt());
+        double[][] vTF = MatrixUtil.convertToRowMajor(svd.getVt());
         double[] s = Arrays.copyOf(svd.getS(), svd.getS().length);
 
         double[] ep2 = MatrixUtil.extractColumn(uF, 2);
         MatrixUtil.multiply(ep2, 1./MatrixUtil.lPSum(ep2, 2));
         //System.out.printf("ep2=%s\n", FormatArray.toString(ep2, "%.3e"));
-        //double[] ep1 = Arrays.copyOf(vTF[2], vTF[2].length);
 
         double[] ep2im = Arrays.copyOf(ep2, ep2.length);
         MatrixUtil.multiply(ep2im, 1./ep2im[2]); // redoing the normalization that MTJ toolkit already applied to u, undone in ep2
+
+        double[] ep1im = Arrays.copyOf(vTF[2], vTF[2].length);
+        MatrixUtil.multiply(ep1im, 1./ep1im[2]);
+
+        // if ep2im and ep1im are outside of image boundaries, can proceed.
+        // if either are inside boundaries, print error.
+        if (ep2im[0] >= 0 && ep2im[0] < (oX * 2) && ep2im[1] >= 0 && ep2im[1] < (oY * 2)) {
+            System.err.printf(
+                    "ERROR: the left nullspace (e2) is inside the image bounds which means that method rectify() cannot be used ");
+        }
+        if (ep1im[0] >= 0 && ep1im[0] < (oX * 2) && ep1im[1] >= 0 && ep1im[1] < (oY * 2)) {
+            System.err.printf(
+                    "ERROR: the right nullspace (e1) is inside the image bounds which means that method rectify() cannot be used ");
+        }
+        System.out.printf("epipoles=(%s),(%s)\n", FormatArray.toString(ep1im, "%.3f"), FormatArray.toString(ep2im, "%.3f"));
 
         double[] vRand = Arrays.copyOf(ep2, ep2.length);
         Random rand = new Random(System.currentTimeMillis());

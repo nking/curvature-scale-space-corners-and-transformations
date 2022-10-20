@@ -55,9 +55,8 @@ import algorithms.util.FormatArray;
          The projection of one camera center onto the other camera's image plane is an epipole.
          (the epipole can lie outside the image boundaries)
          in the Essential Matrix: e2 ~ T and e1 ~ R*T up to a scalar factor.
-         in general:
-             e1 = right nullspace of FM = SVD(fm).V[*,2]
-             e2 = left nullspace of FM = SVD(fm).U[*,2]
+         e1 = right nullspace of FM = SVD(fm).V[*,2].
+         e2 = left nullspace of FM = SVD(fm).U[*,2].
          e2^T*E = 0
          E*e1 = 0
      Epipolar line of p:
@@ -1758,12 +1757,12 @@ public class EpipolarTransformer {
      *       In the epipolar plane, the point where the camera principal point intersects it image is the
      *       epipole.  The location of the epipole in the other image can be thought of as the projection
      *       of the other camera center onto its image.
-     *       (the epipole can lie outside the image boundaries)
-     *       e2 is the left nullspace of E and e2 is the right nullspace of E.
-     *         e2^T*E = 0
-     *         E*e1 = 0
-     *         and e2 = SVD(E).u <-- last column, then divided by last item
-     *             e1 = SVD(E).v <-- last row, then divided by last item
+     *       (the epipole can lie outside the image boundaries).
+     *       e1 = right nullspace of FM = SVD(fm).V[*,2].
+     *       e2 = left nullspace of FM = SVD(fm).U[*,2].
+     *         e2^T*E = 0.
+     *         E*e1 = 0.
+     *         this method returns e1 and e2 divided by their last columns.
      *         for the essential matrix: e2 ~ T and e1 ~ R*T up to a scalar factor.
 
      * @param fundamentalMatrix
@@ -1779,8 +1778,8 @@ public class EpipolarTransformer {
         
         epipoles:
              [U,D,V] = svd(denormalized FundamentalMatrix);
-             e1 = last column of V divided by it's last item
-             e2 = last column of U divided by it's last item
+             e1 = last column of V divided by its last item.  right nullspace.
+             e2 = last column of U divided by its last item.  left nullspace.
 
         e2 when normalized by 3rd coord is in coord space of left image and
                it is the location of the right camera center.
@@ -1794,12 +1793,14 @@ public class EpipolarTransformer {
             return null;
         }
 
+        // left nullspace
         double[] e2 = new double[3];
         double e2Div = svdE.getU().get(2, 2);
         for (int i = 0; i < e2.length; i++) {
             e2[i] = svdE.getU().get(i, 2)/e2Div;
         }
-        
+
+        //right nullspace
         double[] e1 = new double[3];
         double e1Div = svdE.getVt().get(2, 2);
         for (int i = 0; i < e1.length; i++) {

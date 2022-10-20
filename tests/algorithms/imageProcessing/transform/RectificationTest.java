@@ -96,6 +96,9 @@ public class RectificationTest extends TestCase {
         //  MASKS uncalibrated method on them.
         // TODO: implement the non-linear polar rectification algorithm of Pollefys
 
+        //NOTE: if idx1=1 and idx2=2, can see from the epipoles that the rectifications will
+        // rotate the image around z-axis by a large amount
+
         // for idx1 = 1 and idx2 = 2, there must be another problem
 
         double[][] e1e2 = EpipolarTransformer.calculateEpipoles(new DenseMatrix(fm));
