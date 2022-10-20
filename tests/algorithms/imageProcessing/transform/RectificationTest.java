@@ -126,6 +126,11 @@ public class RectificationTest extends TestCase {
         MiscDebug.writeImage(imgW1.copyToGreyscale2(), "_rect_zhang98_01_");
         MiscDebug.writeImage(imgW2.copyToGreyscale2(), "_rect_zhang98_02_");
 
+        Rectification.RectifiedImage[] imgR2 = Rectification.hWarpUnionSize(
+                im1.copyToGreyscale2(), im2.copyToGreyscale2(), rP.getH1(), rP.getH2());
+        MiscDebug.writeImage(imgR2[0].copyToGreyscale2(), "_union_rect_zhang98_01_");
+        MiscDebug.writeImage(imgR2[1].copyToGreyscale2(), "_union_rect_zhang98_02_");
+
     }
     
 }
