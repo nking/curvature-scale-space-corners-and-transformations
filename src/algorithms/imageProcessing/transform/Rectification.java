@@ -659,7 +659,7 @@ public class Rectification {
         */
 
     }
-   
+
     /**
      use the homography from rectify(...) to warp the image img such that
      epipolar lines correspond to scan lines.
@@ -673,49 +673,36 @@ public class Rectification {
      * @param h homography transformation matrix
      * @return 
     */
-    public static double[][] hBackwardWarp(double[][] img, double[][] h) throws NotConvergedException {
+    public static double[][] hWarp(double[][] img, double[][] h) throws NotConvergedException {
 
         int ydim = img.length;
         int xdim = img[0].length;
 
-        int i;
-        int j;
+        double[][] invH = MatrixUtil.pseudoinverseFullRowRank(h);
 
         ImageProcessor iP = new ImageProcessor();
         double[][] im1 = MatrixUtil.zeros(ydim, xdim);
 
-        double v;
-        //int x, y;
-        float x, y;
+        int i;
+        int j;
         double[] xy = new double[3];
-        double[] xyr;
-        xy[2] = 1;
+        double[] xy0;
         int k;
         for (j = 0; j < xdim; ++j) {
             for (i = 0; i < ydim; ++i) {
-                v = img[j][i];
                 xy[0] = j;
                 xy[1] = i;
                 xy[2] = 1;
-                xyr = MatrixUtil.multiplyMatrixByColumnVector(h, xy);
+                xy0 = MatrixUtil.multiplyMatrixByColumnVector(invH, xy);
                 for (k = 0; k < 3; ++k) {
-                    xyr[k] /= xyr[2];
+                    xy0[k] /= xy0[2];
                 }
-                //im1 = interp2(double(im0),xi,yi,'bilinear');
-              //  x = (int)Math.round(xyr[0]) - offsets[0];
-              //  y = (int)Math.round(xyr[1]) - offsets[1];
-              //  if (x > -1 && x < xdim && y > -1 && y < ydim) {
-              //      im1[y][x] = v;
-              //  }
-                x = (float)xyr[0];
-                y = (float)xyr[1];
-                if (Math.floor(x) > -1 && Math.ceil(x) < xdim && Math.floor(y) > -1 && Math.ceil(y) < ydim) {
-                    //im1[i][j] = iP.biLinearInterpolation(img, x, y);
-                    im1[(int)y][(int)x] = img[i][j];
+                if (Math.floor(xy0[0]) > -1 && Math.ceil(xy0[0]) < xdim && Math.floor(xy0[1]) > -1 && Math.ceil(xy0[1]) < ydim) {
+                    im1[i][j] = iP.biLinearInterpolation(img, (float) xy0[0], (float) xy0[1]);
                 }
-
             }
         }
+
         return im1;
     }
 
@@ -732,7 +719,7 @@ public class Rectification {
      * @param h homography transformation matrix
      * @return
      */
-    public static RectifiedImage hBackwardWarp(GreyscaleImage img, double[][] h) throws NotConvergedException {
+    public static RectifiedImage hWarp(GreyscaleImage img, double[][] h) throws NotConvergedException {
 
         int ydim = img.getHeight();
         int xdim = img.getWidth();
@@ -746,52 +733,22 @@ public class Rectification {
         double interp;
         ImageProcessor iP = new ImageProcessor();
         int v;
-        float x, y;
-        //int x, y;
         double[] xy = new double[3];
-        double[] xyr;
-        xy[2] = 1;
+        double[] xy0;
         int k;
         for (j = 0; j < xdim; ++j) {
             for (i = 0; i < ydim; ++i) {
-                //v = img.getValue(j, i);
                 xy[0] = j;
                 xy[1] = i;
                 xy[2] = 1;
-                xyr = MatrixUtil.multiplyMatrixByColumnVector(h, xy);
+                xy0 = MatrixUtil.multiplyMatrixByColumnVector(invH, xy);
                 for (k = 0; k < 3; ++k) {
-                    xyr[k] /= xyr[2];
+                    xy0[k] /= xy0[2];
                 }
-                /*
-                //im1 = interp2(double(im0),xi,yi,'bilinear');
-                x = (int)Math.round(xyr[0]) + offsets[0];
-                y = (int)Math.round(xyr[1]) + offsets[1];
-                if (x > -1 && x < xdim && y > -1 && y < ydim) {
-                    rImg.setRGB(x, y, v, v, v);
-                }*/
-                //im1 = interp2(double(im0),xi,yi,'bilinear');
-                x = (float)xyr[0];
-                y = (float)xyr[1];
-                if (Math.floor(x) > -1 && Math.ceil(x) < xdim && Math.floor(y) > -1 && Math.ceil(y) < ydim) {
-                    //interp = iP.biLinearInterpolation(img, x, y);
-                    //v = (int) Math.round(interp);
-                    //rImg.setRGB(j, i, v, v, v);
-                    v = img.getValue(j, i);
-                    rImg.setRGB((int)x, (int)y, v, v, v);
-
-                    xy[0] = x;
-                    xy[1] = y;
-                    xy[0] = 1;
-                    double[] xy0 = MatrixUtil.multiplyMatrixByColumnVector(invH, xy);
-                    for (k = 0; k < 3; ++k) {
-                        xy0[k] /= xy0[2];
-                    }
-                    // TODO: write the transformed range in the mesh method using the 4 bounds as before,
-                    // but revise based upon how we will use that range:
-                    // loop over that transformed range here, apply inverse H to get i,j in image frame,
-                    // if i,j is within bounds of image:
-                    // interpolate for the location to get the value and store it in rectified image.
-                    // so, the rectified image ranges can only be 0 through xdim,ydim
+                if (Math.floor(xy0[0]) > -1 && Math.ceil(xy0[0]) < xdim && Math.floor(xy0[1]) > -1 && Math.ceil(xy0[1]) < ydim) {
+                    interp = iP.biLinearInterpolation(img, (float) xy0[0], (float) xy0[1]);
+                    v = (int) Math.round(interp);
+                    rImg.setRGB(j, i, v, v, v);
                 }
             }
         }

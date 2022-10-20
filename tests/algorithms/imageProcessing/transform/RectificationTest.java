@@ -1,10 +1,8 @@
 package algorithms.imageProcessing.transform;
 
-import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.transform.Rectification.RectifiedPoints;
 import algorithms.matrix.MatrixUtil;
-import java.security.NoSuchAlgorithmException;
 
 import algorithms.misc.MiscDebug;
 import algorithms.util.FormatArray;
@@ -12,9 +10,6 @@ import junit.framework.TestCase;
 import static junit.framework.TestCase.assertNotNull;
 
 import no.uib.cipr.matrix.DenseMatrix;
-import no.uib.cipr.matrix.Matrix;
-import no.uib.cipr.matrix.NotConvergedException;
-import org.junit.Test;
 
 /**
  *
@@ -57,9 +52,9 @@ public class RectificationTest extends TestCase {
                 x2R[0][i], x2R[1][i], x2R[2][i]);
         }
 
-        Rectification.RectifiedImage imgW1 = Rectification.hBackwardWarp(im1.copyToGreyscale2(), rP.getH1());
+        Rectification.RectifiedImage imgW1 = Rectification.hWarp(im1.copyToGreyscale2(), rP.getH1());
 
-        Rectification.RectifiedImage imgW2 = Rectification.hBackwardWarp(im2.copyToGreyscale2(), rP.getH2());
+        Rectification.RectifiedImage imgW2 = Rectification.hWarp(im2.copyToGreyscale2(), rP.getH2());
 
         MiscDebug.writeImage(imgW1.copyToGreyscale2(), "_rect_oldhouse_00_");
         MiscDebug.writeImage(imgW2.copyToGreyscale2(), "_rect_oldhouse_84_");
@@ -70,7 +65,7 @@ public class RectificationTest extends TestCase {
         System.out.println("testRectification Zhang");
 
         int idx1 = 1;
-        int idx2 = 5;
+        int idx2 = 2;//5;
 
         double[][] k1 = Zhang98Data.getIntrinsicCameraMatrix();
         //x1, x2 size is 3 X 256
@@ -97,8 +92,6 @@ public class RectificationTest extends TestCase {
         double[][] fm = MatrixUtil.copy(fmN);
         EpipolarNormalizationHelper.denormalizeFM(fm, t1, t2);
 
-        // NOTE: these are not stereo images
-
         // when using idx1 = 1 and idx2 = 5, BOTH epipoles are within image bounds so we cannot use the
         //  MASKS uncalibrated method on them.
         // TODO: implement the non-linear polar rectification algorithm of Pollefys
@@ -109,8 +102,8 @@ public class RectificationTest extends TestCase {
 
         System.out.printf("e1e2=\n%s\n", FormatArray.toString(e1e2, "%.3e"));
 
-        /*
-        RectifiedPoints rP = Rectification.rectify(fm, x1, x2, im1.getWidth(), im1.getHeight());
+        RectifiedPoints rP = Rectification.rectify(fm, x1, x2, im1.getWidth()/2,
+            im1.getHeight()/2);
 
         int i;
         double[][] x1R = rP.getX1();
@@ -123,13 +116,13 @@ public class RectificationTest extends TestCase {
                     x2R[0][i], x2R[1][i], x2R[2][i]);
         }
 
-        Rectification.RectifiedImage imgW1 = Rectification.hBackwardWarp(im1.copyToGreyscale2(), rP.getH1());
+        Rectification.RectifiedImage imgW1 = Rectification.hWarp(im1.copyToGreyscale2(), rP.getH1());
 
-        Rectification.RectifiedImage imgW2 = Rectification.hBackwardWarp(im2.copyToGreyscale2(), rP.getH2());
+        Rectification.RectifiedImage imgW2 = Rectification.hWarp(im2.copyToGreyscale2(), rP.getH2());
 
         MiscDebug.writeImage(imgW1.copyToGreyscale2(), "_rect_zhang98_01_");
         MiscDebug.writeImage(imgW2.copyToGreyscale2(), "_rect_zhang98_02_");
-        */
+
     }
     
 }
