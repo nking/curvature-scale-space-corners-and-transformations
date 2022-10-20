@@ -1,5 +1,8 @@
 package algorithms.imageProcessing.transform;
 
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import algorithms.util.ResourceFinder;
@@ -568,5 +571,23 @@ public class Zhang98Data {
         }
         
         System.out.printf("sqsum=%.7e\n", sqsum);
+    }
+
+    public static ImageExt getImage(int idx) throws IOException {
+        if (idx < 1 || idx > 5) {
+            throw new IllegalArgumentException("idx must be 1 through 5, inclusive");
+        }
+
+        String path = ResourceFinder.findTestResourcesDirectory() + sep + ZHANGDIR
+                + sep + "image" + Integer.toString(idx) + ".gif";
+
+        File f = new File(path);
+        if (!f.exists()) {
+            throw new IOException("could not find file at " + path);
+        }
+
+        ImageExt image = ImageIOHelper.readImageExt(path);
+
+        return image;
     }
 }

@@ -2502,7 +2502,8 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
     }
 
     /**
-     * NOT YET TESTED
+     * NOT YET TESTED.  this assumes x and y should be interpreted as integers that
+     * will be indexes for gsImg.
      *
      http://en.wikipedia.org/wiki/Bilinear_interpolation
      http://en.wikipedia.org/wiki/Bilinear_interpolation#/media/File:Bilinear_interpolation_visualisation.svg
@@ -2510,7 +2511,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
      * @param y
      * @return
      */
-    public double biLinearInterpolation(double[][] gsImg, float x, float y) {
+    public double biLinearInterpolation(double[][] gsImg, double x, double y) {
 
         double x1 = Math.floor(x);
 
