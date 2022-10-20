@@ -681,22 +681,41 @@ public class Rectification {
         int i;
         int j;
 
-        Grid grid = meshgridForH(h, xdim, ydim);
-
-        assert(grid.xi.length == ydim);
-        assert(grid.xi[0].length == xdim);
-
         ImageProcessor iP = new ImageProcessor();
         double[][] im1 = MatrixUtil.zeros(ydim, xdim);
+
+        double v;
+        //int x, y;
+        float x, y;
+        double[] xy = new double[3];
+        double[] xyr;
+        xy[2] = 1;
+        int k;
         for (j = 0; j < xdim; ++j) {
             for (i = 0; i < ydim; ++i) {
-                //im1 = interp2(double(im0),xi,yi,'bilinear');
-                if (grid.xi[i][j] > 0 && grid.xi[i][j] < xdim && grid.yi[i][j] > 0 && grid.yi[i][j] < ydim) {
-                    im1[i][j] = iP.biLinearInterpolation(img, grid.xi[i][j], grid.yi[i][j]);
+                v = img[j][i];
+                xy[0] = j;
+                xy[1] = i;
+                xy[2] = 1;
+                xyr = MatrixUtil.multiplyMatrixByColumnVector(h, xy);
+                for (k = 0; k < 3; ++k) {
+                    xyr[k] /= xyr[2];
                 }
+                //im1 = interp2(double(im0),xi,yi,'bilinear');
+              //  x = (int)Math.round(xyr[0]) - offsets[0];
+              //  y = (int)Math.round(xyr[1]) - offsets[1];
+              //  if (x > -1 && x < xdim && y > -1 && y < ydim) {
+              //      im1[y][x] = v;
+              //  }
+                x = (float)xyr[0];
+                y = (float)xyr[1];
+                if (Math.floor(x) > -1 && Math.ceil(x) < xdim && Math.floor(y) > -1 && Math.ceil(y) < ydim) {
+                    //im1[i][j] = iP.biLinearInterpolation(img, x, y);
+                    im1[(int)y][(int)x] = img[i][j];
+                }
+
             }
         }
-
         return im1;
     }
 
@@ -720,215 +739,65 @@ public class Rectification {
 
         int i;
         int j;
-/*
-TODO: change meshgrid to a method which returns ranges as boundaries
-and use that in place of the loops over xdim and ydim here
- */
-        if (true) {
-            ImageProcessor iP = new ImageProcessor();
-            RectifiedImage rImg = new RectifiedImage(xdim, ydim);
-            double interp;
-            int v;
-            float x, y;
-            double[] xy = new double[3];
-            double[] xyr;
-            xy[2] = 1;
-            int k;
-            for (j = 0; j < xdim; ++j) {
-                for (i = 0; i < ydim; ++i) {
-                    xy[0] = j;
-                    xy[1] = i;
-                    xy[2] = 1;
-                    xyr = MatrixUtil.multiplyMatrixByColumnVector(h, xy);
-                    for (k = 0; k < 3; ++k) {
-                        xyr[k] /= xyr[2];
-                    }
-                    //im1 = interp2(double(im0),xi,yi,'bilinear');
-                    x = (float)xyr[0];
-                    y = (float)xyr[1];
-                    if (Math.floor(x) > -1 && Math.ceil(x) < xdim && Math.floor(y) > -1 && Math.ceil(y) < ydim) {
-                        interp = iP.biLinearInterpolation(img, x, y);
-                        v = (int) Math.round(interp);
-                        rImg.setRGB(j, i, v, v, v);
-                    }
-                }
-            }
-            return rImg;
-        }
 
-        Grid grid = meshgridForH(h, xdim, ydim);
-
-        assert(grid.xi.length == ydim);
-        assert(grid.xi[0].length == xdim);
-
-        ImageProcessor iP = new ImageProcessor();
+        double[][] invH = MatrixUtil.pseudoinverseFullRowRank(h);
 
         RectifiedImage rImg = new RectifiedImage(xdim, ydim);
-
         double interp;
+        ImageProcessor iP = new ImageProcessor();
         int v;
         float x, y;
+        //int x, y;
+        double[] xy = new double[3];
+        double[] xyr;
+        xy[2] = 1;
+        int k;
         for (j = 0; j < xdim; ++j) {
             for (i = 0; i < ydim; ++i) {
+                //v = img.getValue(j, i);
+                xy[0] = j;
+                xy[1] = i;
+                xy[2] = 1;
+                xyr = MatrixUtil.multiplyMatrixByColumnVector(h, xy);
+                for (k = 0; k < 3; ++k) {
+                    xyr[k] /= xyr[2];
+                }
+                /*
                 //im1 = interp2(double(im0),xi,yi,'bilinear');
-                x = (float)Math.round(grid.xi[i][j]); //[480 X 720]  ydim=480
-                y = (float)Math.round(grid.yi[i][j]);
-                if (x > 0 && x < xdim && y > 0 && y < ydim) {
-                    interp = iP.biLinearInterpolation(img, x, y);
-                    v = (int) Math.round(interp);
-                    rImg.setRGB(j, i, v, v, v);
+                x = (int)Math.round(xyr[0]) + offsets[0];
+                y = (int)Math.round(xyr[1]) + offsets[1];
+                if (x > -1 && x < xdim && y > -1 && y < ydim) {
+                    rImg.setRGB(x, y, v, v, v);
+                }*/
+                //im1 = interp2(double(im0),xi,yi,'bilinear');
+                x = (float)xyr[0];
+                y = (float)xyr[1];
+                if (Math.floor(x) > -1 && Math.ceil(x) < xdim && Math.floor(y) > -1 && Math.ceil(y) < ydim) {
+                    //interp = iP.biLinearInterpolation(img, x, y);
+                    //v = (int) Math.round(interp);
+                    //rImg.setRGB(j, i, v, v, v);
+                    v = img.getValue(j, i);
+                    rImg.setRGB((int)x, (int)y, v, v, v);
+
+                    xy[0] = x;
+                    xy[1] = y;
+                    xy[0] = 1;
+                    double[] xy0 = MatrixUtil.multiplyMatrixByColumnVector(invH, xy);
+                    for (k = 0; k < 3; ++k) {
+                        xy0[k] /= xy0[2];
+                    }
+                    // TODO: write the transformed range in the mesh method using the 4 bounds as before,
+                    // but revise based upon how we will use that range:
+                    // loop over that transformed range here, apply inverse H to get i,j in image frame,
+                    // if i,j is within bounds of image:
+                    // interpolate for the location to get the value and store it in rectified image.
+                    // so, the rectified image ranges can only be 0 through xdim,ydim
                 }
             }
         }
-
         return rImg;
     }
 
-    /**
-     use the homography from rectify(...) to create the mesh grid indexes needed
-     to warp the image img such that
-     epipolar lines correspond to scan lines.
-     <pre>
-     following Chapter 11 of "Invitation to Computer Vision, From Images to Geometric Models"
-     by Ma, Soatto, Kosecka,& Sastry 2012 (MASKS).
-     the code is adapted from their examples_code/Hwarp.m which is freely available for non-commercial purposes.
-     </pre>
-
-     * @param h homography transformation matrix
-     * @param xdim the length of the x-axis of the image to be transformed (i.e. image width)
-       @param ydim the length of the y-axis of the image to be transformed (i.e. the image height)
-     * @return
-     */
-    static Grid meshgridForH(final double[][] h, final int xdim, final int ydim) throws NotConvergedException {
-
-        double[] ulc = MatrixUtil.multiplyMatrixByColumnVector(h, new double[]{1,1,1});
-        MatrixUtil.multiply(ulc, 1./ulc[2]);
-
-        double[] urc = MatrixUtil.multiplyMatrixByColumnVector(h, new double[]{xdim,1,1});
-        MatrixUtil.multiply(urc, 1./urc[2]);
-
-        double[] llc = MatrixUtil.multiplyMatrixByColumnVector(h, new double[]{1,ydim,1});
-        MatrixUtil.multiply(llc, 1./llc[2]);
-
-        double[] lrc = MatrixUtil.multiplyMatrixByColumnVector(h, new double[]{xdim,ydim,1});
-        MatrixUtil.multiply(lrc, 1./lrc[2]);
-
-        double xmin = MiscMath0.findMin(new double[]{ulc[0],llc[0],urc[0],lrc[0]});
-        double xmax = MiscMath0.findMax(new double[]{ulc[0],llc[0],urc[0],lrc[0]});
-        double ymin = MiscMath0.findMin(new double[]{ulc[1],urc[1],llc[1],lrc[1]});
-        double ymax = MiscMath0.findMax(new double[]{ulc[1],urc[1],llc[1],lrc[1]});
-
-        TDoubleList rangeX = new TDoubleArrayList();
-        TDoubleList rangeY = new TDoubleArrayList();
-        //range of xmin to xmax inclusive, and of size xdim
-        double d = (xmax - xmin)/(xdim - 1);
-        int c = 0;
-        double ii = xmin;
-        while (c < xdim) {
-            rangeX.add(ii);
-            ii += d;
-            ++c;
-        }
-        //range of ymin to ymax inclusive, and of size ydim
-        d = (ymax - ymin)/(ydim - 1);
-        c = 0;
-        ii = ymin;
-        while (c < ydim) {
-            rangeY.add(ii);
-            ii += d;
-            ++c;
-        }
-        assert(rangeX.size() == xdim);
-        assert(rangeY.size() == ydim);
-
-        int j;
-        /*
-        matlab:
-        x = 1, 2, 3;
-        y = 1, 2, 3, 4, 5;
-        [X2,Y2] = meshgrid(x,y)
-        X2 = 5×3
-             1     2     3
-             1     2     3
-             1     2     3
-             1     2     3
-             1     2     3
-        Y2 = 5×3
-             1     1     1
-             2     2     2
-             3     3     3
-             4     4     4
-             5     5     5
-         c=0
-         meshgrid then reshape
-         for j=0, j<xdim;++j
-            for (i = 0; i < ydim; ++i)
-                xx[c]=x[j];
-                yy[c]=y[i];
-                ++c
-        but we are using the opposite indexing order w.r.t x and y, so swap outer and inner loops
-        for (i = 0; i < ydim; ++i)
-          for j=0, j<xdim;++j
-                xx[c]=x[j];
-                yy[c]=y[i];
-                ++c
-         */
-        double[] xx = new double[ydim*xdim];
-        double[] yy = new double[ydim*xdim];
-        c = 0;
-        int i;
-        for (i = 0; i < ydim; ++i) {
-            for (j = 0; j < xdim; ++j) {
-                xx[c] = rangeX.get(j);
-                yy[c] = rangeY.get(i);
-                ++c;
-            }
-        }
-
-        double[][] gg = new double[3][];
-        gg[0] = Arrays.copyOf(xx, xx.length);
-        gg[1] = Arrays.copyOf(yy, yy.length);
-        gg[2] = new double[xx.length];
-        Arrays.fill(gg[2], 1);
-
-        // gg = [xx; yy; ones(1,ydim*xdim)];// [3 X nr*nc]
-        //ww = H \ gg  ==> ww = pInv(H)*gg // [3 X 3] * [3 X nr*nc] = [3 X nr*nc]
-        double[][] ww = MatrixUtil.multiply(MatrixUtil.pseudoinverseRankDeficient(h), gg);
-        //System.out.printf("ww=pinv(h)*gg=\n%s\n", FormatArray.toString(ww, "%.4e"));
-        for (i = 0; i < ww[0].length; ++i) {
-            for (j = 0; j < 3; ++j) {
-                ww[j][i] /= ww[2][i];
-            }
-        }
-        //double[] wx = ww[0];
-        //double[] wy = ww[1];
-
-        //xi = reshape(wx,[ydim,xdim]); // [nr X nc]
-        //yi = reshape(wy,[ydim,xdim]); // [nr X nc]
-        double[][] xi = MatrixUtil.zeros(ydim, xdim);
-        double[][] yi = MatrixUtil.zeros(ydim, xdim);
-        // fill by columns
-        c = 0;
-        for (i = 0; i < ydim; ++i) {
-            for (j = 0; j < xdim; ++j) {
-                xi[i][j] = ww[0][c];
-                yi[i][j] = ww[1][c];
-                ++c;
-            }
-        }
-
-        Grid grid = new Grid();
-        grid.xi = xi;
-        grid.yi = yi;
-
-        return grid;
-    }
-
-    public static class Grid {
-        public double[][] xi;
-        public double[][] yi;
-    }
-    
     public static class RectifiedImage extends Image {
         public RectifiedImage(int theWidth, int theHeight) {
             super(theWidth, theHeight);
