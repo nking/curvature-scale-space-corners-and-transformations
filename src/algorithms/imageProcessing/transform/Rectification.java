@@ -720,6 +720,41 @@ public class Rectification {
 
         int i;
         int j;
+/*
+TODO: change meshgrid to a method which returns ranges as boundaries
+and use that in place of the loops over xdim and ydim here
+ */
+        if (true) {
+            ImageProcessor iP = new ImageProcessor();
+            RectifiedImage rImg = new RectifiedImage(xdim, ydim);
+            double interp;
+            int v;
+            float x, y;
+            double[] xy = new double[3];
+            double[] xyr;
+            xy[2] = 1;
+            int k;
+            for (j = 0; j < xdim; ++j) {
+                for (i = 0; i < ydim; ++i) {
+                    xy[0] = j;
+                    xy[1] = i;
+                    xy[2] = 1;
+                    xyr = MatrixUtil.multiplyMatrixByColumnVector(h, xy);
+                    for (k = 0; k < 3; ++k) {
+                        xyr[k] /= xyr[2];
+                    }
+                    //im1 = interp2(double(im0),xi,yi,'bilinear');
+                    x = (float)xyr[0];
+                    y = (float)xyr[1];
+                    if (Math.floor(x) > -1 && Math.ceil(x) < xdim && Math.floor(y) > -1 && Math.ceil(y) < ydim) {
+                        interp = iP.biLinearInterpolation(img, x, y);
+                        v = (int) Math.round(interp);
+                        rImg.setRGB(j, i, v, v, v);
+                    }
+                }
+            }
+            return rImg;
+        }
 
         Grid grid = meshgridForH(h, xdim, ydim);
 
@@ -831,7 +866,7 @@ public class Rectification {
                 xx[c]=x[j];
                 yy[c]=y[i];
                 ++c
-        but we are using the opposite indexing order, so use fill pattern Y2 for X2 and vice versa
+        but we are using the opposite indexing order w.r.t x and y, so swap outer and inner loops
         for (i = 0; i < ydim; ++i)
           for j=0, j<xdim;++j
                 xx[c]=x[j];
