@@ -688,15 +688,18 @@ public class Rectification {
         double[] xy = new double[3];
         double[] xy0;
         int k;
+        // iterate over the rectified image pixel coordinates
         for (j = 0; j < xdim; ++j) {
             for (i = 0; i < ydim; ++i) {
                 xy[0] = j;
                 xy[1] = i;
                 xy[2] = 1;
+                // transform to the original image coordinate frame
                 xy0 = MatrixUtil.multiplyMatrixByColumnVector(invH, xy);
                 for (k = 0; k < 3; ++k) {
                     xy0[k] /= xy0[2];
                 }
+                // interpolate the value of the original image location if within image bounds
                 if (Math.floor(xy0[0]) > -1 && Math.ceil(xy0[0]) < xdim && Math.floor(xy0[1]) > -1 && Math.ceil(xy0[1]) < ydim) {
                     im1[i][j] = iP.biLinearInterpolation(img, (float) xy0[0], (float) xy0[1]);
                 }
@@ -736,15 +739,18 @@ public class Rectification {
         double[] xy = new double[3];
         double[] xy0;
         int k;
+        // iterate over the rectified image pixel coordinates
         for (j = 0; j < xdim; ++j) {
             for (i = 0; i < ydim; ++i) {
                 xy[0] = j;
                 xy[1] = i;
                 xy[2] = 1;
+                // transform to the original image coordinate frame
                 xy0 = MatrixUtil.multiplyMatrixByColumnVector(invH, xy);
                 for (k = 0; k < 3; ++k) {
                     xy0[k] /= xy0[2];
                 }
+                // interpolate the value of the original image location if within image bounds
                 if (Math.floor(xy0[0]) > -1 && Math.ceil(xy0[0]) < xdim && Math.floor(xy0[1]) > -1 && Math.ceil(xy0[1]) < ydim) {
                     interp = iP.biLinearInterpolation(img, (float) xy0[0], (float) xy0[1]);
                     v = (int) Math.round(interp);
