@@ -5,7 +5,6 @@ import algorithms.dimensionReduction.CURDecomposition.CUR;
 import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.transform.Camera.CameraParameters;
-import algorithms.imageProcessing.transform.Camera.CameraProjection;
 import static algorithms.imageProcessing.transform.CameraPose.eps;
 import algorithms.matrix.LinearEquations;
 import algorithms.matrix.MatrixUtil;
@@ -14,7 +13,6 @@ import algorithms.sort.MiscSorter;
 import algorithms.util.FormatArray;
 import java.util.Arrays;
 import java.util.List;
-import java.util.TreeMap;
 
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.EVD;

@@ -126,7 +126,7 @@ public class PNPTest extends TestCase {
         
         assertEquals(nImages, refinedExtr.size());
                 
-        for (int i = 0; i < nImages; ++i) {
+        for (int i = 1; i <= nImages; ++i) {
             log.log(LEVEL, String.format("\n"));
             log.log(LEVEL, String.format("PNP   r%d=\n%s\n", i, 
                     FormatArray.toString(refinedExtr.get(i).getRotation(), pr)));

@@ -614,12 +614,15 @@ public class ReconstructionTest extends TestCase {
        */
     public void estCalculateUsingEssentialMatrix() throws Exception {
         System.out.println("calculateUsingEssentialMatrix");
-       
+
+        int idx1 = 1;
+        int idx2 = 5;
+
         double[][] k1 = Zhang98Data.getIntrinsicCameraMatrix();
         double[][] k2 = MatrixUtil.copy(k1);
         //x1, x2 size is 3 X 256
-        double[][] x1 = Zhang98Data.getObservedFeaturesInImage(1);
-        double[][] x2 = Zhang98Data.getObservedFeaturesInImage(5);
+        double[][] x1 = Zhang98Data.getObservedFeaturesInImage(idx1);
+        double[][] x2 = Zhang98Data.getObservedFeaturesInImage(idx2);
 
         Reconstruction.ReconstructionResults result = 
             Reconstruction.calculateUsingEssentialMatrix(k1, k2, x1, x2);
@@ -634,14 +637,14 @@ public class ReconstructionTest extends TestCase {
             FormatArray.toString(result.k2ExtrTrans, "%.4e"));
         
         System.out.printf("\nimg1:\nrot=%strans=%s\n", 
-                FormatArray.toString(Zhang98Data.getRotation(1), "%.4e"),
-                FormatArray.toString(Zhang98Data.getTranslation(1), "%.4e"));
+                FormatArray.toString(Zhang98Data.getRotation(idx1), "%.4e"),
+                FormatArray.toString(Zhang98Data.getTranslation(idx1), "%.4e"));
         System.out.printf("\nimg5:\nrot=%strans=%s\n", 
-                FormatArray.toString(Zhang98Data.getRotation(5), "%.4e"),
-                FormatArray.toString(Zhang98Data.getTranslation(5), "%.4e"));
+                FormatArray.toString(Zhang98Data.getRotation(idx2), "%.4e"),
+                FormatArray.toString(Zhang98Data.getTranslation(idx2), "%.4e"));
         
         double[][] diffRSameCenter = Rotation.procrustesAlgorithmForRotation(
-            Zhang98Data.getRotation(1), Zhang98Data.getRotation(5));
+            Zhang98Data.getRotation(1), Zhang98Data.getRotation(idx2));
         
         System.out.printf("\ndifference in rot between img1 and img5=\n%s\n", 
            FormatArray.toString(diffRSameCenter, "%.4e"));

@@ -9,6 +9,8 @@ import no.uib.cipr.matrix.RQ;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
 
+import java.util.Arrays;
+
 /**
  given a set of features in image coordinates and world coordinate space with
   known camera intrinsic parameters, estimate the camera pose, that is
@@ -33,16 +35,28 @@ public class CameraPose {
     /**
      * given a set of features in image space and world coordinate space with
      * known camera intrinsic parameters, estimate the camera pose, that is
-     * extract the camera extrinsic parameters.
+     * extract the camera extrinsic parameters of rotation and translation.
      * calibrating the camera extrinsic parameters is a.k.a. 
      * perspective-n-point-problem where n is the number of features (a.k.a. points).
      * This method uses DLT and could be followed by non-linear optimization
      * to improve the parameter estimates.
+     * This is also known as estimating the Motion.
      * <pre>
      * references:
      *  Kitani lecture notes http://www.cs.cmu.edu/~16385/s17/Slides/11.3_Pose_Estimation.pdf
+     *
+     *  a few lines of code from source provided by book authors:
+     *  @Book{Hartley2004,
+     *     author = "Hartley, R.~I. and Zisserman, A.",
+     *     title = "Multiple View Geometry in Computer Vision",
+     *     edition = "Second",
+     *     year = "2004",
+     *     publisher = "Cambridge University Press, ISBN: 0521540518"
+     * }
+     * https://www.robots.ox.ac.uk/~vgg/hzbook/
+     * vgg_multiview/vgg_KR_from_P.m
      * </pre>
-     * @param x the image coordinates of the features in format 3 X N where
+     * @param x the images coordinates of the features in pixels in format 3 X N where
      * 3 is for x, y, 1 rows, and N columns is the number of features.  At least 3 features are needed to 
      * calculate the extrinsic parameters.
      * NOTE x and X should both be distortion-free or both should be distorted.
@@ -93,7 +107,7 @@ public class CameraPose {
         MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(ell);
         
         // vT is 12X12.  last row in vT is the eigenvector for the smallest eigenvalue
-        // it is also the epipole, defined as the right nullspace
+        // it is also the epipole e1, defined as the right nullspace
         double[] xOrth = svd.vT[svd.vT.length - 1];
                 
         // reshape into 3 X 4
@@ -102,10 +116,9 @@ public class CameraPose {
         System.arraycopy(xOrth, 4, P2[1], 0, 4);
         System.arraycopy(xOrth, 8, P2[2], 0, 4);
 
-        MatrixUtil.SVDProducts svdP2 = MatrixUtil.performSVD(P2);
+        MatrixUtil.SVDProducts svdP = MatrixUtil.performSVD(P2);
+        double[] c = Arrays.copyOf(svdP.vT[svdP.vT.length - 1], svdP.vT[0].length);
 
-        double[] c = MatrixUtil.extractColumn(svdP2.u, 2);
-        
         // assert P2*c = 0
         double[] check0 = MatrixUtil.multiplyMatrixByColumnVector(P2, c);
         System.out.printf("check that P2*c=0:%s\n", FormatArray.toString(check0, "%.3e"));
@@ -137,7 +150,6 @@ public class CameraPose {
 
         if (kIntr[0][0] < 0) {
             // from vgg_multiview/vgg_KR_from_P.m
-            // TODO: put copyright information here
             double[][] diag = MatrixUtil.createIdentityMatrix(3);
             diag[0][0] = -1;
             diag[1][1] = -1;
@@ -146,6 +158,17 @@ public class CameraPose {
             System.out.printf("  decomposed into intrinsic=\n   %s\n", FormatArray.toString(kIntr, "%.3e"));
             System.out.printf("  decomposed into extrinsic rotation=\n   %s\n", FormatArray.toString(kExtrRot, "%.3e"));
         }
+
+        // from vgg_multiview/vgg_KR_from_P.m
+        // t = -P(:,1:N)\P(:,end) = -M\P(:,end) = inv(-M)*P
+        double[][] invM = MatrixUtil.copy(M);
+        MatrixUtil.multiply(invM, -1);
+        invM = MatrixUtil.pseudoinverseRankDeficient(invM);
+        double[] t = MatrixUtil.extractColumn(P2, 3);
+        t = MatrixUtil.multiplyMatrixByColumnVector(invM, t);
+
+        System.out.printf("t=\n%s\n", FormatArray.toString(t, "%.3e"));
+        System.out.printf("c=\n%s\n", FormatArray.toString(c, "%.3e"));
 
         CameraExtrinsicParameters extrinsics = new CameraExtrinsicParameters();
         extrinsics.setRotation(kExtrRot);

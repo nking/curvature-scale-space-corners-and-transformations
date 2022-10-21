@@ -167,25 +167,28 @@ public class Zhang98Data {
         return MatrixUtil.transpose(r);
     }
     
-    public static double[][] getRotation(int imageIdx) {
+    public static double[][] getRotation(int idx) {
+        if (idx < 1 || idx > 5) {
+            throw new IllegalArgumentException("idx must be 1 through 5, inclusive");
+        }
         double[][] r = new double[3][];
-        switch (imageIdx) {
-            case 0:
+        switch (idx) {
+            case 1:
                 r[0] = new double[]{0.992759, -0.026319, 0.117201};
                 r[1] = new double[]{0.0139247, 0.994339, 0.105341};
                 r[2] = new double[]{-0.11931, -0.102947, 0.987505};
                 break;
-            case 1:
+            case 2:
                 r[0] = new double[]{0.997397, -0.00482564, 0.0719419};
                 r[1] = new double[]{0.0175608, 0.983971, -0.17746};
                 r[2] = new double[]{-0.0699324, 0.178262, 0.981495};        
                 break;
-            case 2:
+            case 3:
                 r[0] = new double[]{0.915213, -0.0356648, 0.401389};
                 r[1] = new double[]{-0.00807547, 0.994252, 0.106756};
                 r[2] = new double[]{-0.402889, -0.100946, 0.909665};        
                 break;
-            case 3:
+            case 4:
                 r[0] = new double[]{0.986617, -0.0175461, -0.16211};
                 r[1] = new double[]{0.0337573, 0.994634, 0.0977953};
                 r[2] = new double[]{0.159524, -0.101959, 0.981915};                
@@ -199,19 +202,22 @@ public class Zhang98Data {
         return r;
     }
     
-    public static double[] getTranslation(int imageIdx) {
+    public static double[] getTranslation(int idx) {
+        if (idx < 1 || idx > 5) {
+            throw new IllegalArgumentException("idx must be 1 through 5, inclusive");
+        }
         double[] t = null;
-        switch (imageIdx) {
-            case 0:
+        switch (idx) {
+            case 1:
                 t = new double[]{-3.84019, 3.65164, 12.791};
                 break;
-            case 1:
+            case 2:
                 t = new double[]{-3.71693, 3.76928, 13.1974};
                 break;
-            case 2:
+            case 3:
                 t = new double[]{-2.94409, 3.77653, 14.2456};
                 break;
-            case 3:
+            case 4:
                 t = new double[]{-3.40697, 3.6362, 12.4551};
                 break;
             default:
@@ -307,8 +313,8 @@ public class Zhang98Data {
             //populate xWI; extract the world feature.  size [1X3]
             MatrixUtil.extractColumn(coordsW, i, coordsWI);
             for (j = 0; j < mImages; ++j) {
-                r = getRotation(j);
-                t = getTranslation(j);
+                r = getRotation(j+1);
+                t = getTranslation(j+1);
                 //transform to camera reference frame. size [1X3]
                 Camera.worldToCameraCoordinates(coordsWI, r, t, rAux, coordsWIC);
                 for (k = 0; k < 3; ++k) {
@@ -352,8 +358,8 @@ public class Zhang98Data {
             MatrixUtil.extractColumn(coordsW, i, coordsWI);
             
             for (j = 0; j < mImages; ++j) {
-                r = getRotation(j);
-                t = getTranslation(j);
+                r = getRotation(j+1);
+                t = getTranslation(j+1);
                 
                 h[0][0] = r[0][0];
                 h[1][0] = r[1][0];

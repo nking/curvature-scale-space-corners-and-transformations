@@ -191,7 +191,7 @@ public class BundleAdjustmentTest extends TestCase {
         log.log(LEVEL, String.format("[kRadial]=[%.3e, %.3e].  expected=[%.3e, %.3e]\n", 
             kRadial[0], kRadial[1], k1E, k2E));
         
-        for (i = 0; i < nImages; ++i) {
+        for (i = 1; i <= nImages; ++i) {
             r = Rotation.createRotationZYX(extrRotThetas[i]);
             log.log(LEVEL, String.format("\n"));
             log.log(LEVEL, String.format("   r%d=\n%s\n", i, 
