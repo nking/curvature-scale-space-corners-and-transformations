@@ -5,9 +5,7 @@ import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraParameters;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
-import no.uib.cipr.matrix.RQ;
-import no.uib.cipr.matrix.DenseMatrix;
-import no.uib.cipr.matrix.NotConvergedException;
+import no.uib.cipr.matrix.*;
 
 import java.util.Arrays;
 
@@ -41,22 +39,16 @@ public class CameraPose {
      * This method uses DLT and could be followed by non-linear optimization
      * to improve the parameter estimates.
      * This is also known as estimating the Motion.
-     * <pre>
-     * references:
-     *  Kitani lecture notes http://www.cs.cmu.edu/~16385/s17/Slides/11.3_Pose_Estimation.pdf
-     *
-     *  a few lines of code from source provided by book authors:
-     *  @Book{Hartley2004,
-     *     author = "Hartley, R.~I. and Zisserman, A.",
-     *     title = "Multiple View Geometry in Computer Vision",
-     *     edition = "Second",
-     *     year = "2004",
-     *     publisher = "Cambridge University Press, ISBN: 0521540518"
-     * }
-     * https://www.robots.ox.ac.uk/~vgg/hzbook/
-     * vgg_multiview/vgg_KR_from_P.m
-     * </pre>
-     * @param x the images coordinates of the features in pixels in format 3 X N where
+     <pre>
+      references:
+        https://www.ipb.uni-bonn.de/html/teaching/msr2-2020/sse2-13-DLT.pdf
+        slides from a lecture titled "Photogrammetry & Robotics Lab,
+         Camera Calibration: Direct Linear Transform" by Cyrill Stachniss
+     see also http://www.ipb.uni-bonn.de/photogrammetry-i-ii/
+     and
+       Kitani lecture notes http://www.cs.cmu.edu/~16385/s17/Slides/11.3_Pose_Estimation.pdf
+     </pre>
+     * @param x the image coordinates of the features in pixels in format 3 X N where
      * 3 is for x, y, 1 rows, and N columns is the number of features.  At least 3 features are needed to 
      * calculate the extrinsic parameters.
      * NOTE x and X should both be distortion-free or both should be distorted.
@@ -82,25 +74,35 @@ public class CameraPose {
         if (X[0].length != n) {
             throw new IllegalArgumentException("the number of columns in X must be the same as in x");
         }
-        
-        // normalize by last coordinate:
-        /*for (int i = 0; i < x[0].length; ++i) {
-            x[0][i] /= x[2][i];
-            x[1][i] /= x[2][i];
-        }*/
+
+        x = MatrixUtil.copy(x);
+        X = MatrixUtil.copy(X);
+
+        int i, j;
+
+        // normalize by last coordinate just in case nor performed already:
+        for (i = 0; i < x[0].length; ++i) {
+            for (j = 0; j < x.length; ++j) {
+                x[j][i] /= x[x.length - 1][i];
+            }
+        }
+        for (i = 0; i < X[0].length; ++i) {
+            for (j = 0; j < X.length; ++j) {
+                X[j][i] /= X[X.length - 1][i];
+            }
+        }
                 
         // 2*n X 12       
         double xi, yi, Xi, Yi, Zi;
         double[][] ell = new double[2*n][12];
-        for (int i = 0; i < n; ++i) {
+        for (i = 0; i < n; ++i) {
             xi = x[0][i];
             yi = x[1][i];
             Xi = X[0][i];
             Yi = X[1][i];
             Zi = X[2][i];
-            // http://www.cs.cmu.edu/~16385/s17/Slides/11.3_Pose_Estimation.pdf
-            ell[2*i]     = new double[]{Xi, Yi, Zi, 1, 0, 0, 0, 0, -xi*Xi, -xi*Yi, -xi*Zi, -xi};
-            ell[2*i + 1] = new double[]{0, 0, 0, 0, Xi, Yi, Zi, 1, -yi*Xi, -yi*Yi, -yi*Zi, -yi};
+            ell[2*i]     = new double[]{-Xi, -Yi, -Zi, -1, 0, 0, 0, 0, xi*Xi, xi*Yi, xi*Zi, xi};
+            ell[2*i + 1] = new double[]{0, 0, 0, 0, -Xi, -Yi, -Zi, -1, yi*Xi, yi*Yi, yi*Zi, yi};
         }
 
         // SVD.V is 12 X 12.  SVD.U is 2n X 2n
@@ -111,7 +113,7 @@ public class CameraPose {
         double[] xOrth = svd.vT[svd.vT.length - 1];
                 
         // reshape into 3 X 4
-        double[][] P2 = MatrixUtil.zeros(3, 4);
+        double[][] P2 = MatrixUtil.zeros(3,4);
         System.arraycopy(xOrth, 0, P2[0], 0, 4);
         System.arraycopy(xOrth, 4, P2[1], 0, 4);
         System.arraycopy(xOrth, 8, P2[2], 0, 4);
@@ -133,49 +135,29 @@ public class CameraPose {
 
         // [3X3]
         double[][] M = MatrixUtil.copySubMatrix(P2, 0, 2, 0, 2);
-        RQ rq = RQ.factorize(new DenseMatrix(M));
-        
-        System.out.printf("RQ.R=intr\n%s\n", FormatArray.toString(
-            MatrixUtil.convertToRowMajor(rq.getR()), "%.3e"));
-        System.out.printf("RQ.Q=rot=\n%s\n", FormatArray.toString(
-            MatrixUtil.convertToRowMajor(rq.getQ()), "%.3e"));
-        
-        double[][] kIntr = MatrixUtil.convertToRowMajor(rq.getR());
-        MatrixUtil.multiply(kIntr, 1./kIntr[2][2]);
+        double[][] invM = MatrixUtil.pseudoinverseFullColumnRank(M);
+        QR qr = QR.factorize(new DenseMatrix(invM)); // Q=rot^T R=K^-1
+        double[][] rot = MatrixUtil.transpose(MatrixUtil.convertToRowMajor(qr.getQ()));
+        double[][] k = MatrixUtil.pseudoinverseFullColumnRank(MatrixUtil.convertToRowMajor(qr.getR()));
+        MatrixUtil.multiply(k, 1./k[2][2]);
 
-        double[][] kExtrRot = MatrixUtil.convertToRowMajor(rq.getQ());
-        System.out.printf("  decomposed into intrinsic=\n   %s\n", FormatArray.toString(kIntr, "%.3e"));
-        System.out.printf("  decomposed into extrinsic rotation=\n   %s\n", FormatArray.toString(kExtrRot, "%.3e"));
-        System.out.printf("  decomposed into extrinsic translation=\n   %s\n", FormatArray.toString(c, "%.3e"));
+        double[][] rzpi = MatrixUtil.createIdentityMatrix(3);
+        rzpi[0][0] = -1;
+        rzpi[1][1] = -1;
 
-        if (kIntr[0][0] < 0) {
-            // from vgg_multiview/vgg_KR_from_P.m
-            double[][] diag = MatrixUtil.createIdentityMatrix(3);
-            diag[0][0] = -1;
-            diag[1][1] = -1;
-            kIntr = MatrixUtil.multiply(kIntr, diag);
-            kExtrRot = MatrixUtil.multiply(diag, kExtrRot);
-            System.out.printf("  decomposed into intrinsic=\n   %s\n", FormatArray.toString(kIntr, "%.3e"));
-            System.out.printf("  decomposed into extrinsic rotation=\n   %s\n", FormatArray.toString(kExtrRot, "%.3e"));
-        }
+        rot = MatrixUtil.multiply(rzpi, rot);
+        k = MatrixUtil.multiply(k, rzpi);
 
-        // from vgg_multiview/vgg_KR_from_P.m
-        // t = -P(:,1:N)\P(:,end) = -M\P(:,end) = inv(-M)*P
-        double[][] invM = MatrixUtil.copy(M);
-        MatrixUtil.multiply(invM, -1);
-        invM = MatrixUtil.pseudoinverseRankDeficient(invM);
-        double[] t = MatrixUtil.extractColumn(P2, 3);
-        t = MatrixUtil.multiplyMatrixByColumnVector(invM, t);
-
-        System.out.printf("t=\n%s\n", FormatArray.toString(t, "%.3e"));
-        System.out.printf("c=\n%s\n", FormatArray.toString(c, "%.3e"));
+        double[] projectionCenter = MatrixUtil.multiplyMatrixByColumnVector(invM,
+                MatrixUtil.extractColumn(P2, 3));
+        MatrixUtil.multiply(projectionCenter, -1);
 
         CameraExtrinsicParameters extrinsics = new CameraExtrinsicParameters();
-        extrinsics.setRotation(kExtrRot);
-        extrinsics.setTranslation(c);
+        extrinsics.setRotation(rot);
+        extrinsics.setTranslation(projectionCenter);
         
         CameraIntrinsicParameters intrinsics = new CameraIntrinsicParameters();
-        intrinsics.setIntrinsic(kIntr);
+        intrinsics.setIntrinsic(k);
         CameraParameters camera = new CameraParameters(intrinsics, extrinsics);
         
         return camera;
@@ -227,6 +209,23 @@ public class CameraPose {
         }
         
         int nImages = 1;
+
+        x = MatrixUtil.copy(x);
+        X = MatrixUtil.copy(X);
+
+        int i, j;
+
+        // normalize by last coordinate just in case nor performed already:
+        for (i = 0; i < x[0].length; ++i) {
+            for (j = 0; j < x.length; ++j) {
+                x[j][i] /= x[x.length - 1][i];
+            }
+        }
+        for (i = 0; i < X[0].length; ++i) {
+            for (j = 0; j < X.length; ++j) {
+                X[j][i] /= X[X.length - 1][i];
+            }
+        }
         
         // following Ma et al. 2003
         double[][] h = CameraCalibration.solveForHomography(x, X);

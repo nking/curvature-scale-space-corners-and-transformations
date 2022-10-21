@@ -48,14 +48,19 @@ public class CameraPoseTest extends TestCase {
             double[] expectedT = Arrays.copyOf(Zhang98Data.getTranslation(i), 3);
             MatrixUtil.multiply(expectedT, 1./expectedT[2]);
 
+            double[][] xc = Camera.pixelToCameraCoordinates(x, expectedKIntr, radial, true);
+
             Camera.CameraParameters result = CameraPose.calculatePoseUsingDLT(x, xW);
             Camera.CameraExtrinsicParameters extr = result.getExtrinsicParameters();
             Camera.CameraIntrinsicParameters intr = result.getIntrinsicParameters();
             double[] t = Arrays.copyOf(extr.getTranslation(), 3);
-            MatrixUtil.multiply(t, 1./t[2]);
+            //MatrixUtil.multiply(t, 1./t[2]);
+            double[] t2 = MatrixUtil.multiplyMatrixByColumnVector(
+                    MatrixUtil.pseudoinverseFullColumnRank(expectedKIntr), t);
 
             System.out.printf("%d) r=\n%s\n", i, FormatArray.toString(extr.getRotation(), "%.3e"));
             System.out.printf("%d) t=\n%s\n", i, FormatArray.toString(t, "%.3e"));
+            System.out.printf("%d) t2=\n%s\n", i, FormatArray.toString(t2, "%.3e"));
             System.out.printf("%d) kIntr=\n%s\n", i, FormatArray.toString(intr.getIntrinsic(), "%.3e"));
             System.out.printf("    r expected=\n%s\n", FormatArray.toString(expectedR, "%.3e"));
             System.out.printf("    t expected=\n%s\n", FormatArray.toString(expectedT, "%.3e"));
