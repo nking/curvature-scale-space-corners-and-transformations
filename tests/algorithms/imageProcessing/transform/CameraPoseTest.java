@@ -44,27 +44,60 @@ public class CameraPoseTest extends TestCase {
         for (int i = 1; i <= 5; ++i) {
             System.out.println();
             double[][] x = Zhang98Data.getObservedFeaturesInImage(i);
+
+            // remove distortion from x
+            double[][] xU = CameraCalibration.removeRadialDistortion(x, radial[0], radial[1], true);
+
             double[][] expectedR = Zhang98Data.getRotation(i);
             double[] expectedT = Arrays.copyOf(Zhang98Data.getTranslation(i), 3);
             MatrixUtil.multiply(expectedT, 1./expectedT[2]);
 
             double[][] xc = Camera.pixelToCameraCoordinates(x, expectedKIntr, radial, true);
 
-            Camera.CameraParameters result = CameraPose.calculatePoseUsingDLT(x, xW);
+            Camera.CameraPoseParameters result = CameraPose.calculatePoseUsingDLT(xU, xW);
+            //Camera.CameraPoseParameters result = CameraPose.calculatePoseUsingDLT(x, xW);
+
+            // if given camera coordinates xc, K is no longer part of the data, so can't be extracted
+            // the calculated matrix.
+            //Camera.CameraPoseParameters result = CameraPose.calculatePoseUsingDLT(xc, xW);
+
             Camera.CameraExtrinsicParameters extr = result.getExtrinsicParameters();
             Camera.CameraIntrinsicParameters intr = result.getIntrinsicParameters();
-            double[] t = Arrays.copyOf(extr.getTranslation(), 3);
-            //MatrixUtil.multiply(t, 1./t[2]);
-            double[] t2 = MatrixUtil.multiplyMatrixByColumnVector(
-                    MatrixUtil.pseudoinverseFullColumnRank(expectedKIntr), t);
+            double[] p3 = Arrays.copyOf(result.getP3(), result.getP3().length);
+
+            /*
+            tc1 = -1*(R^-1)*p3
+            tc3 = p3
+            ti2 = -1 * R^-1 * K^-1 * p3
+            ti4 = K^-1 * p3.   <====== best match to Zhang's translation
+            */
+            double[] tc1 = MatrixUtil.multiplyMatrixByColumnVector(
+                    MatrixUtil.pseudoinverseFullColumnRank(expectedR), p3);
+            MatrixUtil.multiply(tc1,-1);
+            double[] _tc1 = MatrixUtil.multiplyMatrixByColumnVector(
+                    MatrixUtil.pseudoinverseFullColumnRank(extr.getRotation()), p3);
+            MatrixUtil.multiply(_tc1,-1);
+            double[] tc3 = Arrays.copyOf(p3, p3.length);
+            double[] ti2 = Arrays.copyOf(extr.getTranslation(), 3);
+            double[] ti4 = MatrixUtil.multiplyMatrixByColumnVector(
+                    MatrixUtil.pseudoinverseFullColumnRank(expectedKIntr), p3);
+            MatrixUtil.multiply(ti4,1./ti4[2]);
+            double[] _ti4 = MatrixUtil.multiplyMatrixByColumnVector(
+                    MatrixUtil.pseudoinverseFullColumnRank(intr.getIntrinsic()), p3);
+            MatrixUtil.multiply(_ti4,1./_ti4[2]);
 
             System.out.printf("%d) r=\n%s\n", i, FormatArray.toString(extr.getRotation(), "%.3e"));
-            System.out.printf("%d) t=\n%s\n", i, FormatArray.toString(t, "%.3e"));
-            System.out.printf("%d) t2=\n%s\n", i, FormatArray.toString(t2, "%.3e"));
-            System.out.printf("%d) kIntr=\n%s\n", i, FormatArray.toString(intr.getIntrinsic(), "%.3e"));
             System.out.printf("    r expected=\n%s\n", FormatArray.toString(expectedR, "%.3e"));
-            System.out.printf("    t expected=\n%s\n", FormatArray.toString(expectedT, "%.3e"));
+            System.out.printf("%d) kIntr=\n%s\n", i, FormatArray.toString(intr.getIntrinsic(), "%.3e"));
             System.out.printf("    kIntr expected=\n%s\n", FormatArray.toString(expectedKIntr, "%.3e"));
+            System.out.printf("%d) tc1=\n%s\n", i, FormatArray.toString(tc1, "%.3e"));
+            System.out.printf("%d) _tc1=\n%s\n", i, FormatArray.toString(_tc1, "%.3e"));
+            System.out.printf("%d) tc3=\n%s\n", i, FormatArray.toString(tc3, "%.3e"));
+            System.out.printf("%d) ti2=\n%s\n", i, FormatArray.toString(ti2, "%.3e"));
+            System.out.printf("%d) ti4=\n%s\n", i, FormatArray.toString(ti4, "%.3e"));
+            System.out.printf("%d) _ti4=\n%s\n", i, FormatArray.toString(_ti4, "%.3e"));
+            System.out.printf("    t expected=\n%s\n", FormatArray.toString(expectedT, "%.3e"));
+
         }
 
     }

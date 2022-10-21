@@ -612,7 +612,8 @@ public class Camera {
         // use absolute value of focal lengths
 //        intr[0][0] = Math.abs(intr[0][0]);
 //        intr[1][1] = Math.abs(intr[1][1]);
-       
+
+        //NOTE: this is same result as full column rank pseudoinverse of intr
         double[][] cameraIntrInv = Camera.createIntrinsicCameraMatrixInverse(
             intr);
 
@@ -728,7 +729,7 @@ public class Camera {
             this.p = p;
         }
     }
-    
+
     public static class CameraParameters {
         private final CameraIntrinsicParameters intrinsicParameters;
         private final CameraExtrinsicParameters extrinsicParameters;
@@ -738,20 +739,7 @@ public class Camera {
             this.intrinsicParameters = intrinsics;
             this.extrinsicParameters = extrinsics;
         }
-        
-        public double[][] createProjectionMatrix() {
-            
-            double[][] rt = new double[3][4];
-            int i, j;
-            for (i = 0; i < 3; ++i) {
-                rt[i] = new double[4];
-                System.arraycopy(extrinsicParameters.rotation[i], 0, rt[i], 0, 3);
-                rt[i][3] = extrinsicParameters.translation[i];
-            }
-            
-            double[][] p = MatrixUtil.multiply(intrinsicParameters.getIntrinsic(), rt);
-            return p;
-        }
+
         /**
          * @return the intrinsicParameters
          */
@@ -766,7 +754,48 @@ public class Camera {
             return extrinsicParameters;
         }
     }
-    
+
+    public static class CameraPoseParameters extends CameraParameters {
+        private final double[] p3;
+        public CameraPoseParameters(CameraIntrinsicParameters intrinsics, CameraExtrinsicParameters extrinsics,
+                                    double[] p3) {
+            super(intrinsics, extrinsics);
+            this.p3 = p3;
+        }
+
+        /**
+         the last column of the projection matrix P which was [3 X 4] in size.
+         <pre>
+         Regarding translation, p3 is included in the results.  p3 is the last column in the projection
+         matrix calculated internally.  (2) and (4) outlined below are what you should consider using
+         to estimate the translation, depending upon your system's use of translate then rotate or vice versa.
+
+         If the user is assuming translate, then rotate: X_c = R * (X_wcs - t).
+             (1) The projection matrix constructed would be [R*XW | -R*t]
+                 where the last column is -R*t, R is rotation, t is translation,
+                 XW is object in real world coordinate frame, X_c is the object location seen in
+                 the camera reference frame.
+                 In this case, one would extract the translation
+                 using t = -1*(R^-1)*p3.  Note that when properly formed, R^-1 = R^T because rotation is orthogonal and unitary.
+             (2) For the context of X_im = K * X_c, we have P = [K*R*XW | -K*R*t]
+                 where K is the intrinsic parameter matrix for the camera.
+                 In this case, one would extract the translation
+                 using t = -1 * R^-1 * K^-1 * p3.
+         If the user is assuming rotate then translate, X_c = R * X_wcs + t.
+             (3) The projection matrix constructed would be [R*XW | t].
+                 In this case, one would extract the translation
+                 using t = p3.
+             (4) For the context of X_im = K * X_c, we have P = [K*R*XW | K*t].
+                 In this case, one would extract the translation
+                 using t = K^-1 * p3.
+         </pre>
+         * @return
+         */
+        public double[] getP3() {
+            return p3;
+        }
+    }
+
     public static class CameraExtrinsicParameters {
         private double[][] rotation;
         private double[] translation;

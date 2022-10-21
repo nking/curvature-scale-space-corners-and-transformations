@@ -2,7 +2,7 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
-import algorithms.imageProcessing.transform.Camera.CameraParameters;
+import algorithms.imageProcessing.transform.Camera.CameraPoseParameters;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import no.uib.cipr.matrix.*;
@@ -31,14 +31,13 @@ public class CameraPose {
     public static double eps = 1e-7;
     
     /**
-     * given a set of features in image space and world coordinate space with
-     * known camera intrinsic parameters, estimate the camera pose, that is
-     * extract the camera extrinsic parameters of rotation and translation.
-     * calibrating the camera extrinsic parameters is a.k.a. 
-     * perspective-n-point-problem where n is the number of features (a.k.a. points).
-     * This method uses DLT and could be followed by non-linear optimization
-     * to improve the parameter estimates.
+     * given a set of features in image space and world coordinate space,
+     * estimate the camera pose, that is
+     * extract the camera extrinsic parameters of rotation and translation and the camera
+     * intrinsic parameters.
      * This is also known as estimating the Motion.
+     * This method uses DLT and could be followed by non-linear optimization
+     *      * to improve the parameter estimates.
      <pre>
       references:
         https://www.ipb.uni-bonn.de/html/teaching/msr2-2020/sse2-13-DLT.pdf
@@ -47,6 +46,36 @@ public class CameraPose {
      see also http://www.ipb.uni-bonn.de/photogrammetry-i-ii/
      and
        Kitani lecture notes http://www.cs.cmu.edu/~16385/s17/Slides/11.3_Pose_Estimation.pdf
+     </pre>
+     <pre>
+     While reading this, keep in mind that this method needs x in image reference frame (units os pixels).
+     The case of camera coordinates is explained also.
+
+     Regarding translation, p3 is included in the results.  p3 is the last column in the projection
+     matrix calculated internally.  (2) and (4) outlined below are what you should consider using
+     to estimate the translation, depending upon your system's use of translate then rotate or vice versa.
+         If the user is assuming translate, then rotate: X_c = R * (X_wcs - t).
+             (1) The projection matrix constructed would be [R*XW | -R*t]
+             where the last column is -R*t, R is rotation, t is translation,
+             XW is object in real world coordinate frame, X_c is the object location seen in
+             the camera reference frame.
+             In this case, one would extract the translation
+             using t = -1*(R^-1)*p3.  Note that when properly formed, R^-1 = R^T because rotation is orthogonal and unitary.
+             (2) For the context of X_im = K * X_c, we have P = [K*R*XW | -K*R*t]
+             where K is the intrinsic parameter matrix for the camera.
+             In this case, one would extract the translation
+             using t = -1 * R^-1 * K^-1 * p3.
+         If the user is assuming rotate then translate, X_c = R * X_wcs + t.
+             (3) The projection matrix constructed would be [R*XW | t].
+             In this case, one would extract the translation
+             using t = p3.
+             (4) For the context of X_im = K * X_c, we have P = [K*R*XW | K*t].
+             In this case, one would extract the translation
+             using t = K^-1 * p3.
+
+     This method returns case (2) translation in the CameraExtrinsics field and assumes that x are given
+     in image coordinates.
+
      </pre>
      * @param x the image coordinates of the features in pixels in format 3 X N where
      * 3 is for x, y, 1 rows, and N columns is the number of features.  At least 3 features are needed to 
@@ -58,7 +87,7 @@ public class CameraPose {
      * NOTE x and X should both be distortion-free or both should be distorted.
      * @return 
      */
-    public static CameraParameters calculatePoseUsingDLT(double[][] x, double[][] X) 
+    public static CameraPoseParameters calculatePoseUsingDLT(double[][] x, double[][] X)
         throws NotConvergedException {
                 
         if (x.length != 3) {
@@ -148,17 +177,23 @@ public class CameraPose {
         rot = MatrixUtil.multiply(rzpi, rot);
         k = MatrixUtil.multiply(k, rzpi);
 
+        // this assumes xc=R*(xw-t) instead of xc=R*xw + t
+        // calculates: last column of P = P[*][3] = -K*R*X_0 where X_0 is projection center of camera.
+        // X_0 = -1 * R^-1 * K^-1 * P[*][3]
         double[] projectionCenter = MatrixUtil.multiplyMatrixByColumnVector(invM,
                 MatrixUtil.extractColumn(P2, 3));
         MatrixUtil.multiply(projectionCenter, -1);
 
+        double[] p3 = MatrixUtil.extractColumn(P2, 3);
+
         CameraExtrinsicParameters extrinsics = new CameraExtrinsicParameters();
         extrinsics.setRotation(rot);
         extrinsics.setTranslation(projectionCenter);
-        
+
         CameraIntrinsicParameters intrinsics = new CameraIntrinsicParameters();
         intrinsics.setIntrinsic(k);
-        CameraParameters camera = new CameraParameters(intrinsics, extrinsics);
+
+        CameraPoseParameters camera = new CameraPoseParameters(intrinsics, extrinsics, p3);
         
         return camera;
     }

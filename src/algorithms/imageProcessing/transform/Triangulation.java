@@ -201,9 +201,13 @@ public class Triangulation {
       *         = [R | t] xw
       *     x_im = K*x_c = K*[R|t]*xw
       *
+      *     NOTE: sometimes the rotation is applied before translation, then P = K * [ R | -R*t].
+      *     This method uses the projection matrix rows and does not decompose it into K and R components
+      *     so the assumed order of transformations does not affect this method.
+      *
      * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
      * </pre>
-     * @param camera1 camera matrix for image 1.   the size is 3X4.
+     * @param camera1 camera matrix for image 1.   the size is 3X4
       *                P = [ R | t ] or P = K * [ R | t ] and must be consistent with camera2.
      * @param camera2 camera matrix for image 2. the size is 3X4.
       *                 P = [ R | t ] or P = K * [ R | t ] and must be consistent with camera1.
@@ -294,6 +298,7 @@ public class Triangulation {
              x = alpha * P * X
                  if P is [ R | t ], then x is in image coordinates.
                  if P = K * [ R | t ], then x is in camera coordinates
+                  (NOTE: sometimes the rotation is first, then P = K * [ R | -R*t])
 
                     [ p1  p1  p3  p4  ]   [ X ]
         x = alpha * [ p5  p6  p7  p8  ] * [ Y ]
