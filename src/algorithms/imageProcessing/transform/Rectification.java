@@ -946,39 +946,9 @@ public class Rectification {
      * @return 
     */
     public static double[][] hWarp(double[][] img, double[][] h) throws NotConvergedException {
-
-        int ydim = img.length;
-        int xdim = img[0].length;
-
-        double[][] invH = MatrixUtil.pseudoinverseFullRowRank(h);
-
-        ImageProcessor iP = new ImageProcessor();
-        double[][] im1 = MatrixUtil.zeros(ydim, xdim);
-
-        int i;
-        int j;
-        double[] xy = new double[3];
-        double[] xy0;
-        int k;
-        // iterate over the rectified image pixel coordinates
-        for (j = 0; j < xdim; ++j) {
-            for (i = 0; i < ydim; ++i) {
-                xy[0] = j;
-                xy[1] = i;
-                xy[2] = 1;
-                // transform to the original image coordinate frame
-                xy0 = MatrixUtil.multiplyMatrixByColumnVector(invH, xy);
-                for (k = 0; k < 3; ++k) {
-                    xy0[k] /= xy0[2];
-                }
-                // interpolate the value of the original image location if within image bounds
-                if (Math.floor(xy0[0]) > -1 && Math.ceil(xy0[0]) < xdim && Math.floor(xy0[1]) > -1 && Math.ceil(xy0[1]) < ydim) {
-                    im1[i][j] = iP.biLinearInterpolation(img, (float) xy0[0], (float) xy0[1]);
-                }
-            }
-        }
-
-        return im1;
+        int yDim = img.length;
+        int xDim = img[0].length;
+        return hWarp(img, h, 0, 0, xDim, yDim);
     }
 
     /**
@@ -995,42 +965,9 @@ public class Rectification {
      * @return
      */
     public static RectifiedImage hWarp(GreyscaleImage img, double[][] h) throws NotConvergedException {
-
-        int ydim = img.getHeight();
-        int xdim = img.getWidth();
-
-        int i;
-        int j;
-
-        double[][] invH = MatrixUtil.pseudoinverseFullRowRank(h);
-
-        RectifiedImage rImg = new RectifiedImage(xdim, ydim);
-        double interp;
-        ImageProcessor iP = new ImageProcessor();
-        int v;
-        double[] xy = new double[3];
-        double[] xy0;
-        int k;
-        // iterate over the rectified image pixel coordinates
-        for (j = 0; j < xdim; ++j) {
-            for (i = 0; i < ydim; ++i) {
-                xy[0] = j;
-                xy[1] = i;
-                xy[2] = 1;
-                // transform to the original image coordinate frame
-                xy0 = MatrixUtil.multiplyMatrixByColumnVector(invH, xy);
-                for (k = 0; k < 3; ++k) {
-                    xy0[k] /= xy0[2];
-                }
-                // interpolate the value of the original image location if within image bounds
-                if (Math.floor(xy0[0]) > -1 && Math.ceil(xy0[0]) < xdim && Math.floor(xy0[1]) > -1 && Math.ceil(xy0[1]) < ydim) {
-                    interp = iP.biLinearInterpolation(img, (float) xy0[0], (float) xy0[1]);
-                    v = (int) Math.round(interp);
-                    rImg.setRGB(j, i, v, v, v);
-                }
-            }
-        }
-        return rImg;
+        int yDim = img.getHeight();
+        int xDim = img.getWidth();
+        return hWarp(img, h, 0, 0, xDim, yDim);
     }
 
     public static class RectifiedImage extends Image {
