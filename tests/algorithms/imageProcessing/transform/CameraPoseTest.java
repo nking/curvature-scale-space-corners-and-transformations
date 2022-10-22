@@ -54,12 +54,10 @@ public class CameraPoseTest extends TestCase {
 
             double[][] xc = Camera.pixelToCameraCoordinates(x, expectedKIntr, radial, true);
 
-            Camera.CameraPoseParameters result = CameraPose.calculatePoseUsingDLT(xU, xW);
-            //Camera.CameraPoseParameters result = CameraPose.calculatePoseUsingDLT(x, xW);
+            Camera.CameraPoseParameters result = CameraPose.calculatePoseAndKUsingDLT(xU, xW);
 
-            // if given camera coordinates xc, K is no longer part of the data, so can't be extracted
-            // the calculated matrix.
-            //Camera.CameraPoseParameters result = CameraPose.calculatePoseUsingDLT(xc, xW);
+            Camera.CameraExtrinsicParameters extr2 = CameraPose.calculatePoseUsingCameraCalibration(
+                    new Camera.CameraIntrinsicParameters(expectedKIntr), xU,xW);
 
             Camera.CameraExtrinsicParameters extr = result.getExtrinsicParameters();
             Camera.CameraIntrinsicParameters intr = result.getIntrinsicParameters();
@@ -86,7 +84,19 @@ public class CameraPoseTest extends TestCase {
                     MatrixUtil.pseudoinverseFullColumnRank(intr.getIntrinsic()), p3);
             MatrixUtil.multiply(_ti4,1./_ti4[2]);
 
+            double[] ti2_2 = Arrays.copyOf(extr2.getTranslation(), extr2.getTranslation().length);
+            MatrixUtil.multiply(ti2_2,1./ti2_2[2]);
+            double[] ti4_2 = MatrixUtil.multiplyMatrixByColumnVector(
+                    MatrixUtil.pseudoinverseFullColumnRank(expectedR), extr2.getTranslation());
+            MatrixUtil.multiply(ti4_2,-1);
+            MatrixUtil.multiply(ti4_2,1./ti4_2[2]);
+
+            double[][] r2Orth = MatrixUtil.copy(extr2.getRotation());
+            r2Orth = Rotation.orthonormalizeUsingSVD(r2Orth);
+
             System.out.printf("%d) r=\n%s\n", i, FormatArray.toString(extr.getRotation(), "%.3e"));
+            System.out.printf("%d) r2=\n%s\n", i, FormatArray.toString(extr2.getRotation(), "%.3e"));
+            System.out.printf("%d) r2Orth=\n%s\n", i, FormatArray.toString(r2Orth, "%.3e"));
             System.out.printf("    r expected=\n%s\n", FormatArray.toString(expectedR, "%.3e"));
             System.out.printf("%d) kIntr=\n%s\n", i, FormatArray.toString(intr.getIntrinsic(), "%.3e"));
             System.out.printf("    kIntr expected=\n%s\n", FormatArray.toString(expectedKIntr, "%.3e"));
@@ -96,6 +106,8 @@ public class CameraPoseTest extends TestCase {
             System.out.printf("%d) ti2=\n%s\n", i, FormatArray.toString(ti2, "%.3e"));
             System.out.printf("%d) ti4=\n%s\n", i, FormatArray.toString(ti4, "%.3e"));
             System.out.printf("%d) _ti4=\n%s\n", i, FormatArray.toString(_ti4, "%.3e"));
+            System.out.printf("%d) ti2_2=\n%s\n", i, FormatArray.toString(ti2_2, "%.3e"));
+            System.out.printf("%d) ti4_2=\n%s\n", i, FormatArray.toString(ti4_2, "%.3e"));
             System.out.printf("    t expected=\n%s\n", FormatArray.toString(expectedT, "%.3e"));
 
         }

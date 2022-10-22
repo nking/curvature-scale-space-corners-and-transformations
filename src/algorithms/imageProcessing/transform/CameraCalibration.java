@@ -495,7 +495,7 @@ public class CameraCalibration {
         SVDProducts svd = MatrixUtil.performSVD(r);
         
         r = MatrixUtil.multiply(svd.u, svd.vT);
-        
+
         CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();
         kExtr.setRotation(r);
         kExtr.setTranslation(t);

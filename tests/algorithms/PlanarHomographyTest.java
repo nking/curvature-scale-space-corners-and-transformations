@@ -518,6 +518,7 @@ public class PlanarHomographyTest extends TestCase {
             x2[1][i] = xc2[1][i]/xc2[2][i];
             x2[2][i] = 1;
         }
+        // convert to image frame:
         x1 = MatrixUtil.multiply(intr, x1); // 3 x nCorres
         x2 = MatrixUtil.multiply(intr, x2);
 

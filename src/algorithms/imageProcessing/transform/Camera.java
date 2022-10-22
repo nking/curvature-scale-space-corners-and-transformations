@@ -807,6 +807,10 @@ public class Camera {
             return rotation;
         }
 
+        public static double[][] applyOrthoNormalization(double[][] r) throws NotConvergedException {
+            return Rotation.orthonormalizeUsingSkewCayley(r);
+        }
+
         /**
          * @param rotation the rotation to set
          */

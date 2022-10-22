@@ -3,7 +3,10 @@ package algorithms.imageProcessing.transform;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import java.util.Arrays;
+
+import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
+import no.uib.cipr.matrix.SVD;
 
 /**
  * a utility class holding rotations associated with euler angles,
@@ -2367,5 +2370,25 @@ public class Rotation {
             d3X3 = MatrixUtil.zeros(3, 3);
         }
     }
-    
+
+    public static double[][] orthonormalizeUsingSVD(double[][] r) throws NotConvergedException {
+        SVD svd = SVD.factorize(new DenseMatrix(r));
+        DenseMatrix r2 = (DenseMatrix) svd.getU().mult(svd.getU(), svd.getVt());
+        return MatrixUtil.convertToRowMajor(r2);
+    }
+    public static double[][] orthonormalizeUsingSkewCayley(double[][] r) throws NotConvergedException {
+        r = cay(r);
+        double[][] skew = MatrixUtil.pointwiseSubtract(
+                r, MatrixUtil.transpose(r));
+        MatrixUtil.multiply(skew, 0.5);
+        r = cay(skew);
+        return r;
+    }
+    private static double[][] cay(double[][] r) throws NotConvergedException {
+        double[][] identity = MatrixUtil.createIdentityMatrix(3);
+        double[][] t1 = MatrixUtil.pseudoinverseFullColumnRank(
+                MatrixUtil.pointwiseAdd(identity, r));
+        double[][] t2 = MatrixUtil.pointwiseSubtract(identity, r);
+        return MatrixUtil.multiply(t1, t2);
+    }
 }
