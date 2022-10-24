@@ -7,6 +7,7 @@ import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import no.uib.cipr.matrix.*;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -91,14 +92,6 @@ public class CameraPose {
         double[][] p = calculatePFromXXW(x, X);
 
         /*
-        MatrixUtil.SVDProducts svdP = MatrixUtil.performSVD(p);
-        double[] c = Arrays.copyOf(svdP.vT[svdP.vT.length - 1], svdP.vT[0].length);
-        // assert P*c = 0
-        double[] check0 = MatrixUtil.multiplyMatrixByColumnVector(p, c);
-        System.out.printf("check that P*c=0:%s\n", FormatArray.toString(check0, "%.3e"));
-        */
-
-        /*
         Szeliski Sect 6.2.1
         Since K is by convention upper-triangular 
         (see the discussion in Section 2.1.5), both K and R can be obtained 
@@ -109,30 +102,52 @@ public class CameraPose {
         // [3X3]
         double[][] M = MatrixUtil.copySubMatrix(p, 0, 2, 0, 2);
         double[][] invM = MatrixUtil.pseudoinverseFullColumnRank(M);
-        QR qr = QR.factorize(new DenseMatrix(invM)); // Q=rot^T R=K^-1
-        double[][] rot = MatrixUtil.transpose(MatrixUtil.convertToRowMajor(qr.getQ()));
-        double[][] k = MatrixUtil.pseudoinverseFullColumnRank(MatrixUtil.convertToRowMajor(qr.getR()));
-        MatrixUtil.multiply(k, 1./k[2][2]);
-
-        double[][] rzpi = MatrixUtil.createIdentityMatrix(3);
-        rzpi[0][0] = -1;
-        rzpi[1][1] = -1;
-
-        rot = MatrixUtil.multiply(rzpi, rot);
-        k = MatrixUtil.multiply(k, rzpi);
-
-        // TODO: presumably, should then orthonormalize rot, but then need to apply
-        // similar multiplication to right multiply of k
-        // see Rotation.orthonormalizeUsingSVD or Rotation.orthonormalizeUsingSkewCayley.
 
         // this assumes xc=R*(xw-t) instead of xc=R*xw + t
         // calculates: last column of P = P[*][3] = -K*R*X_0 where X_0 is projection center of camera.
         // X_0 = -1 * R^-1 * K^-1 * P[*][3]
-        double[] projectionCenter = MatrixUtil.multiplyMatrixByColumnVector(invM,
-                MatrixUtil.extractColumn(p, 3));
+        double[] p3 = MatrixUtil.extractColumn(p, 3);
+        double[] projectionCenter = MatrixUtil.multiplyMatrixByColumnVector(invM, p3);
         MatrixUtil.multiply(projectionCenter, -1);
 
-        double[] p3 = MatrixUtil.extractColumn(p, 3);
+        /* this block is
+        from calc_KRZ_from_P.m
+        https://www.ipb.uni-bonn.de/book-pcv/#cod
+        The code offered on the author's book site, and a subdirectory has a readme.txt file
+        which states that the code can be used for non-commercial purposes unless permission is obtained.
+        Photogrammetric Computer Vision
+        Statistics, Geometry, and Reconstruction
+        Wolfgang Förstner, Bernhard P. Wrobel
+         */
+        // normalize M
+        double detM = MatrixUtil.determinant(M);
+        // assuming detM != 0.
+        double sign = (detM < 0) ? -1 : 1.;
+        MatrixUtil.multiply(M, sign);
+
+        invM = MatrixUtil.pseudoinverseFullColumnRank(M);
+
+        QR qr = QR.factorize(new DenseMatrix(invM)); // Q=rot^T, R=K^-1
+        double[][] rot = MatrixUtil.transpose(MatrixUtil.convertToRowMajor(qr.getQ()));
+        double[][] k = MatrixUtil.pseudoinverseFullColumnRank(MatrixUtil.convertToRowMajor(qr.getR()));
+
+        int i;
+
+        //from calc_KRZ_from_P.m
+        //% change chirality abd signs in K if necessary
+        double[] diagK = new double[]{1, 1, 1};
+        double[] diagSc = new double[]{-1, -1, 1};
+        double[][] di = MatrixUtil.zeros(3, 3);
+        for (i = 0; i < 3; ++i) {
+            if (k[i][i] < 0) {
+                diagK[i] = -1;
+            }
+            di[i][i] = diagK[i]*diagSc[i];
+        }
+        rot = MatrixUtil.multiply(di, rot);
+        k = MatrixUtil.multiply(k, di);
+
+        MatrixUtil.multiply(k, 1./k[2][2]);
 
         CameraExtrinsicParameters extrinsics = new CameraExtrinsicParameters();
         extrinsics.setRotation(rot);
@@ -225,6 +240,10 @@ public class CameraPose {
         // it is also the epipole e1, defined as the right nullspace
         double[] xOrth = svd.vT[svd.vT.length - 1];
 
+        // assert that ell * xOrth ~ 0
+        //double[] chk = MatrixUtil.multiplyMatrixByColumnVector(ell, xOrth);
+        //System.out.printf("check that A*x=0:%s\n", FormatArray.toString(chk, "%.3e"));
+
         // reshape into 3 X 4
         double[][] P2 = MatrixUtil.zeros(3,4);
         System.arraycopy(xOrth, 0, P2[0], 0, 4);
@@ -255,20 +274,19 @@ public class CameraPose {
      * Zhang 1999, "Flexible Camera Calibration By Viewing a Plane From Unknown Orientations"
      * Szeliski 2010 draft of "Computer Vision: Algorithms and Applications"
      * </pre>
-     * @param intrinsics
+     * @param intrinsics holds camera intrinsics information, including radial distortion parameters if any
+     *                   and the radial distortion parameter type.
      * @param x the image coordinates of the features in format 3 X N where
-     * 3 is for x, y, 1 rows, and N columns is the number of features.  At least 3 features are needed to 
+     * 3 is for x, y, 1 rows, and N columns is the number of features.  At least 5 features are needed to
      * calculate the extrinsic parameters.
-     * NOTE x and X should both be distortion-free or both should be distorted.
      * @param X the world coordinates of the features in format 3 X N where
-     * 3 is for x, y, 1 rows, and N columns is the number of features.  At least 3 features are needed to
+     * 3 is for x, y, 1 rows, and N columns is the number of features.  At least 5 features are needed to
      * calculate the extrinsic parameters.
-     * NOTE x and X should both be distortion-free or both should be distorted.
-     * @return 
+     * @return
      */
     public static CameraExtrinsicParameters calculatePoseUsingCameraCalibration(
         Camera.CameraIntrinsicParameters intrinsics, double[][] x,
-        double[][] X) throws NotConvergedException {
+        double[][] X) throws NotConvergedException, IOException {
                 
         if (x.length != 3) {
             throw new IllegalArgumentException("x.length must be 3");
@@ -277,8 +295,8 @@ public class CameraPose {
             throw new IllegalArgumentException("X.length must be 3");
         }
         int n = x[0].length;
-        if (n < 4) {
-            throw new IllegalArgumentException("x must have at least 4 correspondences");
+        if (n < 5) {
+            throw new IllegalArgumentException("x must have at least 5 correspondences");
         }
         if (X[0].length != n) {
             throw new IllegalArgumentException("the number of columns in X must be the same as in x");
@@ -302,10 +320,15 @@ public class CameraPose {
                 X[j][i] /= X[X.length - 1][i];
             }
         }
+
+        double[][] xc = Camera.pixelToCameraCoordinates(x, intrinsics);
         
         // following Ma et al. 2003
-        double[][] h = CameraCalibration.solveForHomography(x, X);
+        //double[][] h = CameraCalibration.solveForHomography(xc, X);
 
+        double[][] h = CameraCalibration.solveForHomographyBouget(xc, X);
+
+        // needs at least 5 points
         CameraExtrinsicParameters kExtr = CameraCalibration.solveForExtrinsic(
             intrinsics, h);
         

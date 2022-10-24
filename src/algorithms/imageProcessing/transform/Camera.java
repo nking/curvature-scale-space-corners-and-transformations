@@ -553,33 +553,36 @@ public class Camera {
         }
         
     }
-    
-    /** converts pixel coordinates to camera coordinates by transforming them to camera 
+
+    /** converts pixel coordinates to camera coordinates by transforming them to camera
     reference frame then removing radial distortion.
     The input in terms of Table 1 of Ma et al. 2004 is a double array of (u_d, v_d)
     and the output is a double array of (x, y).
     Also useful reading is NVM Tools by Alex Locher
     https://github.com/alexlocher/nvmtools.git
-    
-     * @param x points in the camera centered reference frame. 
-     * format is 3XN for N points.  
-     * @param kIntr  
+
+     * @param x points in the camera centered reference frame.
+     * format is 3XN for N points.
+     * @param kIntr
      * @param rCoeffs radial distortion vector of length 2 or radial and tangential
      * distortion vector of length 5.  can be null to skip lens distortion correction.
      * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
         f(r) = 1 +k1*r^2 + k2*r^4 if true,
         else use model #3 f(r) = 1 +k1*r + k2*r^2.
         note that if rCoeffs is null or empty, no radial distortion is removed.
-     * @return pixels in the reference frame of 
-     * @throws no.uib.cipr.matrix.NotConvergedException 
-     * @throws java.io.IOException 
+     * @return pixels in the reference frame of
+     * @throws no.uib.cipr.matrix.NotConvergedException
+     * @throws java.io.IOException
      */
-    public static double[][] pixelToCameraCoordinates(double[][] x, 
-        CameraIntrinsicParameters kIntr, double[] rCoeffs, boolean useR2R4) 
+    public static double[][] pixelToCameraCoordinates(double[][] x,
+        CameraIntrinsicParameters kIntr)
         throws NotConvergedException, IOException {
-                        
+
         double[][] intr = MatrixUtil.copy(kIntr.getIntrinsic());
-        
+        double[] rCoeffs = Arrays.copyOf(kIntr.getRadialDistortionCoeffs(),
+                kIntr.getRadialDistortionCoeffs().length);
+        boolean useR2R4 = kIntr.useR2R4();
+
         return pixelToCameraCoordinates(x, intr, rCoeffs, useR2R4);
     }
     
@@ -667,13 +670,37 @@ public class Camera {
     
     public static class CameraIntrinsicParameters {
         private double[][] intrinsic;
+        private double[] radialDistortionCoeffs;
+        private boolean useR2R4;
         private double lambda;
         
         public CameraIntrinsicParameters(double[][] k) {
             this.intrinsic = k;
         }
+
+        /**
+         *
+         * @param k
+         *
+         *          @param radial the radialDistortion to set
+         *          @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+         *          f(r) = 1 +k1*r^2 + k2*r^4 if true,
+         *          else use model #3 f(r) = 1 +k1*r + k2*r^2.
+         */
+        public CameraIntrinsicParameters(double[][] k, double[] radial,boolean useR2R4) {
+            this.intrinsic = k;
+            this.radialDistortionCoeffs = radial;
+            this.useR2R4 = useR2R4;
+        }
         
         public CameraIntrinsicParameters() {
+        }
+
+        public void setUseR2R4(boolean useR2R4) {
+            this.useR2R4 = useR2R4;
+        }
+        public boolean useR2R4() {
+            return useR2R4;
         }
         
         /**
@@ -702,7 +729,14 @@ public class Camera {
         public void setLambda(double lambda) {
             this.lambda = lambda;
         }
-        
+
+        public double[] getRadialDistortionCoeffs() {
+            return radialDistortionCoeffs;
+        }
+
+        public void setRadialDistortionCoeffs(double[] radialDistortionCoeffs) {
+            this.radialDistortionCoeffs = radialDistortionCoeffs;
+        }
     }
     
     public static class CameraProjection {
@@ -850,14 +884,12 @@ public class Camera {
     public static class CameraMatrices {
         private CameraIntrinsicParameters intrinsics;
         private List<CameraExtrinsicParameters> extrinsics = new ArrayList<CameraExtrinsicParameters>();
-        private double[] radialDistortion;
-        private boolean useR2R4;
-        
+
         /**
          * @return the radialDistortion
          */
         public double[] getRadialDistortCoeff() {
-            return radialDistortion;
+            return intrinsics.getRadialDistortionCoeffs();
         }
         
         /**
@@ -866,18 +898,7 @@ public class Camera {
          else return false if using model #3 f(r) = 1 +k1*r + k2*r^2.
         */
         public boolean useR2R4() {
-            return useR2R4;
-        }
-
-        /**
-         * @param radialDistortion the radialDistortion to set
-         * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
-         f(r) = 1 +k1*r^2 + k2*r^4 if true,
-         else use model #3 f(r) = 1 +k1*r + k2*r^2.
-         */
-        public void setRadialDistortion(double[] radialDistortion, boolean useR2R4) {
-            this.radialDistortion = radialDistortion;
-            this.useR2R4 = useR2R4;
+            return intrinsics.useR2R4();
         }
 
         /**

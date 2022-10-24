@@ -10,6 +10,7 @@ import java.util.List;
 import no.uib.cipr.matrix.NotConvergedException;
 
 /**
+ * NOT READY FOR USE.
  * iterative non-linear optimization using Levenberg-Marquardt algorithm
  * to minimize the re-projection error of perspective projection
  * in "perspective-n-point".

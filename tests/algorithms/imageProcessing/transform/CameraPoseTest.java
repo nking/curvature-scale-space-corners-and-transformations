@@ -5,6 +5,7 @@ import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import junit.framework.TestCase;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
@@ -18,7 +19,9 @@ public class CameraPoseTest extends TestCase {
     public CameraPoseTest() {
     }
     
-    public void test() {}
+    public void estNCBook() throws IOException {
+        NeurochemistryBookData2.runCorresMaker();
+    }
 
     /**
      * Test of calculatePoseUsingDLT method, of class CameraPose.
@@ -41,7 +44,16 @@ public class CameraPoseTest extends TestCase {
         double[][] expectedKIntr = Zhang98Data.getIntrinsicCameraMatrix();
         double[] radial = Zhang98Data.getRadialDistortionR2R4();
 
+        double[][] rT0 = new double[5][];
+        double[][] rT2 = new double[5][];
+        double[][] rTE = new double[5][];
+
         for (int i = 1; i <= 5; ++i) {
+
+            //The planar homography pose method extracts R and t much better than
+            // the method using a projective matrix. see the distances beteen expected rotation
+            // and estimated rotations below.
+
             System.out.println();
             double[][] x = Zhang98Data.getObservedFeaturesInImage(i);
 
@@ -52,12 +64,16 @@ public class CameraPoseTest extends TestCase {
             double[] expectedT = Arrays.copyOf(Zhang98Data.getTranslation(i), 3);
             MatrixUtil.multiply(expectedT, 1./expectedT[2]);
 
+            double[] qHamiltonE = Rotation.createHamiltonQuaternionZYX(Rotation.extractThetaFromZYX(expectedR));
+            double[] qBarfootE = Rotation.convertHamiltonToBarfootQuaternion(qHamiltonE);
+
             double[][] xc = Camera.pixelToCameraCoordinates(x, expectedKIntr, radial, true);
 
+            // why does this method only pick up z-axis rotation?
             Camera.CameraPoseParameters result = CameraPose.calculatePoseAndKUsingDLT(xU, xW);
 
             Camera.CameraExtrinsicParameters extr2 = CameraPose.calculatePoseUsingCameraCalibration(
-                    new Camera.CameraIntrinsicParameters(expectedKIntr), xU,xW);
+                    new Camera.CameraIntrinsicParameters(expectedKIntr, radial, useR2R4), x, xW);
 
             Camera.CameraExtrinsicParameters extr = result.getExtrinsicParameters();
             Camera.CameraIntrinsicParameters intr = result.getIntrinsicParameters();
@@ -94,10 +110,32 @@ public class CameraPoseTest extends TestCase {
             double[][] r2Orth = MatrixUtil.copy(extr2.getRotation());
             r2Orth = Rotation.orthonormalizeUsingSVD(r2Orth);
 
+            // find distances between rotations
+            rT0[i-1] = Rotation.extractThetaFromZYX(extr.getRotation());
+            rT0[i-1] = Arrays.copyOf(rT0[i-1], rT0[i-1].length);
+            MatrixUtil.multiply(rT0[i-1], 180./Math.PI);
+
+            rT2[i-1] = Rotation.extractThetaFromZYX(r2Orth);
+            rT2[i-1] = Arrays.copyOf(rT2[i-1], rT2[i-1].length);
+            MatrixUtil.multiply(rT2[i-1], 180./Math.PI);
+
+            rTE[i-1] = Rotation.extractThetaFromZYX(expectedR);
+            rTE[i-1] = Arrays.copyOf(rTE[i-1], rTE[i-1].length);
+            MatrixUtil.multiply(rTE[i-1], 180./Math.PI);
+
+            double[] qHamilton = Rotation.createHamiltonQuaternionZYX(Rotation.extractThetaFromZYX(extr.getRotation()));
+            double[] qBarfoot = Rotation.convertHamiltonToBarfootQuaternion(qHamilton);
+            double distR0 = Rotation.distanceBetweenQuaternions(qBarfootE, qBarfoot);
+
+            qHamilton = Rotation.createHamiltonQuaternionZYX(Rotation.extractThetaFromZYX(r2Orth));
+            qBarfoot = Rotation.convertHamiltonToBarfootQuaternion(qHamilton);
+            double distR2Orth = Rotation.distanceBetweenQuaternions(qBarfootE, qBarfoot);
+
             System.out.printf("%d) r=\n%s\n", i, FormatArray.toString(extr.getRotation(), "%.3e"));
             System.out.printf("%d) r2=\n%s\n", i, FormatArray.toString(extr2.getRotation(), "%.3e"));
             System.out.printf("%d) r2Orth=\n%s\n", i, FormatArray.toString(r2Orth, "%.3e"));
             System.out.printf("    r expected=\n%s\n", FormatArray.toString(expectedR, "%.3e"));
+            System.out.printf("dist r     =%.3e\ndist r2Orth=%.3e\n", distR0, distR2Orth);
             System.out.printf("%d) kIntr=\n%s\n", i, FormatArray.toString(intr.getIntrinsic(), "%.3e"));
             System.out.printf("    kIntr expected=\n%s\n", FormatArray.toString(expectedKIntr, "%.3e"));
             System.out.printf("%d) tc1=\n%s\n", i, FormatArray.toString(tc1, "%.3e"));
@@ -112,21 +150,65 @@ public class CameraPoseTest extends TestCase {
 
         }
 
-    }
+        // looking offset in x, y, z rotations for the solutions that would put
+        //    them into agreement with the expected, within reasonable stdevs of their means.
 
-    /**
-     * Test of calculatePoseUsingCameraCalibration method, of class CameraPose.
-     */
-    public void estCalculatePoseUsingCameraCalibration() throws Exception {
-        System.out.println("calculatePoseUsingCameraCalibration");
-        Camera.CameraIntrinsicParameters intrinsics = null;
-        double[][] x = null;
-        double[][] X = null;
-        Camera.CameraExtrinsicParameters expResult = null;
-        Camera.CameraExtrinsicParameters result = CameraPose.calculatePoseUsingCameraCalibration(intrinsics, x, X);
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        // TODO: need to redo these for angle subtraction
+
+        double[] mean = new double[3];
+        double[] stdev = new double[3];
+        double[] diff = new double[3];
+        System.out.printf("rThetas1 (degrees)=\n");
+        for (int i = 0; i < 5; ++i) {
+            System.out.printf("  %s\n", FormatArray.toString(rT0[i], "%.3f"));
+            MatrixUtil.pointwiseSubtract(rT0[i], rTE[i], diff);
+            for (int j = 0; j < 3; ++j) {
+                mean[j] += diff[j];
+            }
+        }
+        for (int j = 0; j < 3; ++j) {
+            mean[j] /= 5.;
+        }
+        for (int i = 0; i < 5; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                stdev[j] += (diff[j] - mean[j])*(diff[j] - mean[j]);
+            }
+        }
+        for (int j = 0; j < 3; ++j) {
+            stdev[j] = Math.sqrt(stdev[j]/4.);
+        }
+        System.out.printf("rThetas1 mean diff from expected, stdev of mean diff from expected (degrees)=\n   %s\n   %s\n",
+                FormatArray.toString(mean, "%.3f"), FormatArray.toString(stdev, "%.3f"));
+
+        Arrays.fill(mean, 0);
+        Arrays.fill(stdev, 0);
+        System.out.printf("rThetas2 (degrees)=\n");
+        for (int i = 0; i < 5; ++i) {
+            System.out.printf("  %s\n", FormatArray.toString(rT2[i], "%.3f"));
+            MatrixUtil.pointwiseSubtract(rT2[i], rTE[i], diff);
+            for (int j = 0; j < 3; ++j) {
+                mean[j] += diff[j];
+            }
+        }
+        for (int j = 0; j < 3; ++j) {
+            mean[j] /= 5.;
+        }
+        for (int i = 0; i < 5; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                stdev[j] += (diff[j] - mean[j])*(diff[j] - mean[j]);
+            }
+        }
+        for (int j = 0; j < 3; ++j) {
+            stdev[j] = Math.sqrt(stdev[j]/4.);
+        }
+        System.out.printf("rThetas2 mean diff from expected, stdev of mean diff from expected (degrees)=\n   %s\n   %s\n",
+                FormatArray.toString(mean, "%.3f"), FormatArray.toString(stdev, "%.3f"));
+
+        System.out.printf("rThetasE (degrees)=\n");
+        for (int i = 0; i < 5; ++i) {
+            System.out.printf("  %s\n", FormatArray.toString(rTE[i], "%.3f"));
+        }
+
     }
 
 }

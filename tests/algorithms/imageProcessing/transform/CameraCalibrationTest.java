@@ -137,7 +137,7 @@ public class CameraCalibrationTest extends TestCase {
         cameraMatrices.getExtrinsics().addAll(extrinsics);
         
         List<Camera.CameraExtrinsicParameters> extrinsics2 = CameraCalibration.solveForExtrinsics2(
-            kIntr, coordsI, coordsW, useR2R4);
+            kIntr, coordsI, coordsW);
         
         CameraExtrinsicParameters ex1, ex2;
         for (int i = 0; i < nImages; ++i) {
@@ -156,6 +156,9 @@ public class CameraCalibrationTest extends TestCase {
                 
         kRadial = CameraCalibration.solveForRadialDistortion(coordsI, u, v, 
             cameraMatrices, useR2R4);
+        kIntr.setRadialDistortionCoeffs(kRadial);
+        kIntr.setUseR2R4(useR2R4);
+
         double k1 = kRadial[0];
         double k2 = kRadial[1];
         log.log(LEVEL, String.format("k=\n%s\n", FormatArray.toString(kRadial, "%.4e")));
@@ -174,11 +177,11 @@ public class CameraCalibrationTest extends TestCase {
         cIntrE[2] = new double[]{0, 0, 1};
         useR2R4 = false;
         Camera.CameraIntrinsicParameters kIntrE = new Camera.CameraIntrinsicParameters(
-            cIntrE);
+            cIntrE, null, useR2R4);
         for (i = 0; i < nImages; ++i) {
             uvDI = MatrixUtil.copySubMatrix(coordsI, 0, 2, nFeatures*i, nFeatures*(i + 1)-1);
             
-            xyDI = Camera.pixelToCameraCoordinates(uvDI, kIntrE, null, useR2R4);
+            xyDI = Camera.pixelToCameraCoordinates(uvDI, kIntrE);
             xyi = CameraCalibration.removeRadialDistortion(xyDI, k1E, k2E);
             xyDUI = CameraCalibration.applyRadialDistortion(xyi, k1E, k2E, useR2R4);
             // assert that xy != xyDI

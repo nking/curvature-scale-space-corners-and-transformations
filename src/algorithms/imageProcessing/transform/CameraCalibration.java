@@ -5,6 +5,8 @@ import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraMatrices;
 import algorithms.matrix.MatrixUtil;
 import algorithms.matrix.MatrixUtil.SVDProducts;
+import algorithms.misc.MiscMath;
+import algorithms.misc.MiscMath0;
 import algorithms.misc.PolynomialRootSolver;
 import algorithms.util.FormatArray;
 import java.io.IOException;
@@ -112,7 +114,7 @@ public class CameraCalibration {
         
         
         //(2) using all homographies, solve for the camera intrinsic parameters
-        // this is where at least 3 points are needed per image to euqal the number of unknown intrinsic parameters.
+        // this is where at least 3 points are needed per image to equal the number of unknown intrinsic parameters.
         CameraIntrinsicParameters kIntr = solveForIntrinsic(h);
         
         CameraMatrices cameraMatrices = new CameraMatrices();
@@ -120,7 +122,7 @@ public class CameraCalibration {
         
         //List<CameraExtrinsicParameters> extrinsics = solveForExtrinsics(kIntr, h, nImages);        
         List<CameraExtrinsicParameters> extrinsics = solveForExtrinsics2(
-            kIntr, coordsI, coordsW, useR2R4);
+            kIntr, coordsI, coordsW);
         
         cameraMatrices.getExtrinsics().addAll(extrinsics);
         
@@ -163,8 +165,9 @@ public class CameraCalibration {
                 
         double[] kRadial = solveForRadialDistortion(coordsI, u, v, cameraMatrices,
             useR2R4);
-       
-        cameraMatrices.setRadialDistortion(kRadial, useR2R4);
+
+        kIntr.setRadialDistortionCoeffs(kRadial);
+        kIntr.setUseR2R4(useR2R4);
         
         // (5) optimization to improve the parameter estimates
         
@@ -233,8 +236,8 @@ public class CameraCalibration {
                     [h_i_2]
                     [h_i_3]
         */
-        
-        // 2*n X 9       
+
+        // 2*n X 9
         double u, v, X, Y;
         double[][] ell = new double[2*n][9];
         for (int i = 0; i < n; ++i) {
@@ -263,7 +266,274 @@ public class CameraCalibration {
         
         return h;
     }
-    
+
+    /**
+     * solve for the planar homography between world coordinate objects xW and the imaged objects' coordinates.
+     * x ~ H*xW where "~" means equal up to a non zero scalar factor.
+     *
+     * this method is similar to solveForHomography(), but has additional normalization and a refinement step,
+     * all ported from github repositories holding the Bouguet Matlab Toolbox code.
+     * The Bouguet's toolbox web page implies that the source is freely available.
+     * The github repositories with the Bouguet Matlab code that the individual authors have modified do not have license
+     * information.  Those references are here and the method this is adapted from.
+     * <pre>
+     *     http://robots.stanford.edu/cs223b04/JeanYvesCalib/
+     *     compute_homography.m in
+     *     https://github.com/fragofer/TOOLBOX_calib
+     *     and
+     *     https://github.com/hunt0r/Bouguet_cam_cal_toolbox
+     * </pre>
+     *
+     * @param x image coordinates
+     * @param xW world coordinates
+     * @return
+     * @throws NotConvergedException
+     */
+    public static double[][] solveForHomographyBouget(double[][] x, double[][] xW) throws NotConvergedException {
+
+        if (x.length != 3) {
+            throw new IllegalArgumentException("x must have 3 rows.");
+        }
+        if (xW.length != 3) {
+            throw new IllegalArgumentException("coordsW must have 3 rows.");
+        }
+        int n = x[0].length;
+        if (xW[0].length != n) {
+            throw new IllegalArgumentException("coordsW must have same number of columns as x.");
+        }
+
+        /*
+         First computes an initial guess for the homography through quasi-linear method.
+         Then, if the total number of points is larger than 4, optimize the solution by minimizing
+         the reprojection error (in the least squares sense)
+         */
+
+        int i, j;
+
+        x = MatrixUtil.copy(x);
+        xW = MatrixUtil.copy(xW);
+
+        // normalize by last coordinate just in case nor performed already:
+        for (i = 0; i < x[0].length; ++i) {
+            for (j = 0; j < x.length; ++j) {
+                x[j][i] /= x[x.length - 1][i];
+            }
+        }
+        for (i = 0; i < xW[0].length; ++i) {
+            for (j = 0; j < xW.length; ++j) {
+                xW[j][i] /= xW[xW.length - 1][i];
+            }
+        }
+
+        //Prenormalization of point coordinates (very important):
+        // (Affine normalization)
+
+        double[] ax = x[0];
+        double[] ay = x[1];
+
+        double mxx = MiscMath.getAvgAndStDev(ax)[0];
+        double myy = MiscMath.getAvgAndStDev(ay)[0];
+        ax = MatrixUtil.subtract(ax, mxx);
+        ay = MatrixUtil.subtract(ay, myy);
+
+        double scxx = meanOfAbs(ax);
+        double scyy = meanOfAbs(ay);
+
+        double[][] hNorm = new double[3][];
+        hNorm[0] = new double[]{1./scxx, 0., -mxx/scxx};
+        hNorm[1] = new double[]{0, 1./scyy, -myy/scyy};
+        hNorm[2] = new double[]{0, 0, 1};
+
+        double[][] invHNorm = new double[3][];
+        invHNorm[0] = new double[]{scxx, 0, mxx};
+        invHNorm[1] = new double[]{0, scyy, myy};
+        invHNorm[2] = new double[]{0, 0, 1};
+
+        //[3 X 3] * [3 X n]
+        double[][] xn = MatrixUtil.multiply(hNorm, x);
+
+        // 2*n X 9
+        double u, v, X, Y;
+        double[][] ell = new double[2*n][9];
+        for (i = 0; i < n; ++i) {
+            u = xn[0][i];
+            v = xn[1][i];
+            X = xW[0][i];
+            Y = xW[1][i];
+            // eqn(15) of Ma et al. 2003
+            ell[2*i]     = new double[]{X, Y, 1, 0, 0, 0, -u*X, -u*Y, -u};
+            ell[2*i + 1] = new double[]{0, 0, 0, X, Y, 1, -v*X, -v*Y, -v};
+        }
+
+        if (n > 4) {
+            // SVD(A).V == SVD(A^T*A).V
+            ell = MatrixUtil.createATransposedTimesA(ell);
+        }
+
+        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(ell);
+
+        // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
+        double[] xOrth = svd.vT[svd.vT.length - 1];
+        //h00, h01, h02, h10, h11, h12,h20,h21,h22
+
+        MatrixUtil.multiply(xOrth, 1./xOrth[xOrth.length - 1]);
+
+        double[][] h = new double[3][3];
+        for (i = 0; i < 3; i++) {
+            h[i] = new double[3];
+            h[i][0] = xOrth[(i * 3) + 0];
+            h[i][1] = xOrth[(i * 3) + 1];
+            h[i][2] = xOrth[(i * 3) + 2];
+        }
+
+        h = MatrixUtil.multiply(invHNorm, h);
+
+        if (true) {
+            // a quick look at errors
+            double[][] xEst = MatrixUtil.multiply(h, xW);
+            for (i = 0; i < xEst[0].length; ++i) {
+                for (j = 0; j < xEst.length; ++j) {
+                    xEst[j][i] /= xEst[xEst.length - 1][i];
+                }
+            }
+            double[][] err = MatrixUtil.pointwiseSubtract(x, xEst);
+            err = MatrixUtil.copySubMatrix(err, 0, 1, 0, err[0].length - 1);
+            double[] xMeanStdv = MiscMath0.getAvgAndStDev(err[0]);
+            double[] yMeanStdv = MiscMath0.getAvgAndStDev(err[1]);
+            System.out.printf("x err=%s\n", FormatArray.toString(xMeanStdv, "%.4e"));
+            System.out.printf("y err=%s\n", FormatArray.toString(yMeanStdv, "%.4e"));
+        }
+
+        // refinement to improve solution
+        if (n > 4) {
+            //hhv = reshape(H',9,1);
+            double[] hhv = MatrixUtil.stack(MatrixUtil.transpose(h));
+
+            //hhv = hhv(1:8);
+            hhv = Arrays.copyOf(hhv, 8);
+
+            for (int iter = 1; iter <= 10; ++iter) {
+
+                //mrep = H * M;
+                double[][] mrep = MatrixUtil.multiply(h, xW);
+
+                double[][] J = MatrixUtil.zeros(2*n,8);
+
+                //MMM = (M ./ (ones(3,1)*mrep(3,:)));   // ./ = elementwise division
+                double[][] MMM = new double[3][n];
+                for (i = 0; i < 3; ++i) {
+                    MMM[i] = MatrixUtil.pointwiseDivision(xW[i], mrep[2]);
+                }
+
+                //J(1:2:2*Np,1:3) = -MMM';
+                //J(2:2:2*Np,4:6) = -MMM';
+                for (j = 0; j < n; ++j) {
+                    J[2*j] = new double[]{-MMM[0][j], -MMM[1][j], -MMM[2][j],   0,0,0,    0,0};
+                    J[2*j + 1] = new double[]{0, 0, 0, -MMM[0][j], -MMM[1][j], -MMM[2][j], 0,0};
+                }
+
+                //mrep = mrep ./ (ones(3,1)*mrep(3,:));
+                for (i = 0; i < 3; ++i) {
+                    mrep[i] = MatrixUtil.pointwiseDivision(mrep[i], mrep[2]);
+                }
+
+                // [2 * n]
+                //m_err = m(1:2,:) - mrep(1:2,:);
+                //m_err = m_err(:); // <=== this stacks each column after the previous
+                double[] merr = new double[2*n];
+                int c = 0;
+                for (i = 0; i < n; ++i) {
+                    for (j = 0; j < 2; ++j) {
+                        merr[c] = mrep[j][i] - mrep[j][i];
+                        c++;
+                    }
+                }
+
+                //MMM2 = (ones(3,1)*mrep(1,:)) .* MMM;
+                //MMM3 = (ones(3,1)*mrep(2,:)) .* MMM;
+                //     .* is elementwise multiplication
+                double[][] MMM2 = new double[3][]; // [3 X n]
+                for (i = 0; i < 3; ++i) {
+                    MMM2[i] = MatrixUtil.pointwiseMultiplication(mrep[0], MMM[i]);
+                }
+                double[][] MMM3 = new double[3][]; // [3 X n]
+                for (i = 0; i < 3; ++i) {
+                    MMM3[i] = MatrixUtil.pointwiseMultiplication(mrep[1], MMM[i]);
+                }
+
+                //J(1:2:2*Np,7:8) = MMM2(1:2,:)';
+                //J(2:2:2*Np,7:8) = MMM3(1:2,:)';
+                for (j = 0; j < n; ++j) {
+                    J[2*j][6] = MMM2[0][j];
+                    J[2*j][7] = MMM2[1][j];
+                    J[2*j + 1][6] = MMM3[0][j];
+                    J[2*j + 1][7] = MMM3[1][j];
+                }
+
+                //MMM = (M ./ (ones(3,1)*mrep(3,:)))';
+                for (i = 0; i < 3; ++i) {
+                    MMM[i] = MatrixUtil.pointwiseDivision(xW[i], mrep[2]);
+                }
+                // [n X 3]
+                MMM = MatrixUtil.transpose(MMM);
+
+                //                ([8 X 2*n]*[2*n X 8])= [8 X 8];
+                //                                                J'*m_err = [8 X 2*n] * [2 * n X 1] = [8 X 1]
+                //hh_innov  = inv(J'*J)*J'*m_err; // [8X1]
+                double[][] t1 = MatrixUtil.pseudoinverseFullColumnRank(MatrixUtil.createATransposedTimesA(J));
+                double[] t2 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.transpose(J), merr);
+                double[] hhInov = MatrixUtil.multiplyMatrixByColumnVector(t1, t2);
+
+                // length 8:
+                //hhv_up = hhv - hh_innov;
+                double[] hhvUp = new double[8];
+                MatrixUtil.pointwiseSubtract(hhv, hhInov, hhvUp);
+
+                //H_up = reshape([hhv_up;1],3,3)';
+                // reshape writes into columns, but the transpose means write into rows
+                double[][] hUp = new double[3][];
+                hUp[0] = Arrays.copyOfRange(hhvUp, 0, 3);
+                hUp[1] = Arrays.copyOfRange(hhvUp, 3, 6);
+                hUp[2] = new double[]{hhvUp[6], hhvUp[7], 1};
+
+                // %norm(m_err)
+                // %norm(hh_innov)
+
+                //hhv = hhv_up;
+                hhv = hhvUp;
+
+                //H = H_up;
+                h = hUp;
+            }
+        }
+
+        if (true) {
+            // a quick look at errors
+            double[][] xEst = MatrixUtil.multiply(h, xW);
+            for (i = 0; i < xEst[0].length; ++i) {
+                for (j = 0; j < xEst.length; ++j) {
+                    xEst[j][i] /= xEst[xEst.length - 1][i];
+                }
+            }
+            double[][] err = MatrixUtil.pointwiseSubtract(x, xEst);
+            err = MatrixUtil.copySubMatrix(err, 0, 1, 0, err[0].length - 1);
+            double[] xMeanStdv = MiscMath0.getAvgAndStDev(err[0]);
+            double[] yMeanStdv = MiscMath0.getAvgAndStDev(err[1]);
+            System.out.printf("x err=%s\n", FormatArray.toString(xMeanStdv, "%.4e"));
+            System.out.printf("y err=%s\n", FormatArray.toString(yMeanStdv, "%.4e"));
+        }
+
+        return h;
+    }
+
+    private static double meanOfAbs(double[] a) {
+        double sum = 0;
+        for (int i = 0; i < a.length; ++i) {
+            sum += Math.abs(a[i]);
+        }
+        return sum/a.length;
+    }
+
     /**
      * estimate the camera intrinsic parameters from the image homographies.
      * @param h H as (3*NImages)x3 homography, projection matrices
@@ -427,7 +697,8 @@ public class CameraCalibration {
      * following Ma et al. 2003
      * estimate the extrinsic parameters from the image of the absolute conic.
      * @param kIntr camera intrinsic parameters
-     * @param h homography for the projection for an image
+     * @param h homography for the projection for an image. at least 5 points should have been used
+     *          to generate h.
      * @return 
      */
     static Camera.CameraExtrinsicParameters solveForExtrinsic(
@@ -457,8 +728,8 @@ public class CameraCalibration {
         
         // points at infinity, a.k.a. ideal points, have the form (x, y, 0)^T
         // the line at infinity is (0, 0, 1)^T.
-        
-        double[][] aInv = Camera.createIntrinsicCameraMatrixInverse(kIntr.getIntrinsic());
+
+        double[][] aInv = Camera.createIntrinsicCameraMatrixInverse(kIntr.getIntrinsic());// K^-1
         
         //h_i is the ith column vector of H
         //r1 = λ * A^−1 * h1
@@ -491,9 +762,9 @@ public class CameraCalibration {
             r[row][1] = r2[row];
             r[row][2] = r3[row];
         }
-        
+
+        // orthonormalization of r:
         SVDProducts svd = MatrixUtil.performSVD(r);
-        
         r = MatrixUtil.multiply(svd.u, svd.vT);
 
         CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();
@@ -508,14 +779,10 @@ public class CameraCalibration {
      * Tracking with the VRduino"
      * estimate the extrinsic parameters
      * @param kIntr camera intrinsic parameters
-     * @param kRadial an array holding the 2 radial distortion coefficients, or a null array
      * @param coordsI holds the image coordinates in pixels of features present in image i
      * @param coordsW holds the world coordinates of features present in image 1 corresponding
                to the same features and order of coordsI_i
-     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
-    f(r) = 1 +k1*r^2 + k2*r^4 if true,
-    else use model #3 f(r) = 1 +k1*r + k2*r^2.
-    * note that if rCoeffs is null or empty, no radial distortion is applied.
+
      * @return 
      * @throws no.uib.cipr.matrix.NotConvergedException 
      * @throws Exception if there is an error in use of MPSolver during the
@@ -523,8 +790,8 @@ public class CameraCalibration {
      * error message from the MPSolve documentation.
      */
     static CameraExtrinsicParameters solveForExtrinsic2(
-        CameraIntrinsicParameters kIntr, double[] kRadial, 
-        double[][] coordsI, double[][] coordsW, boolean useR2R4) 
+        CameraIntrinsicParameters kIntr,
+        double[][] coordsI, double[][] coordsW)
         throws NotConvergedException, Exception {
         
         if (coordsI.length != 3) {
@@ -539,8 +806,7 @@ public class CameraCalibration {
         }
         
         // convert to camera centered coordinates
-        double[][] xc = Camera.pixelToCameraCoordinates(coordsI, 
-            kIntr, kRadial, useR2R4);
+        double[][] xc = Camera.pixelToCameraCoordinates(coordsI, kIntr);
         
         // normalize by last coordinate:
         for (int i = 0; i < xc[0].length; ++i) {
@@ -1646,8 +1912,7 @@ public class CameraCalibration {
         double[] dV = new double[2*nFeatures*nImages];
         for (i = 0; i < nImages; ++i) {
             xy = MatrixUtil.copySubMatrix(uvD, 0, 2, nFeatures*i, nFeatures*(i + 1)-1);
-            xy = Camera.pixelToCameraCoordinates(xy, 
-                cameraMatrices.getIntrinsics(), null, false);
+            xy = Camera.pixelToCameraCoordinates(xy, cameraMatrices.getIntrinsics());
             for (j = 0; j < nFeatures; ++j) {
                 ui = u[nFeatures*i + j];
                 vi = v[nFeatures*i + j];
@@ -1756,10 +2021,7 @@ public class CameraCalibration {
      * @param kIntr
      * @param coordsI
      * @param coordsW
-     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
-    f(r) = 1 +k1*r^2 + k2*r^4 if true,
-    else use model #3 f(r) = 1 +k1*r + k2*r^2.
-    * note that if rCoeffs is null or empty, no radial distortion is applied.
+     *.
      * @return
      * @throws NotConvergedException 
      * @throws Exception if there is an error in use of MPSolver during the
@@ -1768,7 +2030,7 @@ public class CameraCalibration {
      */
     static List<CameraExtrinsicParameters> solveForExtrinsics2(
         CameraIntrinsicParameters kIntr, double[][] coordsI, 
-        double[][] coordsW, boolean useR2R4) 
+        double[][] coordsW)
         throws NotConvergedException, Exception {
         
         int nFeatures = coordsW[0].length;
@@ -1790,7 +2052,7 @@ public class CameraCalibration {
             //NOTE: here, internal to solveForExtrinsic() would be a different place 
             // where one could remove radial distortion.
             // the method forms the image of the "absolute conic"
-            kExtr = solveForExtrinsic2(kIntr, kRadial, cI, coordsW, useR2R4);
+            kExtr = solveForExtrinsic2(kIntr, cI, coordsW);
             
             list.add(kExtr);
         }
