@@ -718,7 +718,8 @@ public class Rotation {
         return r;
     }
 
-    public static class RodriguesRotation {
+    public static class RodriguesRotation
+    {
         /**
          * [3X3]
          */
@@ -753,7 +754,7 @@ public class Rotation {
      * @param in [3X1] rotation vector
      * @return
      */
-    public static RodriguesRotation createRodriguesRotationMatrixBouguet(double[] in) {
+    public static RodriguesRotation createRodriguesRotationMatrixBouguet(final double[] in) {
 
         if (in.length != 3) {
             throw new IllegalArgumentException("in length must be 3");

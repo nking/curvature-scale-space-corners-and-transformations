@@ -427,48 +427,58 @@ public class CameraPose {
         if ((r < 1e-3)|| (n < 5)) { // test of planarity
             // planar structure
             //Transform the plane to bring it in the Z=0 plane:
-            soln = bouguetPoseInitPlanar(intrinsics, xc, X, svd.getVt());
+            soln = bouguetPoseInitPlanar(intrinsics, xc, X, svd.getVt(), XMean);
         } else {
             //%fprintf(1,'Non planar structure detected: r=%f\n',r);
-            soln = bouguetPoseInitNonPlanar(intrinsics, xc, X, Xmean);
+            soln = bouguetPoseInitNonPlanar(intrinsics, xc, X, XMean);
         }
 
         if (refine) {
+            // could return more intermediate arrays such as JJ
             soln = bouguetPoseRefine(soln, intrinsics, xc, X);
         }
 
         //computation of the homography (not useful in the end)
+        if (true) {
+            //H = [Rckk(:,1:2)Tckk];  // [3X2][3X1]
+            double[][] H = new double[3][];
+            for (i = 0; i < 3; ++i) {
+                H[i] = new double[]{soln.getRotation()[i][0], soln.getRotation()[i][1], soln.getTranslation()[i]};
+            }
+            //% Computes the reprojection error in pixels:
+            //x = project_points2(X_kk, omckk, Tckk, fc, cc, kc, alpha_c);
+            ProjectedPoints pp = bouguetProjectPoints2(X, soln.getRodriguesVector(), soln.getTranslation(), intrinsics);
 
-        H = [Rckk(:,1:2) Tckk];
+            //ex = x_kk - x;
+            double[][] ex = MatrixUtil.pointwiseSubtract(x, pp.XP);
 
-        //% Computes the reprojection error in pixels:
+            //% Converts the homography in pixel units:
+            //KK = [fc(1) alpha_c * fc(1) cc(1);
+            //0 fc(2) cc(2);
+            //0 0 1];
+            //H = KK * H;
+            H = MatrixUtil.multiply(intrinsics.getIntrinsic(), H);
+            System.out.printf("H from [R_3X2 | t]=\n%s\n", FormatArray.toString(H, "%.3e"));
+        }
 
-        x = project_points2(X_kk,omckk,Tckk,fc,cc,kc,alpha_c);
-
-        ex = x_kk - x;
-
-        //% Converts the homography in pixel units:
-
-        KK = [fc(1) alpha_c*fc(1) cc(1);0 fc(2) cc(2); 0 0 1];
-
-        H = KK*H;
-
+        //can return [omckk,Tckk,Rckk,H,x,ex,JJ] if return JJ from refine
+        return soln;
     }
 
     public static class ProjectedPoints {
 
         /**
-         * [3 X n] projected points XP = R*X+T, where R = rodrigues(om)
+         * [2 X n] projected points XP = R*X+T, where R = rodrigues(om)
          */
         public double[][] XP;
 
         /**
-         * [3*n X 3] derivatives of XP w.r.t. rotation vector om
+         * [2*n X 3] derivatives of XP w.r.t. rotation vector om
          */
         public double[][] dxdom;
 
         /**
-         * [3*n X 3] derivatives of XP translation vector
+         * [2*n X 3] derivatives of XP translation vector
          */
         public double[][] dxdT;
     }
@@ -487,8 +497,7 @@ public class CameraPose {
      */
     private static ProjectedPoints bouguetProjectPoints2(double[][] X, double[] om, double[] t,
                                                          CameraIntrinsicParameters intrinsics) {
-//TODO: make another pass through this one and write unit tests
-
+       // TODO: assert argument dimensions
         /*
         %Definitions:
             %Let P be a point in 3D of coordinates X in the world reference frame (stored in the matrix X)
@@ -586,8 +595,8 @@ public class CameraPose {
         // [2*n X 3]
         double[][] dxdom = new double[2*n][];
         for (i = 0; i < n; ++i) {
-            dxdom[2*i] = dd1[i];
-            dxdom[2*i + 1] = dd2[i];
+            dxdom[2*i] = Arrays.copyOf(dd1[i], dd1[i].length);
+            dxdom[2*i + 1] = Arrays.copyOf(dd2[i], dd2[i].length);
         }
 
         // dYdT is [3*n X 3]
@@ -614,8 +623,8 @@ public class CameraPose {
         //[2*n X 3]
         double[][] dxdT = new double[2*n][];
         for (i = 0; i < n; ++i) {
-            dxdT[2*i] = dd1[i];
-            dxdT[2*i + 1] = dd2[i];
+            dxdT[2*i] = Arrays.copyOf(dd1[i], dd1[i].length);
+            dxdT[2*i + 1] = Arrays.copyOf(dd2[i], dd2[i].length);
         }
 
         double[] k = intrinsics.getRadialDistortionCoeffs();
@@ -676,7 +685,8 @@ public class CameraPose {
 
         //dr6dom = 3*((r2'.^2)*ones(1,3)) .* dr2dom;
         //dr6dT = 3*((r2'.^2)*ones(1,3)) .* dr2dT;
-        d0 = MatrixUtil.outerProduct(r2, new double[]{1, 1, 1});
+        d0 = MatrixUtil.outerProduct(r4, new double[]{1, 1, 1});
+        MatrixUtil.multiply(d0, 3);
         double[][] dr6dom = MatrixUtil.pointwiseAdd(d0, dr2dom);
         double[][] dr6dT = MatrixUtil.pointwiseAdd(d0, dr2dT);
 
@@ -783,7 +793,7 @@ public class CameraPose {
         //dxd1dT(2:2:end,:) = (x(2,:)'*ones(1,3)) .* dcdistdT;
         //dxd1dT = dxd1dT + coeff.* dxdT;
         d1 = MatrixUtil.pointwiseMultiplication(d01, dcdistdT); // [nX3]
-        d2 = MatrixUtil.pointwiseMultiplication(d01, dcdistdT);
+        d2 = MatrixUtil.pointwiseMultiplication(d02, dcdistdT);
         double[][] dxd1dT = new double[2*n][]; // [2nX3]
         for (i = 0; i < n; ++i) {
             dxd1dT[2*i] = d1[i];
@@ -796,11 +806,11 @@ public class CameraPose {
         //dxd1dk(1:2:end,:) = (x(1,:)'*ones(1,5)) .* dcdistdk;
         //dxd1dk(2:2:end,:) = (x(2,:)'*ones(1,5)) .* dcdistdk;
         d1 = MatrixUtil.pointwiseMultiplication(d01, dcdistdk); // [nX3]
-        d2 = MatrixUtil.pointwiseMultiplication(d01, dcdistdk);
+        d2 = MatrixUtil.pointwiseMultiplication(d02, dcdistdk);
         double[][] dxd1dk = new double[2*n][]; // [2nX3]
         for (i = 0; i < n; ++i) {
-            dxd1dk[2*i] = d1[i];
-            dxd1dk[2*i + 1] = d2[i];
+            dxd1dk[2*i] = Arrays.copyOf(d1[i], d1[i].length);
+            dxd1dk[2*i + 1] = Arrays.copyOf(d2[i], d2[i].length);
         }
 
         // excluding tangential distortion.  lines 161 - 191
@@ -811,7 +821,7 @@ public class CameraPose {
         //[2Xn]
         double[][] xd2 = MatrixUtil.copy(xd1);
         double[][] dxd2dom = MatrixUtil.copy(dxd1dom);// + ddelta_xdom ;
-        double[][] dxd2dT = MatrixUtil.copy((dxd1dT );//+ ddelta_xdT;
+        double[][] dxd2dT = MatrixUtil.copy(dxd1dT);//+ ddelta_xdT;
         double[][] dxd2dk = MatrixUtil.copy(dxd1dk);// + ddelta_xdk ;
 
         //% Add Skew:
@@ -819,6 +829,7 @@ public class CameraPose {
 
         //xd3 = [xd2(1,:) + alpha*xd2(2,:);xd2(2,:)];
         tmp1 = Arrays.copyOf(xd2[1], xd2[1].length);
+        MatrixUtil.multiply(tmp1, alpha);
         double[][] xd3 = new double[2][]; // [2Xn]
         xd3[0] = MatrixUtil.add(xd2[0], tmp1);
         xd3[1] = Arrays.copyOf(xd2[1], xd2[1].length);
@@ -860,7 +871,7 @@ public class CameraPose {
 
         //dxd3dalpha = zeros(2*n,1);
         //dxd3dalpha(1:2:2*n,:) = xd2(2,:)';
-        // xd2 is [2Xn]
+        // xd2 is [2*n X 1]
         double[] dxd3dalpha = Arrays.copyOf(xd2[1], xd2[1].length);
 
         //% Pixel coordinates:
@@ -880,20 +891,19 @@ public class CameraPose {
             Arrays.fill(tmp1, 1);
             tmp3 = MatrixUtil.outerProduct(f, tmp1);
             double[][] tmp4 = MatrixUtil.outerProduct(c, tmp1);
-            tmp4 = MatrixUtil.pointwiseAdd(tmp3, tmp4);
-            xp = MatrixUtil.pointwiseMultiplication(xd3, tmp4);
+            xp = MatrixUtil.pointwiseAdd(MatrixUtil.pointwiseMultiplication(xd3, tmp3), tmp4);
 
             //coeff = reshape(f(:)*ones(1, n), 2 * n, 1);
-            double[] coeff2 = MatrixUtil.stack(tmp3);
+            double[] coeff2 = MatrixUtil.stack(tmp3);  //[2*n X 1]
             //dxpdom = (coeff * ones(1, 3)). * dxd3dom;
             dxpdom = MatrixUtil.outerProduct(coeff2, new double[]{1, 1, 1}); // [2*n X 3]
             dxpdom = MatrixUtil.pointwiseMultiplication(dxpdom, dxd3dom);
 
             //dxpdT = (coeff * ones(1, 3)). * dxd3dT;
             dxpdT = MatrixUtil.outerProduct(coeff2, new double[]{1, 1, 1});
-            dxpdT = MatrixUtil.pointwiseMultiplication(dxpdT, dxd3dT);
+            dxpdT = MatrixUtil.pointwiseMultiplication(dxpdT, dxd3dT); // [2*n X 3]
 
-            //dxpdk = (coeff * ones(1, 5)). * dxd3dk;
+            //dxpdk = (coeff * ones(1, 5)). * dxd3dk;  [2*n X 5]
             dxpdk = MatrixUtil.outerProduct(coeff2, new double[]{1, 1, 1, 1, 1});
             dxpdk = MatrixUtil.pointwiseMultiplication(dxpdk, dxd3dk);
 
@@ -902,7 +912,7 @@ public class CameraPose {
             //dxpdf = zeros(2 * n, 2);
             //dxpdf(1:2:end, 1) =xd3(1,:)';
             //dxpdf(2:2:end, 2) =xd3(2,:)';
-            dxpdf = MatrixUtil.zeros(2*n, 2);
+            dxpdf = MatrixUtil.zeros(2*n, 2); //[2*nX2] for f as an array
             for (i = 0; i < n; ++i) {
                 dxpdf[2*i][0] = xd3[0][i];
                 dxpdf[2*i + 1][1] = xd3[1][i];
@@ -917,17 +927,17 @@ public class CameraPose {
             tmp3 = MatrixUtil.outerProduct(c, tmp1);
             xp = MatrixUtil.copy(xd3);
             MatrixUtil.multiply(xp, f);
-            xp = MatrixUtil.pointwiseAdd(xp,tmp3);
+            xp = MatrixUtil.pointwiseAdd(xp, tmp3);
 
-            //dxpdom = f * dxd3dom;
+            //dxpdom = f * dxd3dom;  [2*n X 3]
             dxpdom = MatrixUtil.copy(dxd3dom);
             MatrixUtil.multiply(dxpdom, f);
 
-            //dxpdT = f * dxd3dT;
+            //dxpdT = f * dxd3dT;  [2*n X 3]
             dxpdT = MatrixUtil.copy(dxd3dT);
             MatrixUtil.multiply(dxpdT, f);
 
-            //dxpdk = f * dxd3dk;
+            //dxpdk = f * dxd3dk;  [2*n X 5]
             dxpdk = MatrixUtil.copy(dxd3dk);
             MatrixUtil.multiply(dxpdk, f);
 
@@ -939,6 +949,7 @@ public class CameraPose {
             //dxpdf = xd3(:);
             dxpdf = new double[1][];
             dxpdf[0] = MatrixUtil.stack(xd3);
+            dxpdf = MatrixUtil.transpose(dxpdf);
         }
 
         //dxpdc = zeros(2*n,2);
@@ -1040,7 +1051,8 @@ public class CameraPose {
     }
 
     private static CameraExtrinsicParameters bouguetPoseRefine(CameraExtrinsicParameters init,
-                                                               CameraIntrinsicParameters intrinsics, double[][] xc, double[][] X) {
+                                                               CameraIntrinsicParameters intrinsics,
+                                                               double[][] xc, double[][] X) throws NotConvergedException {
 
         double threshCond = Double.POSITIVE_INFINITY;
         int MaxIter = 20;
@@ -1051,13 +1063,23 @@ public class CameraPose {
         double[] omckk = Arrays.copyOf(init.getRodriguesVector(), init.getRodriguesVector().length);
         double[] Tckk = Arrays.copyOf(init.getTranslation(), init.getTranslation().length);
 
+        int n = xc[0].length;
+
+        //[2 X n]
+        double[][] xkk;
+        if (xc.length == 3) {
+            xkk = MatrixUtil.copySubMatrix(xc, 0, 1, 0, n - 1);
+        } else {
+            xkk = MatrixUtil.copy(xc);
+        }
+
         //% Final optimization (minimize the reprojection error in pixel):
         //% through Gradient Descent:
 
-        //param = [omckk;Tckk];
-        double[][] param = new double[2][];
-        param[0] = omckk;
-        param[1] = Tckk;
+        //param = [omckk;Tckk];  [6X1]
+        double[] param = new double[6];
+        System.arraycopy(omckk, 0, param, 0, 3);
+        System.arraycopy(Tckk, 0, param, 3, 3);
 
         //change = 1;
         //iter = 0;
@@ -1069,45 +1091,79 @@ public class CameraPose {
 
         ProjectedPoints pp;
 
+        double[][] JJ = MatrixUtil.zeros(2*n, 6);
+
         while ((change > 1e-10) && (iter < MaxIter)) {
 
             //%fprintf(1,'%d...',iter+1);
 
-            [x,dxdom,dxdT] = project_points2(X_kk,omckk,Tckk,fc,cc,kc,alpha_c);
+            //[x,dxdom,dxdT] = project_points2(X_kk,omckk,Tckk,fc,cc,kc,alpha_c);
             pp = bouguetProjectPoints2(X, omckk, Tckk, intrinsics);
+            double[][] x = pp.XP;  //[2 X n]
+            double[][] dxdom = pp.dxdom; // [2*n X 3]
+            double[][] dxdT = pp.dxdT; // [2*n X 3]
 
-            ex = x_kk - x;
+            //ex = x_kk - x; //[2Xn]
+            double[][] ex = MatrixUtil.pointwiseSubtract(xkk, x);
 
             //%keyboard;
 
-            JJ = [dxdom dxdT];
+            int i;
 
-            if cond(JJ) > thresh_cond,
+            //JJ = [dxdom dxdT];  // [2*n X 3]  [2*n X 3] = [2*n X 6]
+            for (i = 0; i < 2*n; ++i) {
+                System.arraycopy(dxdom[i], 0, JJ[i], 0, dxdom[i].length);
+                System.arraycopy(dxdT[i], 0, JJ[i], dxdom[i].length, dxdT[i].length);
+            }
+
+            //Condition number of a matrix is the ratio of the largest singular value of that matrix to the smallest singular value.
+            //if cond(JJ) > thresh_cond,
+            if (MatrixUtil.conditionNumber(JJ) > threshCond) {
                 change = 0;
-            else
-                JJ2 = JJ'*JJ;
+            } else {
+                //JJ2 = JJ'*JJ;  //[6 X 2*n][2*n X 6] = [6X6]
+                double[][] JJ2 = MatrixUtil.createATransposedTimesA(JJ);
 
-                param_innov = inv(JJ2)*(JJ')*ex(:);
-                param_up = param + param_innov;
-                change = norm(param_innov)/norm(param_up);
-                param = param_up;
-                iter = iter + 1;
+                //param_innov = inv(JJ2)*(JJ')*ex(:); //  [6X6][6 X 2*n] * [2*nX1] = [6 X 1]
+                double[] paramInnov = MatrixUtil.multiplyMatrixByColumnVector(
+                        MatrixUtil.multiply(MatrixUtil.pseudoinverseFullColumnRank(JJ2), MatrixUtil.transpose(JJ)),
+                        MatrixUtil.stack(ex)
+                );
 
-                omckk = param(1:3);
-                Tckk = param(4:6);
+                //           [6X1] + [6X1]
+                //param_up = param + param_innov;
+                double[] paramUp = MatrixUtil.add(param, paramInnov);
 
-            end;// end if
-        end; // end while
+                //change = norm(param_innov)/norm(param_up);
+                change = MatrixUtil.lPSum(paramInnov, 2) / MatrixUtil.lPSum(paramUp, 2);
+
+                //param = param_up;
+                System.arraycopy(paramUp, 0, param, 0, paramUp.length);
+                //iter = iter + 1;
+                ++iter;
+
+                //omckk = param(1:3);
+                System.arraycopy(param, 0, omckk, 0, omckk.length);
+
+                //Tckk = param(4:6);
+                System.arraycopy(param, 3, Tckk, 0, Tckk.length);
+
+            }// end if
+        } // end while
 
         //%fprintf(1,'\n');
 
-        Rckk = rodrigues(omckk);
+        //Rckk = rodrigues(omckk);
+        Rotation.RodriguesRotation rRot = Rotation.createRodriguesRotationMatrixBouguet(omckk);
 
+        //can return [omckk,Tckk,Rckk,JJ]
+        CameraExtrinsicParameters extr = new CameraExtrinsicParameters(rRot.r, omckk, Tckk);
+        return extr;
     }
 
     static CameraExtrinsicParameters bouguetPoseInitPlanar(
             Camera.CameraIntrinsicParameters intrinsics, double[][] xc,
-            double[][] X, DenseMatrix vT) throws NotConvergedException, IOException {
+            double[][] X, DenseMatrix vT, double[] XMean) throws NotConvergedException, IOException {
 
         // planar structure
         //Transform the plane to bring it in the Z=0 plane:
