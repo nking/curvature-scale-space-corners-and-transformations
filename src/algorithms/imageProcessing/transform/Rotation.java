@@ -726,7 +726,8 @@ public class Rotation {
         public double[][] r;
 
         /**
-         * [9X3]
+         * [9X3] or [3X9]
+         * 9X3 returned for vector, else 3X9 for matrix
          */
         public double[][] dRdin;
 
@@ -734,6 +735,254 @@ public class Rotation {
          * [3X1]
          */
         public double[] om;
+    }
+
+    /**
+     * calculate the Rodrigues rotation vector from the given rotation matrix.
+     * The method is ported from github repositories holding the Bouguet Matlab Toolbox code, rodrigues.m.
+     *      <pre>
+     *      The Bouguet toolbox webpage is currently at http://robots.stanford.edu/cs223b04/JeanYvesCalib/
+     *      and states that the source code is freely available.
+     *      The github repositories with the forked Bouguet Matlab code do not have license
+     *      information.
+     *
+     *      https://github.com/fragofer/TOOLBOX_calib
+     *      and
+     *      https://github.com/hunt0r/Bouguet_cam_cal_toolbox
+     *
+     *      rogrigues.m includes the comment: Copyright (c) March 1993 -- Pietro Perona, CalTech, before a brief
+     *      changelist by Bouguet.
+     * @param in [3X3] rotation matrix
+     * @return
+     */
+    public static RodriguesRotation extractRodriguesRotationVectorBouguet(final double[][] in) throws NotConvergedException {
+
+        if (in.length != 3 || in[0].length != 3) {
+            throw new IllegalArgumentException("in dimensions must be 3 X 3");
+        }
+
+        final double eps = 2.2204e-16;
+
+        //[m,n] = size(in);
+        int m = in.length;
+        int n = in[0].length;
+
+        //%bigeps = 10e+4*eps;
+        //bigeps = 10e+20*eps;
+        double bigeps = 10e20 * eps;
+
+        //norm(in' * in - eye(3)) < bigeps)...
+        //                & (abs(det(in)-1) < bigeps))
+        double check1 = MatrixUtil.spectralNorm(
+                MatrixUtil.pointwiseSubtract(MatrixUtil.createATransposedTimesA(in),
+                        MatrixUtil.createIdentityMatrix(3)));
+        double check2 = Math.abs(MatrixUtil.determinant(in) - 1);
+        if ((check1 >= bigeps) || check2 >= bigeps){
+            throw new IllegalArgumentException("in does not appear to be a rotation matrix");
+        }
+
+        //R = in;
+        double[][] R = in;
+
+        //% project the rotation matrix to SO(3);
+        //[U,S,V] = svd(R);
+        //R = U*V';
+        SVD svd = SVD.factorize(new DenseMatrix(R));
+        R = MatrixUtil.convertToRowMajor((DenseMatrix) svd.getU().mult(svd.getU(), svd.getVt()));
+
+        //tr = (trace(R)-1)/2;
+        double tr = (MatrixUtil.trace(R) - 1)/2.;
+        //dtrdR = [1 0 0 0 1 0 0 0 1]/2; // [1X9]
+        double[] dtrdR = new double[]{1/2., 0, 0, 0, 1/2., 0, 0, 0, 1/2.};
+        //theta = real(acos(tr));
+        double theta = Math.acos(tr);
+
+        double[] out = null;
+        double[][] dout = null;
+
+        //if sin(theta) >= 1e-4,
+        if (Math.sin(theta) >= 1e-4) {
+
+            //dthetadtr = -1 / sqrt(1 - tr ^ 2);
+            double dthetadtr = 1./Math.sqrt(1. - tr*tr);
+
+            //dthetadR = dthetadtr * dtrdR; [1X9]
+            double[] dthetadR = Arrays.copyOf(dtrdR, dtrdR.length);
+            MatrixUtil.multiply(dthetadR, dthetadtr);
+
+            //%var1 = [vth; theta];
+            //vth = 1 / (2 * sin(theta));
+            double vth = 1./(2.*Math.sin(theta));
+            //dvthdtheta = -vth * cos(theta) / sin(theta);
+            double dvthdtheta = -vth * Math.cos(theta) / Math.sin(theta);
+            //dvar1dtheta = [dvthdtheta; 1]; //[2X1]
+            double[] dvar1dtheta = new double[]{dvthdtheta, 1};
+
+            //dvar1dR = dvar1dtheta * dthetadR;  //[2X1][1X9] = [2X9]
+            double[][] dvar1dR = MatrixUtil.outerProduct(dvar1dtheta, dthetadR);
+
+            //om1 = [R(3, 2) - R(2, 3), R(1, 3) - R(3, 1), R(2, 1) - R(1, 2)]'; // [1X3]
+            double[] om1 = new double[]{R[2][1] - R[1][2], R[0][2] - R[2][0], R[1][0] - R[0][1]};
+
+            //          0 1   2  3 4 5 6  7 8
+            //dom1dR = [0 0   0  0 0 1 0 -1 0; //[3 X 9]
+            //          0 0  -1  0 0 0 1  0 0;
+            //          0 1   0 -1 0 0 0  0 0];
+            double[][] dom1dR = MatrixUtil.zeros(3, 9);
+            dom1dR[0][5] = 1;
+            dom1dR[0][7] = -1;
+            dom1dR[1][2] = -1;
+            dom1dR[1][6] = 1;
+            dom1dR[2][1] = 1;
+            dom1dR[2][3] = -1;
+
+            //%var = [om1; vth; theta];
+            //dvardR = [dom1dR; dvar1dR]; //[3X9] ; [2X9] => [5X9]
+            double[][] dvardR = new double[5][];
+            dvardR[0] = Arrays.copyOf(dom1dR[0], dom1dR[0].length);
+            dvardR[1] = Arrays.copyOf(dom1dR[1], dom1dR[1].length);
+            dvardR[2] = Arrays.copyOf(dom1dR[2], dom1dR[2].length);
+            dvardR[3] = Arrays.copyOf(dvar1dR[0], dvar1dR[0].length);
+            dvardR[4] = Arrays.copyOf(dvar1dR[1], dvar1dR[1].length);
+
+            int i;
+            //%var2 = [om; theta];
+            //om = vth * om1; // vth*[1X3] = [1X3]
+            double[] om = Arrays.copyOf(om1, om1.length);
+            MatrixUtil.multiply(om, vth);
+            //domdvar = [vth * eye(3) om1 zeros(3, 1)]; // [3X3] | [3X1] | [3X1] = [3 X 5]
+            double[][] tmp = MatrixUtil.createIdentityMatrix(3);
+            MatrixUtil.multiply(tmp, vth);
+            double[][] domdvar = MatrixUtil.zeros(3, 5);
+            for (i = 0; i < 3; ++i) {
+                System.arraycopy(tmp[i], 0, domdvar[i], 0, tmp[i].length);
+                domdvar[i][tmp[i].length] = om1[i];
+            }
+            //dthetadvar = [0 0 0 0 1]; // [1X5]
+            double[] dthetadvar = new double[]{0, 0, 0, 0, 1};
+            //dvar2dvar = [domdvar; dthetadvar];  // [3X5] ; [1X5] => [4 X 5]
+            double[][] dvar2dvar = MatrixUtil.zeros(4, 5);
+            for (i = 0; i < 3; ++i) {
+                System.arraycopy(domdvar[i], 0, dvar2dvar[i], 0, domdvar[i].length);
+            }
+            System.arraycopy(dthetadvar, 0, dvar2dvar[3], 0, dthetadvar.length);
+
+            //out = om * theta;
+            out = Arrays.copyOf(om, om.length);
+            MatrixUtil.multiply(out, theta);
+
+            //domegadvar2 = [theta * eye(3) om]; // [3X3 | [3X1] ==> [3 X 4]
+            double[][] domegadvar2 = MatrixUtil.zeros(3, 4);
+            tmp = MatrixUtil.createIdentityMatrix(3);
+            MatrixUtil.multiply(tmp, theta);
+            for (i = 0; i < 3; ++i) {
+                System.arraycopy(tmp[i], 0, domegadvar2[i], 0, tmp[i].length);
+                domegadvar2[i][3] = om[i];
+            }
+
+            //dout = domegadvar2 * dvar2dvar * dvardR; // [3X4] [4X5] [5X9] = [3X9]
+            dout = MatrixUtil.multiply(MatrixUtil.multiply(domegadvar2, dvar2dvar), dvardR);
+
+        } else {
+            if (tr > 0) {
+                //out = [0 0 0]';
+                out = new double[3];
+
+                //         0 1     2    3 4   5   6    7    8
+                // dout = [0 0     0    0 0  1/2   0  -1/2  0;
+                //         0 0  -1/2    0 0    0 1/2     0  0;
+                //         0 1/2   0 -1/2 0    0   0     0  0];
+
+                dout = MatrixUtil.zeros(3, 9);
+                dout[0][5] = 0.5;
+                dout[0][7] = -0.5;
+                dout[1][2] = -0.5;
+                dout[1][6] = 0.5;
+                dout[2][1] = 0.5;
+                dout[2][3] = -0.5;
+
+            } else {
+
+                //% Solution by Mike Burl on Feb 27, 2007
+                //% This is a better way to determine the signs of the
+                //% entries of the rotation vector using a hash table on all
+                //% the combinations of signs of a pairs of products (in the
+                //% rotation matrix)
+
+                //% Define hashvec and Smat
+                //hashvec = [0; -1; -3; -9; 9; 3; 1; 13; 5; -7; -11]; // [11 X 1]
+                //Smat = [1,1,1; 1,0,-1; 0,1,-1; 1,-1,0; 1,1,0; 0,1,1; 1,0,1; 1,1,1; 1,1,-1; //[11X 3]
+                //1,-1,-1; 1,-1,1];
+                double[] hashvec = new double[]{0, -1, -3, -9, 9, 3, 1, 13, 5, -7, -11};
+                double[][] Smat = new double[11][];
+                Smat[0] = new double[]{1, 1, 1};
+                Smat[1] = new double[]{1, 0, -1};
+                Smat[2] = new double[]{0, 1, -1};
+                Smat[3] = new double[]{1, -1, 0};
+                Smat[4] = new double[]{1, 1, 0};
+                Smat[5] = new double[]{0, 1, 1};
+                Smat[6] = new double[]{1, 0, 1};
+                Smat[7] = new double[]{1, 1, 1};
+                Smat[8] = new double[]{1, 1, -1};
+                Smat[9] = new double[]{1, -1, -1};
+                Smat[10] = new double[]{1, -1, 1};
+
+                // M = (R+eye(3,3))/2;
+                double[][] M = MatrixUtil.pointwiseAdd(R, MatrixUtil.createIdentityMatrix(3));
+                MatrixUtil.multiply(M, 0.5);
+
+                //uabs = sqrt(M(1,1));
+                //vabs = sqrt(M(2,2));
+                //wabs = sqrt(M(3,3));
+                double uabs = Math.sqrt(M[0][0]);
+                double vabs = Math.sqrt(M[1][1]);
+                double wabs = Math.sqrt(M[2][2]);
+
+                //mvec = ([M(1,2), M(2,3), M(1,3)] + [M(2,1), M(3,2), M(3,1)])/2;
+                double[] mvec0 = new double[]{M[0][1], M[1][2], M[0][2]};
+                double[] mvec1 = new double[]{M[1][0], M[2][1], M[2][0]};
+                double[] mvec = MatrixUtil.add(mvec0, mvec1);
+                MatrixUtil.multiply(mvec, 0.5);
+
+                //syn  = ((mvec > eps) - (mvec < -eps)); % robust sign() function
+                double[] syn = new double[mvec.length];
+                double t0, t1;
+                int i;
+                for (i = 0; i < 3; ++i) {
+                    t0 = (mvec[i] > eps) ? 1 : 0;
+                    t1 = (mvec[i] < -eps) ? 1 : 0;
+                    if (t0 - t1 > 0) {
+                        syn[i] = 1;
+                    }
+                }
+                //hash = syn * [9; 3; 1];  [1X3][3X1]=[1X1]
+                double hash = MatrixUtil.innerProduct(syn, new double[]{9, 3, 1});
+
+                //idx = find(hash == hashvec);
+                // should not need to apply an offset of 1 as they are consitent use of indexes
+                int idx = -1;
+                for (i = 0; i < hashvec.length; ++i) {
+                    if (hash == hashvec[i]) {
+                        idx = i;
+                    }
+                }
+                if (idx == -1) {
+                    throw new IllegalStateException("ERROR: no solution found");
+                }
+                //svec = Smat(idx,:)';
+                double[] svec = Smat[idx];
+
+                //out = theta * [uabs; vabs; wabs] .* svec; // [3X1] .* [3X1] = [3X1]
+                out = MatrixUtil.pointwiseMultiplication(new double[]{uabs, vabs, wabs}, svec);
+            }
+        }
+
+        RodriguesRotation rRot = new RodriguesRotation();
+        rRot.om = out;
+        rRot.r = MatrixUtil.copy(in);
+        rRot.dRdin = dout;
+
+        return rRot;
     }
 
     /**

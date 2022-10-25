@@ -419,29 +419,42 @@ public class RotationTest extends TestCase {
                 
     }
 
-    public void testRodriguesRotationMatrixBouguet() throws NotConvergedException {
+    public void testRodriguesRotationBouguet() throws NotConvergedException {
         // tests from the Bouguet toolbox in rodrigues.m
+        System.out.println("testRodriguesRotationBouguet");
 
         long seed = System.nanoTime();
         System.out.printf("seed=%d\n", seed);
         Random rand = new Random(seed);
 
+        double[] om;
+        double[] dom;
+        double[][] R1, dR1, R2, R2a;
+
+        /*
+        %% TEST OF dRdom:
+        om = randn(3,1);
+        dom = randn(3,1)/1000000;
+        [R1,dR1] = rodrigues(om);
+        R2 = rodrigues(om+dom);
+        R2a = R1 + reshape(dR1 * dom,3,3);
+        gain = norm(R2 - R1)/norm(R2 - R2a)
+         */
+
         int i;
-        double[] om = new double[3];
-        double[] dom = new double[3];
+        om = new double[3];
+        dom = new double[3];
         for (i = 0; i < 3; ++i) {
             om[i] = rand.nextDouble();
             dom[i] = rand.nextDouble()/1000000;
         }
         Rotation.RodriguesRotation rRot = Rotation.createRodriguesRotationMatrixBouguet(om);
         // [3X3]
-        double[][] R1 = rRot.r;
+        R1 = rRot.r;
         // [9X3]
-        double[][] dR1 = rRot.dRdin;
-
+        dR1 = rRot.dRdin;
         Rotation.RodriguesRotation rRot2 = Rotation.createRodriguesRotationMatrixBouguet(MatrixUtil.add(om, dom));
-        double[][] R2 = rRot2.r;
-
+        R2 = rRot2.r;
         //R2a = R1 + reshape(dR1 * dom,3,3);
         // [9X3][3X1] = [9X1]
         double[] tmp = MatrixUtil.multiplyMatrixByColumnVector(dR1, dom);
@@ -449,70 +462,188 @@ public class RotationTest extends TestCase {
         tmp2[0] = new double[]{tmp[0], tmp[3], tmp[6]};
         tmp2[1] = new double[]{tmp[1], tmp[4], tmp[7]};
         tmp2[2] = new double[]{tmp[2], tmp[5], tmp[8]};
-        double[][] R2a = MatrixUtil.pointwiseAdd(R1, tmp2);
-
+        R2a = MatrixUtil.pointwiseAdd(R1, tmp2);
+        // norm1 ~ 1E-6;  norm2 ~ 4E-7
         double norm1 = MatrixUtil.spectralNorm(MatrixUtil.pointwiseSubtract(R2, R1));
         double norm2 = MatrixUtil.spectralNorm(MatrixUtil.pointwiseSubtract(R2, R2a));
         double gain = norm1/norm2;
+        System.out.printf("norm1=%.4e, norm2=%.4e, gain=%.4e\n", norm1, norm2, gain);
+
+        double[][] Rcompare = Rotation.createRodriguesFormulaRotationMatrix(om);
+        double[] omCompare = Rotation.extractRodriguesRotationVector(R1);
+        double dCompare = distanceBetween(R1, Rcompare);
+        double norm = MatrixUtil.spectralNorm(MatrixUtil.pointwiseSubtract(R1, Rcompare));
+        System.out.printf("bouguet R=\n%s\n", FormatArray.toString(R1, "%.4e"));
+        System.out.printf("existing R=\n%s\n", FormatArray.toString(Rcompare, "%.4e"));
+        System.out.printf("dist between=%.4e, norm diffs=%.4e\n", dCompare, norm);
+
+        double d21 = distanceBetween(R2, R1);
+        double d2a = distanceBetween(R2, R2a);
+        // d21 is similar to norm1, though maybe only for small angles
+        // d2a is similar to norm2, ...
+
+        // =========
+        System.out.println("\nTEST OF dOmdR");
+        double[][] R, dR, domdR;
+        double[] omc, om2, om_app;
         /*
         %% TEST OF dOmdR:
         om = randn(3,1);
         R = rodrigues(om);
         dom = randn(3,1)/10000;
         dR = rodrigues(om+dom) - R;
+
+        //[omc,domdR] = rodrigues(R);
+        //[om2] = rodrigues(R+dR);
+        //om_app = omc + domdR*dR(:); // [3X1] + [3X9]*[9X1]
+        //gain = norm(om2 - omc)/norm(om2 - om_app)
         */
         for (i = 0; i < 3; ++i) {
             om[i] = rand.nextDouble();
             dom[i] = rand.nextDouble()/10000;
         }
         Rotation.RodriguesRotation rRot3 = Rotation.createRodriguesRotationMatrixBouguet(om);
-        double[][] R = rRot3.r;
+        R = rRot3.r;
 
         Rotation.RodriguesRotation rRot4 = Rotation.createRodriguesRotationMatrixBouguet(MatrixUtil.add(om, dom));
-        double[][] dR = MatrixUtil.pointwiseSubtract(rRot4.r, R);
+        dR = MatrixUtil.pointwiseSubtract(rRot4.r, R);
 
-        int z = 1;
-/*
-[omc,domdR] = rodrigues(R);
-[om2] = rodrigues(R+dR);
-om_app = omc + domdR*dR(:);
-gain = norm(om2 - omc)/norm(om2 - om_app)
+        Rotation.RodriguesRotation rRot5 = Rotation.extractRodriguesRotationVectorBouguet(R);
+        omc = rRot5.om;
+        domdR = rRot5.dRdin;
+        Rotation.RodriguesRotation rRot6 = Rotation.extractRodriguesRotationVectorBouguet(
+                MatrixUtil.pointwiseAdd(R, dR)
+        );
+        om2 = rRot6.om;
+        om_app = MatrixUtil.add(omc,
+                MatrixUtil.multiplyMatrixByColumnVector(domdR, MatrixUtil.stack(dR)));
+        norm1 = MatrixUtil.lPSum(MatrixUtil.subtract(om2, omc), 2);
+        norm2 = MatrixUtil.lPSum(MatrixUtil.subtract(om2, om_app), 2);
+        gain = norm1/norm2;
+        System.out.printf("norm1=%.4e, norm2=%.4e, gain=%.4e\n", norm1, norm2, gain);
 
-%% OTHER BUG: (FIXED NOW!!!)
-omu = randn(3,1);
-omu = omu/norm(omu)
-om = pi*omu;
-[R,dR]= rodrigues(om);
-[om2] = rodrigues(R);
-[om om2]
+        omCompare = Rotation.extractRodriguesRotationVector(R);
+        norm = MatrixUtil.lPSum(MatrixUtil.subtract(omc, omCompare), 2);
+        System.out.printf("bouguet omc=\n%s\n", FormatArray.toString(omc, "%.4e"));
+        System.out.printf("existing om=\n%s\n", FormatArray.toString(omCompare, "%.4e"));
+        System.out.printf("norm diffs=%.4e", norm);
 
-%% NORMAL OPERATION
-om = randn(3,1);
-[R,dR]= rodrigues(om);
-[om2] = rodrigues(R);
-[om om2]
+        //==========
+        System.out.println("\nOTHER BUG: (FIXED NOW!!!)");
+        /*
+        %% OTHER BUG: (FIXED NOW!!!)
+        omu = randn(3,1);
+        omu = omu/norm(omu)
+        om = pi*omu;
+        [R,dR]= rodrigues(om);
+        [om2] = rodrigues(R);
+        [om om2]*/
+        double[] omu = new double[3];
+        for (i = 0; i < 3; ++i) {
+            omu[i] = rand.nextDouble();
+        }
+        MatrixUtil.multiply(omu, 1./MatrixUtil.lPSum(omu, 2));
+        om = Arrays.copyOf(omu, omu.length);
+        MatrixUtil.multiply(om, Math.PI);
+        Rotation.RodriguesRotation rRot7 = Rotation.createRodriguesRotationMatrixBouguet(om);
+        R = rRot7.r;
+        dR = rRot7.dRdin;
+        Rotation.RodriguesRotation rRot8 = Rotation.extractRodriguesRotationVectorBouguet(R);
+        om2 = rRot8.om;
+        System.out.printf("om=%s\nom2=%s\n", FormatArray.toString(om, "%.4e"),
+                FormatArray.toString(om2, "%.4e"));
 
-%% Test: norm(om) = pi
-u = randn(3,1);
-u = u / sqrt(sum(u.^2));
-om = pi*u;
-R = rodrigues(om);
-R2 = rodrigues(rodrigues(R));
-norm(R - R2)
+        //=======
+        /*
+        %% NORMAL OPERATION
+        om = randn(3,1);
+        [R,dR]= rodrigues(om);
+        [om2] = rodrigues(R);
+        [om om2]
+        */
+        System.out.println("\nNORMAL OPERATION");
+        for (i = 0; i < 3; ++i) {
+            om[i] = rand.nextDouble();
+        }
+        Rotation.RodriguesRotation rRot9 = Rotation.createRodriguesRotationMatrixBouguet(om);
+        R = rRot9.r;
+        dR = rRot9.dRdin;
+        Rotation.RodriguesRotation rRot10 = Rotation.extractRodriguesRotationVectorBouguet(R);
+        om2 = rRot10.om;
+        System.out.printf("om=%s\nom2=%s\n", FormatArray.toString(om, "%.4e"),
+                FormatArray.toString(om2, "%.4e"));
 
-%% Another test case where norm(om)=pi from Chen Feng (June 27th, 2014)
-R = [-0.950146567583153 -6.41765854280073e-05 0.311803617668748; ...
-     -6.41765854277654e-05 -0.999999917385145 -0.000401386434914383; ...
-      0.311803617668748 -0.000401386434914345 0.950146484968298];
-om = rodrigues(R)
-norm(om) - pi
+        //=====================
+        /*
+        %% Test: norm(om) = pi
+        u = randn(3,1);
+        u = u / sqrt(sum(u.^2));
+        om = pi*u;
+        R = rodrigues(om);
+        R2 = rodrigues(rodrigues(R));
+        norm(R - R2)*/
+        System.out.println("\nTest: norm(om) = pi");
+        double[] u = new double[3];
+        for (i = 0; i < 3; ++i) {
+            u[i] = rand.nextDouble();
+        }
+        MatrixUtil.multiply(u, 1./MatrixUtil.lPSum(u, 2));
+        om = Arrays.copyOf(u, u.length);
+        MatrixUtil.multiply(om, Math.PI);
 
-%% Another test case where norm(om)=pi from 余成义 (July 1st, 2014)
-R = [-0.999920129411407	-6.68593208347372e-05	-0.0126384464118876; ...
-     9.53007036072085e-05	-0.999997464662094	-0.00224979713751896; ...
-    -0.0126382639492467	-0.00225082189773293	0.999917600647740];
-om = rodrigues(R)
-norm(om) - pi
+        Rotation.RodriguesRotation rRot11 = Rotation.createRodriguesRotationMatrixBouguet(om);
+        R = rRot11.r;
+        Rotation.RodriguesRotation rRot12 =
+                Rotation.createRodriguesRotationMatrixBouguet(Rotation.extractRodriguesRotationVectorBouguet(R).om);
+        R2 = rRot12.r;
+        norm = MatrixUtil.spectralNorm(MatrixUtil.pointwiseSubtract(R, R2));
+        System.out.printf("norm=%.4e", norm);
+
+        //================
+        /*
+        %% Another test case where norm(om)=pi from Chen Feng (June 27th, 2014)
+        R = [-0.950146567583153 -6.41765854280073e-05 0.311803617668748; ...
+             -6.41765854277654e-05 -0.999999917385145 -0.000401386434914383; ...
+              0.311803617668748 -0.000401386434914345 0.950146484968298];
+        om = rodrigues(R)
+        norm(om) - pi
+        */
+        System.out.println("\nAnother test case where norm(om)=pi from Chen Feng (June 27th, 2014)");
+        R[0] = new double[]{-0.950146567583153, -6.41765854280073e-05, 0.311803617668748};
+        R[1] = new double[]{-6.41765854277654e-05, -0.999999917385145, -0.000401386434914383};
+        R[2] = new double[]{0.311803617668748, -0.000401386434914345, 0.950146484968298};
+        Rotation.RodriguesRotation rRot13 = Rotation.extractRodriguesRotationVectorBouguet(R);
+        om = rRot13.om;
+        norm = MatrixUtil.lPSum(om, 2);
+        System.out.printf("norm=%.4e", norm);
+
+        //================
+        /*
+        %% Another test case where norm(om)=pi from 余成义 (July 1st, 2014)
+        R = [-0.999920129411407	-6.68593208347372e-05	-0.0126384464118876; ...
+             9.53007036072085e-05	-0.999997464662094	-0.00224979713751896; ...
+            -0.0126382639492467	-0.00225082189773293	0.999917600647740];
+        om = rodrigues(R)
+        norm(om) - pi
          */
+        System.out.println("\nAnother test case where norm(om)=pi from 余成义 (July 1st, 2014)");
+        R[0] = new double[]{-0.999920129411407,	-6.68593208347372e-05,	-0.0126384464118876};
+        R[1] = new double[]{9.53007036072085e-05,	-0.999997464662094,	-0.00224979713751896};
+        R[2] = new double[]{-0.0126382639492467,	-0.00225082189773293,	0.999917600647740};
+        Rotation.RodriguesRotation rRot14 = Rotation.extractRodriguesRotationVectorBouguet(R);
+        om = rRot14.om;
+        norm = MatrixUtil.lPSum(om, 2);
+        System.out.printf("norm=%.4e", norm);
+    }
+
+    private double distanceBetween(double[][] r0, double[][] r1) {
+        return Rotation.distanceBetweenQuaternions(
+                Rotation.createQuaternionZYXFromEuler(
+                        Rotation.extractThetaFromZYX(r0)
+                ),
+                Rotation.createQuaternionZYXFromEuler(
+                        Rotation.extractThetaFromZYX(r1)
+                )
+        );
     }
 }
