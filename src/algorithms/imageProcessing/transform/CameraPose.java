@@ -495,6 +495,7 @@ public class CameraPose {
      * dxpdom are the Derivatives of xp with respect to om ((2N)x3 matrix), and
      * dxpdT are the derivatives of xp with respect to T ((2N)x3 matrix).
      */
+    @SuppressWarnings({"fallthrough"})
     private static ProjectedPoints bouguetProjectPoints2(double[][] X, double[] om, double[] t,
                                                          CameraIntrinsicParameters intrinsics) {
        // TODO: assert argument dimensions
@@ -698,6 +699,7 @@ public class CameraPose {
         Arrays.fill(cdist, 1);
         double[][] dcdistdom = null;
         double[][] dcdistdT = null;
+
         if (k != null) {
             dcdistdom = new double[n][];
             dcdistdT = new double[n][];
@@ -1241,11 +1243,13 @@ public class CameraPose {
         RRR = MatrixUtil.transpose(RRR);
 
         //omckk = rodrigues(RRR);
-        double[] omckk = Rotation.extractRodriguesRotationVector(RRR);
+        Rotation.RodriguesRotation rRot = Rotation.extractRodriguesRotationVectorBouguet(RRR);
+        double[] omckk = rRot.om;
 
         //%omckk = rodrigues([H(:,1:2) cross(H(:,1),H(:,2))]);
         //Rckk = rodrigues(omckk);
-        double[][] Rckk = Rotation.createRodriguesFormulaRotationMatrix(omckk);
+        Rotation.RodriguesRotation rRot2 = Rotation.createRodriguesRotationMatrixBouguet(omckk);
+        double[][] Rckk = rRot2.r;
 
         //Tckk = H(:,3);
         double[] Tckk = MatrixUtil.extractColumn(H, 2);
@@ -1257,9 +1261,9 @@ public class CameraPose {
         //Rckk = Rckk * R_transform;
         Rckk = MatrixUtil.multiply(Rckk, Rtransform);
         //omckk = rodrigues(Rckk);
-        omckk = Rotation.extractRodriguesRotationVector(Rckk);
+        omckk = Rotation.extractRodriguesRotationVectorBouguet(Rckk).om;
         //Rckk = rodrigues(omckk);
-        Rckk = Rotation.createRodriguesFormulaRotationMatrix(omckk);
+        Rckk = Rotation.createRodriguesRotationMatrixBouguet(omckk).r;
 
         return new CameraExtrinsicParameters(Rckk, omckk, Tckk);
     }
@@ -1337,10 +1341,10 @@ public class CameraPose {
         double[] Tckk = Arrays.copyOfRange(orth, 9, 12);
         MatrixUtil.multiply(Tckk, 1./sc);
         //omckk = rodrigues(Rckk);
-        double[] omckk = Rotation.extractRodriguesRotationVector(Rckk);
+        double[] omckk = Rotation.extractRodriguesRotationVectorBouguet(Rckk).om;
 
         //Rckk = rodrigues(omckk);
-        Rckk = Rotation.createRodriguesFormulaRotationMatrix(omckk);
+        Rckk = Rotation.createRodriguesRotationMatrixBouguet(omckk).r;
 
         return new CameraExtrinsicParameters(Rckk, omckk, Tckk);
     }

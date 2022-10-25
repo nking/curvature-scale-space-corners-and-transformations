@@ -68,12 +68,8 @@ public class PNP {
      * of nFeatures.
      * @param kIntr
      * @param kExtrs
-     * @param kRadial
      * @param nMaxIter
-     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
-        f(r) = 1 +k1*r^2 + k2*r^4 if true,
-        else use model #3 f(r) = 1 +k1*r + k2*r^2.
-        note that if rCoeffs is null or empty, no radial distortion is removed.
+     *
      * @throws Exception if there is an error in use of MPSolver during the
      * removal of radial distortion, a generic exception is thrown with the
      * error message from the MPSolve documentation.
@@ -82,8 +78,7 @@ public class PNP {
      */
     public static List<CameraExtrinsicParameters> solveForPose(double[][] imageC, double[][] worldC, 
         CameraIntrinsicParameters kIntr, 
-        List<CameraExtrinsicParameters> kExtrs, 
-        double[] kRadial, final int nMaxIter, boolean useR2R4) 
+        List<CameraExtrinsicParameters> kExtrs, final int nMaxIter)
         throws NotConvergedException, Exception {
         
         if (imageC.length != 3) {
@@ -120,7 +115,7 @@ public class PNP {
             
             MatrixUtil.copySubMatrix(imageC, 0, 2, i*nFeatures, i*nFeatures+nFeatures-1, imageCI);
             
-            r = solveForPose(imageCI, worldC, kIntr, kExtrs.get(i), kRadial, nMaxIter, useR2R4);
+            r = solveForPose(imageCI, worldC, kIntr, kExtrs.get(i), nMaxIter);
             
             refined.add(r);
         }
@@ -155,12 +150,7 @@ public class PNP {
      * @param worldC
      * @param kIntrs
      * @param kExtrs
-     * @param kRadial
      * @param nMaxIter
-     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
-        f(r) = 1 +k1*r^2 + k2*r^4 if true,
-        else use model #3 f(r) = 1 +k1*r + k2*r^2.
-        note that if rCoeffs is null or empty, no radial distortion is removed.
      * @throws Exception if there is an error in use of MPSolver during the
      * removal of radial distortion, a generic exception is thrown with the
      * error message from the MPSolve documentation.
@@ -169,8 +159,7 @@ public class PNP {
      */
     public static List<CameraExtrinsicParameters> solveForPose(double[][] imageC, double[][] worldC, 
         List<CameraIntrinsicParameters> kIntrs, 
-        List<CameraExtrinsicParameters> kExtrs, 
-        double[] kRadial, final int nMaxIter, boolean useR2R4) 
+        List<CameraExtrinsicParameters> kExtrs, final int nMaxIter)
         throws NotConvergedException, Exception {
         
         if (kIntrs.size() != kExtrs.size()) {
@@ -216,7 +205,7 @@ public class PNP {
             
             MatrixUtil.copySubMatrix(imageC, 0, 2, i*nFeatures, i*nFeatures+nFeatures-1, imageCI);
             
-            r = solveForPose(imageCI, worldC, kIntrs.get(i), kExtrs.get(i), kRadial, nMaxIter, useR2R4);
+            r = solveForPose(imageCI, worldC, kIntrs.get(i), kExtrs.get(i), nMaxIter);
             
             refined.add(r);
         }
@@ -250,12 +239,7 @@ public class PNP {
      * @param worldC
      * @param kIntr
      * @param kExtr
-     * @param kRadial
      * @param nMaxIter
-     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
-        f(r) = 1 +k1*r^2 + k2*r^4 if true,
-        else use model #3 f(r) = 1 +k1*r + k2*r^2.
-        note that if rCoeffs is null or empty, no radial distortion is removed.
      * @throws Exception if there is an error in use of MPSolver during the
      * removal of radial distortion, a generic exception is thrown with the
      * error message from the MPSolve documentation.
@@ -264,8 +248,7 @@ public class PNP {
      */
     public static CameraExtrinsicParameters solveForPose(double[][] imageC, double[][] worldC, 
         CameraIntrinsicParameters kIntr, 
-        CameraExtrinsicParameters kExtr, 
-        double[] kRadial, final int nMaxIter, boolean useR2R4) 
+        CameraExtrinsicParameters kExtr, final int nMaxIter)
         throws NotConvergedException, Exception {
         
         if (imageC.length != 3) {
@@ -286,8 +269,7 @@ public class PNP {
         }
         
         double[] b = new double[2*n];
-        final double[][] xn = Camera.pixelToCameraCoordinates(imageC, kIntr, 
-            kRadial, useR2R4);
+        final double[][] xn = Camera.pixelToCameraCoordinates(imageC, kIntr);
         for (int i = 0; i < n; ++i) {
             xn[0][i] /= xn[2][i];
             xn[1][i] /= xn[2][i];

@@ -71,7 +71,10 @@ public class PNPTest extends TestCase {
         double beta = kIntr.getIntrinsic()[1][1];
         double v0 = kIntr.getIntrinsic()[1][2];
         double[] kRadial = cameraMatrices.getRadialDistortCoeff();
-        
+
+        kIntr.setRadialDistortionCoeffs(kRadial);
+        kIntr.setUseR2R4(useR2R4);
+
         double fX = alpha;
         double fY = beta;
         double oX = u0;
@@ -119,8 +122,7 @@ public class PNPTest extends TestCase {
         
         List<CameraExtrinsicParameters> refinedExtr = PNP.solveForPose(
             coordsI, coordsW, 
-            kIntr, cameraMatrices.getExtrinsics(),
-            cameraMatrices.getRadialDistortCoeff(), nMaxIter, useR2R4); 
+            kIntr, cameraMatrices.getExtrinsics(), nMaxIter);
         
         log.log(LEVEL, String.format("\nresults of PNP refinement:\n"));
         
