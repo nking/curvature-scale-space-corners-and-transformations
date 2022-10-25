@@ -563,8 +563,7 @@ public class Rotation {
             //[3X3]
             tmp2 = MatrixUtil.multiply(sn, sn);
             MatrixUtil.multiply(tmp2, 1. - Math.cos(theta));
-            
-            
+
         } else {
             
             double[][] sr = MatrixUtil.skewSymmetric(axis);
@@ -717,6 +716,223 @@ public class Rotation {
         }
         
         return r;
+    }
+
+    public static class RodriguesRotation {
+        /**
+         * [3X3]
+         */
+        public double[][] r;
+
+        /**
+         * [9X3]
+         */
+        public double[][] dRdin;
+
+        /**
+         * [3X1]
+         */
+        public double[] om;
+    }
+
+    /**
+     * calculate the rotation matrix given the Rodrigues rotation vector.
+     * The method is ported from github repositories holding the Bouguet Matlab Toolbox code, rodrigues.m.
+     *      <pre>
+     *      The Bouguet toolbox webpage is currently at http://robots.stanford.edu/cs223b04/JeanYvesCalib/
+     *      and states that the source code is freely available.
+     *      The github repositories with the forked Bouguet Matlab code do not have license
+     *      information.
+     *
+     *      https://github.com/fragofer/TOOLBOX_calib
+     *      and
+     *      https://github.com/hunt0r/Bouguet_cam_cal_toolbox
+     *
+     *      rogrigues.m includes the comment: Copyright (c) March 1993 -- Pietro Perona, CalTech, before a brief
+     *      changelist by Bouguet.
+     * @param in [3X1] rotation vector
+     * @return
+     */
+    public static RodriguesRotation createRodriguesRotationMatrixBouguet(double[] in) {
+
+        if (in.length != 3) {
+            throw new IllegalArgumentException("in length must be 3");
+        }
+
+        final double eps = 2.2204e-16;
+
+        //[m,n] = size(in);
+        int m = in.length;
+        //int n = 1;
+        //%bigeps = 10e+4*eps;
+        //bigeps = 10e+20*eps;
+
+        double bigeps = 10e20 * eps;
+
+        double[][] R;
+        double[][] dRdin;
+        //theta = norm(in);
+        double theta = MatrixUtil.lPSum(in, 2);
+        //if theta < eps
+        if (theta < eps) {
+            //R = eye(3);
+            //dRdin = [0 0 0;
+            //0 0 1;
+            //0 -1 0;
+            //0 0 -1;
+            //0 0 0;
+            //1 0 0;
+            //0 1 0;
+            //-1 0 0;
+            //0 0 0];
+            R = MatrixUtil.createIdentityMatrix(3);
+            dRdin = new double[9][];
+            dRdin[0] = new double[]{0, 0, 0};
+            dRdin[1] = new double[]{0, 0, 1};
+            dRdin[2] = new double[]{0, -1, 0};
+            dRdin[3] = new double[]{0, 0, -1};
+            dRdin[4] = new double[]{0, 0, 0};
+            dRdin[5] = new double[]{1, 0, 0};
+            dRdin[6] = new double[]{0, 1, 0};
+            dRdin[7] = new double[]{-1, 0, 0};
+            dRdin[8] = new double[]{0, 0, 0};
+
+            //out = R;
+            //dout = dRdin;
+            RodriguesRotation rRot = new RodriguesRotation();
+            rRot.r = R;
+            rRot.dRdin = dRdin;
+            rRot.om = Arrays.copyOf(in, in.length);
+
+            return rRot;
+        }
+
+        //%m3 = [in,theta]
+
+        //dm3din = [eye(3);in'/theta];
+        double[][] dm3din = new double[4][]; // [4X3]
+        dm3din[0] = new double[]{1, 0, 0};
+        dm3din[1] = new double[]{0, 1, 0};
+        dm3din[2] = new double[]{0, 0, 1};
+        dm3din[3] = Arrays.copyOf(in, in.length);
+        MatrixUtil.multiply(dm3din[3], 1./theta);
+
+        //omega = in/theta;
+        double[] omega = Arrays.copyOf(dm3din[3], dm3din[3].length);
+
+        //%m2 = [omega;theta]
+
+        double invTheta = 1./theta;
+        double invTheta2 = invTheta*invTheta;
+        //dm2dm3 = [eye(3)/theta -in/theta^2; zeros(1,3) 1];
+        double[][] dm2dm3 = new double[4][];
+        dm2dm3[0] = new double[]{1*invTheta, 0, 0, in[0]*-invTheta2};
+        dm2dm3[1] = new double[]{0, 1*invTheta, 0, in[1]*-invTheta2};
+        dm2dm3[2] = new double[]{0, 0, 1*invTheta, in[2]*-invTheta2};
+        dm2dm3[3] = new double[]{0, 0, 0, 1};
+
+        //alpha = cos(theta);
+        //beta = sin(theta);
+        //gamma = 1-cos(theta);
+        //omegav=[[0 -omega(3) omega(2)];[omega(3) 0 -omega(1)];[-omega(2) omega(1) 0 ]];
+        //A = omega*omega';
+        double alpha = Math.cos(theta);
+        double beta = Math.sin(theta);
+        double gamma = 1. - alpha;
+        double[][] omegav = MatrixUtil.skewSymmetric(omega);
+        double[][] A = MatrixUtil.outerProduct(omega, omega);
+
+        //%m1 = [alpha;beta;gamma;omegav;A];
+
+        //dm1dm2 = zeros(21,4);
+        //dm1dm2(1,4) = -sin(theta);
+        //dm1dm2(2,4) = cos(theta);
+        //dm1dm2(3,4) = sin(theta);
+        //dm1dm2(4:12,1:3) = [0 0 0  0 0 1 0 -1 0;
+        //                    0 0 -1 0 0 0 1 0 0;
+        //                    0 1 0 -1 0 0 0 0 0]';
+        double[][] dm1dm2 = MatrixUtil.zeros(21, 4);
+        dm1dm2[0][3] = -beta;
+        dm1dm2[1][3] = alpha;
+        dm1dm2[2][3] = beta;
+        System.arraycopy(new double[]{0,0,0}, 0, dm1dm2[3], 0, 3);
+        System.arraycopy(new double[]{0,0,1}, 0, dm1dm2[4], 0, 3);
+        System.arraycopy(new double[]{0,-1,0}, 0, dm1dm2[5], 0, 3);
+        System.arraycopy(new double[]{0,0,-1}, 0, dm1dm2[6], 0, 3);
+        System.arraycopy(new double[]{0,0,0}, 0, dm1dm2[7], 0, 3);
+        System.arraycopy(new double[]{1,0,0}, 0, dm1dm2[8], 0, 3);
+        System.arraycopy(new double[]{0,1,0}, 0, dm1dm2[9], 0, 3);
+        System.arraycopy(new double[]{-1,0,0}, 0, dm1dm2[10], 0, 3);
+        System.arraycopy(new double[]{0,0,0}, 0, dm1dm2[11], 0, 3);
+
+        //w1 = omega(1);
+        //w2 = omega(2);
+        //w3 = omega(3);
+        double w1 = omega[0];
+        double w2 = omega[1];
+        double w3 = omega[2];
+
+        //dm1dm2(13:21,1) = [2*w1;w2;w3;w2;0;0;w3;0;0];
+        //dm1dm2(13: 21,2) = [0;w1;0;w1;2*w2;w3;0;w3;0];
+        //dm1dm2(13:21,3) = [0;0;w1;0;0;w2;w1;w2;2*w3];
+
+        //NLK temporarily transpose for sets, then transpose back
+        dm1dm2 = MatrixUtil.transpose(dm1dm2);
+        System.arraycopy(new double[]{2*w1,w2,w3,w2,0,0,w3,0,0}, 0, dm1dm2[0], 12, 9);
+        System.arraycopy(new double[]{0,w1,0,w1,2*w2,w3,0,w3,0}, 0, dm1dm2[1], 12, 9);
+        System.arraycopy(new double[]{0,0,w1,0,0,w2,w1,w2,2*w3}, 0, dm1dm2[2], 12, 9);
+        dm1dm2 = MatrixUtil.transpose(dm1dm2);
+
+        //R = eye(3)*alpha + omegav*beta + A*gamma;
+        R = MatrixUtil.createIdentityMatrix(3);
+        MatrixUtil.multiply(R, alpha);
+        double[][] t1 = MatrixUtil.copy(omegav);
+        MatrixUtil.multiply(t1, beta);
+        double[][] t2 = MatrixUtil.copy(A);
+        MatrixUtil.multiply(A, gamma);
+        R = MatrixUtil.pointwiseAdd(R, t1);
+        R = MatrixUtil.pointwiseAdd(R, t2);
+
+        //dRdm1 = zeros(9,21);
+        //dRdm1([1 5 9],1) = ones(3,1);
+        //dRdm1(:,2) = omegav(:);
+        //dRdm1(:,4:12) = beta*eye(9);
+        //dRdm1(:,3) = A(:);
+        //dRdm1(:,13:21) = gamma*eye(9);
+        double[][] dRdm1 = MatrixUtil.zeros(9, 21);
+        dRdm1[0][0] = 1;
+        dRdm1[4][0] = 1;
+        dRdm1[8][0] = 1;
+        dRdm1 = MatrixUtil.transpose(dRdm1);
+        double[] omegavStack = MatrixUtil.stack(omegav);
+        System.arraycopy(omegavStack, 0, dRdm1[1], 0, omegavStack.length);
+        double[][] i9 = MatrixUtil.createIdentityMatrix(9);
+        MatrixUtil.multiply(i9, beta);
+        for (int i = 3; i <= 11; ++i) {
+            System.arraycopy(i9[i-3], 0, dRdm1[i], 0, i9[i-3].length);
+        }
+        double[] AStack = MatrixUtil.stack(A);
+        dRdm1[2] = AStack;
+
+        i9 = MatrixUtil.createIdentityMatrix(9);
+        MatrixUtil.multiply(i9, gamma);
+        for (int i = 12; i <= 20; ++i) {
+            System.arraycopy(i9[i-12], 0, dRdm1[i], 0, i9[i-12].length);
+        }
+        dRdm1 = MatrixUtil.transpose(dRdm1);
+
+        //dRdin = dRdm1 * dm1dm2 * dm2dm3 * dm3din;
+        //        [9X21]  [21X4]  [4X4]     [4X3] = [9X3]
+        dRdin = MatrixUtil.multiply(dRdm1, dm1dm2);
+        dRdin = MatrixUtil.multiply(dRdin, dm2dm3);
+        dRdin = MatrixUtil.multiply(dRdin, dm3din);
+
+        RodriguesRotation rRot = new RodriguesRotation();
+        rRot.r = R;
+        rRot.dRdin = dRdin;
+        rRot.om = Arrays.copyOf(in, in.length);
+
+        return rRot;
     }
     
     /**

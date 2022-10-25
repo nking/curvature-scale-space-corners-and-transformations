@@ -4,6 +4,8 @@ package algorithms.imageProcessing.transform;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import java.util.Arrays;
+import java.util.Random;
+
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.NotConvergedException;
 
@@ -415,5 +417,102 @@ public class RotationTest extends TestCase {
         System.out.printf("r0Diff=\n%s\n", FormatArray.toString(r0Diff, "%.3e"));
         System.out.printf("thetaExR0Diff(theta extracted from r)Diff)=\n%s\n", FormatArray.toString(thetaExR0Diff, "%.3e"));
                 
+    }
+
+    public void testRodriguesRotationMatrixBouguet() throws NotConvergedException {
+        // tests from the Bouguet toolbox in rodrigues.m
+
+        long seed = System.nanoTime();
+        System.out.printf("seed=%d\n", seed);
+        Random rand = new Random(seed);
+
+        int i;
+        double[] om = new double[3];
+        double[] dom = new double[3];
+        for (i = 0; i < 3; ++i) {
+            om[i] = rand.nextDouble();
+            dom[i] = rand.nextDouble()/1000000;
+        }
+        Rotation.RodriguesRotation rRot = Rotation.createRodriguesRotationMatrixBouguet(om);
+        // [3X3]
+        double[][] R1 = rRot.r;
+        // [9X3]
+        double[][] dR1 = rRot.dRdin;
+
+        Rotation.RodriguesRotation rRot2 = Rotation.createRodriguesRotationMatrixBouguet(MatrixUtil.add(om, dom));
+        double[][] R2 = rRot2.r;
+
+        //R2a = R1 + reshape(dR1 * dom,3,3);
+        // [9X3][3X1] = [9X1]
+        double[] tmp = MatrixUtil.multiplyMatrixByColumnVector(dR1, dom);
+        double[][] tmp2 = new double[3][];
+        tmp2[0] = new double[]{tmp[0], tmp[3], tmp[6]};
+        tmp2[1] = new double[]{tmp[1], tmp[4], tmp[7]};
+        tmp2[2] = new double[]{tmp[2], tmp[5], tmp[8]};
+        double[][] R2a = MatrixUtil.pointwiseAdd(R1, tmp2);
+
+        double norm1 = MatrixUtil.spectralNorm(MatrixUtil.pointwiseSubtract(R2, R1));
+        double norm2 = MatrixUtil.spectralNorm(MatrixUtil.pointwiseSubtract(R2, R2a));
+        double gain = norm1/norm2;
+        /*
+        %% TEST OF dOmdR:
+        om = randn(3,1);
+        R = rodrigues(om);
+        dom = randn(3,1)/10000;
+        dR = rodrigues(om+dom) - R;
+        */
+        for (i = 0; i < 3; ++i) {
+            om[i] = rand.nextDouble();
+            dom[i] = rand.nextDouble()/10000;
+        }
+        Rotation.RodriguesRotation rRot3 = Rotation.createRodriguesRotationMatrixBouguet(om);
+        double[][] R = rRot3.r;
+
+        Rotation.RodriguesRotation rRot4 = Rotation.createRodriguesRotationMatrixBouguet(MatrixUtil.add(om, dom));
+        double[][] dR = MatrixUtil.pointwiseSubtract(rRot4.r, R);
+
+        int z = 1;
+/*
+[omc,domdR] = rodrigues(R);
+[om2] = rodrigues(R+dR);
+om_app = omc + domdR*dR(:);
+gain = norm(om2 - omc)/norm(om2 - om_app)
+
+%% OTHER BUG: (FIXED NOW!!!)
+omu = randn(3,1);
+omu = omu/norm(omu)
+om = pi*omu;
+[R,dR]= rodrigues(om);
+[om2] = rodrigues(R);
+[om om2]
+
+%% NORMAL OPERATION
+om = randn(3,1);
+[R,dR]= rodrigues(om);
+[om2] = rodrigues(R);
+[om om2]
+
+%% Test: norm(om) = pi
+u = randn(3,1);
+u = u / sqrt(sum(u.^2));
+om = pi*u;
+R = rodrigues(om);
+R2 = rodrigues(rodrigues(R));
+norm(R - R2)
+
+%% Another test case where norm(om)=pi from Chen Feng (June 27th, 2014)
+R = [-0.950146567583153 -6.41765854280073e-05 0.311803617668748; ...
+     -6.41765854277654e-05 -0.999999917385145 -0.000401386434914383; ...
+      0.311803617668748 -0.000401386434914345 0.950146484968298];
+om = rodrigues(R)
+norm(om) - pi
+
+%% Another test case where norm(om)=pi from 余成义 (July 1st, 2014)
+R = [-0.999920129411407	-6.68593208347372e-05	-0.0126384464118876; ...
+     9.53007036072085e-05	-0.999997464662094	-0.00224979713751896; ...
+    -0.0126382639492467	-0.00225082189773293	0.999917600647740];
+om = rodrigues(R)
+norm(om) - pi
+         */
     }
 }

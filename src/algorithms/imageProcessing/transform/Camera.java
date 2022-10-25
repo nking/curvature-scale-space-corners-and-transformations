@@ -833,6 +833,15 @@ public class Camera {
     public static class CameraExtrinsicParameters {
         private double[][] rotation;
         private double[] translation;
+        private double[] rodriguesVector;
+
+        public CameraExtrinsicParameters(double[][] rotation, double[] rodriguesRotationVector, double[] translation) {
+            this.rotation = rotation;
+            this.rodriguesVector = rodriguesRotationVector;
+            this.translation = translation;
+        }
+
+        public CameraExtrinsicParameters() {}
 
         /**
          * @return the rotation
@@ -843,6 +852,13 @@ public class Camera {
 
         public static double[][] applyOrthoNormalization(double[][] r) throws NotConvergedException {
             return Rotation.orthonormalizeUsingSkewCayley(r);
+        }
+
+        public void setRodriguesVector(double[] rVector) {
+            this.rodriguesVector = rVector;
+        }
+        public double[] getRodriguesVector() {
+            return this.rodriguesVector;
         }
 
         /**
