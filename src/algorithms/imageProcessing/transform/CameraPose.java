@@ -1301,7 +1301,7 @@ public class CameraPose {
 
         for (i = 0; i < n; ++i) {
             J[i * 2] = new double[]{-X[0][i], 0, (xc[0][i] * X[0][i]), -X[1][i],
-                    0, xc[0][i] * X[1][i], -X[2][i], 0, xc[0][i] * X[2][i], 1, 0, xc[0][i]};
+                    0, xc[0][i] * X[1][i], -X[2][i], 0, xc[0][i] * X[2][i], -1, 0, xc[0][i]};
             J[i * 2 + 1] = new double[]{0, X[0][i], -xc[1][i] * X[0][i], 0, X[1][i],
                     -xc[1][i] * X[1][i], 0, X[2][i],
                     -xc[1][i] * X[2][i], 0, 1, -xc[1][i]};
