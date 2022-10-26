@@ -510,8 +510,10 @@ public class RotationTest extends TestCase {
         Rotation.RodriguesRotation rRot4 = Rotation.createRodriguesRotationMatrixBouguet(omPlusDom);
         dR = MatrixUtil.pointwiseSubtract(rRot4.r, R);
 
+        double[] checkOMC = Rotation.extractRodriguesRotationVector(R);
+
         Rotation.RodriguesRotation rRot5 = Rotation.extractRodriguesRotationVectorBouguet(R);
-        omc = rRot5.om;
+        omc = rRot5.om; // om should equal omc
         domdR = rRot5.dRdin;
         Rotation.RodriguesRotation rRot6 = Rotation.extractRodriguesRotationVectorBouguet(
                 MatrixUtil.pointwiseAdd(R, dR)
@@ -576,19 +578,26 @@ public class RotationTest extends TestCase {
         for (i = 0; i < 3; ++i) {
             omu[i] = rand.nextDouble();
         }
-        MatrixUtil.multiply(omu, 1./MatrixUtil.lPSum(omu, 2));
-        om = Arrays.copyOf(omu, omu.length);
+        om = MatrixUtil.normalizeL2(omu);
         MatrixUtil.multiply(om, Math.PI);
+        double[][] _R = Rotation.createRodriguesFormulaRotationMatrix(om);
         Rotation.RodriguesRotation rRot7 = Rotation.createRodriguesRotationMatrixBouguet(om);
         R = rRot7.r;
+        System.out.printf("R(om) = \n%s\n", FormatArray.toString(R, "%.4e"));
+        System.out.printf("R(om) existing = \n%s\n", FormatArray.toString(_R, "%.4e"));
         dR = rRot7.dRdin;
         Rotation.RodriguesRotation rRot8 = Rotation.extractRodriguesRotationVectorBouguet(R);
         om2 = rRot8.om;
+        double[] _om2 = Rotation.extractRodriguesRotationVector(R);
+        // om and om2 should be  the same
+        System.out.printf("rand(3)*pi = om = %s\n", FormatArray.toString(om, "%.4e"));
+        System.out.printf("om2=toVec(R(om)) = %s\n", FormatArray.toString(om2, "%.4e"));
+        System.out.printf("_om2=toVec(R(om)) existing = %s\n", FormatArray.toString(_om2, "%.4e"));
 
-        System.out.printf("rand(3)*pi = om = %s\nom2=toVec(R(om)) = %s\n",
-                FormatArray.toString(om, "%.4e"),
-                FormatArray.toString(om2, "%.4e"));
-        System.out.printf("R(om)=\n%s\n", FormatArray.toString(R, "%.4e"));
+        System.out.printf("R(om2) = \n%s\n",
+                FormatArray.toString(Rotation.createRodriguesRotationMatrixBouguet(om2).r, "%.4e"));
+        System.out.printf("R(_om2) existing = \n%s\n",
+                FormatArray.toString(Rotation.createRodriguesFormulaRotationMatrix(_om2), "%.4e"));
 
         //=======
         /*
