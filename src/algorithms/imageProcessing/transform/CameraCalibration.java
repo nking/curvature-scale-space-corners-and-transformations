@@ -444,7 +444,7 @@ public class CameraCalibration {
                 int c = 0;
                 for (i = 0; i < n; ++i) {
                     for (j = 0; j < 2; ++j) {
-                        merr[c] = mrep[j][i] - mrep[j][i];
+                        merr[c] = xn[j][i] - mrep[j][i];
                         c++;
                     }
                 }
