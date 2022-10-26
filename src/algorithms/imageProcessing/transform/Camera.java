@@ -564,12 +564,6 @@ public class Camera {
      * @param x points in the camera centered reference frame.
      * format is 3XN for N points.
      * @param kIntr
-     * @param rCoeffs radial distortion vector of length 2 or radial and tangential
-     * distortion vector of length 5.  can be null to skip lens distortion correction.
-     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
-        f(r) = 1 +k1*r^2 + k2*r^4 if true,
-        else use model #3 f(r) = 1 +k1*r + k2*r^2.
-        note that if rCoeffs is null or empty, no radial distortion is removed.
      * @return pixels in the reference frame of
      * @throws no.uib.cipr.matrix.NotConvergedException
      * @throws java.io.IOException
@@ -851,7 +845,8 @@ public class Camera {
         }
 
         public static double[][] applyOrthoNormalization(double[][] r) throws NotConvergedException {
-            return Rotation.orthonormalizeUsingSkewCayley(r);
+            //return Rotation.orthonormalizeUsingSkewCayley(r);
+            return Rotation.orthonormalizeUsingSVD(r);
         }
 
         public void setRodriguesVector(double[] rVector) {

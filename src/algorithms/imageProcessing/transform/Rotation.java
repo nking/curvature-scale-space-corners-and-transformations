@@ -1121,17 +1121,18 @@ public class Rotation {
         double w1 = omega[0];
         double w2 = omega[1];
         double w3 = omega[2];
-
         //dm1dm2(13:21,1) = [2*w1;w2;w3;w2;0;0;w3;0;0];
         //dm1dm2(13: 21,2) = [0;w1;0;w1;2*w2;w3;0;w3;0];
         //dm1dm2(13:21,3) = [0;0;w1;0;0;w2;w1;w2;2*w3];
-
-        //NLK temporarily transpose for sets, then transpose back
-        dm1dm2 = MatrixUtil.transpose(dm1dm2);
-        System.arraycopy(new double[]{2*w1,w2,w3,w2,0,0,w3,0,0}, 0, dm1dm2[0], 12, 9);
-        System.arraycopy(new double[]{0,w1,0,w1,2*w2,w3,0,w3,0}, 0, dm1dm2[1], 12, 9);
-        System.arraycopy(new double[]{0,0,w1,0,0,w2,w1,w2,2*w3}, 0, dm1dm2[2], 12, 9);
-        dm1dm2 = MatrixUtil.transpose(dm1dm2);
+        int i;
+        double[] c0 = new double[]{2*w1,w2,w3,w2,0,0,w3,0,0};
+        double[] c1 = new double[]{0,w1,0,w1,2*w2,w3,0,w3,0};
+        double[] c2 = new double[]{0,0,w1,0,0,w2,w1,w2,2*w3};
+        for (i = 12; i <= 20; ++i) {
+            dm1dm2[i][0] = c0[i - 12];
+            dm1dm2[i][1] = c1[i - 12];
+            dm1dm2[i][2] = c2[i - 12];
+        }
 
         //R = eye(3)*alpha + omegav*beta + A*gamma; // [3X3] + [3X3] + [3X3]
         R = MatrixUtil.createIdentityMatrix(3);
@@ -1159,7 +1160,7 @@ public class Rotation {
         double[] AStack = MatrixUtil.stack(A);
         double[][] iG = MatrixUtil.createIdentityMatrix(9);
         MatrixUtil.multiply(iG, gamma);
-        for (int i = 0; i < dRdm1.length; ++i) {
+        for (i = 0; i < dRdm1.length; ++i) {
             dRdm1[i][1] = omegavStack[i];
             dRdm1[i][2] = AStack[i];
             System.arraycopy(iB[i], 0, dRdm1[i], 3, iB[i].length);
@@ -2845,8 +2846,19 @@ public class Rotation {
         r = cay(skew);
         return r;
     }
-    private static double[][] cay(double[][] r) throws NotConvergedException {
-        double[][] identity = MatrixUtil.createIdentityMatrix(3);
+
+    /**
+     * orthogonalize matrix R using skew parameters via Cayley's formula.
+     * (I - A)*(I + A)^-1
+     * @param r  a rotation matrix (i.e. a skew symmetric matrix A^T = A^-1)
+     * @return
+     * @throws NotConvergedException
+     */
+    public static double[][] cay(double[][] r) throws NotConvergedException {
+        if (r.length != r[0].length) {
+            throw new IllegalArgumentException("r must be a square rotation matrix");
+        }
+        double[][] identity = MatrixUtil.createIdentityMatrix(r.length);
         double[][] t1 = MatrixUtil.pseudoinverseFullColumnRank(
                 MatrixUtil.pointwiseAdd(identity, r));
         double[][] t2 = MatrixUtil.pointwiseSubtract(identity, r);

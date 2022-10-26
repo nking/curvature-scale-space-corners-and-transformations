@@ -421,7 +421,7 @@ public class RotationTest extends TestCase {
 
     public void testRodriguesRotationBouguet() throws NotConvergedException {
         // tests from the Bouguet toolbox in rodrigues.m
-        System.out.println("testRodriguesRotationBouguet");
+        System.out.println("\ntestRodriguesRotationBouguet");
 
         long seed = System.nanoTime();
         System.out.printf("seed=%d\n", seed);
@@ -498,6 +498,7 @@ public class RotationTest extends TestCase {
         //om_app = omc + domdR*dR(:); // [3X1] + [3X9]*[9X1]
         //gain = norm(om2 - omc)/norm(om2 - om_app)
         */
+
         for (i = 0; i < 3; ++i) {
             om[i] = rand.nextDouble();
             dom[i] = rand.nextDouble()/10000;
@@ -505,7 +506,8 @@ public class RotationTest extends TestCase {
         Rotation.RodriguesRotation rRot3 = Rotation.createRodriguesRotationMatrixBouguet(om);
         R = rRot3.r;
 
-        Rotation.RodriguesRotation rRot4 = Rotation.createRodriguesRotationMatrixBouguet(MatrixUtil.add(om, dom));
+        double[] omPlusDom = MatrixUtil.add(om, dom);
+        Rotation.RodriguesRotation rRot4 = Rotation.createRodriguesRotationMatrixBouguet(omPlusDom);
         dR = MatrixUtil.pointwiseSubtract(rRot4.r, R);
 
         Rotation.RodriguesRotation rRot5 = Rotation.extractRodriguesRotationVectorBouguet(R);
@@ -522,11 +524,43 @@ public class RotationTest extends TestCase {
         gain = norm1/norm2;
         System.out.printf("norm1=%.4e, norm2=%.4e, gain=%.4e\n", norm1, norm2, gain);
 
+        double[] tmp3 = Arrays.copyOf(om, 3);
+        MatrixUtil.multiply(tmp3, 1./MatrixUtil.lPSum(om, 2));
+        System.out.printf("om=%s norm=%.4e\n", FormatArray.toString(tmp3, "%.3e"),
+                MatrixUtil.lPSum(om, 2));
+
+        tmp3 = Arrays.copyOf(omc, 3);
+        MatrixUtil.multiply(tmp3, 1./MatrixUtil.lPSum(omc, 2));
+        System.out.printf("omc=%s norm=%.4e\n", FormatArray.toString(tmp3, "%.3e"),
+                MatrixUtil.lPSum(omc, 2));
+
+        tmp3 = Arrays.copyOf(om2, 3);
+        MatrixUtil.multiply(tmp3, 1./MatrixUtil.lPSum(om2, 2));
+        System.out.printf("om2=%s norm=%.4e\n", FormatArray.toString(tmp3, "%.3e"),
+                MatrixUtil.lPSum(om2, 2));
+
+        tmp3 = Arrays.copyOf(omPlusDom, 3);
+        MatrixUtil.multiply(tmp3, 1./MatrixUtil.lPSum(omPlusDom, 2));
+        System.out.printf("omPlusDom=%s norm=%.4e\n", FormatArray.toString(tmp3, "%.3e"),
+                MatrixUtil.lPSum(omPlusDom, 2));
+
+        tmp3 = Arrays.copyOf(om_app, 3);
+        MatrixUtil.multiply(tmp3, 1./MatrixUtil.lPSum(om_app, 2));
+        System.out.printf("omapp=%s norm=%.4e\n", FormatArray.toString(tmp3, "%.3e"),
+                MatrixUtil.lPSum(om_app, 2));
+
+        // om ~ omPlusDom as the later is a small addition
+        // omc ~ omapp as the later is a small addition
+        //R
+        //om+dom
+        //dR = om+dom - R
+        System.out.printf("R(om) =\n%s\n", FormatArray.toString(R, "%.4e"));
+        System.out.printf("R(om+dom)=\n%s\n", FormatArray.toString(rRot4.r, "%.4e"));
+        System.out.printf("dR = R(om+dom)-R=\n%s\n", FormatArray.toString(dR, "%.4e"));
+
         omCompare = Rotation.extractRodriguesRotationVector(R);
         norm = MatrixUtil.lPSum(MatrixUtil.subtract(omc, omCompare), 2);
-        System.out.printf("bouguet omc=\n%s\n", FormatArray.toString(omc, "%.4e"));
-        System.out.printf("existing om=\n%s\n", FormatArray.toString(omCompare, "%.4e"));
-        System.out.printf("norm diffs=%.4e\n", norm);
+        System.out.printf("norm diffs between bouguet(omc) and existing(omc)=%.4e\n", norm);
 
         //==========
         System.out.println("\nOTHER BUG: (FIXED NOW!!!)");
@@ -550,8 +584,11 @@ public class RotationTest extends TestCase {
         dR = rRot7.dRdin;
         Rotation.RodriguesRotation rRot8 = Rotation.extractRodriguesRotationVectorBouguet(R);
         om2 = rRot8.om;
-        System.out.printf("om=%s\nom2=%s\n", FormatArray.toString(om, "%.4e"),
+
+        System.out.printf("rand(3)*pi = om = %s\nom2=toVec(R(om)) = %s\n",
+                FormatArray.toString(om, "%.4e"),
                 FormatArray.toString(om2, "%.4e"));
+        System.out.printf("R(om)=\n%s\n", FormatArray.toString(R, "%.4e"));
 
         //=======
         /*
@@ -570,8 +607,21 @@ public class RotationTest extends TestCase {
         dR = rRot9.dRdin;
         Rotation.RodriguesRotation rRot10 = Rotation.extractRodriguesRotationVectorBouguet(R);
         om2 = rRot10.om;
+        System.out.printf("should be equal:\n");
         System.out.printf("om=%s\nom2=%s\n", FormatArray.toString(om, "%.4e"),
                 FormatArray.toString(om2, "%.4e"));
+
+        norm = MatrixUtil.lPSum(om, 2);
+        tmp3 = Arrays.copyOf(om, 3);
+        MatrixUtil.multiply(tmp3, 1./norm);
+        System.out.printf("om norm=%.4e\nom normalized=%s\n", norm,
+                FormatArray.toString(tmp3, "%.4e"));
+
+        norm = MatrixUtil.lPSum(om2, 2);
+        tmp3 = Arrays.copyOf(om2, 3);
+        MatrixUtil.multiply(tmp3, 1./norm);
+        System.out.printf("om2 norm=%.4e\nom2 normalized=%s\n", norm,
+                FormatArray.toString(tmp3, "%.4e"));
 
         //=====================
         /*
@@ -611,11 +661,14 @@ public class RotationTest extends TestCase {
         norm(om) - pi
         */
         System.out.println("\nAnother test case where norm(om)=pi from Chen Feng (June 27th, 2014)");
+        // math.acos(1-0.950146567583153)*radToDeg = 87.142 degrees
         R[0] = new double[]{-0.950146567583153, -6.41765854280073e-05, 0.311803617668748};
         R[1] = new double[]{-6.41765854277654e-05, -0.999999917385145, -0.000401386434914383};
         R[2] = new double[]{0.311803617668748, -0.000401386434914345, 0.950146484968298};
         Rotation.RodriguesRotation rRot13 = Rotation.extractRodriguesRotationVectorBouguet(R);
         om = rRot13.om;
+        System.out.printf("om=%s\nom2=%s\n", FormatArray.toString(om, "%.4e"),
+                FormatArray.toString(om2, "%.4e"));
         norm = MatrixUtil.lPSum(om, 2);
         System.out.printf("norm=%.4e\n", norm);
 
