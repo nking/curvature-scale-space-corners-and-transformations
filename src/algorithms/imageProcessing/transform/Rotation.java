@@ -804,7 +804,7 @@ public class Rotation {
         if (Math.sin(theta) >= 1e-4) {
 
             //dthetadtr = -1 / sqrt(1 - tr ^ 2);
-            double dthetadtr = 1./Math.sqrt(1. - tr*tr);
+            double dthetadtr = -1./Math.sqrt(1. - tr*tr);
 
             //dthetadR = dthetadtr * dtrdR; [1X9]
             double[] dthetadR = Arrays.copyOf(dtrdR, dtrdR.length);
