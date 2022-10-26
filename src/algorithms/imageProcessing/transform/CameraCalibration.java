@@ -255,7 +255,7 @@ public class CameraCalibration {
         // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
         double[] xOrth = svd.vT[svd.vT.length - 1];
         //h00, h01, h02, h10, h11, h12,h20,h21,h22
-        
+
         double[][] h = new double[3][3];
         for (int i = 0; i < 3; i++) {
             h[i] = new double[3];
@@ -263,7 +263,7 @@ public class CameraCalibration {
             h[i][1] = xOrth[(i * 3) + 1];
             h[i][2] = xOrth[(i * 3) + 2];
         }
-        
+
         return h;
     }
 
@@ -360,6 +360,7 @@ public class CameraCalibration {
             v = xn[1][i];
             X = xW[0][i];
             Y = xW[1][i];
+            // last rows are "1" for both xn and xW
             // eqn(15) of Ma et al. 2003
             ell[2*i]     = new double[]{X, Y, 1, 0, 0, 0, -u*X, -u*Y, -u};
             ell[2*i + 1] = new double[]{0, 0, 0, X, Y, 1, -v*X, -v*Y, -v};
@@ -378,13 +379,12 @@ public class CameraCalibration {
 
         MatrixUtil.multiply(xOrth, 1./xOrth[xOrth.length - 1]);
 
+        // Hrem = reshape(hh,3,3)';
+        // Matlab reshape fills along columns, but this is transposed, so fill rows
         double[][] h = new double[3][3];
-        for (i = 0; i < 3; i++) {
-            h[i] = new double[3];
-            h[i][0] = xOrth[(i * 3) + 0];
-            h[i][1] = xOrth[(i * 3) + 1];
-            h[i][2] = xOrth[(i * 3) + 2];
-        }
+        h[0] = Arrays.copyOfRange(xOrth, 0, 3);
+        h[1] = Arrays.copyOfRange(xOrth, 3, 6);
+        h[2] = Arrays.copyOfRange(xOrth, 6, 9);
 
         h = MatrixUtil.multiply(invHNorm, h);
 

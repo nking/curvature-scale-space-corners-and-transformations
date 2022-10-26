@@ -1211,7 +1211,8 @@ public class CameraPose {
         //% Compute the planar homography:
 
         //H = compute_homography(xn,X_new(1:2,:));
-        //NLK: replace Xnew[2] with 1's because compute_homography.m when receiving Xnew of length 2, appends a row of 1's
+        //NLK: replace Xnew[2] with 1's because compute_homography.m when receiving Xnew of length 2,
+        // appends a row of 1's
         Arrays.fill(Xnew[2], 1);
         double[][] H = CameraCalibration.solveForHomographyBouget(xc, Xnew);
 
