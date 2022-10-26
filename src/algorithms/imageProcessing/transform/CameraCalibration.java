@@ -428,8 +428,12 @@ public class CameraCalibration {
                 //J(1:2:2*Np,1:3) = -MMM';
                 //J(2:2:2*Np,4:6) = -MMM';
                 for (j = 0; j < n; ++j) {
-                    J[2*j] = new double[]{-MMM[0][j], -MMM[1][j], -MMM[2][j],   0,0,0,    0,0};
-                    J[2*j + 1] = new double[]{0, 0, 0, -MMM[0][j], -MMM[1][j], -MMM[2][j], 0,0};
+                    //J[2*j] = new double[]{-MMM[0][j], -MMM[1][j], -MMM[2][j],   0,0,0,    0,0};
+                    System.arraycopy(new double[]{-MMM[0][j], -MMM[1][j], -MMM[2][j]},
+                            0, J[2*j], 0, 3);
+                    //J[2*j + 1] = new double[]{0, 0, 0, -MMM[0][j], -MMM[1][j], -MMM[2][j], 0,0};
+                    System.arraycopy(new double[]{-MMM[0][j], -MMM[1][j], -MMM[2][j]},
+                            0, J[2*j], 3, 3);
                 }
 
                 //mrep = mrep ./ (ones(3,1)*mrep(3,:));

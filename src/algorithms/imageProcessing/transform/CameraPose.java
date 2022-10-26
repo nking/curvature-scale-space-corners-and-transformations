@@ -1169,6 +1169,18 @@ public class CameraPose {
         return extr;
     }
 
+    /**
+     * https://github.com/fragofer/TOOLBOX_calib/
+     * compute_extrinsic_init.m
+     * @param intrinsics
+     * @param xc objects in camera coordinates
+     * @param X objects in real world coordinates
+     * @param vT
+     * @param XMean
+     * @return
+     * @throws NotConvergedException
+     * @throws IOException
+     */
     static CameraExtrinsicParameters bouguetPoseInitPlanar(
             Camera.CameraIntrinsicParameters intrinsics, double[][] xc,
             double[][] X, DenseMatrix vT, double[] XMean) throws NotConvergedException, IOException {
@@ -1208,11 +1220,19 @@ public class CameraPose {
         double[][] Xnew = MatrixUtil.multiply(Rtransform, X);
         Xnew = MatrixUtil.pointwiseAdd(Xnew, t2);
 
+        // DEBUG: looking at a few members
+        int i;
+        for (i = 0; i < 4; ++i) {
+            if (i >= Xnew[0].length) break;
+            System.out.printf("Xnew=\n%s\n", FormatArray.toString(MatrixUtil.extractColumn(Xnew, i), "%.4e"));
+        }
+
         //% Compute the planar homography:
 
         //H = compute_homography(xn,X_new(1:2,:));
-        //NLK: replace Xnew[2] with 1's because compute_homography.m when receiving Xnew of length 2,
-        // appends a row of 1's
+        //NLK: replace Xnew[2] with 1's because we are giving the method only the first
+        // 2 rows of Xnew, then compute_homography.m when receiving Xnew of length 2,
+        // appends a row of 1's in the Matlab code.
         Arrays.fill(Xnew[2], 1);
         double[][] H = CameraCalibration.solveForHomographyBouget(xc, Xnew);
 
@@ -1284,7 +1304,7 @@ public class CameraPose {
         int n = xc[0].length;
 
         //J = zeros(2*Np,12);
-        double[][] J = MatrixUtil.zeros(2*n, 12);
+        double[][] J = new double[2*n][];
 
         //xX = (ones(3,1)*xn(1,:)).*X_kk;
         //yX = (ones(3,1)*xn(2,:)).*X_kk;
