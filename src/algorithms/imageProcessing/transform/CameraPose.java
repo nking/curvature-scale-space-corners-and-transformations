@@ -16,6 +16,12 @@ import java.util.Arrays;
   known camera intrinsic parameters, estimate the camera pose, that is
   extract the camera extrinsic parameters.
  <em>See also PNP.java</em>
+
+ TODO: write methods to use quaternion rotation instead of euler rotation.
+ see "Pose estimation using linearized rotations and quaternion algebra",
+ 2010 Timothy Barfoot 􏰀, James R. Forbes, Paul T. Furgale
+ University of Toronto, Institute for Aerospace Studies,
+ 4925 Dufferin Street, Toronto, Ontario, Canada M3H 5T6
  
  * TODO: consider solving with M-estimators.
  * see http://research.microsoft.com/en- us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html

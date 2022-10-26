@@ -218,6 +218,11 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
       v_parallel = (I + ([nˆ]_x)^2 * v)
       
  * </pre>
+ *
+ * TODO: add a method to extract the quaternion rotation from a 4X4 rotation matrix.
+ * see Barfoot et al.
+ * see http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
+ *
  * @author nichole
  */
 public class Rotation {
