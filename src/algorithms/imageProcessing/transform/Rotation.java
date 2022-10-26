@@ -821,7 +821,7 @@ public class Rotation {
             //dvar1dR = dvar1dtheta * dthetadR;  //[2X1][1X9] = [2X9]
             double[][] dvar1dR = MatrixUtil.outerProduct(dvar1dtheta, dthetadR);
 
-            //om1 = [R(3, 2) - R(2, 3), R(1, 3) - R(3, 1), R(2, 1) - R(1, 2)]'; // [1X3]
+            //om1 = [R(3, 2) - R(2, 3), R(1, 3) - R(3, 1), R(2, 1) - R(1, 2)]'; // [3X1]
             double[] om1 = new double[]{R[2][1] - R[1][2], R[0][2] - R[2][0], R[1][0] - R[0][1]};
 
             //          0 1   2  3 4 5 6  7 8
@@ -847,7 +847,7 @@ public class Rotation {
 
             int i;
             //%var2 = [om; theta];
-            //om = vth * om1; // vth*[1X3] = [1X3]
+            //om = vth * om1; // vth*[3X1] = [3X1]
             double[] om = Arrays.copyOf(om1, om1.length);
             MatrixUtil.multiply(om, vth);
             //domdvar = [vth * eye(3) om1 zeros(3, 1)]; // [3X3] | [3X1] | [3X1] = [3 X 5]
@@ -951,7 +951,7 @@ public class Rotation {
                 for (i = 0; i < 3; ++i) {
                     t0 = (mvec[i] > eps) ? 1 : 0;
                     t1 = (mvec[i] < -eps) ? 1 : 0;
-                    if (t0 - t1 > 0) {
+                    if ((t0 - t1) > 0) {
                         syn[i] = 1;
                     }
                 }
@@ -959,7 +959,7 @@ public class Rotation {
                 double hash = MatrixUtil.innerProduct(syn, new double[]{9, 3, 1});
 
                 //idx = find(hash == hashvec);
-                // should not need to apply an offset of 1 as they are consitent use of indexes
+                // should not need to apply an offset of 1 as they are consistent use of indexes
                 int idx = -1;
                 for (i = 0; i < hashvec.length; ++i) {
                     if (hash == hashvec[i]) {
@@ -973,7 +973,7 @@ public class Rotation {
                 double[] svec = Smat[idx];
 
                 //out = theta * [uabs; vabs; wabs] .* svec; // [3X1] .* [3X1] = [3X1]
-                out = MatrixUtil.pointwiseMultiplication(new double[]{uabs, vabs, wabs}, svec);
+                out = MatrixUtil.pointwiseMultiplication(new double[]{theta*uabs, theta*vabs, theta*wabs}, svec);
             }
         }
 
@@ -1026,6 +1026,7 @@ public class Rotation {
         //if theta < eps
         if (theta < eps) {
             //R = eye(3);
+            R = MatrixUtil.createIdentityMatrix(3);
             //dRdin = [0 0 0;
             //0 0 1;
             //0 -1 0;
@@ -1035,7 +1036,6 @@ public class Rotation {
             //0 1 0;
             //-1 0 0;
             //0 0 0];
-            R = MatrixUtil.createIdentityMatrix(3);
             dRdin = new double[9][];
             dRdin[0] = new double[]{0, 0, 0};
             dRdin[1] = new double[]{0, 0, 1};
@@ -1068,13 +1068,13 @@ public class Rotation {
         MatrixUtil.multiply(dm3din[3], 1./theta);
 
         //omega = in/theta;
-        double[] omega = Arrays.copyOf(dm3din[3], dm3din[3].length);
+        double[] omega = Arrays.copyOf(dm3din[3], dm3din[3].length); // [3X1]
 
         //%m2 = [omega;theta]
 
         double invTheta = 1./theta;
         double invTheta2 = invTheta*invTheta;
-        //dm2dm3 = [eye(3)/theta -in/theta^2; zeros(1,3) 1];
+        //dm2dm3 = [eye(3)/theta -in/theta^2; zeros(1,3) 1];// [3X3] | [3X1] ;
         double[][] dm2dm3 = new double[4][];
         dm2dm3[0] = new double[]{1*invTheta, 0, 0, in[0]*-invTheta2};
         dm2dm3[1] = new double[]{0, 1*invTheta, 0, in[1]*-invTheta2};
@@ -1090,7 +1090,7 @@ public class Rotation {
         double beta = Math.sin(theta);
         double gamma = 1. - alpha;
         double[][] omegav = MatrixUtil.skewSymmetric(omega);
-        double[][] A = MatrixUtil.outerProduct(omega, omega);
+        double[][] A = MatrixUtil.outerProduct(omega, omega); //[3X3]
 
         //%m1 = [alpha;beta;gamma;omegav;A];
 
@@ -1133,7 +1133,7 @@ public class Rotation {
         System.arraycopy(new double[]{0,0,w1,0,0,w2,w1,w2,2*w3}, 0, dm1dm2[2], 12, 9);
         dm1dm2 = MatrixUtil.transpose(dm1dm2);
 
-        //R = eye(3)*alpha + omegav*beta + A*gamma;
+        //R = eye(3)*alpha + omegav*beta + A*gamma; // [3X3] + [3X3] + [3X3]
         R = MatrixUtil.createIdentityMatrix(3);
         MatrixUtil.multiply(R, alpha);
         double[][] t1 = MatrixUtil.copy(omegav);
@@ -1153,23 +1153,18 @@ public class Rotation {
         dRdm1[0][0] = 1;
         dRdm1[4][0] = 1;
         dRdm1[8][0] = 1;
-        dRdm1 = MatrixUtil.transpose(dRdm1);
         double[] omegavStack = MatrixUtil.stack(omegav);
-        System.arraycopy(omegavStack, 0, dRdm1[1], 0, omegavStack.length);
-        double[][] i9 = MatrixUtil.createIdentityMatrix(9);
-        MatrixUtil.multiply(i9, beta);
-        for (int i = 3; i <= 11; ++i) {
-            System.arraycopy(i9[i-3], 0, dRdm1[i], 0, i9[i-3].length);
-        }
+        double[][] iB = MatrixUtil.createIdentityMatrix(9);
+        MatrixUtil.multiply(iB, beta);
         double[] AStack = MatrixUtil.stack(A);
-        dRdm1[2] = AStack;
-
-        i9 = MatrixUtil.createIdentityMatrix(9);
-        MatrixUtil.multiply(i9, gamma);
-        for (int i = 12; i <= 20; ++i) {
-            System.arraycopy(i9[i-12], 0, dRdm1[i], 0, i9[i-12].length);
+        double[][] iG = MatrixUtil.createIdentityMatrix(9);
+        MatrixUtil.multiply(iG, gamma);
+        for (int i = 0; i < dRdm1.length; ++i) {
+            dRdm1[i][1] = omegavStack[i];
+            dRdm1[i][2] = AStack[i];
+            System.arraycopy(iB[i], 0, dRdm1[i], 3, iB[i].length);
+            System.arraycopy(iG[i], 0, dRdm1[i], 12, iG[i].length);
         }
-        dRdm1 = MatrixUtil.transpose(dRdm1);
 
         //dRdin = dRdm1 * dm1dm2 * dm2dm3 * dm3din;
         //        [9X21]  [21X4]  [4X4]     [4X3] = [9X3]

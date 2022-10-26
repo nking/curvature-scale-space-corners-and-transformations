@@ -526,7 +526,7 @@ public class RotationTest extends TestCase {
         norm = MatrixUtil.lPSum(MatrixUtil.subtract(omc, omCompare), 2);
         System.out.printf("bouguet omc=\n%s\n", FormatArray.toString(omc, "%.4e"));
         System.out.printf("existing om=\n%s\n", FormatArray.toString(omCompare, "%.4e"));
-        System.out.printf("norm diffs=%.4e", norm);
+        System.out.printf("norm diffs=%.4e\n", norm);
 
         //==========
         System.out.println("\nOTHER BUG: (FIXED NOW!!!)");
@@ -596,8 +596,10 @@ public class RotationTest extends TestCase {
         Rotation.RodriguesRotation rRot12 =
                 Rotation.createRodriguesRotationMatrixBouguet(Rotation.extractRodriguesRotationVectorBouguet(R).om);
         R2 = rRot12.r;
+        norm1 = MatrixUtil.spectralNorm(R);
+        norm2 = MatrixUtil.spectralNorm(R2);
         norm = MatrixUtil.spectralNorm(MatrixUtil.pointwiseSubtract(R, R2));
-        System.out.printf("norm=%.4e", norm);
+        System.out.printf("norm(R)=%.4e, norm(R2)=%.4e, norm(R-R2)=%.4e\n", norm1, norm2, norm);
 
         //================
         /*
@@ -615,7 +617,7 @@ public class RotationTest extends TestCase {
         Rotation.RodriguesRotation rRot13 = Rotation.extractRodriguesRotationVectorBouguet(R);
         om = rRot13.om;
         norm = MatrixUtil.lPSum(om, 2);
-        System.out.printf("norm=%.4e", norm);
+        System.out.printf("norm=%.4e\n", norm);
 
         //================
         /*
@@ -633,7 +635,7 @@ public class RotationTest extends TestCase {
         Rotation.RodriguesRotation rRot14 = Rotation.extractRodriguesRotationVectorBouguet(R);
         om = rRot14.om;
         norm = MatrixUtil.lPSum(om, 2);
-        System.out.printf("norm=%.4e", norm);
+        System.out.printf("norm=%.4e\n\n", norm);
     }
 
     private double distanceBetween(double[][] r0, double[][] r1) {
