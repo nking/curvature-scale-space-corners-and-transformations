@@ -1139,7 +1139,7 @@ public class Rotation {
         double[][] t1 = MatrixUtil.copy(omegav);
         MatrixUtil.multiply(t1, beta);
         double[][] t2 = MatrixUtil.copy(A);
-        MatrixUtil.multiply(A, gamma);
+        MatrixUtil.multiply(t2, gamma);
         R = MatrixUtil.pointwiseAdd(R, t1);
         R = MatrixUtil.pointwiseAdd(R, t2);
 
