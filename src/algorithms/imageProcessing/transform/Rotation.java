@@ -752,20 +752,22 @@ public class Rotation {
      *
      *      rogrigues.m includes the comment: Copyright (c) March 1993 -- Pietro Perona, CalTech, before a brief
      *      changelist by Bouguet.
+     *      </pre>
+     *      Note that this is an ambiguous task.
      * @param in [3X3] rotation matrix
      * @return
      */
     public static RodriguesRotation extractRodriguesRotationVectorBouguet(final double[][] in) throws NotConvergedException {
 
-        if (in.length != 3 || in[0].length != 3) {
+        //[m,n] = size(in);
+        int m = in.length;
+        int n = in[0].length;
+
+        if (m != 3 || n != 3) {
             throw new IllegalArgumentException("in dimensions must be 3 X 3");
         }
 
         final double eps = 2.2204e-16;
-
-        //[m,n] = size(in);
-        int m = in.length;
-        int n = in[0].length;
 
         //%bigeps = 10e+4*eps;
         //bigeps = 10e+20*eps;
@@ -787,8 +789,7 @@ public class Rotation {
         //% project the rotation matrix to SO(3);
         //[U,S,V] = svd(R);
         //R = U*V';
-        SVD svd = SVD.factorize(new DenseMatrix(R));
-        R = MatrixUtil.convertToRowMajor((DenseMatrix) svd.getU().mult(svd.getU(), svd.getVt()));
+        R = Rotation.orthonormalizeUsingSVD(R);
 
         //tr = (trace(R)-1)/2;
         double tr = (MatrixUtil.trace(R) - 1)/2.;
@@ -796,13 +797,15 @@ public class Rotation {
         double[] dtrdR = new double[]{1/2., 0, 0, 0, 1/2., 0, 0, 0, 1/2.};
         //theta = real(acos(tr));
         double theta = Math.acos(tr);
+        if (Double.isNaN(theta)) {
+            throw new IllegalArgumentException("the rotation 'in' is not proper?");
+        }
 
         double[] out = null;
         double[][] dout = null;
 
         //if sin(theta) >= 1e-4,
         if (Math.sin(theta) >= 1e-4) {
-
             //dthetadtr = -1 / sqrt(1 - tr ^ 2);
             double dthetadtr = -1./Math.sqrt(1. - tr*tr);
 
@@ -910,9 +913,12 @@ public class Rotation {
                 //% rotation matrix)
 
                 //% Define hashvec and Smat
+                //           0   1   2  3   4  5  6   7  8   9   10
                 //hashvec = [0; -1; -3; -9; 9; 3; 1; 13; 5; -7; -11]; // [11 X 1]
+                //            0       1       2       3      4      5      6      7      8
                 //Smat = [1,1,1; 1,0,-1; 0,1,-1; 1,-1,0; 1,1,0; 0,1,1; 1,0,1; 1,1,1; 1,1,-1; //[11X 3]
                 //1,-1,-1; 1,-1,1];
+                //      9       10
                 double[] hashvec = new double[]{0, -1, -3, -9, 9, 3, 1, 13, 5, -7, -11};
                 double[][] Smat = new double[11][];
                 Smat[0] = new double[]{1, 1, 1};
@@ -951,9 +957,7 @@ public class Rotation {
                 for (i = 0; i < 3; ++i) {
                     t0 = (mvec[i] > eps) ? 1 : 0;
                     t1 = (mvec[i] < -eps) ? 1 : 0;
-                    if ((t0 - t1) > 0) {
-                        syn[i] = 1;
-                    }
+                    syn[i] = t0 - t1;
                 }
                 //hash = syn * [9; 3; 1];  [1X3][3X1]=[1X1]
                 double hash = MatrixUtil.innerProduct(syn, new double[]{9, 3, 1});
