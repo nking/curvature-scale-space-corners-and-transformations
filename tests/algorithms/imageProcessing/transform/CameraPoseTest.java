@@ -4,11 +4,11 @@ import static algorithms.imageProcessing.transform.Rotation.extractThetaFromZYX;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import junit.framework.TestCase;
+import no.uib.cipr.matrix.NotConvergedException;
 
 import java.io.IOException;
 import java.util.Arrays;
-
-import static org.junit.Assert.*;
+import java.util.Random;
 
 /**
  *
@@ -26,7 +26,7 @@ public class CameraPoseTest extends TestCase {
     /**
      * Test of calculatePoseUsingDLT method, of class CameraPose.
      */
-    public void testCalculatePoseUsingDLT() throws Exception {
+    public void estCalculatePoseUsingDLT() throws Exception {
 
         // see testresources/zhang1998/README.txt
 
@@ -211,4 +211,74 @@ public class CameraPoseTest extends TestCase {
 
     }
 
+    public void testCalculatePoseUsingBouguet() throws IOException, NotConvergedException {
+
+        //CameraExtrinsicParameters calculatePoseUsingBouguet(
+        //            Camera.CameraIntrinsicParameters intrinsics, double[][] x,
+        //            double[][] X, boolean refine)
+
+        // following unit test at bootom of
+        // https://github.com/fragofer/TOOLBOX_calib/
+        // compute_extrinsic.m
+
+        int Np = 4;
+        int sx = 10;
+        int sy = 10;
+        int sz = 5;
+
+        long seed = System.nanoTime();
+        System.out.println("seed = " + seed);
+        Random random = new Random(seed);
+
+        //om = randn(3,1);
+        int i, j;
+        double[] om = new double[3];
+        for (i = 0; i < 3; ++i) {
+            om[i] = random.nextDouble();
+        }
+        //T = [0;0;100];
+        double[] T = new double[]{0, 0, 100}; //[3X1]
+        //noise = 2/1000;
+        double noise = 2./1000;
+        //XX = [sx*randn(1,Np);sy*randn(1,Np);sz*randn(1,Np)];
+        double[][] XX = new double[3][];
+        double[] s = new double[]{sx, sy, sz};
+        for (i = 0; i < 3; ++i) {
+            XX[i] = new double[Np];
+            for (j = 0; j < Np; ++j) {
+                XX[i][j] = s[i]* random.nextDouble();
+            }
+        }
+        //xx = project_points(XX,om,T);
+        Camera.CameraIntrinsicParameters intr = new Camera.CameraIntrinsicParameters(
+            MatrixUtil.createIdentityMatrix(3), null, false);
+        CameraPose.ProjectedPoints pp = CameraPose.bouguetProjectPoints2(XX, om, T, intr);
+        double[][] xx = pp.xEst;
+
+        //xxn = xx + noise * randn(2,Np); //[2Xn]
+        double[][] noiseM = new double[2][];
+        for (i = 0; i < 2; ++i) {
+            noiseM[i] = new double[Np];
+            for (j = 0; j < Np; ++j) {
+                noiseM[i][j] = noise*random.nextDouble();
+            }
+        }
+        //[2Xn]
+        double[][] xxn = MatrixUtil.pointwiseAdd(xx, noiseM);
+
+        //[omckk,Tckk] = compute_extrinsic(xxn,XX);
+        boolean refine = true;
+        Camera.CameraExtrinsicParameters c = CameraPose.calculatePoseUsingBouguet(intr, xxn, XX, refine);
+        //[om omckk om-omckk]
+        //[T Tckk T-Tckk]
+        System.out.printf("om=\n  %s\n", FormatArray.toString(om, "%.4e"));
+        System.out.printf("omckk=\n  %s\n", FormatArray.toString(c.getRodriguesVector(), "%.4e"));
+        System.out.printf("om-omckk=\n  %s\n", FormatArray.toString(
+                MatrixUtil.subtract(om, c.getRodriguesVector()), "%.4e"));
+
+        System.out.printf("T=\n  %s\n", FormatArray.toString(T, "%.4e"));
+        System.out.printf("Tckk=\n  %s\n", FormatArray.toString(c.getTranslation(), "%.4e"));
+        System.out.printf("T-Tckk=\n  %s\n", FormatArray.toString(
+                MatrixUtil.subtract(T, c.getTranslation()), "%.4e"));
+    }
 }

@@ -49,8 +49,7 @@ import no.uib.cipr.matrix.SVD;
  * The equations below use a right hand system.
  * The right hand system is consistent with methods in physics, engineering,
  * and computer science in general.  The <b>Hamilton quaternion</b> is consistent
- * with the right hand system.
- * 
+ * with the right hand system and has format [scalar vector].
  * The NASA 1977 publication and Szeliski 2010
  *    define a quaternion as (qw, qx, qy, qz) where qw is a scalar and
  * [qx, qy, qz] is a vector.   That is the Hamilton Quaternion format.
@@ -1653,7 +1652,7 @@ public class Rotation {
     }*/
     
     /**
-     * given a quaternion, form the left-hand compound operator
+     * given a quaternion of Barfoot format [vector scalar], form the left-hand compound operator
      * (symbol is superscript +)
      * <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
@@ -1662,12 +1661,12 @@ public class Rotation {
      * eqn (2):
      * given q = 4X1 column vector of [eps eta] where eta is the scalar,
      * and "1" is a 3X3 identity matrix, also written as I_3.
-     * and [q]_x is the skew-symetric matrix for q.
+     * and [eps]_x is the skew-symetric matrix for vector eps.
      * 
      * The left-hand compound operator is a 4X4 matrix:
      * 
-     * q^+ = [ eta*I_3-[q]_x   eps ]
-     *       [ -eps^T          eta ]
+     * q^+ = [ eta*I_3-[eps]_x   eps ]  // | [3X3]  [3X1] |
+     *       [ -eps^T           eta ]   // | [1X3]  [1X1] |
      * 
      * multiplication of quaternions, u and v, which is typically written 
      * as u ⊗ v may be written equivalently as either
@@ -1763,7 +1762,7 @@ public class Rotation {
     
     /**
      * given a quaternion, return the inverse
-     * (symbol is superscript -1)
+     * (symbol is superscript -1).
      * <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
@@ -1837,7 +1836,8 @@ public class Rotation {
      *      [ 0^T 1 ]
      * where C is the canonical 3X3 rotation matrix.
      * </pre>
-     * @param quaternion rotation as a [4X1] column vector of [eps eta] where eta is the scalar.
+     * @param quaternion rotation as a [4X1] column vector of [eps eta] where eta is the scalar
+      *                   (i.e. Barfoot format)
      * @return a 4x4 rotation matrix whose 3X3 block at [0:2, 0:2] is the rotation matrix.
      */
     public static double[][] createRotationMatrixFromQuaternion4(double[] quaternion) {
@@ -2135,7 +2135,7 @@ public class Rotation {
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
      * 
      * eqn (21):
-     * calc C = 3X3 rotation matrix (oftern written as R)
+     * calc C = 3X3 rotation matrix (often written as R)
      * given array of euler rotation angles  alpha, beta,gamma matrices
      * 
      * s_theta column 0 = C_gamma(theta[2]) * C_beta(theta[1]) * [1, 0, 0]^T

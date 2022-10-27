@@ -353,16 +353,11 @@ public class Camera {
      * @param xC distortion-free camera centered coordinates. 
      * format is 3XN for N points.  
      * In terms of Table 1 of Ma et al. 2004, this is a double array of (x, y).
-     * @param rCoeffs radial distortion vector of length 2
-     * distortion vector of length 5.  can be null to skip lens distortion correction.
      * @param kIntr
-     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
-        f(r) = 1 +k1*r^2 + k2*r^4 if true,
-        else use model #3 f(r) = 1 +k1*r + k2*r^2.
-        note that if rCoeffs is null or empty, no radial distortion is applied.
+     *
      */
-    public static double[][] cameraToPixelCoordinates(double[][] xC, double[] rCoeffs,
-        CameraIntrinsicParameters kIntr, boolean useR2R4) {
+    public static double[][] cameraToPixelCoordinates(double[][] xC,
+        CameraIntrinsicParameters kIntr) {
         
         // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
         
@@ -372,11 +367,12 @@ public class Camera {
             cc[0][i] /= xC[2][i];
             cc[1][i] /= xC[2][i];
         }
-        
-        if (rCoeffs != null && rCoeffs.length > 0) {
+
+        if (kIntr.getRadialDistortionCoeffs() != null && kIntr.getRadialDistortionCoeffs().length >= 2) {
             // input and output cc are in camera reference frame
-            cc = CameraCalibration.applyRadialDistortion(cc, rCoeffs[0], rCoeffs[1],
-                useR2R4);
+            cc = CameraCalibration.applyRadialDistortion(cc, kIntr.getRadialDistortionCoeffs()[0],
+                    kIntr.getRadialDistortionCoeffs()[1],
+                kIntr.useR2R4());
         }
                                         
         cc = MatrixUtil.multiply(kIntr.getIntrinsic(), cc);
@@ -568,13 +564,15 @@ public class Camera {
      * @throws no.uib.cipr.matrix.NotConvergedException
      * @throws java.io.IOException
      */
-    public static double[][] pixelToCameraCoordinates(double[][] x,
-        CameraIntrinsicParameters kIntr)
+    public static double[][] pixelToCameraCoordinates(double[][] x, CameraIntrinsicParameters kIntr)
         throws NotConvergedException, IOException {
 
         double[][] intr = MatrixUtil.copy(kIntr.getIntrinsic());
-        double[] rCoeffs = Arrays.copyOf(kIntr.getRadialDistortionCoeffs(),
-                kIntr.getRadialDistortionCoeffs().length);
+        double[] rCoeffs = null;
+        if (kIntr.getRadialDistortionCoeffs() != null) {
+            rCoeffs = Arrays.copyOf(kIntr.getRadialDistortionCoeffs(),
+                    kIntr.getRadialDistortionCoeffs().length);
+        }
         boolean useR2R4 = kIntr.useR2R4();
 
         return pixelToCameraCoordinates(x, intr, rCoeffs, useR2R4);
