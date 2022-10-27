@@ -1361,7 +1361,7 @@ public class CameraPose {
 
         //sc = norm(V(1:9,12)) / norm(Rckk(:));
         double norm0 = MatrixUtil.lPSum(Arrays.copyOfRange(orth, 0, 9), 2);
-        double norm1 = MatrixUtil.spectralNorm(Rckk);
+        double norm1 = MatrixUtil.lPSum(MatrixUtil.stack(Rckk), 2);
         double sc = norm0/norm1;
 
         //Tckk = V(10:12,12)/sc;
