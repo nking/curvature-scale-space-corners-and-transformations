@@ -213,18 +213,12 @@ public class CameraPoseTest extends TestCase {
 
     public void testCalculatePoseUsingBouguet() throws IOException, NotConvergedException {
 
-        //CameraExtrinsicParameters calculatePoseUsingBouguet(
-        //            Camera.CameraIntrinsicParameters intrinsics, double[][] x,
-        //            double[][] X, boolean refine)
-
-        // following unit test at bootom of
+        // following unit test at bottom of
         // https://github.com/fragofer/TOOLBOX_calib/
         // compute_extrinsic.m
 
-        int Np = 4;
-        int sx = 10;
-        int sy = 10;
-        int sz = 5;
+        int Np = 100;//4;
+        double[] s = new double[]{10, 10, 5};
 
         long seed = System.nanoTime();
         System.out.println("seed = " + seed);
@@ -242,18 +236,24 @@ public class CameraPoseTest extends TestCase {
         double noise = 2./1000;
         //XX = [sx*randn(1,Np);sy*randn(1,Np);sz*randn(1,Np)];
         double[][] XX = new double[3][];
-        double[] s = new double[]{sx, sy, sz};
+
         for (i = 0; i < 3; ++i) {
             XX[i] = new double[Np];
             for (j = 0; j < Np; ++j) {
-                XX[i][j] = s[i]* random.nextDouble();
+                XX[i][j] = s[i] * random.nextDouble();
             }
         }
         //xx = project_points(XX,om,T);
+        double[] radial = new double[]{1e-7, 1e-7};
         Camera.CameraIntrinsicParameters intr = new Camera.CameraIntrinsicParameters(
-            MatrixUtil.createIdentityMatrix(3), null, false);
+            MatrixUtil.createIdentityMatrix(3), radial, true);
         CameraPose.ProjectedPoints pp = CameraPose.bouguetProjectPoints2(XX, om, T, intr);
         double[][] xx = pp.xEst;
+
+        System.out.printf("om=\n%s\n", FormatArray.toString(om, "%.3e"));
+        System.out.printf("T=\n%s\n", FormatArray.toString(T, "%.3e"));
+        //System.out.printf("XX=\n%s\n", FormatArray.toString(XX, "%.3e"));
+        //System.out.printf("xEst=\n%s\n", FormatArray.toString(xx, "%.3e"));
 
         //xxn = xx + noise * randn(2,Np); //[2Xn]
         double[][] noiseM = new double[2][];
@@ -266,8 +266,10 @@ public class CameraPoseTest extends TestCase {
         //[2Xn]
         double[][] xxn = MatrixUtil.pointwiseAdd(xx, noiseM);
 
+        System.out.printf("xxn = xEst with noise =\n%s\n", FormatArray.toString(xxn, "%.3e"));
+
         //[omckk,Tckk] = compute_extrinsic(xxn,XX);
-        boolean refine = true;
+        boolean refine = false;
         Camera.CameraExtrinsicParameters c = CameraPose.calculatePoseUsingBouguet(intr, xxn, XX, refine);
         //[om omckk om-omckk]
         //[T Tckk T-Tckk]

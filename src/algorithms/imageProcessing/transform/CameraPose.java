@@ -332,9 +332,9 @@ public class CameraPose {
         double[][] xc = Camera.pixelToCameraCoordinates(x, intrinsics);
         
         // following Ma et al. 2003
-        //double[][] h = CameraCalibration.solveForHomography(xc, X);
+        double[][] h = CameraCalibration.solveForHomography(xc, X);
 
-        double[][] h = CameraCalibration.solveForHomographyBouget(xc, X);
+        //double[][] h = CameraCalibration.solveForHomographyBouget(xc, X);
 
         // needs at least 5 points
         CameraExtrinsicParameters kExtr = CameraCalibration.solveForExtrinsic(
@@ -398,18 +398,6 @@ public class CameraPose {
         }
         X = MatrixUtil.copy(X);
 
-        // normalize by last coordinate just in case not performed already:
-        for (i = 0; i < x[0].length; ++i) {
-            for (j = 0; j < x.length; ++j) {
-                x[j][i] /= x[x.length - 1][i];
-            }
-        }
-        for (i = 0; i < X[0].length; ++i) {
-            for (j = 0; j < X.length; ++j) {
-                X[j][i] /= X[X.length - 1][i];
-            }
-        }
-
         //xn = normalize_pixel(x_kk,fc,cc,kc,alpha_c);
         double[][] xc = Camera.pixelToCameraCoordinates(x, intrinsics);
 
@@ -465,6 +453,12 @@ public class CameraPose {
 
             //ex = x_kk - x;
             double[][] ex = MatrixUtil.pointwiseSubtract(x, pp.getXEstAs3XN());
+
+            double[][] err = MatrixUtil.copySubMatrix(ex, 0, 1, 0, ex[0].length - 1);
+            double[] xMeanStdv = MiscMath0.getAvgAndStDev(err[0]);
+            double[] yMeanStdv = MiscMath0.getAvgAndStDev(err[1]);
+            System.out.printf("x err=%s\n", FormatArray.toString(xMeanStdv, "%.4e"));
+            System.out.printf("y err=%s\n", FormatArray.toString(yMeanStdv, "%.4e"));
 
             //% Converts the homography in pixel units:
             //KK = [fc(1) alpha_c * fc(1) cc(1);
@@ -1218,7 +1212,7 @@ public class CameraPose {
      * @param intrinsics
      * @param xc objects in camera coordinates
      * @param X objects in real world coordinates
-     * @param vT
+     * @param vT formed from the SVD of X (hence, the last column is orthogonal to X)
      * @param XMean
      * @return
      * @throws NotConvergedException
@@ -1227,6 +1221,46 @@ public class CameraPose {
     static CameraExtrinsicParameters bouguetPoseInitPlanar(
             Camera.CameraIntrinsicParameters intrinsics, double[][] xc,
             double[][] X, DenseMatrix vT, double[] XMean) throws NotConvergedException, IOException {
+
+        if (xc.length != 2 && xc.length != 3) {
+            throw new IllegalArgumentException("xc length must be 3 or 2");
+        }
+
+        int i, j;
+
+        //if size(m,1)<3,
+        //    m = [m;ones(1,Np)];
+        //end;
+        //if size(M,1)<3,
+        //    M = [M;ones(1,Np)];
+        //end;
+        //m = m ./ (ones(3,1)*m(3,:));
+        //M = M ./ (ones(3,1)*M(3,:));
+
+        if (xc.length == 2) {
+            double[][] x2 = new double[3][];
+            x2[0] = Arrays.copyOf(xc[0], xc[0].length);
+            x2[1] = Arrays.copyOf(xc[1], xc[1].length);
+            x2[2] = new double[xc[0].length];
+            Arrays.fill(x2[2], 1);
+            xc = x2;
+        } else {
+            xc = MatrixUtil.copy(xc);
+            // normalize by last coordinate just in case not performed already:
+            for (i = 0; i < xc[0].length; ++i) {
+                for (j = 0; j < xc.length; ++j) {
+                    xc[j][i] /= xc[xc.length - 1][i];
+                }
+            }
+        }
+
+        if (X.length == 4) {
+            for (i = 0; i < X[0].length; ++i) {
+                for (j = 0; j < X.length; ++j) {
+                    X[j][i] /= X[X.length - 1][i];
+                }
+            }
+        }
 
         // planar structure
         //Transform the plane to bring it in the Z=0 plane:
@@ -1263,20 +1297,13 @@ public class CameraPose {
         double[][] Xnew = MatrixUtil.multiply(Rtransform, X);
         Xnew = MatrixUtil.pointwiseAdd(Xnew, t2);
 
-        // DEBUG: looking at a few members
-        int i;
-        for (i = 0; i < 4; ++i) {
-            if (i >= Xnew[0].length) break;
-            System.out.printf("Xnew=\n%s\n", FormatArray.toString(MatrixUtil.extractColumn(Xnew, i), "%.4e"));
-        }
-
         //% Compute the planar homography:
 
         //H = compute_homography(xn,X_new(1:2,:));
         //NLK: replace Xnew[2] with 1's because we are giving the method only the first
         // 2 rows of Xnew, then compute_homography.m when receiving Xnew of length 2,
         // appends a row of 1's in the Matlab code.
-        Arrays.fill(Xnew[2], 1);
+        //Arrays.fill(Xnew[2], 1);
         double[][] H = CameraCalibration.solveForHomographyBouget(xc, Xnew);
 
         //% De-embed the motion parameters from the homography:
@@ -1312,6 +1339,7 @@ public class CameraPose {
         RRR[2] = u3;
         RRR = MatrixUtil.transpose(RRR);
 
+        //TODO: as this is an ambiguous vector, consider other designs
         //omckk = rodrigues(RRR);
         Rotation.RodriguesRotation rRot = Rotation.extractRodriguesRotationVectorBouguet(RRR);
         double[] omckk = rRot.om;
@@ -1323,11 +1351,14 @@ public class CameraPose {
 
         //Tckk = H(:,3);
         double[] Tckk = MatrixUtil.extractColumn(H, 2);
+        System.out.printf("T_transform=\n%s\n", FormatArray.toString(Ttransform, "%.4e"));
+        System.out.printf("Tckk=\n%s\n", FormatArray.toString(Tckk, "%.4e"));
 
         //%If Xc = Rckk * X_new + Tckk, then Xc = Rckk * R_transform * X_kk + Tckk + T_transform
         //NLK: Xc = Rckk * (R_transform * X_kk + T_transform) + Tckk
         //Tckk = Tckk + Rckk* T_transform;
         Tckk = MatrixUtil.add(Tckk, MatrixUtil.multiplyMatrixByColumnVector(Rckk, Ttransform));
+        System.out.printf("Tckk += Rckk* T_transform = \n%s\n", FormatArray.toString(Tckk, "%.4e"));
         //Rckk = Rckk * R_transform;
         Rckk = MatrixUtil.multiply(Rckk, Rtransform);
         //omckk = rodrigues(Rckk);
@@ -1340,6 +1371,46 @@ public class CameraPose {
     static CameraExtrinsicParameters bouguetPoseInitNonPlanar(
             Camera.CameraIntrinsicParameters intrinsics, double[][] xc,
             double[][] X, double[] XMean) throws NotConvergedException, IOException {
+
+        if (xc.length != 2 && xc.length != 3) {
+            throw new IllegalArgumentException("xc length must be 3 or 2");
+        }
+
+        int i, j;
+
+        //if size(m,1)<3,
+        //    m = [m;ones(1,Np)];
+        //end;
+        //if size(M,1)<3,
+        //    M = [M;ones(1,Np)];
+        //end;
+        //m = m ./ (ones(3,1)*m(3,:));
+        //M = M ./ (ones(3,1)*M(3,:));
+
+        if (xc.length == 2) {
+            double[][] x2 = new double[3][];
+            x2[0] = Arrays.copyOf(xc[0], xc[0].length);
+            x2[1] = Arrays.copyOf(xc[1], xc[1].length);
+            x2[2] = new double[xc[0].length];
+            Arrays.fill(x2[2], 1);
+            xc = x2;
+        } else {
+            xc = MatrixUtil.copy(xc);
+            // normalize by last coordinate just in case not performed already:
+            for (i = 0; i < xc[0].length; ++i) {
+                for (j = 0; j < xc.length; ++j) {
+                    xc[j][i] /= xc[xc.length - 1][i];
+                }
+            }
+        }
+
+        if (X.length == 4) {
+            for (i = 0; i < X[0].length; ++i) {
+                for (j = 0; j < X.length; ++j) {
+                    X[j][i] /= X[X.length - 1][i];
+                }
+            }
+        }
 
         //% Computes an initial guess for extrinsic parameters (works for general 3d structure, not planar!!!):
         //% The DLT method is applied here!!
@@ -1359,8 +1430,6 @@ public class CameraPose {
         //J(2:2:end,12) = -xn(2,:)';
         //J(1:2:end,10) = -ones(Np,1);
         //J(2:2:end,11) = ones(Np,1);
-
-        int i;
 
         for (i = 0; i < n; ++i) {
             J[i * 2] = new double[]{-X[0][i], 0, (xc[0][i] * X[0][i]), -X[1][i],

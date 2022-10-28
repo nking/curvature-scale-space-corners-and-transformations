@@ -15,7 +15,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
+import no.uib.cipr.matrix.SVD;
 
 /**
  * estimate the camera intrinsic and extrinsic parameters using 3 images
@@ -284,22 +287,22 @@ public class CameraCalibration {
      *     https://github.com/hunt0r/Bouguet_cam_cal_toolbox
      * </pre>
      *
-     * @param x image coordinates
-     * @param xW world coordinates
+     * @param x0 image coordinates
+     * @param xW0 world coordinates
      * @return
      * @throws NotConvergedException
      */
-    public static double[][] solveForHomographyBouget(double[][] x, double[][] xW) throws NotConvergedException {
+    public static double[][] solveForHomographyBouget(double[][] x0, double[][] xW0) throws NotConvergedException {
 
-        if (x.length != 3) {
-            throw new IllegalArgumentException("x must have 3 rows.");
+        if (x0.length != 3) {
+            throw new IllegalArgumentException("x0 must have 3 rows.");
         }
-        if (xW.length != 3) {
-            throw new IllegalArgumentException("coordsW must have 3 rows.");
+        if (xW0.length != 3) {
+            throw new IllegalArgumentException("xW0 must have 3 rows.");
         }
-        int n = x[0].length;
-        if (xW[0].length != n) {
-            throw new IllegalArgumentException("coordsW must have same number of columns as x.");
+        int n = x0[0].length;
+        if (xW0[0].length != n) {
+            throw new IllegalArgumentException("xW0 must have same number of columns as x0.");
         }
 
         /*
@@ -310,10 +313,11 @@ public class CameraCalibration {
 
         int i, j;
 
-        x = MatrixUtil.copy(x);
-        xW = MatrixUtil.copy(xW);
+        double[][] x = MatrixUtil.copy(x0);
+        double[][] xW = MatrixUtil.copy(xW0);
 
-        // normalize by last coordinate just in case nor performed already:
+        //m = m ./ (ones(3,1)*m(3,:));
+        //M = M ./ (ones(3,1)*M(3,:));
         for (i = 0; i < x[0].length; ++i) {
             for (j = 0; j < x.length; ++j) {
                 x[j][i] /= x[x.length - 1][i];
@@ -349,21 +353,23 @@ public class CameraCalibration {
         invHNorm[1] = new double[]{0, scyy, myy};
         invHNorm[2] = new double[]{0, 0, 1};
 
+        //mn = Hnorm*m;
         //[3 X 3] * [3 X n]
         double[][] xn = MatrixUtil.multiply(hNorm, x);
 
         // 2*n X 9
-        double u, v, X, Y;
+        double u, v, X, Y, Z;
         double[][] ell = new double[2*n][9];
         for (i = 0; i < n; ++i) {
             u = xn[0][i];
             v = xn[1][i];
             X = xW[0][i];
             Y = xW[1][i];
+            Z = xW[2][i];
             // last rows are "1" for both xn and xW
             // eqn(15) of Ma et al. 2003
-            ell[2*i]     = new double[]{X, Y, 1, 0, 0, 0, -u*X, -u*Y, -u};
-            ell[2*i + 1] = new double[]{0, 0, 0, X, Y, 1, -v*X, -v*Y, -v};
+            ell[2*i]     = new double[]{X, Y, Z, 0, 0, 0, -u*X, -u*Y, -u*Z};
+            ell[2*i + 1] = new double[]{0, 0, 0, X, Y, Z, -v*X, -v*Y, -v*Z};
         }
 
         if (n > 4) {
@@ -371,12 +377,11 @@ public class CameraCalibration {
             ell = MatrixUtil.createATransposedTimesA(ell);
         }
 
-        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(ell);
-
+        SVD svd = SVD.factorize(new DenseMatrix(ell));
+        double[][] vT = MatrixUtil.convertToRowMajor(svd.getVt());
         // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
-        double[] xOrth = svd.vT[svd.vT.length - 1];
+        double[] xOrth = vT[vT.length - 1];
         //h00, h01, h02, h10, h11, h12,h20,h21,h22
-
         MatrixUtil.multiply(xOrth, 1./xOrth[xOrth.length - 1]);
 
         // Hrem = reshape(hh,3,3)';
@@ -402,113 +407,128 @@ public class CameraCalibration {
             double[] yMeanStdv = MiscMath0.getAvgAndStDev(err[1]);
             System.out.printf("x err=%s\n", FormatArray.toString(xMeanStdv, "%.4e"));
             System.out.printf("y err=%s\n", FormatArray.toString(yMeanStdv, "%.4e"));
+
+            double[][] xEst2 = MatrixUtil.multiply(h, xW0);
+            for (i = 0; i < xEst2[0].length; ++i) {
+                for (j = 0; j < xEst2.length; ++j) {
+                    xEst2[j][i] /= xEst2[xEst.length - 1][i];
+                }
+            }
+            double[][] err2 = MatrixUtil.pointwiseSubtract(x0, xEst2);
+            err2 = MatrixUtil.copySubMatrix(err2, 0, 1, 0, err2[0].length - 1);
+            double[] xMeanStdv2 = MiscMath0.getAvgAndStDev(err2[0]);
+            double[] yMeanStdv2 = MiscMath0.getAvgAndStDev(err2[1]);
+            System.out.printf("x0 err=%s\n", FormatArray.toString(xMeanStdv2, "%.4e"));
+            System.out.printf("y0 err=%s\n", FormatArray.toString(yMeanStdv2, "%.4e"));
+        }
+
+        if (n <= 4) {
+            return h;
         }
 
         // refinement to improve solution
-        if (n > 4) {
-            //hhv = reshape(H',9,1);
-            double[] hhv = MatrixUtil.stack(MatrixUtil.transpose(h));
+        //hhv = reshape(H',9,1);
+        double[] hhv = MatrixUtil.stack(MatrixUtil.transpose(h));
 
-            //hhv = hhv(1:8);
-            hhv = Arrays.copyOf(hhv, 8);
+        //hhv = hhv(1:8);
+        hhv = Arrays.copyOf(hhv, 8);
 
-            for (int iter = 1; iter <= 10; ++iter) {
+        for (int iter = 1; iter <= 10; ++iter) {
 
-                //mrep = H * M;
-                double[][] mrep = MatrixUtil.multiply(h, xW);
+            //mrep = H * M;
+            double[][] mrep = MatrixUtil.multiply(h, xW);
 
-                double[][] J = MatrixUtil.zeros(2*n,8);
+            double[][] J = MatrixUtil.zeros(2*n,8);
 
-                //MMM = (M ./ (ones(3,1)*mrep(3,:)));   // ./ = elementwise division
-                double[][] MMM = new double[3][n];
-                for (i = 0; i < 3; ++i) {
-                    MMM[i] = MatrixUtil.pointwiseDivision(xW[i], mrep[2]);
-                }
-
-                //J(1:2:2*Np,1:3) = -MMM';
-                //J(2:2:2*Np,4:6) = -MMM';
-                for (j = 0; j < n; ++j) {
-                    //J[2*j] = new double[]{-MMM[0][j], -MMM[1][j], -MMM[2][j],   0,0,0,    0,0};
-                    System.arraycopy(new double[]{-MMM[0][j], -MMM[1][j], -MMM[2][j]},
-                            0, J[2*j], 0, 3);
-                    //J[2*j + 1] = new double[]{0, 0, 0, -MMM[0][j], -MMM[1][j], -MMM[2][j], 0,0};
-                    System.arraycopy(new double[]{-MMM[0][j], -MMM[1][j], -MMM[2][j]},
-                            0, J[2*j], 3, 3);
-                }
-
-                //mrep = mrep ./ (ones(3,1)*mrep(3,:));
-                for (i = 0; i < 3; ++i) {
-                    mrep[i] = MatrixUtil.pointwiseDivision(mrep[i], mrep[2]);
-                }
-
-                // [2 * n]
-                //m_err = m(1:2,:) - mrep(1:2,:);
-                //m_err = m_err(:); // <=== this stacks each column after the previous
-                double[] merr = new double[2*n];
-                int c = 0;
-                for (i = 0; i < n; ++i) {
-                    for (j = 0; j < 2; ++j) {
-                        merr[c] = xn[j][i] - mrep[j][i];
-                        c++;
-                    }
-                }
-
-                //MMM2 = (ones(3,1)*mrep(1,:)) .* MMM;
-                //MMM3 = (ones(3,1)*mrep(2,:)) .* MMM;
-                //     .* is elementwise multiplication
-                double[][] MMM2 = new double[3][]; // [3 X n]
-                for (i = 0; i < 3; ++i) {
-                    MMM2[i] = MatrixUtil.pointwiseMultiplication(mrep[0], MMM[i]);
-                }
-                double[][] MMM3 = new double[3][]; // [3 X n]
-                for (i = 0; i < 3; ++i) {
-                    MMM3[i] = MatrixUtil.pointwiseMultiplication(mrep[1], MMM[i]);
-                }
-
-                //J(1:2:2*Np,7:8) = MMM2(1:2,:)';
-                //J(2:2:2*Np,7:8) = MMM3(1:2,:)';
-                for (j = 0; j < n; ++j) {
-                    J[2*j][6] = MMM2[0][j];
-                    J[2*j][7] = MMM2[1][j];
-                    J[2*j + 1][6] = MMM3[0][j];
-                    J[2*j + 1][7] = MMM3[1][j];
-                }
-
-                //MMM = (M ./ (ones(3,1)*mrep(3,:)))';
-                for (i = 0; i < 3; ++i) {
-                    MMM[i] = MatrixUtil.pointwiseDivision(xW[i], mrep[2]);
-                }
-                // [n X 3]
-                MMM = MatrixUtil.transpose(MMM);
-
-                //                ([8 X 2*n]*[2*n X 8])= [8 X 8];
-                //                                                J'*m_err = [8 X 2*n] * [2 * n X 1] = [8 X 1]
-                //hh_innov  = inv(J'*J)*J'*m_err; // [8X1]
-                double[][] t1 = MatrixUtil.pseudoinverseFullColumnRank(MatrixUtil.createATransposedTimesA(J));
-                double[] t2 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.transpose(J), merr);
-                double[] hhInov = MatrixUtil.multiplyMatrixByColumnVector(t1, t2);
-
-                // length 8:
-                //hhv_up = hhv - hh_innov;
-                double[] hhvUp = new double[8];
-                MatrixUtil.pointwiseSubtract(hhv, hhInov, hhvUp);
-
-                //H_up = reshape([hhv_up;1],3,3)';
-                // reshape writes into columns, but the transpose means write into rows
-                double[][] hUp = new double[3][];
-                hUp[0] = Arrays.copyOfRange(hhvUp, 0, 3);
-                hUp[1] = Arrays.copyOfRange(hhvUp, 3, 6);
-                hUp[2] = new double[]{hhvUp[6], hhvUp[7], 1};
-
-                // %norm(m_err)
-                // %norm(hh_innov)
-
-                //hhv = hhv_up;
-                hhv = hhvUp;
-
-                //H = H_up;
-                h = hUp;
+            //MMM = (M ./ (ones(3,1)*mrep(3,:)));   // ./ = elementwise division
+            double[][] MMM = new double[3][n];
+            for (i = 0; i < 3; ++i) {
+                MMM[i] = MatrixUtil.pointwiseDivision(xW[i], mrep[2]);
             }
+
+            //J(1:2:2*Np,1:3) = -MMM';
+            //J(2:2:2*Np,4:6) = -MMM';
+            for (j = 0; j < n; ++j) {
+                //J[2*j] = new double[]{-MMM[0][j], -MMM[1][j], -MMM[2][j],   0,0,0,    0,0};
+                System.arraycopy(new double[]{-MMM[0][j], -MMM[1][j], -MMM[2][j]},
+                        0, J[2*j], 0, 3);
+                //J[2*j + 1] = new double[]{0, 0, 0, -MMM[0][j], -MMM[1][j], -MMM[2][j], 0,0};
+                System.arraycopy(new double[]{-MMM[0][j], -MMM[1][j], -MMM[2][j]},
+                        0, J[2*j], 3, 3);
+            }
+
+            //mrep = mrep ./ (ones(3,1)*mrep(3,:));
+            for (i = 0; i < 3; ++i) {
+                mrep[i] = MatrixUtil.pointwiseDivision(mrep[i], mrep[2]);
+            }
+
+            // [2 * n]
+            //m_err = m(1:2,:) - mrep(1:2,:);
+            //m_err = m_err(:); // <=== this stacks each column after the previous
+            double[] merr = new double[2*n];
+            int c = 0;
+            for (i = 0; i < n; ++i) {
+                for (j = 0; j < 2; ++j) {
+                    merr[c] = xn[j][i] - mrep[j][i];
+                    c++;
+                }
+            }
+
+            //MMM2 = (ones(3,1)*mrep(1,:)) .* MMM;
+            //MMM3 = (ones(3,1)*mrep(2,:)) .* MMM;
+            //     .* is elementwise multiplication
+            double[][] MMM2 = new double[3][]; // [3 X n]
+            for (i = 0; i < 3; ++i) {
+                MMM2[i] = MatrixUtil.pointwiseMultiplication(mrep[0], MMM[i]);
+            }
+            double[][] MMM3 = new double[3][]; // [3 X n]
+            for (i = 0; i < 3; ++i) {
+                MMM3[i] = MatrixUtil.pointwiseMultiplication(mrep[1], MMM[i]);
+            }
+
+            //J(1:2:2*Np,7:8) = MMM2(1:2,:)';
+            //J(2:2:2*Np,7:8) = MMM3(1:2,:)';
+            for (j = 0; j < n; ++j) {
+                J[2*j][6] = MMM2[0][j];
+                J[2*j][7] = MMM2[1][j];
+                J[2*j + 1][6] = MMM3[0][j];
+                J[2*j + 1][7] = MMM3[1][j];
+            }
+
+            //MMM = (M ./ (ones(3,1)*mrep(3,:)))';
+            for (i = 0; i < 3; ++i) {
+                MMM[i] = MatrixUtil.pointwiseDivision(xW[i], mrep[2]);
+            }
+            // [n X 3]
+            MMM = MatrixUtil.transpose(MMM);
+
+            //                ([8 X 2*n]*[2*n X 8])= [8 X 8];
+            //                                                J'*m_err = [8 X 2*n] * [2 * n X 1] = [8 X 1]
+            //hh_innov  = inv(J'*J)*J'*m_err; // [8X1]
+            double[][] t1 = MatrixUtil.pseudoinverseFullColumnRank(MatrixUtil.createATransposedTimesA(J));
+            double[] t2 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.transpose(J), merr);
+            double[] hhInov = MatrixUtil.multiplyMatrixByColumnVector(t1, t2);
+
+            // length 8:
+            //hhv_up = hhv - hh_innov;
+            double[] hhvUp = new double[8];
+            MatrixUtil.pointwiseSubtract(hhv, hhInov, hhvUp);
+
+            //H_up = reshape([hhv_up;1],3,3)';
+            // reshape writes into columns, but the transpose means write into rows
+            double[][] hUp = new double[3][];
+            hUp[0] = Arrays.copyOfRange(hhvUp, 0, 3);
+            hUp[1] = Arrays.copyOfRange(hhvUp, 3, 6);
+            hUp[2] = new double[]{hhvUp[6], hhvUp[7], 1};
+
+            // %norm(m_err)
+            // %norm(hh_innov)
+
+            //hhv = hhv_up;
+            hhv = hhvUp;
+
+            //H = H_up;
+            h = hUp;
         }
 
         if (true) {
