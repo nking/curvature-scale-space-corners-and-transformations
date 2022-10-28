@@ -250,7 +250,11 @@ public class PNP {
         CameraIntrinsicParameters kIntr, 
         CameraExtrinsicParameters kExtr, final int nMaxIter)
         throws NotConvergedException, Exception {
-        
+
+        if (true) {
+            return CameraPose.bouguetPoseRefine(kExtr, kIntr, imageC, worldC);
+        }
+
         if (imageC.length != 3) {
             throw new IllegalArgumentException("imageC.length must be 3 for the x,y,z dimensions");
         }
@@ -294,7 +298,7 @@ public class PNP {
         outExtr.setRotation(MatrixUtil.copy(kExtr.getRotation()));
         outExtr.setTranslation(Arrays.copyOf(kExtr.getTranslation(), 4));
         
-//TODO: check the signs of the last row.  wetzsteinuses a convention of looking down
+//TODO: check the signs of the last row.  wetzstein uses a convention of looking down
 //the negative z-axis.
         
         // equation (19).  size is 1 X 9
@@ -317,7 +321,7 @@ public class PNP {
         System.out.printf("(observed-projected) in camera ref frame=\n%s\n",
             FormatArray.toString(bMinusFGP, "%.3e"));
         
-        // sum the squares to evalute the re-projection error:
+        // sum the squares to evaluate the re-projection error:
         double fPrev = evaluateObjective(bMinusFGP);
         double fTest = Double.POSITIVE_INFINITY;
         

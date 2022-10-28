@@ -262,7 +262,7 @@ public class CameraCalibrationTest extends TestCase {
     /**
      * Test of solveForPose method, of class PNP.
      */
-    public void estSolveForPose_ZhangData() throws Exception {
+    public void testSolveForPose_ZhangData() throws Exception {
         
         log.log(LEVEL, "testSolveForPose_ZhangData");
         
@@ -328,9 +328,9 @@ public class CameraCalibrationTest extends TestCase {
             ex1 = extrinsics.get(i);
             log.log(LEVEL, String.format("\n"));
             log.log(LEVEL, String.format("   r%d=\n%s\n", i, FormatArray.toString(ex1.getRotation(), "%.3e")));
-            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(Zhang98Data.getRotation(i), "%.3e")));
+            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(Zhang98Data.getRotation(i+1), "%.3e")));
             log.log(LEVEL, String.format("   t%d=\n%s\n", i,FormatArray.toString(ex1.getTranslation(), "%.3e")));
-            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(Zhang98Data.getTranslation(i), "%.3e")));
+            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(Zhang98Data.getTranslation(i+1), "%.3e")));
         }
         
         // now have initial parameters to refine using BundleAdjustment.java in other tests
@@ -348,24 +348,24 @@ public class CameraCalibrationTest extends TestCase {
             coordsI, coordsW, 
             kIntr, cameraMatrices.getExtrinsics(), nMaxIter);
         
-        log.log(LEVEL, String.format("\nAfter PNP\n"));
+        log.log(LEVEL, String.format("\nAfter optimization\n"));
         
         assertEquals(nImages, refinedExtr.size());
                 
         for (int i = 1; i <= nImages; ++i) {
             log.log(LEVEL, String.format("\n"));
             log.log(LEVEL, String.format("   r%d=\n%s\n", i, 
-                    FormatArray.toString(refinedExtr.get(i).getRotation(), "%.3e")));
+                    FormatArray.toString(refinedExtr.get(i-1).getRotation(), "%.3e")));
             log.log(LEVEL, String.format("ansR%d=\n%s\n", i, 
                     FormatArray.toString(Zhang98Data.getRotation(i), "%.3e")));
             log.log(LEVEL, String.format("   t%d=\n%s\n", i,
-                    FormatArray.toString(refinedExtr.get(i).getTranslation(), "%.3e")));
+                    FormatArray.toString(refinedExtr.get(i-1).getTranslation(), "%.3e")));
             log.log(LEVEL, String.format("ansT%d=\n%s\n", i,
                     FormatArray.toString(Zhang98Data.getTranslation(i), "%.3e")));
         }
     }
     
-    public void testNeurochemistryBookPoses() throws Exception {
+    public void estNeurochemistryBookPoses() throws Exception {
         
         //test pose
         //test triangulation

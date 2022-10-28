@@ -40,13 +40,15 @@ public class CameraPose {
     public static double eps = 1e-7;
     
     /**
+     * NOT READY FOR USE.
+     * TODO: correct this for normalizations.
      * given a set of features in image space and world coordinate space,
      * estimate the camera pose, that is
      * extract the camera extrinsic parameters of rotation and translation and also the camera
      * intrinsic parameters.
      * This is also known as estimating the Motion.
-     * This method uses DLT and could be followed by non-linear optimization
-     *      * to improve the parameter estimates.
+     * This method uses DLT and should be followed by non-linear optimization
+     * to improve the parameter estimates.
      <pre>
       references:
         https://www.ipb.uni-bonn.de/html/teaching/msr2-2020/sse2-13-DLT.pdf
@@ -222,11 +224,6 @@ public class CameraPose {
                 x[j][i] /= x[x.length - 1][i];
             }
         }
-        for (i = 0; i < X[0].length; ++i) {
-            for (j = 0; j < X.length; ++j) {
-                X[j][i] /= X[X.length - 1][i];
-            }
-        }
 
         // 2*n X 12
         double xi, yi, Xi, Yi, Zi;
@@ -268,7 +265,7 @@ public class CameraPose {
      * calibrating the camera extrinsic parameters is a.k.a. 
      * perspective-n-point-problem where n is the number of features (a.k.a. points).
      * It's also called planar homography decomposition.
-     * This method uses planar homography DLT and could be followed by non-linear optimization
+     * This method uses planar homography DLT and should be followed by non-linear optimization
      * to improve the parameter estimates.
      * Note that the projective matrix assumed is P = [K*R|K*t] from  x_im = K * X_c = K * R * X_wcs + t.
      If you instead are using the convention x_im = K * X_c = K * R * (X_wcs - t),
@@ -323,11 +320,12 @@ public class CameraPose {
                 x[j][i] /= x[x.length - 1][i];
             }
         }
+        /*
         for (i = 0; i < X[0].length; ++i) {
             for (j = 0; j < X.length; ++j) {
                 X[j][i] /= X[X.length - 1][i];
             }
-        }
+        }*/
 
         double[][] xc = Camera.pixelToCameraCoordinates(x, intrinsics);
         
@@ -909,7 +907,10 @@ public class CameraPose {
         //dxd3dalpha = zeros(2*n,1);
         //dxd3dalpha(1:2:2*n,:) = xd2(2,:)';
         // xd2 is [2*n X 1]
-        double[] dxd3dalpha = Arrays.copyOf(xd2[1], xd2[1].length);
+        double[] dxd3dalpha = new double[2*n];
+        for (i = 0; i < n; ++i) {
+            dxd3dalpha[i*2] = xd2[1][i];
+        }
 
         //% Pixel coordinates:
         //if length(f)>1,
@@ -944,7 +945,7 @@ public class CameraPose {
             dxpdk = MatrixUtil.outerProduct(coeff2, new double[]{1, 1, 1, 1, 1});
             dxpdk = MatrixUtil.pointwiseMultiplication(dxpdk, dxd3dk);
 
-            //dxpdalpha = (coeff). * dxd3dalpha;
+            //dxpdalpha = (coeff). * dxd3dalpha;  //[2*n X 1] [2*n X 1]
             dxpdalpha = MatrixUtil.pointwiseMultiplication(coeff2, dxd3dalpha);
             //dxpdf = zeros(2 * n, 2);
             //dxpdf(1:2:end, 1) =xd3(1,:)';
@@ -1095,7 +1096,7 @@ public class CameraPose {
         return pp;
     }
 
-    private static CameraExtrinsicParameters bouguetPoseRefine(CameraExtrinsicParameters init,
+    public static CameraExtrinsicParameters bouguetPoseRefine(CameraExtrinsicParameters init,
                                                                CameraIntrinsicParameters intrinsics,
                                                                double[][] xc, double[][] X) throws NotConvergedException {
 
@@ -1104,6 +1105,11 @@ public class CameraPose {
         }
         if (X.length != 3) {
             throw new IllegalArgumentException("X length must be3");
+        }
+
+        if (init == null || init.getRodriguesVector() == null || init.getRotation() == null) {
+            throw new IllegalArgumentException("inital solution must have the Rodrigues rotation vector" +
+                    " and translation");
         }
 
         int i, j;

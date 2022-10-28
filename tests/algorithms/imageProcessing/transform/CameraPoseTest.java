@@ -26,7 +26,7 @@ public class CameraPoseTest extends TestCase {
     /**
      * Test of calculatePoseUsingDLT method, of class CameraPose.
      */
-    public void estCalculatePoseUsingDLT() throws Exception {
+    public void testCalculatePoseUsingDLT() throws Exception {
 
         // see testresources/zhang1998/README.txt
 
@@ -69,7 +69,7 @@ public class CameraPoseTest extends TestCase {
 
             double[][] xc = Camera.pixelToCameraCoordinates(x, expectedKIntr, radial, true);
 
-            // why does this method only pick up z-axis rotation?
+            // potentially has normalization problems:
             Camera.CameraPoseParameters result = CameraPose.calculatePoseAndKUsingDLT(xU, xW);
 
             Camera.CameraExtrinsicParameters extr2 = CameraPose.calculatePoseUsingCameraCalibration(

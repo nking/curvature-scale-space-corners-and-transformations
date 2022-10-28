@@ -794,14 +794,16 @@ public class CameraCalibration {
         CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();
         kExtr.setRotation(r);
         kExtr.setTranslation(t);
-        
+        kExtr.setRodriguesVector(Rotation.extractRodriguesRotationVectorBouguet(r).om);
+
         return kExtr;
     }
     
     /**
      * following Wetzstein "EE 267 Virtual Reality Course Notes: 6-DOF Pose 
      * Tracking with the VRduino"
-     * estimate the extrinsic parameters
+     * estimate the extrinsic parameters.
+     * Added the Rodrigues Rotation vector to the fit.
      * @param kIntr camera intrinsic parameters
      * @param coordsI holds the image coordinates in pixels of features present in image i
      * @param coordsW holds the world coordinates of features present in image 1 corresponding
@@ -923,7 +925,8 @@ public class CameraCalibration {
         CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();
         kExtr.setRotation(r);
         kExtr.setTranslation(t);
-        
+        kExtr.setRodriguesVector(Rotation.extractRodriguesRotationVectorBouguet(r).om);
+
         return kExtr;
     }
     
