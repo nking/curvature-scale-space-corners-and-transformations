@@ -288,7 +288,7 @@ public class BundleAdjustment {
                   (2) QR factorization: A = Q*R
                   (3) Cholesky factorization:A = L*L^T
                   Some details for the above 3 are in Triggs et al. 2000 Appendix B and near page 23
-                  ("Bundle Ajustment – A Modern Synthesis",
+                  ("Bundle Adjustment – A Modern Synthesis",
                   Springer-Verlag, pp.298–372, 2000, 
                   Lecture Notes in Computer Science (LNCS), 
                   10.1007/3-540-44480-7_21. inria-00590128)
@@ -1344,12 +1344,15 @@ public class BundleAdjustment {
             MatrixUtil.multiply(cholL, cholLT), "%.3e")));
 
         /* avoid inverting A by using Cholesky decomposition w/ forward and 
-        backward substitution to find x as dC.
-            mA * dC=vB
-            A ﹡ x = b: 
-            A = L ﹡ L^*
-            L ﹡ y = b ==> y via forward subst
-            L^* ﹡ x = y ==> x via backward subst
+        backward substitution to find dC.
+            mA * dC = vB
+            mA = L ﹡ L^* as Cholesky decomposition of A
+
+            L ﹡ L^* * dC = vB
+
+            let y = (L^* * dC)
+            L ﹡ (y) = vB ==> solve for y via forward subst
+            returning to y = (L^* * dC), can solve for dC via backward subst
         */
 
         // length is vB.length vectorized which is [mImages*9]
