@@ -159,7 +159,7 @@ public class CameraCalibration {
         // two distortion coefficients (k1,k2)
         
         // calculating the projected world coordinates using eqn (17).
-        //    the homgraphy transforms the world reference coordinates to the
+        //    the homography transforms the world reference coordinates to the
         //    image reference frame (which are w.r.t. the corner of the image,
         //    not the center).
         double[] u = new double[n*nImages];
@@ -173,14 +173,15 @@ public class CameraCalibration {
         kIntr.setUseR2R4(useR2R4);
         
         // (5) optimization to improve the parameter estimates
-        
+
         // ============ iterate over the above steps after non-linear optimization
         //  for extrinsic parameters.
         double[][] cI;
         CameraExtrinsicParameters kExtr;
         CameraExtrinsicParameters extrinsic;
         int nMaxIter = 100;
-        /*for (i = 0; i < nImages; ++i) {
+        /*
+        for (i = 0; i < nImages; ++i) {
             
             cI = MatrixUtil.copySubMatrix(coordsI, 0, 2, n*i, n*(i + 1)-1);
             
@@ -188,10 +189,10 @@ public class CameraCalibration {
             
             // improve the extrinsic parameter estimates:
             extrinsic = PNP.solveForPose(cI, coordsW, kIntr, 
-                kExtr, kRadial, nMaxIter, useR2R4);
+                kExtr, nMaxIter);
             
             cameraMatrices.getExtrinsics().set(i, extrinsic);
-        }*/     
+        }*/
       
         return cameraMatrices;
     }

@@ -2,6 +2,13 @@
    - chap 12.1.3 of MASKS book
    - https://docs.opencv.org/4.x/dc/d2c/tutorial_real_time_pose.html
 
+-- for bundleadjustment using a preconditioner for J,  conjugate gradient,
+   and sparse matrices:
+   see Kushal and Agarwal, "Visibility Based Preconditioning for Bundle Adjustment"
+   if make it in C++, can use CHOLMOD library for sparse matrix factoring and decompositions, 
+   else for java, can build a jni wrapper for CHOLMOD 
+   see https://stackoverflow.com/questions/17046585/cholmod-in-java
+
 -- some of the algorithms operate on images whose values are
     from polar theta transformations of color space, that is,
     the values are degrees between 0 and 360 or scaled to some
