@@ -1099,6 +1099,24 @@ public class CameraPose {
                                                                CameraIntrinsicParameters intrinsics,
                                                                double[][] xc, double[][] X) throws NotConvergedException {
 
+        if (xc.length != 2 && xc.length != 3) {
+            throw new IllegalArgumentException("xc length must be 3 or 2");
+        }
+        if (X.length != 3) {
+            throw new IllegalArgumentException("X length must be3");
+        }
+
+        int i, j;
+
+        //if size(m,1)<3,
+        //    m = [m;ones(1,Np)];
+        //end;
+        //if size(M,1)<3,
+        //    M = [M;ones(1,Np)];
+        //end;
+        //m = m ./ (ones(3,1)*m(3,:));
+        //M = M ./ (ones(3,1)*M(3,:));
+
         //TODO: make this an argument or consider if it should be less than infinity
         double threshCond = Double.POSITIVE_INFINITY;
         int MaxIter = 20;
@@ -1112,12 +1130,7 @@ public class CameraPose {
         int n = xc[0].length;
 
         //[2 X n]
-        double[][] xkk;
-        if (xc.length == 3) {
-            xkk = MatrixUtil.copySubMatrix(xc, 0, 1, 0, n - 1);
-        } else {
-            xkk = MatrixUtil.copy(xc);
-        }
+        double[][] xkk = MatrixUtil.copySubMatrix(xc, 0, 1, 0, n - 1);
 
         //% Final optimization (minimize the reprojection error in pixel):
         //% through Gradient Descent:
@@ -1152,8 +1165,6 @@ public class CameraPose {
             double[][] ex = MatrixUtil.pointwiseSubtract(xkk, x);
 
             //%keyboard;
-
-            int i;
 
             //JJ = [dxdom dxdT];  // [2*n X 3]  [2*n X 3] = [2*n X 6]
             for (i = 0; i < 2*n; ++i) {
@@ -1207,6 +1218,9 @@ public class CameraPose {
     }
 
     /**
+     * calc a rotation (ambiguous) and translation between the measurements of a point in the real world.
+     * the lists xC and X are correspondences of image and object.
+     *
      * https://github.com/fragofer/TOOLBOX_calib/
      * compute_extrinsic_init.m
      * @param intrinsics
@@ -1224,6 +1238,9 @@ public class CameraPose {
 
         if (xc.length != 2 && xc.length != 3) {
             throw new IllegalArgumentException("xc length must be 3 or 2");
+        }
+        if (X.length != 2 && X.length != 3 && X.length != 4) {
+            throw new IllegalArgumentException("X length must be 2, 3, or 4");
         }
 
         int i, j;
@@ -1254,6 +1271,15 @@ public class CameraPose {
             }
         }
 
+        if (X.length == 2) {
+            double[][] x2 = new double[3][];
+            x2[0] = Arrays.copyOf(X[0], X[0].length);
+            x2[1] = Arrays.copyOf(X[1], X[1].length);
+            x2[2] = new double[X[0].length];
+            Arrays.fill(x2[2], 1);
+            X = x2;
+        }
+
         if (X.length == 4) {
             for (i = 0; i < X[0].length; ++i) {
                 for (j = 0; j < X.length; ++j) {
@@ -1268,7 +1294,7 @@ public class CameraPose {
         int n = xc[0].length;
 
         //R_transform = V';  [3X3]
-        double[][] Rtransform = MatrixUtil.convertToRowMajor(vT);
+        double[][] Rtransform = MatrixUtil.convertToRowMajor(vT); // orthogonal to X...
         //%norm(R_transform(1:2,3))
 
         //if norm(R_transform(1:2,3)) < 1e-6,
@@ -1303,7 +1329,7 @@ public class CameraPose {
         //NLK: replace Xnew[2] with 1's because we are giving the method only the first
         // 2 rows of Xnew, then compute_homography.m when receiving Xnew of length 2,
         // appends a row of 1's in the Matlab code.
-        //Arrays.fill(Xnew[2], 1);
+        Arrays.fill(Xnew[2], 1);
         double[][] H = CameraCalibration.solveForHomographyBouget(xc, Xnew);
 
         //% De-embed the motion parameters from the homography:
@@ -1339,7 +1365,6 @@ public class CameraPose {
         RRR[2] = u3;
         RRR = MatrixUtil.transpose(RRR);
 
-        //TODO: as this is an ambiguous vector, consider other designs
         //omckk = rodrigues(RRR);
         Rotation.RodriguesRotation rRot = Rotation.extractRodriguesRotationVectorBouguet(RRR);
         double[] omckk = rRot.om;
@@ -1351,8 +1376,8 @@ public class CameraPose {
 
         //Tckk = H(:,3);
         double[] Tckk = MatrixUtil.extractColumn(H, 2);
-        System.out.printf("T_transform=\n%s\n", FormatArray.toString(Ttransform, "%.4e"));
-        System.out.printf("Tckk=\n%s\n", FormatArray.toString(Tckk, "%.4e"));
+        System.out.printf("T_transform of X from its origin=\n%s\n", FormatArray.toString(Ttransform, "%.4e"));
+        System.out.printf("Tckk derived from homography between x and X_origin =\n%s\n", FormatArray.toString(Tckk, "%.4e"));
 
         //%If Xc = Rckk * X_new + Tckk, then Xc = Rckk * R_transform * X_kk + Tckk + T_transform
         //NLK: Xc = Rckk * (R_transform * X_kk + T_transform) + Tckk
@@ -1374,6 +1399,9 @@ public class CameraPose {
 
         if (xc.length != 2 && xc.length != 3) {
             throw new IllegalArgumentException("xc length must be 3 or 2");
+        }
+        if (X.length != 2 && X.length != 3 && X.length != 4) {
+            throw new IllegalArgumentException("X length must be 2, 3, or 4");
         }
 
         int i, j;
@@ -1402,6 +1430,15 @@ public class CameraPose {
                     xc[j][i] /= xc[xc.length - 1][i];
                 }
             }
+        }
+
+        if (X.length == 2) {
+            double[][] x2 = new double[3][];
+            x2[0] = Arrays.copyOf(X[0], X[0].length);
+            x2[1] = Arrays.copyOf(X[1], X[1].length);
+            x2[2] = new double[X[0].length];
+            Arrays.fill(x2[2], 1);
+            X = x2;
         }
 
         if (X.length == 4) {

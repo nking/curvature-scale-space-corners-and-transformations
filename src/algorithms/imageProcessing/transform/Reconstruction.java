@@ -3176,7 +3176,7 @@ public class Reconstruction {
     epipolar constraint for uncalibrated cameras:
         x2'^T * [T']_x * K *R * K^-1 * x1' = x2'^T * [T']_x * (K*R*K^-1 + T'*v^T)*x1'
         = x2'^T * [T']_x * R' * x1'
-           where v is an arbitraty vector
+           where v is an arbitrary vector
            
     since F = [T']_x * K *R * K^-1,
        fitting for the projection |(K*R*K^-1 + T'*v^T), v_4*T'|

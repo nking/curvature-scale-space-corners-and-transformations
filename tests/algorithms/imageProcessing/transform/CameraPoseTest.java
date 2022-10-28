@@ -221,6 +221,12 @@ public class CameraPoseTest extends TestCase {
         double[] s = new double[]{10, 10, 5};
 
         long seed = System.nanoTime();
+        //seed = 691498835451920L; // this with Np=6 (reproducible for same Random.java implementations):
+        //                             om= 1.9923e-01, 1.3144e-01, 3.8956e-01
+        //                          omckk= 1.8306e-02, 5.2196e-01, 3.5149e+00
+        //                          om-omckk= 1.8093e-01, -3.9053e-01, -3.1254e+00 <=== last is ~ 360 off, so need wrap correction for diffs
+        //                              T= 0.0000e+00, 0.0000e+00, 1.0000e+02
+        //                           Tckk= -6.9559e-01, -6.8940e-01, -1.0996e+02  <===-1*T
         System.out.println("seed = " + seed);
         Random random = new Random(seed);
 
@@ -263,13 +269,15 @@ public class CameraPoseTest extends TestCase {
                 noiseM[i][j] = noise*random.nextDouble();
             }
         }
+        // and so Rtransform is w.r.t. the real world origin of XW whether or not the user calibrated that to be
+        //    the center of the camera.
         //[2Xn]
         double[][] xxn = MatrixUtil.pointwiseAdd(xx, noiseM);
 
-        System.out.printf("xxn = xEst with noise =\n%s\n", FormatArray.toString(xxn, "%.3e"));
+        //System.out.printf("xxn = xEst with noise =\n%s\n", FormatArray.toString(xxn, "%.3e"));
 
         //[omckk,Tckk] = compute_extrinsic(xxn,XX);
-        boolean refine = false;
+        boolean refine = true;
         Camera.CameraExtrinsicParameters c = CameraPose.calculatePoseUsingBouguet(intr, xxn, XX, refine);
         //[om omckk om-omckk]
         //[T Tckk T-Tckk]
@@ -282,5 +290,10 @@ public class CameraPoseTest extends TestCase {
         System.out.printf("Tckk=\n  %s\n", FormatArray.toString(c.getTranslation(), "%.4e"));
         System.out.printf("T-Tckk=\n  %s\n", FormatArray.toString(
                 MatrixUtil.subtract(T, c.getTranslation()), "%.4e"));
+
+        // expected errors?  can see a rough dependence of 1/(Np^2)
+        // for nP=100:
+        double oTol = 1E-3;
+        double tTol = 5E-1;
     }
 }
