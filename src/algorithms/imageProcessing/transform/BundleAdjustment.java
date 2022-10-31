@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.BlockMatrixIsometric;
+import algorithms.matrix.LinearEquations;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import gnu.trove.map.TIntObjectMap;
@@ -212,7 +213,7 @@ public class BundleAdjustment {
         BlockMatrixIsometric intr, double[][] extrRotThetas, double[][] extrTrans,
         double[][] kRadials, final int nMaxIter, boolean useR2R4) 
         throws NotConvergedException, IOException {
-        
+
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
                                  
@@ -497,7 +498,7 @@ public class BundleAdjustment {
         
         double[] outInitLambda = new double[1];
         
-        // use lambda=0, evaluate objective, and get the max of diagnonal of (J^T*J) as the output initLambda
+        // use lambda=0, evaluate objective, and get the max of diagonal of (J^T*J) as the output initLambda
         try {
             calculateLMVectorsSparsely(coordsI, coordsWTest,  
                 imageFeaturesMap, intrTest, extrRotThetasTest, extrTransTest, kRadialsTest, useR2R4,
@@ -622,7 +623,7 @@ public class BundleAdjustment {
             log.fine(String.format("new lambda=%.11e\n", lambda));           
         }        
     }
-    
+
     /**
      * NOT YET TESTED.
      * solve for bundle adjustment data structures needed by the Levenberg-Marquardt
@@ -842,7 +843,7 @@ public class BundleAdjustment {
         Arrays.fill(outDC, 0);
         Arrays.fill(outDP, 0);
         Arrays.fill(outFSqSum, 0);
-        
+
         double[] bC = outGradC;
         double[] bP = outGradP;
         
@@ -850,7 +851,7 @@ public class BundleAdjustment {
         double[] bPI = new double[3];
         // for each image j
         double[] bCJ = new double[9];
-               
+
         //HPC is a.k.a. J_C^T*J_P a.k.a. (W^*)^T
         //W_i_j^T are stored here as [3X9] blocks. each W_i_j^T is b_i_j^T*a_i_j 
         BlockMatrixIsometric hPCBlocks /*W^T*/= new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 9*mImages), 3, 9);
@@ -864,28 +865,20 @@ public class BundleAdjustment {
         //The diagonals, U_j, are stored here as [9X9] blocks. each U_j is a summation of a_i_j^T*a_i_j over all i features.
         // HCC is set into matrix A as it is calculated.
         // storing hCCJBlocks in mA, while populating mA with only HCC.  later will add the negative rightsize of mA to mA
-        //BlockMatrixIsometric hCCJBlocks /*UJ*/= new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9), 9, 9);
+        BlockMatrixIsometric hCCJBlocks /*UJ*/= new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9), 9, 9);
 
-        // matrix A is the reduced camera matrix a.k.a. Schur complement. [9m X 9m]; [mXm] block matrix with  blocks [9x9]
-        // U_J is stored it in alone until i and j loops complete the first time, then
-        //     the rest of mA is subtracted in.
-        BlockMatrixIsometric mA = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9*mImages), 9, 9);
-        
         // aka V_i; a [3X3] block
         double[][] hPPI = MatrixUtil.zeros(3, 3); 
         //aka (V_i)^-1; a [3X3] block
         double[][] invHPPI = null;
-                
+
         // matrix A, aka reduced camera matrix; [9m X 9m]; [mXm] block matrix with  blocks [9x9]
         //BlockMatrixIsometric mA = new BlockMatrixIsometric(
         //    MatrixUtil.zeros(mImages*9, mImages*9), 9, 9);
         double[][] auxMA = MatrixUtil.zeros(9, 9);
         double[][] auxMA2 = MatrixUtil.zeros(9, 9);
         double[][] auxMA3 = MatrixUtil.zeros(9, 9);
-        
-        // vector B, on the rhs of eqn; a matrix acting as a vector with m blocks of size [9X1]
- //       double[][] vB = MatrixUtil.zeros(mImages, 9);
-        
+
         double[][] auxHPC = MatrixUtil.zeros(3, 9);
         double[][] auxHPCT = MatrixUtil.zeros(9, 3);
 
@@ -907,7 +900,7 @@ public class BundleAdjustment {
         
         //aka bP [3X1]
         double[] bIJTF = new double[3];
-        //aka bC [9X1]
+        //aka bC [9X1]  which is aka jC_I_J^T * fIJ
         double[] aIJTF = new double[9];
  
         double[] xWI = new double[3];
@@ -920,8 +913,7 @@ public class BundleAdjustment {
         double[] xWCNDI = new double[3];
         //double[] xWCNDI_2_20 = new double[3];
         double[][] xIJCs = null;  
-        
-        
+
         //lourakis (sba-toms.pdf):  observed is one feature in all images, 
         //     then next feature in all images...
         //Qu: observed is all features of first image, then all features of next image
@@ -930,7 +922,9 @@ public class BundleAdjustment {
             // this includes removing radial distortion
             xIJCs = transformPixelToCamera(nFeatures, coordsI, intr, kRadials, useR2R4);        
         }
-                   
+//TODO: edit the algorithm for rotation improvements such as replacing with rotation quaternions and applying
+// rotations to them, then creating a rotation matrix from that when needed (avoiding extraction
+// of rotation vector from the rotation matrix if possible)
         //size is [3 X 3*mImages] with each block being [3X3]
         BlockMatrixIsometric rotMatrices = createRotationMatricesFromEulerAngles(extrRotThetas);
         
@@ -944,8 +938,7 @@ public class BundleAdjustment {
         // i for n features, j for m images
         int i, j, k;
         
-        //largest runtime complexity in the loop clauses is O(nFeatures * mImages)
-        //largest runtime complexity for block multiplication is O(
+        //TODO: runtime complexity
                      
         for (i = 0; i < nFeatures; ++i) { // this is track p in Engels pseudocode
                         
@@ -973,12 +966,15 @@ public class BundleAdjustment {
                     populateCameraProjectionHomography(rotM, extrTrans[j], h);
                     MatrixUtil.multiplyMatrixByColumnVector(h, xWI, xWCI);
                 } else {
+                    //TODO: consider replacing w/ bouguet projection
                     Camera.worldToCameraCoordinates(xWI, rotM, extrTrans[j], rotAux, xWCI);
                 }
           
                 //intr is 3 X 3*nCameras where each block is size 3X3.
                 intr.getBlock(auxIntr, j, 0);
-          
+
+                //TODO: review the normalization
+
                 // normalize
                 for (k = 0; k < 3; ++k) {
                     xWCNI[k] = xWCI[k] / xWCI[2];
@@ -999,7 +995,7 @@ public class BundleAdjustment {
                 }
          
                 //aIJ is [2X9].  a is partial derivative of measurement vector X w.r.t. camera portion of parameter vector P
-                //bIJ is [2X3]
+                //bIJ is [2X3]   b is partial derivative of measurement vector X w.r.t. position parameters
                 // populate aIJ and bIJ as output of method:
                 aIJBIJ(xWI, xWCI, auxIntr, k1, k2, extrRotThetas[j], rotM, 
                     extrTrans[j], aa, aIJ, bIJ);
@@ -1022,7 +1018,7 @@ public class BundleAdjustment {
                     //populate xIJHat;the projected distorted feature i into image j reference frame.  [1X3]
                     MatrixUtil.multiplyMatrixByColumnVector(auxIntr, 
                         xWCNDI, xIJHat);
-                    
+//fIJ = (xIJ - xIJHat) where xIJHat is projected feature i into image j reference frame
                     //populate xIJHat;the projected feature i into image j reference frame.  [1X3]
                     //MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNI, xIJHat);
 
@@ -1080,9 +1076,7 @@ public class BundleAdjustment {
                 if ((i % (nFeatures / 3)) == 0) {
                     log.fine(String.format("%d,%d) bPI=gradP=%s\n", i, j, FormatArray.toString(bPI, "%.7e")));
                 }
-                
-                System.arraycopy(bPI, 0, bP, i*3, 3);
-                
+
                 // populate bIJsq bij^T * bij = [3X2]*[2X3] = [3X3]
                 MatrixUtil.multiply(bIJT, bIJ, bIJsq);
                 
@@ -1101,19 +1095,10 @@ public class BundleAdjustment {
 
                 // if camera c is free (presumably, context is fixed or free variables).
                 if (true) {
-                    
-                    //U_j = Σ_i(AIJT*A1J) where U is jCT*JC which is HCC=U
-                    //add jCT*JC aka U to upper triangular part of block (j,j) of lhs mA; 
-                    //mA[j][j] += aIJT * aIJ; // [9X9]
-                    MatrixUtil.multiply(aIJT, aIJ, auxMA);
 
-                    mA.getBlock(auxMA2, j, j);
-                    MatrixUtil.pointwiseAdd(auxMA, auxMA2, auxMA3);
-                    mA.setBlock(auxMA3, j, j);
-        
-                    //dont use U_j (= mA) yet, nor augment it with damping term
-                    //until finished summing over all i
-                    
+                    //U_j = Σ_i(AIJT*A1J) where U is jCT*JC which is HCC=U
+                    hCCJBlocks.addToBlock(auxMA, j, 0);
+
                     // compute block (i,j) of hPC as hPC=jPTJC [3X9]
                     //hPC[i][j] = bIJT * aIJ;
                     MatrixUtil.multiply(bIJT, aIJ, auxHPC);
@@ -1122,11 +1107,12 @@ public class BundleAdjustment {
                     //aIJ is [2X9]
                     //bIJ is [2X3]
                 
-                    // subtract aIJT*f (where bc = -aIJT*f aka -jCT*f) from block row j in vB. [9X1]
+                    // subtract aIJT*f (where bC = -aIJT*f aka -jCT*f)  [9X1]
                     //aIJTF = aIJT * fIJ.  [9X2]*[2X1]=[1X9]
+                    // from existing b_C_j which is gradC
                     MatrixUtil.multiplyMatrixByColumnVector(aIJT, fIJ2, aIJTF);
 
-                    /* 
+                    /*
                     bC = -JC^T * F =  [9m X 1]
                     ———————————————-
                     -A11T*F11-A21T*F21-A31T*F31-A41T*F41
@@ -1136,30 +1122,42 @@ public class BundleAdjustment {
                     where each row is [9X2][2X1] = [9X1]
                     */
 
-                    // fill bCJ with last entry for image J
+                    // fill bCJ with existing entry for image J
                     System.arraycopy(bC, j*9, bCJ, 0, 9);
      
                     MatrixUtil.pointwiseSubtract(bCJ, aIJTF, bCJ);
 
                     //bC length is [9*mImages]
+                    // update bC at position j with the subtraction
                     System.arraycopy(bCJ, 0, bC, j*9, 9);                    
                 }
             } // end image j loop
-            
+
+            // update bP with the finish bPI calc
+            System.arraycopy(bPI, 0, bP, i*3, 3);
+
             log.fine(String.format("%d,%d) bC=%s\n", i,j, FormatArray.toString(bC, "%.3e")));
 
             // now HPP_i (aka V_i) is summed over all j: V_i = Σ_j(BIJT*B1J)
 
             if (outInitLambda != null) {
+                // find maximum of the diagonal of hPP.  the diagonal of HPP is each [3X3] block hPPI.
                 if (maxDiag(hPPI, outInitLambda)) {
                     log.fine(String.format("max diag of hPPI (aka V_i): new lambda=%.7e\n", outInitLambda[0]));
                 }
             }
-            
-            // augment hPPI by damping term
-            //  (J_P)^T*J_P + lambda*diag((J_P)^T*J_P)
+
+            // Section 2 of Engels at al., between  eqns (4) and (5)
+            // augment H_PP (and H_CC) by damping term
+            //  (J_P)^T*J_P + lambda*diag((J_P)^T*J_P).
+            // Each H_PP_i and each H_CC_j are the diagonal blocks of J^T*J.
+            // Solomon's "Numerical Algorithms" Section 12.1.2:
+            //  J^T*J is positive semi-definite and so J^T*J + λ*I_n×n must be positive definite.
+            // for the augmentation, see also Qu eqn (2.53).
+            // Presumably, the augmentation is meant to be applied to the diagonals of each
+            // H_PP_i and each H_CC_j
             for (k = 0; k < 3; ++k) {
-                hPPI[k][k] *= (1. + lambda);
+                hPPI[k][k] += lambda;
             }
             
             // temporary exit until find reasons for very large numbers in some
@@ -1173,58 +1171,109 @@ public class BundleAdjustment {
             hPPIInvBlocks.setBlock(invHPPI, i, 0);
             
         }// end loop i over features
-        
+
         if (outInitLambda != null) {
+            // if outInitLambda is null, we initialize it with the maximum value found in the
+            // the diagonal elements of H_CC.
+            // The diagonal elements of H_CC are the blocks in  hCCJBlocks.
+            // so presumably, the maximum value in all of hCCJBlocks is the interpretation of what
+            // the initialization should be.
             for (j = 0; j < mImages; ++j) {
-                mA.getBlock(auxMA, j, j);
+                hCCJBlocks.getBlock(auxMA, j, 0);
                 if (maxDiag(auxMA, outInitLambda)) {
-                    log.fine(String.format("max diag of HCC_J (aka U_j): new lambda=%.7e\n", outInitLambda[0]));
+                    log.fine(String.format("max of diagonal blocks of HCC (aka U): new lambda=%.7e\n", outInitLambda[0]));
                 }
             }
         }
 
         // aIJ^T*aIJ is now in auxMA.  each U_j is a summation of a_i_j^T*a_i_j over all i features.
-        // augment U_J with the damping term:  (J_C)^T*J_C + lambda*diag((J_C)^T*J_C)
+        // augment U_J (=HCC_J) with the damping term:  (J_C)^T*J_C + lambda*diag((J_C)^T*J_C)
         for (j = 0; j < mImages; ++j) {
-            mA.getBlock(auxMA, j, j);
+            hCCJBlocks.getBlock(auxMA, j, 0);
             for (k = 0; k < auxMA.length; ++k) {
-                auxMA[k][k] *= (1. + lambda);
+                auxMA[k][k] += lambda;
             }
-            mA.setBlock(auxMA, j, j);
+            hCCJBlocks.setBlock(auxMA, j, 0);
         }
         
-        // HPC is finished and is a dense matrix
-        // hPPInv is finished and the diagonals are stored
-        // HCC is finished and the diagonals are stored in mA
-        // bC is aIJTF and this is stored in outGradC
-        // bP is bIJTF and thisis stored in outGradP
-        
+        /* HPC is finished and is a dense matrix
+           hPPInv is finished and the diagonals are stored
+           HCC is finished and the diagonals are stored in mA
+           bC is aIJTF and this is stored in outGradC
+           bP is bIJTF and this is stored in outGradP
+        ...
+              U_j = H_CC for 1 image j, sum over all features A^TIJ * AIJ;  //U_j is [9X9] U=[9*mImages X 9*mImages]
+              V_i = H_PP for 1 feature i, sum over all images BIJ^ * BIJ    //V_i is [3X3] V=[3*nFeatures X 3*nFeatures]
+              W_ij = H_PC^T = AIJ^T * BIJ                                   //W_ij is [9X3] W=[9*mImages X 3*nFeatures]
+              b_P_i = -J_P^T * f = gradP  //[3X3]  b_P is [3*nFeatures X 1]
+              b_C_j = -J_C^T * f = gradC  //[9X9]  b_C is [9*mImages X 1]
+         */
+
         log.fine(String.format("HPC=W^T=\n%s\n\n", FormatArray.toString(hPCBlocks.getA(), "%.3e")));
         log.fine(String.format("HPPInv=V^-1=\n%s\n\n", FormatArray.toString(hPPIInvBlocks.getA(), "%.3e")));
-        log.fine(String.format("HCC=U=\n%s\n\n", FormatArray.toString(mA.getA(), "%.3e")));
+        log.fine(String.format("HCC=U=\n%s\n\n", FormatArray.toString(hCCJBlocks.getA(), "%.3e")));
         log.fine(String.format("gradC=bC=\n%s\n\n", FormatArray.toString(bC, "%.3e")));
         log.fine(String.format("gradP=bP=\n%s\n\n", FormatArray.toString(bP, "%.3e")));
-                
+
+        /*
+        solving each line here separately:
+        => |dP + (HPP^-1*HPC)*dC     |=|HPP^-1*bP           |
+           |(-HPCT*HPP^-1*HPC+HCC)*dC| |-HPCT*HPP^-1*bP + bC|
+
+         Solving the 2nd line 1st for dC:
+         mA = HCC - HPCT*HPP^-1*HPC
+         vB = bC - HPCT*HPP^-1*bP
+         */
+
+        //calc HPCT * HPP^-1 which is in mA and vB
+        // = W * V^-1
+        //[9m X 3n]           [3n X 3n]
+        //W11 W21 W31 W41  *  V1^-1 0     0     0
+        //W12 W22 W32 W42     0     V2^-1 0     0
+        //W13 W23 W33 W43     0     0     V3^-1 0
+        //                    0     0     0     V4^-1
+        //W*V^-1=       [9mX3n]
+        //W11*V1^-1   W21*V2^-1   W31*V3^-1   W41*V4^-1
+        //W12*V1^-1   W22*V2^-1   W32*V3^-1   W42*V4^-1
+        //W13*V1^-1   W23*V2^-1   W33*V3^-1   W43*V4^-1
+        //each block is [9X3]
+        /*
+        i=1:nFeatures
+           invVI = hPPIInv
+           j=1:mImages
+               [row J, col I] = (hPC[i][j])^T * invVI
+         */
+        //tPC = HPC^T*HPP^-1 = W*V^-1 [9m X 3n]
+        BlockMatrixIsometric tPCBlocks = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 3*nFeatures),
+                9, 3);
+        double[][] tPC = MatrixUtil.zeros(9, 3);
+
         //tP = HPP^-1*bP = V^-1*bP [3n X 1] or [1n X 3] row format
         // blocks: n rows and 1 column
         BlockMatrixIsometric tPRowBlocks = new BlockMatrixIsometric(
             MatrixUtil.zeros(nFeatures, 3), 1, 3);
         double[] tPI = new double[3];
-        
-        //tPC = HPC^T*HPP^-1 = W*V^-1 [9m X 3n]
-        BlockMatrixIsometric tPCBlocks = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 3*nFeatures), 9, 3);
-        double[][] tPC = MatrixUtil.zeros(9, 3);
-        
+
+        // matrix A is the reduced camera matrix a.k.a. Schur complement. [9m X 9m]; [mXm] block matrix with  blocks [9x9]
+        // U_J is stored it in alone until i and j loops complete the first time, then
+        //     the rest of mA is subtracted in.
+        BlockMatrixIsometric mA = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9*mImages), 9, 9);
+
+        // vector B, on the rhs of eqn; a matrix acting as a vector with m blocks of size [9X1]
+        double[] vB =  new double[mImages*9];
+        double[] vBJ = new double[9];
+
         for (i = 0; i < nFeatures; ++i) {
             //calc tP = HPP^-1*bP = V^-1*bP and set into tPBlocks(i,0) += invVI*(Σ_j(-BIJT*F1J))
             
             //invHPPI aka V^-1 is [3X3]
             hPPIInvBlocks.getBlock(invHPPI, i, 0);
-            
+
             System.arraycopy(bP, i*3, bPI, 0, 3);
             // [3X3][3X1]=[3X1]
             MatrixUtil.multiplyMatrixByColumnVector(invHPPI, bPI, tPI);
             tPRowBlocks.setRowBlock(tPI, i, 0);
+
             for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
                 //TODO consider how to handle feature not present in image here
                 if (!imageFeaturesMap.get(j).contains(i)) {
@@ -1237,39 +1286,28 @@ public class BundleAdjustment {
                 MatrixUtil.transpose(auxHPC, auxHPCT);
                 MatrixUtil.multiply(auxHPCT, invHPPI, tPC);
                 tPCBlocks.setBlock(tPC, j, i);
-            }
-        }
-        
-        double[][] vB = MatrixUtil.zeros(mImages, 9); 
-        double[] vBJ = new double[9];
-        for (i = 0; i < nFeatures; ++i) {
-            tPRowBlocks.getRowBlock(tPI, i, 0);            
-            for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
-                //TODO consider how to handle feature not present in image here
-                if (!imageFeaturesMap.get(j).contains(i)) {
-                    continue;
-                }
-                hPCBlocks.getBlock(auxHPC, i, j);
-                MatrixUtil.transpose(auxHPC, auxHPCT);
+
+                //mA = HCC   -  HPCT * HPP^-1 * HPC
+                //     [9X9] -  [9X3] * [3X3] * [3X9]
+                MatrixUtil.multiply(tPC, auxHPC, auxMA);
+                hCCJBlocks.getBlock(auxMA2, j, 0);
+                MatrixUtil.pointwiseSubtract(auxMA2, auxMA, auxMA3);
+                mA.setBlock(auxMA3, j, j);
+
+                //vB = bC - HPCT*HPP^-1*bP
+                //   = bC - HPCT*tPI
+                //    [9X1] - [9X3]*[3X1]
+                System.arraycopy(bC, j*9, bCJ, 0, 9);
                 MatrixUtil.multiplyMatrixByColumnVector(auxHPCT, tPI, vBJ);
                 for (k = 0; k < vBJ.length; ++k) {
-                    vB[j][k] -= vBJ[k];
+                    vBJ[k] = bCJ[j] - vBJ[k];
                 }
+                System.arraycopy(vBJ, 0, vB, j*9, 9);
             }
         }
-        // finish vB: vB += bC
-        for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
-            System.arraycopy(bC, j*9, bCJ, 0, 9);
-            for (k = 0; k < bCJ.length; ++k) {
-                vB[j][k] += bCJ[k];
-            }
-        }
-        
-        // mA -= tPC*HPC  [9*mImages X 9*mImages]
-        double[][] mARight = MatrixUtil.multiply(tPCBlocks.getA(), hPCBlocks.getA());
-        mARight = MatrixUtil.pointwiseSubtract(mA.getA(), mARight);
-        mA = new BlockMatrixIsometric(mARight, 9, 9);
-        
+
+        // at this point, we have calculated mA and vB
+
         /* TODO: (optional) Fix gauge by freezing coordinates and thereby reducing 
             the linear system with a few dimensions.
         
@@ -1333,15 +1371,16 @@ public class BundleAdjustment {
         DenseCholesky chol = new DenseCholesky(aPSD.length, false);
         chol = chol.factor(new LowerSPDDenseMatrix(new DenseMatrix(aPSD)));
         LowerTriangDenseMatrix _cholL = chol.getL();
-        
+
         //[mImages*9, mImages*9]
         double[][] cholL = Matrices.getArray(_cholL);
-        
         double[][] cholLT = MatrixUtil.transpose(cholL);
+
+        double[][] __cholL = LinearEquations.choleskyDecompositionViaLDL(aPSD, eps);
         
         log.fine(String.format("cholL=\n%s\n", FormatArray.toString(cholL, "%.3e")));
-        log.fine(String.format("cholL*LT=\n%s\n", FormatArray.toString(
-            MatrixUtil.multiply(cholL, cholLT), "%.3e")));
+        //log.fine(String.format("cholL*LT=\n%s\n", FormatArray.toString(
+        //    MatrixUtil.multiply(cholL, cholLT), "%.3e")));
 
         /* avoid inverting A by using Cholesky decomposition w/ forward and 
         backward substitution to find dC.
@@ -1354,12 +1393,11 @@ public class BundleAdjustment {
             L ﹡ (y) = vB ==> solve for y via forward subst
             returning to y = (L^* * dC), can solve for dC via backward subst
         */
+        // [mImages*9 X mImages*9] * y = [mImages X 9]
+        // length is vB.length is [mImages*9 X 1]
 
-        // length is vB.length vectorized which is [mImages*9]
-        double[] yM = MatrixUtil.forwardSubstitution(cholL, 
-            MatrixUtil.reshapeToVector(vB)
-        );
-        
+        double[] yM = MatrixUtil.forwardSubstitution(cholL,  vB);
+
         // temporary exit until find reasons for very large numbers in some
         //   of the arrays
         if (hasNaN(yM)) {
@@ -1374,38 +1412,22 @@ public class BundleAdjustment {
         log.fine(String.format("yM=%s\n", FormatArray.toString(yM, "%.3e")));
         log.fine(String.format("outDC=dC=%s\n", FormatArray.toString(outDC, "%.3e")));
 
+        // tPC = HPC^T*(HPP^-1)
+        // tPC^T = (HPP^-1) * HPC
         // calc outDP:  dP = invHPPI * bPI - invHPPI * HPC * dC
-        //              dP = tP - tPC^T * dC // [3nX1] - [3nX9m]*[9*mImagesX1] 
-        //outDP : [3nX1]
-        //tP : [3nX1]
-        //tPCBlocks : (9*mImages, 3*nFeatures), 9, 3);
-        //outDC: [9*mImagesX1]
-        
-        double[] dCJ = new double[9];
-        double[] tmpI = new double[3]; // holds tPC^T * dC
-        double[] tmp = new double[3];
+        //              dP = tP            - tPC^T * dC // [3nX1] - [3nX9m]*[9*mImagesX1]
+        //                                              // = [3*n_features X 1]
+
+        // store into outDP, the 2nd part of its equantion: product tPC^T * dC
+        MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.transpose(tPCBlocks.getA()), outDC, outDP);
+        // calc the rest of outDP by looping over tPRowBlocks
         for (i = 0; i < nFeatures; ++i) {
-            //[row i, col 0] = tPI - (Σ_j(tPC[J,I]^T*dCJ))
-            Arrays.fill(tmpI, 0);
-            for (j = 0; j < mImages; ++j) {
-                //[9X3]
-                tPCBlocks.getBlock(tPC, j, i);
-                // tPC^T [3X9]  in auxHPC
-                MatrixUtil.transpose(tPC, auxHPC);
-                //dCJ [9X1].
-                System.arraycopy(outDC, j*9, dCJ, 0, 9);
-                // tmp [3X1]
-                MatrixUtil.multiplyMatrixByColumnVector(auxHPC, dCJ, tmp);
-                for (k = 0; k < tmp.length; ++k) {
-                    tmpI[k] += tmp[k];
-                }
-            }
-            tPRowBlocks.getRowBlock(tPI, i, 0);
+            tPRowBlocks.setRowBlock(tPI, i, 0);  // tPI is length 3
+            // tPI - next 3 items of outDP
             for (k = 0; k < tPI.length; ++k) {
-                tPI[k] -= tmpI[k];
-                outDP[i*3 + k] = tPI[k];
+                outDP[i*3 + k] = tPI[k] - outDP[i*3 + k];
             }
-           
+
             // Engels: compute updated point (i.e. world coord features)
             // NOTE: for this class, the updates are handled by the invoker of 
             //       this method.  The updated parameters are given to the code so
@@ -1417,7 +1439,7 @@ public class BundleAdjustment {
         log.fine(String.format("outDP=%s\n", FormatArray.toString(outDP, "%.3e")));
 
     }
-    
+
     /**
      * the partial derivative of the
      * final 2D re-projected coordinates of the i-th feature point
@@ -2071,6 +2093,19 @@ public class BundleAdjustment {
             if (outInitLambda[0] < m[i][i]) {
                 outInitLambda[0] = m[i][i];
                 updated = true;
+            }
+        }
+        return updated;
+    }
+    private boolean max(double[][] m, double[] outInitLambda) {
+        int i, j;
+        boolean updated = false;
+        for (i = 0; i < m.length; ++i) {
+            for (j = 0; j < m[i].length; ++j) {
+                if (outInitLambda[0] < m[i][j]) {
+                    outInitLambda[0] = m[i][j];
+                    updated = true;
+                }
             }
         }
         return updated;
