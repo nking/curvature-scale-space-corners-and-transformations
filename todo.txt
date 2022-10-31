@@ -8,6 +8,8 @@
    if make it in C++, can use CHOLMOD library for sparse matrix factoring and decompositions, 
    else for java, can build a jni wrapper for CHOLMOD 
    see https://stackoverflow.com/questions/17046585/cholmod-in-java
+   -- also follow up on real-time structure from motion without bundle adjustment:
+      Davison and Murray, 2002, Niste ́r et al., 2006.
 
 -- some of the algorithms operate on images whose values are
     from polar theta transformations of color space, that is,

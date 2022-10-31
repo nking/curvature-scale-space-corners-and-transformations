@@ -1,8 +1,14 @@
 package algorithms.imageProcessing.transform;
 
 import static algorithms.imageProcessing.transform.Rotation.extractThetaFromZYX;
+
+import algorithms.matrix.BlockMatrixIsometric;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.NotConvergedException;
 
@@ -28,6 +34,7 @@ public class CameraPoseTest extends TestCase {
      */
     public void testCalculatePoseUsingDLT() throws Exception {
 
+        System.out.println("testCalculatePoseUsingDLT");
         // see testresources/zhang1998/README.txt
 
         // they use f(r) = 1 + k1*r + k2*r^2:
@@ -131,12 +138,43 @@ public class CameraPoseTest extends TestCase {
             qBarfoot = Rotation.convertHamiltonToBarfootQuaternion(qHamilton);
             double distR2Orth = Rotation.distanceBetweenQuaternions(qBarfootE, qBarfoot);
 
+            // bundleadjustment optimization:
+            double[][] extrRotThetasInOut = new double[1][];
+            extrRotThetasInOut[0] = Arrays.copyOf(extr2.getRodriguesVector(), extr2.getRodriguesVector().length);
+            double[][] extrTransInOut = new double[1][];
+            extrTransInOut[0] = Arrays.copyOf(extr2.getTranslation(), 3);
+
+            // each image has nFeatures.  refining solution for 1 image:
+            TIntObjectMap<TIntSet> imageFeaturesMap = new TIntObjectHashMap<TIntSet>();
+            TIntSet set = new TIntHashSet();
+            for (int j = 0; j < nFeatures; ++j) {
+                set.add(j);
+            }
+            imageFeaturesMap.put(0, set);
+            double[][] radialInOut = new double[1][];
+            radialInOut[0] = Arrays.copyOf(radial, radial.length);
+            // 1 camera for this one
+            BlockMatrixIsometric intrInOut = new BlockMatrixIsometric(MatrixUtil.copy(expectedKIntr), 3, 3);
+            int nMaxIter = 100;
+            BundleAdjustment ba = new BundleAdjustment();
+            //ba.setUseHomography();
+            ba.solveSparsely(x, xW, imageFeaturesMap,
+                    intrInOut, extrRotThetasInOut, extrTransInOut,
+                    radialInOut, nMaxIter, useR2R4);
+
+            double[][] baRot = Rotation.createRodriguesRotationMatrixBouguet(extrRotThetasInOut[0]).r;
+
+            //boolean refine = true;
+            //Camera.CameraExtrinsicParameters c = CameraPose.calculatePoseUsingBouguet(intr, xxn, XX, refine);
+
             System.out.printf("%d) r=\n%s\n", i, FormatArray.toString(extr.getRotation(), "%.3e"));
             System.out.printf("%d) r2=\n%s\n", i, FormatArray.toString(extr2.getRotation(), "%.3e"));
             System.out.printf("%d) r2Orth=\n%s\n", i, FormatArray.toString(r2Orth, "%.3e"));
+            System.out.printf("%d) ba r=\n%s\n", i, FormatArray.toString(baRot, "%.3e"));
             System.out.printf("    r expected=\n%s\n", FormatArray.toString(expectedR, "%.3e"));
             System.out.printf("dist r     =%.3e\ndist r2Orth=%.3e\n", distR0, distR2Orth);
             System.out.printf("%d) kIntr=\n%s\n", i, FormatArray.toString(intr.getIntrinsic(), "%.3e"));
+            System.out.printf("%d) ba kIntr=\n%s\n", i, FormatArray.toString(intrInOut.getA(), "%.3e"));
             System.out.printf("    kIntr expected=\n%s\n", FormatArray.toString(expectedKIntr, "%.3e"));
             System.out.printf("%d) tc1=\n%s\n", i, FormatArray.toString(tc1, "%.3e"));
             System.out.printf("%d) _tc1=\n%s\n", i, FormatArray.toString(_tc1, "%.3e"));
@@ -146,6 +184,7 @@ public class CameraPoseTest extends TestCase {
             System.out.printf("%d) _ti4=\n%s\n", i, FormatArray.toString(_ti4, "%.3e"));
             System.out.printf("%d) ti2_2=\n%s\n", i, FormatArray.toString(ti2_2, "%.3e"));
             System.out.printf("%d) ti4_2=\n%s\n", i, FormatArray.toString(ti4_2, "%.3e"));
+            System.out.printf("%d) ba t=\n%s\n", i, FormatArray.toString(extrTransInOut[0], "%.3e"));
             System.out.printf("    t expected=\n%s\n", FormatArray.toString(expectedT, "%.3e"));
 
         }
@@ -213,6 +252,7 @@ public class CameraPoseTest extends TestCase {
 
     public void testCalculatePoseUsingBouguet() throws IOException, NotConvergedException {
 
+        System.out.println("testCalculatePoseUsingBouguet");
         // following unit test at bottom of
         // https://github.com/fragofer/TOOLBOX_calib/
         // compute_extrinsic.m

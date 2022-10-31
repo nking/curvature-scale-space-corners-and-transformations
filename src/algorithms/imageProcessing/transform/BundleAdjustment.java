@@ -9,12 +9,8 @@ import gnu.trove.set.TIntSet;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.logging.Logger;
-import no.uib.cipr.matrix.DenseCholesky;
-import no.uib.cipr.matrix.DenseMatrix;
-import no.uib.cipr.matrix.LowerSPDDenseMatrix;
-import no.uib.cipr.matrix.LowerTriangDenseMatrix;
-import no.uib.cipr.matrix.Matrices;
-import no.uib.cipr.matrix.NotConvergedException;
+
+import no.uib.cipr.matrix.*;
 
 /**
  given intrinsic and extrinsic camera parameters, coordinates for points
@@ -99,6 +95,7 @@ public class BundleAdjustment {
     }
     
     /**
+     * NOT READY FOR USE.
      * given world scene features, the features observed in images,
      * initial camera calibration and extrinsic parameters, use the 
      * iterative non-linear Levenberg-Marquardt (L-M)
@@ -625,6 +622,7 @@ public class BundleAdjustment {
     }
 
     /**
+     * NOT READY FOR USE.
      * NOT YET TESTED.
      * solve for bundle adjustment data structures needed by the Levenberg-Marquardt
      * algorithm to refine the intrinsic and extrinsic camera parameters.
@@ -1364,10 +1362,14 @@ public class BundleAdjustment {
         log.fine(String.format("mA=%s\n", FormatArray.toString(mA.getA(), "%.3e")));
         log.fine(String.format("vB=%s\n", FormatArray.toString(vB, "%.3e")));
 
-        double eps = 1.e-7;
+        double eps = 1.e-11;
+
         // this method attempts to find the nearest symmetric positive *definite* matrix to A:
         double[][] aPSD = MatrixUtil.nearestPositiveSemidefiniteToA(mA.getA(), eps);
-       
+        /*    double[][] b = MatrixUtil.nearestSymmetricToA(mA.getA());
+            EVD evdB = EVD.factorize(new DenseMatrix(b));
+            SVD svdB = SVD.factorize(new DenseMatrix(b));
+        */
         DenseCholesky chol = new DenseCholesky(aPSD.length, false);
         chol = chol.factor(new LowerSPDDenseMatrix(new DenseMatrix(aPSD)));
         LowerTriangDenseMatrix _cholL = chol.getL();
@@ -1375,8 +1377,6 @@ public class BundleAdjustment {
         //[mImages*9, mImages*9]
         double[][] cholL = Matrices.getArray(_cholL);
         double[][] cholLT = MatrixUtil.transpose(cholL);
-
-        double[][] __cholL = LinearEquations.choleskyDecompositionViaLDL(aPSD, eps);
         
         log.fine(String.format("cholL=\n%s\n", FormatArray.toString(cholL, "%.3e")));
         //log.fine(String.format("cholL*LT=\n%s\n", FormatArray.toString(
@@ -1396,20 +1396,22 @@ public class BundleAdjustment {
         // [mImages*9 X mImages*9] * y = [mImages X 9]
         // length is vB.length is [mImages*9 X 1]
 
-        double[] yM = MatrixUtil.forwardSubstitution(cholL,  vB);
+        double[][] _mInv = MatrixUtil.pseudoinverseFullColumnRank(mA.getA());
+        MatrixUtil.multiplyMatrixByColumnVector(_mInv, vB, outDC);
 
+        /*
+        double[] yM = MatrixUtil.forwardSubstitution(cholL,  vB);
         // temporary exit until find reasons for very large numbers in some
         //   of the arrays
         if (hasNaN(yM)) {
             throw new NaNException("Errors due to unusually large numbers");
         }
-        
         // [[mImages*9 X mImages*9] * x = [mImages*9] ==> x is length mImages*9
         // x is dC
         MatrixUtil.backwardSubstitution(cholLT, yM, outDC);
-        
 //Error:  dC is too large.  error somewhere in calculating it.        
         log.fine(String.format("yM=%s\n", FormatArray.toString(yM, "%.3e")));
+         */
         log.fine(String.format("outDC=dC=%s\n", FormatArray.toString(outDC, "%.3e")));
 
         // tPC = HPC^T*(HPP^-1)
@@ -1418,7 +1420,7 @@ public class BundleAdjustment {
         //              dP = tP            - tPC^T * dC // [3nX1] - [3nX9m]*[9*mImagesX1]
         //                                              // = [3*n_features X 1]
 
-        // store into outDP, the 2nd part of its equantion: product tPC^T * dC
+        // store into outDP, the 2nd part of its equation: product tPC^T * dC
         MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.transpose(tPCBlocks.getA()), outDC, outDP);
         // calc the rest of outDP by looping over tPRowBlocks
         for (i = 0; i < nFeatures; ++i) {
