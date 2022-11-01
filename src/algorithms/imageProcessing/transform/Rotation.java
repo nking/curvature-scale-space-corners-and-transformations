@@ -1,7 +1,7 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
-import algorithms.util.FormatArray;
+
 import java.util.Arrays;
 
 import no.uib.cipr.matrix.DenseMatrix;
@@ -221,6 +221,16 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
  * TODO: add a method to extract the quaternion rotation from a 4X4 rotation matrix.
  * see Barfoot et al.
  * see http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
+ *
+ * <pre>
+  also note that for optimization of rotation :
+      prefer to update the rotation vectors and/or the rotation matrices.
+      do not update the euler angles because eqn (28) of Barfoot et al. shows that an inverse term
+      is not defined at singularities.
+      do not extract euler angles or vector from a rotation matrix unless unavoidable because the
+      extraction is ambiguous.
+      the create rotation matrix from rotation vector or from euler angles is fine.
+ * </pre>
  *
  * @author nichole
  */
@@ -733,7 +743,7 @@ public class Rotation {
          * [9X3] or [3X9]
          * 9X3 returned for vector, else 3X9 for matrix
          */
-        public double[][] dRdin;
+        public double[][] dRdR;
 
         /**
          * [3X1]
@@ -754,7 +764,7 @@ public class Rotation {
      *      and
      *      https://github.com/hunt0r/Bouguet_cam_cal_toolbox
      *
-     *      rogrigues.m includes the comment: Copyright (c) March 1993 -- Pietro Perona, CalTech, before a brief
+     *      rodrigues.m includes the comment: Copyright (c) March 1993 -- Pietro Perona, CalTech, before a brief
      *      changelist by Bouguet.
      *      </pre>
      *      Note that this is an ambiguous task.
@@ -988,7 +998,7 @@ public class Rotation {
         RodriguesRotation rRot = new RodriguesRotation();
         rRot.om = out;
         rRot.r = MatrixUtil.copy(in);
-        rRot.dRdin = dout;
+        rRot.dRdR = dout;
 
         return rRot;
     }
@@ -1006,7 +1016,7 @@ public class Rotation {
      *      and
      *      https://github.com/hunt0r/Bouguet_cam_cal_toolbox
      *
-     *      rogrigues.m includes the comment: Copyright (c) March 1993 -- Pietro Perona, CalTech, before a brief
+     *      rodrigues.m includes the comment: Copyright (c) March 1993 -- Pietro Perona, CalTech, before a brief
      *      changelist by Bouguet.
      * @param in [3X1] rotation vector
      * @return
@@ -1059,7 +1069,7 @@ public class Rotation {
             //dout = dRdin;
             RodriguesRotation rRot = new RodriguesRotation();
             rRot.r = R;
-            rRot.dRdin = dRdin;
+            rRot.dRdR = dRdin;
             rRot.om = Arrays.copyOf(in, in.length);
 
             return rRot;
@@ -1183,7 +1193,7 @@ public class Rotation {
 
         RodriguesRotation rRot = new RodriguesRotation();
         rRot.r = R;
-        rRot.dRdin = dRdin;
+        rRot.dRdR = dRdin;
         rRot.om = Arrays.copyOf(in, in.length);
 
         return rRot;
@@ -1925,97 +1935,43 @@ public class Rotation {
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
      * 
-     * eqn (31) and (30c).
+     * eqn (25).
      * 
      * "This update approach allows us to store and update the rotation as a 
      * rotation matrix, thereby avoiding singularities and the need to restore 
      * the constraint afterwards (i.e., constraint restoration is built in)."
      * 
      * </pre>
-     * @param theta euler angles
-     * @param dTheta perturbation to apply to the euler angles
+     * @param euler euler angles
+     * @param dEuler perturbation to apply to the euler angles
      * @return resulting perturbed rotation matrix
      */
-    public static double[][] applySingularitySafeRotationPerturbationZYX(double[] theta, double[] dTheta) {
-        if (theta.length != 3) {
-            throw new IllegalArgumentException("theta must be length 3");
+    public static double[][] applySingularitySafeEulerAnglesPerturbationZYX(double[] euler, double[] dEuler) {
+        if (euler.length != 3) {
+            throw new IllegalArgumentException("euler must be length 3");
         }
-        if (dTheta.length != 3) {
-            throw new IllegalArgumentException("dTheta must be length 3");
+        if (dEuler.length != 3) {
+            throw new IllegalArgumentException("dEuler must be length 3");
         }
-        
-        // ==== eqn (30c) ======
-        //3X3        
-        //   dPhi is very similar, that is approx equal to dTheta
-        double[] dPhi = createRotationVector(theta, dTheta);
-        
-        double[][] skew = MatrixUtil.skewSymmetric(dPhi);
-        
+
+        //[3X3]
+        double[][] s = sTheta(euler);
+        double[][] sds = MatrixUtil.skewSymmetric(MatrixUtil.multiplyMatrixByColumnVector(s, dEuler));
         int i;
-        for (i = 0; i < skew.length; ++i) {
-            skew[i][i] = 1. - skew[i][i];
+        for (i = 0; i < sds.length; ++i) {
+            sds[i][i] = 1. - sds[i][i];
         }
-        
-        double[][] r = createRotationZYX(theta);
+
+        double[][] r = createRotationZYX(euler);
         
         // ==== eqn (31) =======
-        double[][] result = MatrixUtil.multiply(skew, r);
-        
-        return result;
-    }  
-    
-     /**
-     * apply a perturbation in rotation angles to the rotation matrix created by
-     * the euler angles theta where the rotation matrix created is R_x*R_y*R_z.
-     * To the first order, this is a constraint-sensitive approach, i.e.
-     * r*r^T = I for the perturbed matrix to first order as long as it was
-     * true for the given matrix r.
-     * <pre>
-     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
-     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
-     * 
-     * eqn (31) and (30c).
-     * 
-     * "This update approach allows us to store and update the rotation as a 
-     * rotation matrix, thereby avoiding singularities and the need to restore 
-     * the constraint afterwards (i.e., constraint restoration is built in)."
-     * 
-     * </pre>
-     * @param theta euler angles
-     * @param dTheta perturbation to apply to the euler angles
-     * @return resulting updated rotation matrix, perturbed by dTheta
-     */
-    public static double[][] applySingularitySafeRotationPerturbationXYZ(double[] theta, double[] dTheta) {
-        if (theta.length != 3) {
-            throw new IllegalArgumentException("theta must be length 3");
-        }
-        if (dTheta.length != 3) {
-            throw new IllegalArgumentException("dTheta must be length 3");
-        }
-        
-        // ==== eqn (30c) ======
-        //3X3        
-        double[] dPhi = createRotationVector(theta, dTheta);
-        
-        double[][] skew = MatrixUtil.skewSymmetric(dPhi);
-        
-        int i;
-        for (i = 0; i < skew.length; ++i) {
-            skew[i][i] = 1. - skew[i][i];
-        }
-        
-        double[][] r = createRotationXYZ(theta);
-        
-        // ==== eqn (31) =======
-        double[][] result = MatrixUtil.multiply(skew, r);
+        double[][] result = MatrixUtil.multiply(sds, r);
         
         return result;
     }
     
     /**
-     * apply a perturbation in rotation angles to the rotation matrix created by
-     * the euler angles theta where the rotation matrix created is R_x*R_y*R_z.
-     * To the first order, this is a constraint-sensitive approach.
+     * apply a perturbation in the rotation vector to a rotation matrix.
      * <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
@@ -2028,60 +1984,27 @@ public class Rotation {
      * </pre>
      * @return 
      */
-    public static double[][] applySingularitySafeRotationPerturbationRVecXYZ(
-        double[] dPhiRotationVector, double[] theta) {
-        if (dPhiRotationVector.length != 3) {
-            throw new IllegalArgumentException("dPhiRotationVector length must be 3");
+    public static double[][] applySingularitySafeRotationVectorPerturbation(
+        double[] dRVector, double[][] rotation) {
+        if (dRVector.length != 3) {
+            throw new IllegalArgumentException("dRVector length must be 3");
         }
-        if (theta.length != 3) {
-            throw new IllegalArgumentException("theta must be length 3");
+        if (rotation.length != 3 || rotation[0].length != 3) {
+            throw new IllegalArgumentException("rotation must be [3X3]");
         }
-               
-        double[][] r1 = Rotation.createRotationZYX(dPhiRotationVector);
-        
-        double[][] r = createRotationXYZ(theta);
-        
-        double[][] result = MatrixUtil.multiply(r1, r);
-        
+
+        RodriguesRotation dRR = Rotation.createRodriguesRotationMatrixBouguet(dRVector);
+
+        // this result should be orthonormal
+        double[][] result = MatrixUtil.multiply(dRR.r, rotation);
+
+        //NOTE: can compare to non-orthonormal results
+        // eqn (26)
+        //double[][] result2 = MatrixUtil.multiply(MatrixUtil.skewSymmetric(dRVector), rotation);
+
         return result;
     }
-    
-    /**
-     * apply a perturbation in rotation angles to the rotation matrix created by
-     * the euler angles theta where the rotation matrix created is R_x*R_y*R_z.
-     * To the first order, this is a constraint-sensitive approach.
-     * <pre>
-     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
-     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
-     * 
-     * eqn (31).
-     * "This update approach allows us to store and update the rotation as a 
-     * rotation matrix, thereby avoiding singularities and the need to restore 
-     * the constraint afterwards (i.e., constraint restoration is built in).
-     * 
-     * </pre>
-     * @param dPhiRotationVector perturbation of the rotation vector
-     * @param theta euler angles representing the rotation matrix.
-     * @return 
-     */
-    public static double[][] applySingularitySafeRotationPerturbationRVecZYX(
-        double[] dPhiRotationVector, double[] theta) {
-        if (dPhiRotationVector.length != 3) {
-            throw new IllegalArgumentException("dPhiRotationVector length must be 3");
-        }
-        if (theta.length != 3) {
-            throw new IllegalArgumentException("theta must be length 3");
-        }
-               
-        double[][] r1 = Rotation.createRotationZYX(dPhiRotationVector);
-        
-        double[][] r = createRotationZYX(theta);
-        
-        double[][] result = MatrixUtil.multiply(r1, r);
-        
-        return result;
-    }
-    
+
     /**
      * calculate S_theta which is the matrix relating angular velocity to 
      * rotation angle rates.  

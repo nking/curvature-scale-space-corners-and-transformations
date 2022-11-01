@@ -221,7 +221,7 @@ public class RotationTest extends TestCase {
         double[][] r0ZYX = Rotation.createRotationZYX(theta0); // checked          
         double[] theta0ExZYX = Rotation.extractThetaFromZYX(r0ZYX); // ** recovered exactly, that is, same as theta0 
         
-        double[][] r0UpZYX = Rotation.applySingularitySafeRotationPerturbationZYX(theta0, dTheta0);
+        double[][] r0UpZYX = Rotation.applySingularitySafeEulerAnglesPerturbationZYX(theta0, dTheta0);
         double[] theta0UpExZYX = Rotation.extractThetaFromZYX(r0UpZYX); // ** nearly the same as theta0Up
         double[][] r0FromTheta0UpZYX = Rotation.createRotationZYX(theta0Up);
         double[] theta0UpExZYXMinusTheta0 = new double[3];
@@ -312,7 +312,7 @@ public class RotationTest extends TestCase {
         // XYZ
         double[][] r0XYZ = Rotation.createRotationXYZ(theta0);
         double[] theta0ExXYZ = Rotation.extractThetaFromXYZ(r0XYZ);     
-        double[][] r0UpXYZ = Rotation.applySingularitySafeRotationPerturbationXYZ(theta0, dTheta0);
+        double[][] r0UpXYZ = Rotation.applySingularitySafeEulerAnglesPerturbationZYX(theta0, dTheta0);
         double[] theta0UpExXYZ = Rotation.extractThetaFromXYZ(r0UpXYZ);
         double[][] r0FromTheta0UpXYZ = Rotation.createRotationXYZ(theta0Up);
         double[] theta0UpExXYZMinusTheta0 = new double[3];
@@ -360,7 +360,7 @@ public class RotationTest extends TestCase {
         double[][] r0ZYX = Rotation.createRotationZYX(theta0);          
         double[] theta0ExZYX = Rotation.extractThetaFromZYX(r0ZYX); //** recovered exactly, that is, same as theta0 
         
-        double[][] r0UpZYX = Rotation.applySingularitySafeRotationPerturbationZYX(theta0, dTheta0);
+        double[][] r0UpZYX = Rotation.applySingularitySafeEulerAnglesPerturbationZYX(theta0, dTheta0);
         double[] theta0UpExZYX = Rotation.extractThetaFromZYX(r0UpZYX); // ** nearly the same as theta0Up
         double[][] r0FromTheta0UpZYX = Rotation.createRotationZYX(theta0Up);
         double[] theta0UpExZYXMinusTheta0 = new double[3];
@@ -452,7 +452,7 @@ public class RotationTest extends TestCase {
         // [3X3]
         R1 = rRot.r;
         // [9X3]
-        dR1 = rRot.dRdin;
+        dR1 = rRot.dRdR;
         Rotation.RodriguesRotation rRot2 = Rotation.createRodriguesRotationMatrixBouguet(MatrixUtil.add(om, dom));
         R2 = rRot2.r;
         //R2a = R1 + reshape(dR1 * dom,3,3);
@@ -514,7 +514,7 @@ public class RotationTest extends TestCase {
 
         Rotation.RodriguesRotation rRot5 = Rotation.extractRodriguesRotationVectorBouguet(R);
         omc = rRot5.om; // om should equal omc
-        domdR = rRot5.dRdin;
+        domdR = rRot5.dRdR;
         Rotation.RodriguesRotation rRot6 = Rotation.extractRodriguesRotationVectorBouguet(
                 MatrixUtil.pointwiseAdd(R, dR)
         );
@@ -585,7 +585,7 @@ public class RotationTest extends TestCase {
         R = rRot7.r;
         System.out.printf("R(om) = \n%s\n", FormatArray.toString(R, "%.4e"));
         System.out.printf("R(om) existing = \n%s\n", FormatArray.toString(_R, "%.4e"));
-        dR = rRot7.dRdin;
+        dR = rRot7.dRdR;
         Rotation.RodriguesRotation rRot8 = Rotation.extractRodriguesRotationVectorBouguet(R);
         om2 = rRot8.om;
         double[] _om2 = Rotation.extractRodriguesRotationVector(R);
@@ -613,7 +613,7 @@ public class RotationTest extends TestCase {
         }
         Rotation.RodriguesRotation rRot9 = Rotation.createRodriguesRotationMatrixBouguet(om);
         R = rRot9.r;
-        dR = rRot9.dRdin;
+        dR = rRot9.dRdR;
         Rotation.RodriguesRotation rRot10 = Rotation.extractRodriguesRotationVectorBouguet(R);
         om2 = rRot10.om;
         System.out.printf("should be equal:\n");

@@ -1036,7 +1036,7 @@ public class CameraPose {
             throw new IllegalArgumentException("T.length should be 3");
         }
 
-        //[R,dRdom] = rodrigues(om);
+        //[R, dRdom] = rodrigues(om);
         Rotation.RodriguesRotation rRot = Rotation.createRodriguesRotationMatrixBouguet(om);
 
         //[m,n] = size(X);
@@ -1086,7 +1086,7 @@ public class CameraPose {
 
         //dYdom = dYdR * dRdom;
         //        [3*n X 9] [9X3] = [3*n X 3]
-        double[][] dYdom = MatrixUtil.multiply(dYdR, rRot.dRdin);
+        double[][] dYdom = MatrixUtil.multiply(dYdR, rRot.dRdR);
 
         ProjectedPoints pp = new ProjectedPoints();
         pp.xEst = Y; //[3 X n]

@@ -1,7 +1,6 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.BlockMatrixIsometric;
-import algorithms.matrix.LinearEquations;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 import gnu.trove.map.TIntObjectMap;
@@ -169,8 +168,8 @@ public class BundleAdjustment {
         UnweightedGraphCommunityFinder.java
         
      </pre>
-     * @param coordsI the features observed in different images (in coordinates 
-     * of the image reference frame). 
+     * @param coordsI the features observed in different images (in coordinates
+     * of the image reference frame).
      * The format of coordsI is 3 X (nFeatures*nImages). Each row should
      * have nFeatures of one image, followed by nFeatures of the next image,
        etc.  The first dimension is for the x,y, and z axes.
@@ -179,36 +178,36 @@ public class BundleAdjustment {
      * @param coordsW the features in a world coordinate system.  The format is
      * 3 X nFeatures.  The first dimension is for the x,y, and z axes.
      * @param imageFeaturesMap an associative array holding the features
-     * in each image.  They key is the image number in coordsI 
+     * in each image.  They key is the image number in coordsI
      * which is j/nFeatures where j is the index of the 2nd dimension,
      * that is coordsI[j].  The value is a set of feature numbers which are
-     * missing from the image.  The feature numbers correspond to the 
+     * missing from the image.  The feature numbers correspond to the
      * 2nd dimension indexes in coordsW.
      * @param intr the intrinsic camera parameter matrices stacked along rows
      * to make a tall double array of size [(mImages*3) X 3] where each image block is
      * size 3X3.  Note that only the focus parameter is refined in this method.
-     * @param extrRotThetas the extrinsic camera parameter rotation euler angles
-     * stacked along the 3 columns, that is the size is [mImages X 3].  
+     * @param extrRVecs the extrinsic camera parameter (Rodrigues) rotation vectors
+     * stacked along the 3 columns, that is the size is [mImages X 3].
      * each image block is size 1X3.
      * @param extrTrans the extrinsic camera parameter translation vectors
      * stacked along the 3 columns, that is the size is [nImages X 3] where
      * nImages is coordsI[0].length/coordsW[0].length.  each array is size
      * 1X3.
-     * @param kRadials a double array wherein each row holds the 
+     * @param kRadials a double array wherein each row holds the
      * radial distortion coefficients k1 and k2 for an image.
      * NOTE: current implementation accepts values of 0 for k1 and k2.
+     * @param nMaxIter
+     *
      * @param useR2R4 useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
         f(r) = 1 +k1*r^2 + k2*r^4 if true,
         else use model #3 f(r) = 1 +k1*r + k2*r^2.
-     * @param nMaxIter
-     * 
-     * @throws no.uib.cipr.matrix.NotConvergedException 
+     * @throws no.uib.cipr.matrix.NotConvergedException
      * @throws java.io.IOException 
      */
     public void solveSparsely(
-        double[][] coordsI, double[][] coordsW, TIntObjectMap<TIntSet> imageFeaturesMap,
-        BlockMatrixIsometric intr, double[][] extrRotThetas, double[][] extrTrans,
-        double[][] kRadials, final int nMaxIter, boolean useR2R4) 
+            double[][] coordsI, double[][] coordsW, TIntObjectMap<TIntSet> imageFeaturesMap,
+            BlockMatrixIsometric intr, double[][] extrRVecs, double[][] extrTrans,
+            double[][] kRadials, final int nMaxIter, boolean useR2R4)
         throws NotConvergedException, IOException {
 
         int nFeatures = coordsW[0].length;
@@ -245,11 +244,11 @@ public class BundleAdjustment {
         if (kRadials[0].length != 2) {
             throw new IllegalArgumentException("kRadials[0].length must be 2.");
         }
-        if (extrRotThetas[0].length != 3) {
-            throw new IllegalArgumentException("extrRotThetas[0].length must be 3");
+        if (extrRVecs[0].length != 3) {
+            throw new IllegalArgumentException("extrRVecs[0].length must be 3");
         }
-        if (extrRotThetas.length != mImages) {
-            throw new IllegalArgumentException("extrRotThetas.length must be mImages "
+        if (extrRVecs.length != mImages) {
+            throw new IllegalArgumentException("extrRVecs.length must be mImages "
             + "where mImages = coordsI[0].length/coordsW[0].length");
         }
         if (extrTrans[0].length != 3) {
@@ -459,7 +458,7 @@ public class BundleAdjustment {
 
         // copy the parameter data structures into test (tentative) data structures
         BlockMatrixIsometric intrTest = intr.copy();
-        double[][] extrRotThetasTest = MatrixUtil.copy(extrRotThetas);
+        double[][] extrRVecsTest = MatrixUtil.copy(extrRVecs);
         double[][] extrTransTest = MatrixUtil.copy(extrTrans);
         double[][] kRadialsTest = MatrixUtil.copy(kRadials);
         double[][] coordsWTest = MatrixUtil.copy(coordsW);
@@ -469,7 +468,7 @@ public class BundleAdjustment {
         
         // update values for the point parameters (== world coordinate features)
         double[] outDP = new double[3*nFeatures];
-        // updatevalues for the camera parameters
+        // update values for the camera parameters
         double[] outDC = new double[9*mImages];
                 
         // Qu array u for parameters is ordered: rot_0, trans_0, intr_0, ...rot_m-1, trans_m-1, intr_m-1, then x_0, ... x_n
@@ -498,7 +497,7 @@ public class BundleAdjustment {
         // use lambda=0, evaluate objective, and get the max of diagonal of (J^T*J) as the output initLambda
         try {
             calculateLMVectorsSparsely(coordsI, coordsWTest,  
-                imageFeaturesMap, intrTest, extrRotThetasTest, extrTransTest, kRadialsTest, useR2R4,
+                imageFeaturesMap, intrTest, extrRVecsTest, extrTransTest, kRadialsTest, useR2R4,
                 outDP, outDC, outGradP, outGradC, outFSqSum, 0., outInitLambda);
         } catch (NaNException e) {
             System.err.println(e.getMessage());
@@ -514,13 +513,16 @@ public class BundleAdjustment {
         double fPrev = outFSqSum[0];
         
         double fTest = Double.POSITIVE_INFINITY;
-        
+
         log.info(String.format(
-            "(nIter=0) lambda=%.3e F=%.3e\n  dC=%s\n  dP=%s\n  gradC=%s\n gradP=%s\n", 
+            "(nIter=0) lambda=%.3e F=%.3e\n  dC=%s\n  gradC=%s\n\n",
             lambda, outFSqSum[0],
-            FormatArray.toString(outDC, "%.3e"), FormatArray.toString(outDP, "%.3e"), 
-            FormatArray.toString(outGradC, "%.3e"), FormatArray.toString(outGradP, "%.3e")
-        ));                 
+            FormatArray.toString(outDC, "%.3e"),
+            FormatArray.toString(outGradC, "%.3e")));
+        log.info(String.format(
+                "dP=%s\n  gradP=%s\n", FormatArray.toString(outDP, "%.3e"),
+                FormatArray.toString(outGradP, "%.3e")
+        ));
                        
         double gainRatio;
                              
@@ -530,18 +532,24 @@ public class BundleAdjustment {
         while ((nIter < nMaxIter) && (Math.abs(fPrev - fTest) >= eps) && (lambda > 1E-15)) {
                 
             nIter++;
-            
-            // update the test data structures by deltaP and deltaC
-            // use the 2nd three elements in outDC:
+
+            /*
+            update the test data structures by deltaP and deltaC
+
+            rotation elements are indexes 0, 1, 2 of dC
+            translation elements are indexes 3,4,5 of dC
+            focus, radial1, radial2 are indexes 6,7,8 of dC
+            3D WCS of features points are indexes 0, 1, 2 of dP
+            */
             updateTranslation(extrTransTest, outDC);
-            updateRotThetas(extrRotThetasTest, outDC);
+            updateRotationVectors(extrRVecsTest, outDC);
             updateIntrinsic(intrTest, outDC);
             updateRadialDistortion(kRadialsTest, outDC);
             //updateWorldC(coordsWTest, outDP);
 
             try {
                 calculateLMVectorsSparsely(coordsI, coordsWTest,
-                    imageFeaturesMap, intrTest, extrRotThetasTest, extrTransTest, kRadialsTest, useR2R4,
+                    imageFeaturesMap, intrTest, extrRVecsTest, extrTransTest, kRadialsTest, useR2R4,
                     outDP, outDC, outGradP, outGradC, outFSqSum, 0, outInitLambda);
             } catch (NaNException e) {
                 System.err.println(e.getMessage());
@@ -555,11 +563,15 @@ public class BundleAdjustment {
             
             log.info(String.format(
                 "(nIter=%d) lambda=%.3e fPrev=%.11e fTest=%.11e diff=%.11e\n "
-                + " g.r.=%.3e\ndC=%s\ndP=%s\ngradC=%s\ngradP=%s\n", 
+                + " g.r.=%.3e\ndC=%s\ngradC=%s\n",
                 nIter, lambda, fPrev, fTest, (fPrev-fTest),
                 gainRatio,
-                FormatArray.toString(outDC, "%.11e"), FormatArray.toString(outDP, "%.11e"), 
-                FormatArray.toString(outGradC, "%.11e"), FormatArray.toString(outGradP, "%.11e")
+                FormatArray.toString(outDC, "%.11e"),
+                FormatArray.toString(outGradC, "%.11e")
+            ));
+            log.info(String.format(
+                    "dP=%s\ngradP=%s\n", FormatArray.toString(outDP, "%.11e"),
+                    FormatArray.toString(outGradP, "%.11e")
             ));
             /*
             for large values of lambda, the update is a very steep descent and
@@ -588,19 +600,24 @@ public class BundleAdjustment {
                     
                     fPrev = fTest;
 
-                    double[][] _dt = MatrixUtil.pointwiseSubtract(extrTrans, extrTransTest);
-                    double[][] _rt = MatrixUtil.pointwiseSubtract(extrRotThetas, extrRotThetasTest);
-                    double _dts = MatrixUtil.frobeniusNorm(_dt);
-                    double _rts = MatrixUtil.frobeniusNorm(_rt);
-                    log.info(String.format("delta trans=%.3e, %s\n", _dts, FormatArray.toString(_dt, "%.11e")));
-                    log.info(String.format("delta rot=%.3e\n%s\n", _rts, FormatArray.toString(_rt, "%.11e")));
+                    for (int i0 = 0; i0 < extrTrans.length; ++i0) {
+                        double[] dT = MatrixUtil.subtract(extrTrans[i0], extrTransTest[i0]);
+                        double[] dRV = MatrixUtil.subtract(extrRVecs[i0], extrRVecsTest[i0]);
+                        double distT = MatrixUtil.lPSum(dT, 2);
+                        double distRV = MatrixUtil.lPSum(dRV, 2);
+                        log.info(String.format("delta trans %d =%.3e, %s\n",
+                                i0, distT, FormatArray.toString(dT, "%.11e")));
+                        log.info(String.format("delta rot vector %d =%.3e, %s\n",
+                                i0, distRV, FormatArray.toString(dRV, "%.11e")));
+                    }
 
                     //copy test data structures into the original in-out datastructures
                     intr.set(intrTest);
-                    MatrixUtil.copy(extrRotThetasTest, extrRotThetas);
+                    MatrixUtil.copy(extrRVecsTest, extrRVecs);
                     MatrixUtil.copy(extrTransTest, extrTrans);
                     MatrixUtil.copy(kRadialsTest, kRadials);
-                    MatrixUtil.copy(coordsWTest, coordsW);
+                    // TODO: consider enabling the updates above and here for WCS features
+                    //MatrixUtil.copy(coordsWTest, coordsW);
                 }
                 
                 // ======= stopping conditions ============
@@ -680,7 +697,7 @@ public class BundleAdjustment {
             a pair of stereo-images.  it also uses cholesky factoring of block
             sparse matrix structure.
      </pre>
-     * @param coordsI the features observed in different images (in coordinates 
+     * @param coordsI the features observed in different images (in coordinates
      * of the image reference frame).  The
      * different images may or may not be from the same camera.
      * The format of coordsI is 3 X (nFeatures*nImages). Each row should
@@ -691,15 +708,15 @@ public class BundleAdjustment {
      * @param coordsW the features in a world coordinate system.  The format is
      * 3 X nFeatures.  The first dimension is for the x,y, and z axes.
      * @param imageFeaturesMap an associative array holding the features
-     * present in each image.  They key is the image number in coordsI 
+     * present in each image.  They key is the image number in coordsI
      * which is j/nFeatures where j is the index of the 2nd dimension,
      * that is coordsI[j].  The value is a set of feature numbers which are
-     * missing from the image.  The feature numbers correspond to the 
+     * missing from the image.  The feature numbers correspond to the
      * 2nd dimension indexes in coordsW.
      * @param intr the intrinsic camera parameter matrices stacked along rows
      * to make a tall double array of size [(mImages*3) X 3] where each block is
      * size 3X3.   Note that only the focus parameter is refined in this class.
-     * @param extrRotThetas the extrinsic camera parameter rotation euler angles
+     * @param extrRVecs the extrinsic camera parameter rotation euler angles
      * stacked along the 3 columns, that is the size is nImages X 3 where
      * nImages is coordsI[0].length/coordsW[0].length.  each array is size
      * 1X3.
@@ -707,7 +724,7 @@ public class BundleAdjustment {
      * stacked along the 3 columns, that is the size is nImages X 3 where
      * nImages is coordsI[0].length/coordsW[0].length.  each array is size
      * 1X3.
-     * @param kRadials a double array wherein each row holds the 
+     * @param kRadials a double array wherein each row holds the
      * radial distortion coefficients k1 and k2 for an image, so the total size is [nCameras X 2].
      * NOTE: current implementation accepts values of 0 for k1 and k2.
      * @param useR2R4 useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
@@ -730,23 +747,23 @@ public class BundleAdjustment {
      * given parameters, not the given parameters plus the returned update steps
      * (outDC and outDP).
      * The length should be 1.
-     * @param lambda the damping parameter.  upon first use, this is 0 and 
+     * @param lambda the damping parameter.  upon first use, this is 0 and
      * outInitLambda is not null so that the sparse Hessian is calculated without
      * the damping term and is used to find the initial value of
      * lambda which it places in outInitLambda.  upon all subsequent uses of
      * this method, it's expected that lambda > 0 and outInitLambda is null.
-     * @param outInitLambda when not null this is the output parameter holding 
+     * @param outInitLambda when not null this is the output parameter holding
      * the maximum of the diagonal of j^T*J.  the array has length 1.
      * @throws no.uib.cipr.matrix.NotConvergedException
      * @throws java.io.IOException
      */
     protected void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
-        TIntObjectMap<TIntSet> imageFeaturesMap,
-        BlockMatrixIsometric intr, double[][] extrRotThetas, double[][] extrTrans,
-        double[][] kRadials, final boolean useR2R4,
-        double[] outDP, double[] outDC, double[] outGradP, double[] outGradC, 
-        double[] outFSqSum, final double lambda,
-        double[] outInitLambda) throws NotConvergedException, IOException, NaNException {
+          TIntObjectMap<TIntSet> imageFeaturesMap,
+          BlockMatrixIsometric intr, double[][] extrRVecs, double[][] extrTrans,
+          double[][] kRadials, final boolean useR2R4,
+          double[] outDP, double[] outDC, double[] outGradP, double[] outGradC,
+          double[] outFSqSum, final double lambda,
+          double[] outInitLambda) throws NotConvergedException, IOException, NaNException {
         
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
@@ -775,11 +792,11 @@ public class BundleAdjustment {
         if (kRadials[0].length != 2) {
             throw new IllegalArgumentException("kRadials[0].length must be 2.");
         }
-        if (extrRotThetas[0].length != 3) {
-            throw new IllegalArgumentException("extrRot[0].length must be 3");
+        if (extrRVecs[0].length != 3) {
+            throw new IllegalArgumentException("extrRVecs[0].length must be 3");
         }
-        if (extrRotThetas.length != mImages) {
-            throw new IllegalArgumentException("extrRot.length must be mImages "
+        if (extrRVecs.length != mImages) {
+            throw new IllegalArgumentException("extrRVecs.length must be mImages "
                     + "where mImages = coordsI[0].length/coordsW[0].length");
         }
         if (extrTrans[0].length != 3) {
@@ -922,7 +939,7 @@ public class BundleAdjustment {
         }
 
         //size is [3 X 3*mImages] with each block being [3X3]
-        BlockMatrixIsometric rotMatrices = createRotationMatricesFromEulerAngles(extrRotThetas);
+        BlockMatrixIsometric rotMatrices = createRotationMatricesFromVectors(extrRVecs);
         
         double[] rotAux = new double[3];
         double[][] rotM = MatrixUtil.zeros(3, 3);
@@ -956,30 +973,34 @@ public class BundleAdjustment {
                 
                 // get the rotation matrix rotM [3X3]
                 rotMatrices.getBlock(rotM, 0, j);
-                
+
+                /*
+                Qu eqn 2.19, used instead of xWCNI
+                xWCNI_2_19[0] = -auxIntr[0][0]*xWCNI[0];
+                xWCNI_2_19[1] = -auxIntr[1][1]*xWCNI[1];
+                xWCNI_2_19[2] = 1;
+
+                that would involve first normalizing by z-coord and then
+                applying camera matrix - those are steps for converting from camera to pixel coordinates.
+                */
+
                 //transform to camera reference frame. size [1X3]
                 if (useHomography == 1) {
                     populateCameraProjectionHomography(rotM, extrTrans[j], h);
                     MatrixUtil.multiplyMatrixByColumnVector(h, xWI, xWCI);
                 } else {
-                    //TODO: consider replacing w/ bouguet projection
+                    //TODO: consider replacing w/ bouguet projection.  it returns derivatives also.
                     Camera.worldToCameraCoordinates(xWI, rotM, extrTrans[j], rotAux, xWCI);
                 }
           
                 //intr is 3 X 3*nCameras where each block is size 3X3.
                 intr.getBlock(auxIntr, j, 0);
 
-                //TODO: review the normalization
-
                 // normalize
                 for (k = 0; k < 3; ++k) {
                     xWCNI[k] = xWCI[k] / xWCI[2];
                 }
-                // Qu eqn 2.19, used instead of xWCNI
-                /*xWCNI_2_19[0] = -auxIntr[0][0]*xWCNI[0];
-                xWCNI_2_19[1] = -auxIntr[1][1]*xWCNI[1];
-                xWCNI_2_19[2] = 1;*/
-                
+
                 k1 = kRadials[j][0];
                 k2 = kRadials[j][1];
 
@@ -993,8 +1014,7 @@ public class BundleAdjustment {
                 //aIJ is [2X9].  a is partial derivative of measurement vector X w.r.t. camera portion of parameter vector P
                 //bIJ is [2X3]   b is partial derivative of measurement vector X w.r.t. position parameters
                 // populate aIJ and bIJ as output of method:
-                aIJBIJ(xWI, xWCI, auxIntr, k1, k2, extrRotThetas[j], rotM, 
-                    extrTrans[j], aa, aIJ, bIJ);
+                aIJBIJ(xWI, xWCI, auxIntr, k1, k2, extrRVecs[j], rotM, extrTrans[j], aa, aIJ, bIJ);
                          
                 //populate  bIJT; [3X2]  aka jP^T
                 MatrixUtil.transpose(bIJ, bIJT);
@@ -1012,8 +1032,7 @@ public class BundleAdjustment {
                    
                     // camera to pixel transformation (distortion already applied):
                     //populate xIJHat;the projected distorted feature i into image j reference frame.  [1X3]
-                    MatrixUtil.multiplyMatrixByColumnVector(auxIntr, 
-                        xWCNDI, xIJHat);
+                    MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNDI, xIJHat);
 //fIJ = (xIJ - xIJHat) where xIJHat is projected feature i into image j reference frame
                     //populate xIJHat;the projected feature i into image j reference frame.  [1X3]
                     //MatrixUtil.multiplyMatrixByColumnVector(auxIntr, xWCNI, xIJHat);
@@ -1377,11 +1396,10 @@ public class BundleAdjustment {
         double[][] cholLT = MatrixUtil.transpose(cholL);
         
         log.info(String.format("cholL=\n%s\n", FormatArray.toString(cholL, "%.3e")));
-        //log.info(String.format("cholL*LT=\n%s\n", FormatArray.toString(
-        //    MatrixUtil.multiply(cholL, cholLT), "%.3e")));
+        log.info(String.format("cholL*LT=\n%s\n", FormatArray.toString(
+            MatrixUtil.multiply(cholL, cholLT), "%.3e")));
 
-        /* avoid inverting A by using Cholesky decomposition w/ forward and 
-        backward substitution to find dC.
+        /* avoid inverting A by using Cholesky decomposition w/ forward and backward substitution to find dC.
             mA * dC = vB
             mA = L ﹡ L^* as Cholesky decomposition of A
 
@@ -1397,7 +1415,6 @@ public class BundleAdjustment {
         double[][] _mInv = MatrixUtil.pseudoinverseFullColumnRank(mA.getA());
         MatrixUtil.multiplyMatrixByColumnVector(_mInv, vB, outDC);
 
-        /*
         double[] yM = MatrixUtil.forwardSubstitution(cholL,  vB);
         // temporary exit until find reasons for very large numbers in some
         //   of the arrays
@@ -1406,11 +1423,13 @@ public class BundleAdjustment {
         }
         // [[mImages*9 X mImages*9] * x = [mImages*9] ==> x is length mImages*9
         // x is dC
-        MatrixUtil.backwardSubstitution(cholLT, yM, outDC);
+        double[] outDC2 = new double[9*mImages];
+        MatrixUtil.backwardSubstitution(cholLT, yM, outDC2);
 //Error:  dC is too large.  error somewhere in calculating it.        
         log.info(String.format("yM=%s\n", FormatArray.toString(yM, "%.3e")));
-         */
-        log.info(String.format("outDC=dC=%s\n", FormatArray.toString(outDC, "%.3e")));
+
+        log.info(String.format("outDC=dC=\n%s\n", FormatArray.toString(outDC, "%.3e")));
+        log.info(String.format("outDC2 from forward, backward substitution=\n%s\n", FormatArray.toString(outDC2, "%.3e")));
 
         // tPC = HPC^T*(HPP^-1)
         // tPC^T = (HPP^-1) * HPC
@@ -1435,9 +1454,8 @@ public class BundleAdjustment {
             //       the updated parameters and world coords.
             
         } // end loop over feature i
-            
-        log.info(String.format("outDP=%s\n", FormatArray.toString(outDP, "%.3e")));
 
+        log.info(String.format("outDP=%s\n", FormatArray.toString(outDP, "%.3e")));
     }
 
     /**
@@ -1786,23 +1804,21 @@ public class BundleAdjustment {
         }
     }
 
-    private BlockMatrixIsometric createRotationMatricesFromEulerAngles(
-        double[][] extrRotThetas) {
+    private BlockMatrixIsometric createRotationMatricesFromVectors(double[][] extrRVecs) {
         
-        //extrRot is mImages*[1X3]
+        //extrRVecs is mImages*[1X3]
         
-        int mImages = extrRotThetas.length;
+        int mImages = extrRVecs.length;
         
         double[][] rot = MatrixUtil.zeros(3, 3);
         
         BlockMatrixIsometric m = new BlockMatrixIsometric(MatrixUtil.zeros(3, 3*mImages), 3, 3);
-       
-        Rotation.AuxiliaryArrays aa = new Rotation.AuxiliaryArrays();
-        
+
+        Rotation.RodriguesRotation rr;
         int i;
         for (i = 0; i < mImages; ++i) {
-            Rotation.createRotationZYX(extrRotThetas[i], aa, rot);
-            m.setBlock(rot, 0, i);
+            rr = Rotation.createRodriguesRotationMatrixBouguet(extrRVecs[i]);
+            m.setBlock(rr.r, 0, i);
         }
         return m;
     }
@@ -1945,78 +1961,36 @@ public class BundleAdjustment {
 
     /**
      * update rotation matrix theta vectors with steps in dC.
-     * @param extrRotThetas the extrinsic camera parameter rotation euler angles
+     * @param extrRVecs the extrinsic camera parameter rotation euler angles
      * stacked along the 3 columns, that is the size is [nImages X 3].
      * @param dC steps of camera parameters in array of length 9*mImages.
      * dC contains 3 rotation, 3 translation, 3 intrinsic parameters for one
      * image, followed by the same 9 for the next image, etc.  only the
-     * rotation elements are used in this method.
      */
-    private void updateRotThetas(double[][] extrRotThetas,  
-        double[] dC) {
-                                 
+    private void updateRotationVectors(double[][] extrRVecs, double[] dC) {
+
         // from Danping Zou lecture notes, Shanghai Jiao Tong University,
         // EE382-Visual localization & Perception, “Lecture 08- Nonlinear least square & RANSAC”
         // http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
         // parameter perturbations for a Lie group such as rotation are:
-        //     R * (I - [delta x]_x) where [delta x]_x is the skew-symetric matrix of delta_x 
-        
-        // T. Barfoot, et al. 2010, 
-        // Pose estimation using linearized rotations and quaternion algebra, 
-        // Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
-        // eqn (31) for updating rotation:
-        // C(theta) = C(deltaPhi) * previous C
-        //     where C is rotation matrix r
-        //           calculated as C(theta) = 
-        //     and deltaPhi = sTheta * deltaTheta
-        
-        //    rotation matrix formed from rZ * rY * rX (yaw, pitch, and roll)
-        //    which is the same convention used by Wetzstein
-                
-        double[] deltaTheta = new double[3];
-        
-        double[][] r = MatrixUtil.zeros(3, 3);
-        Rotation.AuxiliaryArrays aa = new Rotation.AuxiliaryArrays();
-        double[] thetaExtracted = new double[3];
-        
-        // ---- update theta ----        
-        //extracting theta from the updated rotation would keep the theta
-        //    vector consistent with the rotation matrix,
-        //    but the value is different that updating theta with delta theta
-        //    by addition.
-        //    The difference may create a problem with convergence for delta theta.
-        
-        int j;
+        //     R * (I - [delta x]_x) where [delta x]_x is the skew-symmetric matrix of delta_x
+        // which is the same as eqn (29c) of Barfoot, et al. 2010,
+
+        //double[] dRVec = new double[3];
+
+        int i, j;
                         
-        for (j = 0; j < extrRotThetas.length; ++j) {
+        for (j = 0; j < extrRVecs.length; ++j) {
             
             // copy delta thetas for this image into deltaTheta array
-            System.arraycopy(dC, j*9, deltaTheta, 0, 3);
-            
-            double[] qUpdated = 
-                Rotation.applySingularitySafeRotationPerturbationQuaternion(
-                extrRotThetas[j], deltaTheta);
-        
-            // [4X4]
-            double[][] qR = Rotation.createRotationMatrixFromQuaternion4(qUpdated);
-            qR = MatrixUtil.transpose(qR);
+            //System.arraycopy(dC, j*9, dRVec, 0, 3);
 
-            // rotation is [0:2, 0:2] of qR  
-
-            // update in-out variable r
-            for (int i = 0; i < 3; ++i) {
-                System.arraycopy(qR[i], 0, r[i], 0, 3);
+            // apply perturbation to the rotation vector
+            for (i = 0; i < 3; ++i) {
+                //extrRVecs[j][i] += dRVec[i];
+                extrRVecs[j][i] += dC[j*9 + i];
             }
-
-            // ---- update theta ----        
-            //extracting theta from the updated rotation would keep the theta
-            //    vector consistent with the rotation matrix,
-            //    but the value is a little different that updating theta with delta theta
-            //    by addition.
-            Rotation.extractThetaFromZYX(r, thetaExtracted);
-            
-            System.arraycopy(thetaExtracted, 0, extrRotThetas[j], 0, extrRotThetas[j].length);        
-        }    
+        }
     }
     
     private void initDeltaPWithQu(double[] deltaP) {
@@ -2146,7 +2120,7 @@ public class BundleAdjustment {
             
             intr.getBlock(kIntr, j, 0);
             xc = Camera.pixelToCameraCoordinates(x, kIntr, kRadial[j], useR2R4);
-            
+
             for (i = 0; i < 3; ++i) {
                 for (k = 0; k < nFeatures; ++k) {
                     xc[i][k] /= xc[2][k];
