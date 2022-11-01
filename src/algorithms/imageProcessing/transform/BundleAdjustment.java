@@ -67,7 +67,7 @@ import no.uib.cipr.matrix.*;
 public class BundleAdjustment {
     
     // for 0, use image (pixel) reference frame, else for 1 use camera frame.
-    private final int useCameraFrame = 0;
+    private final int useCameraFrame = 1;
         
     private int useHomography = 0;
         
@@ -456,8 +456,8 @@ public class BundleAdjustment {
         //   consider using the eigenvalue spacing of J^T*J (Transtrum & Sethna, "Improvements to the Levenberg-Marquardt algorithm for nonlinear least-squares minimization")
         double lambdaF = 2;
         double eps = 1E-12;
-       
-         // copy the parameter data structures into test (tentative) data structures
+
+        // copy the parameter data structures into test (tentative) data structures
         BlockMatrixIsometric intrTest = intr.copy();
         double[][] extrRotThetasTest = MatrixUtil.copy(extrRotThetas);
         double[][] extrTransTest = MatrixUtil.copy(extrTrans);
@@ -505,7 +505,7 @@ public class BundleAdjustment {
             return;
         }
         double lambda = outInitLambda[0];
-        log.fine(String.format("max diag of Hessian lambda=%.7e\n", lambda));
+        log.info(String.format("max diag of Hessian lambda=%.7e\n", lambda));
 
         // set to null to prevent calculating the max of diagnonal of (J^T*J) 
         outInitLambda = null;
@@ -515,7 +515,7 @@ public class BundleAdjustment {
         
         double fTest = Double.POSITIVE_INFINITY;
         
-        log.fine(String.format(
+        log.info(String.format(
             "(nIter=0) lambda=%.3e F=%.3e\n  dC=%s\n  dP=%s\n  gradC=%s\n gradP=%s\n", 
             lambda, outFSqSum[0],
             FormatArray.toString(outDC, "%.3e"), FormatArray.toString(outDP, "%.3e"), 
@@ -553,7 +553,7 @@ public class BundleAdjustment {
             gainRatio = calculateGainRatio(fTest, fPrev, outDC, outDP, lambda, 
                 outGradC, outGradP, eps);
             
-            log.fine(String.format(
+            log.info(String.format(
                 "(nIter=%d) lambda=%.3e fPrev=%.11e fTest=%.11e diff=%.11e\n "
                 + " g.r.=%.3e\ndC=%s\ndP=%s\ngradC=%s\ngradP=%s\n", 
                 nIter, lambda, fPrev, fTest, (fPrev-fTest),
@@ -592,8 +592,8 @@ public class BundleAdjustment {
                     double[][] _rt = MatrixUtil.pointwiseSubtract(extrRotThetas, extrRotThetasTest);
                     double _dts = MatrixUtil.frobeniusNorm(_dt);
                     double _rts = MatrixUtil.frobeniusNorm(_rt);
-                    log.fine(String.format("delta trans=%.3e, %s\n", _dts, FormatArray.toString(_dt, "%.11e")));
-                    log.fine(String.format("delta rot=%.3e\n%s\n", _rts, FormatArray.toString(_rt, "%.11e")));
+                    log.info(String.format("delta trans=%.3e, %s\n", _dts, FormatArray.toString(_dt, "%.11e")));
+                    log.info(String.format("delta rot=%.3e\n%s\n", _rts, FormatArray.toString(_rt, "%.11e")));
 
                     //copy test data structures into the original in-out datastructures
                     intr.set(intrTest);
@@ -617,7 +617,7 @@ public class BundleAdjustment {
                 lambda *= lambdaF;
                 lambdaF *= 2;
             }
-            log.fine(String.format("new lambda=%.11e\n", lambda));           
+            log.info(String.format("new lambda=%.11e\n", lambda));           
         }        
     }
 
@@ -819,6 +819,7 @@ public class BundleAdjustment {
         if (nFeatures < 6) {
             throw new IllegalArgumentException("need at least 6 features in an image");
         }
+        //TODO: assert intr size as [(mImages*3) X 3]
                 
         /*
         The partial derivatives are implemented following Qu 2018.
@@ -828,7 +829,6 @@ public class BundleAdjustment {
         The factorization is of the reduced camera matrix of the Schur decomposition
         as it is often assumed that (9^3)*mImages < (3^3)*nFeatures, so one
         inverts the matrix HPP (aka V*).
-        
         */
         
         if (outInitLambda != null) {
@@ -920,9 +920,7 @@ public class BundleAdjustment {
             // this includes removing radial distortion
             xIJCs = transformPixelToCamera(nFeatures, coordsI, intr, kRadials, useR2R4);        
         }
-//TODO: edit the algorithm for rotation improvements such as replacing with rotation quaternions and applying
-// rotations to them, then creating a rotation matrix from that when needed (avoiding extraction
-// of rotation vector from the rotation matrix if possible)
+
         //size is [3 X 3*mImages] with each block being [3X3]
         BlockMatrixIsometric rotMatrices = createRotationMatricesFromEulerAngles(extrRotThetas);
         
@@ -1023,13 +1021,13 @@ public class BundleAdjustment {
                     // [1X3] - [1X3] = [1X3]
                     MatrixUtil.pointwiseSubtract(xIJ, xIJHat, fIJ);
                     if ((i % (nFeatures/3)) == 0) {
-                        log.fine(String.format("xWCNI=%s\n", FormatArray.toString(xWCNI, "%.3e")));
-                        log.fine(String.format("xWCNDI=%s\n", FormatArray.toString(xWCNDI, "%.3e")));
-                        log.fine(String.format("*xIJHat=%s\n", FormatArray.toString(xIJHat, "%.3e")));
-                        log.fine(String.format("*xIJ=%s\n", FormatArray.toString(xIJ, "%.3e")));
-                        log.fine(String.format("*diff=%s\n", FormatArray.toString(fIJ, "%.7e")));
-                        log.fine(String.format("%d,%d) aIJ=%s\n", i, j, FormatArray.toString(aIJ, "%.7e")));
-                        log.fine(String.format("bIJ=%s\n", FormatArray.toString(bIJ, "%.7e")));
+                        log.info(String.format("xWCNI=%s\n", FormatArray.toString(xWCNI, "%.3e")));
+                        log.info(String.format("xWCNDI=%s\n", FormatArray.toString(xWCNDI, "%.3e")));
+                        log.info(String.format("*xIJHat=%s\n", FormatArray.toString(xIJHat, "%.3e")));
+                        log.info(String.format("*xIJ=%s\n", FormatArray.toString(xIJ, "%.3e")));
+                        log.info(String.format("*diff=%s\n", FormatArray.toString(fIJ, "%.7e")));
+                        log.info(String.format("%d,%d) aIJ=%s\n", i, j, FormatArray.toString(aIJ, "%.7e")));
+                        log.info(String.format("bIJ=%s\n", FormatArray.toString(bIJ, "%.7e")));
 }                    
                 } else {  
                     // these are DISTORTION-FREE and in CAMERA reference frame
@@ -1039,7 +1037,7 @@ public class BundleAdjustment {
                     // xWCNI are the world scene points projected into camera frame
                     
                     // xIJC are the observed points in the camera reference frame with distortion removed
-                    
+
                     // [1X3] - [1X3] = [1X3]
                     MatrixUtil.pointwiseSubtract(xIJC, xWCNI, fIJ);
                 }
@@ -1072,7 +1070,7 @@ public class BundleAdjustment {
                 MatrixUtil.pointwiseSubtract(bPI, bIJTF, bPI);
                 
                 if ((i % (nFeatures / 3)) == 0) {
-                    log.fine(String.format("%d,%d) bPI=gradP=%s\n", i, j, FormatArray.toString(bPI, "%.7e")));
+                    log.info(String.format("%d,%d) bPI=gradP=%s\n", i, j, FormatArray.toString(bPI, "%.7e")));
                 }
 
                 // populate bIJsq bij^T * bij = [3X2]*[2X3] = [3X3]
@@ -1134,14 +1132,14 @@ public class BundleAdjustment {
             // update bP with the finish bPI calc
             System.arraycopy(bPI, 0, bP, i*3, 3);
 
-            log.fine(String.format("%d,%d) bC=%s\n", i,j, FormatArray.toString(bC, "%.3e")));
+            log.info(String.format("%d,%d) bC=%s\n", i,j, FormatArray.toString(bC, "%.3e")));
 
             // now HPP_i (aka V_i) is summed over all j: V_i = Σ_j(BIJT*B1J)
 
             if (outInitLambda != null) {
                 // find maximum of the diagonal of hPP.  the diagonal of HPP is each [3X3] block hPPI.
                 if (maxDiag(hPPI, outInitLambda)) {
-                    log.fine(String.format("max diag of hPPI (aka V_i): new lambda=%.7e\n", outInitLambda[0]));
+                    log.info(String.format("max diag of hPPI (aka V_i): new lambda=%.7e\n", outInitLambda[0]));
                 }
             }
 
@@ -1179,7 +1177,7 @@ public class BundleAdjustment {
             for (j = 0; j < mImages; ++j) {
                 hCCJBlocks.getBlock(auxMA, j, 0);
                 if (maxDiag(auxMA, outInitLambda)) {
-                    log.fine(String.format("max of diagonal blocks of HCC (aka U): new lambda=%.7e\n", outInitLambda[0]));
+                    log.info(String.format("max of diagonal blocks of HCC (aka U): new lambda=%.7e\n", outInitLambda[0]));
                 }
             }
         }
@@ -1207,11 +1205,11 @@ public class BundleAdjustment {
               b_C_j = -J_C^T * f = gradC  //[9X9]  b_C is [9*mImages X 1]
          */
 
-        log.fine(String.format("HPC=W^T=\n%s\n\n", FormatArray.toString(hPCBlocks.getA(), "%.3e")));
-        log.fine(String.format("HPPInv=V^-1=\n%s\n\n", FormatArray.toString(hPPIInvBlocks.getA(), "%.3e")));
-        log.fine(String.format("HCC=U=\n%s\n\n", FormatArray.toString(hCCJBlocks.getA(), "%.3e")));
-        log.fine(String.format("gradC=bC=\n%s\n\n", FormatArray.toString(bC, "%.3e")));
-        log.fine(String.format("gradP=bP=\n%s\n\n", FormatArray.toString(bP, "%.3e")));
+        log.info(String.format("HPC=W^T=\n%s\n\n", FormatArray.toString(hPCBlocks.getA(), "%.3e")));
+        log.info(String.format("HPPInv=V^-1=\n%s\n\n", FormatArray.toString(hPPIInvBlocks.getA(), "%.3e")));
+        log.info(String.format("HCC=U=\n%s\n\n", FormatArray.toString(hCCJBlocks.getA(), "%.3e")));
+        log.info(String.format("gradC=bC=\n%s\n\n", FormatArray.toString(bC, "%.3e")));
+        log.info(String.format("gradP=bP=\n%s\n\n", FormatArray.toString(bP, "%.3e")));
 
         /*
         solving each line here separately:
@@ -1359,8 +1357,8 @@ public class BundleAdjustment {
         //    Cholesky decomposition, so need to find the nearest or a nearest
         //    symmetric positive definite.
         
-        log.fine(String.format("mA=%s\n", FormatArray.toString(mA.getA(), "%.3e")));
-        log.fine(String.format("vB=%s\n", FormatArray.toString(vB, "%.3e")));
+        log.info(String.format("mA=%s\n", FormatArray.toString(mA.getA(), "%.3e")));
+        log.info(String.format("vB=%s\n", FormatArray.toString(vB, "%.3e")));
 
         double eps = 1.e-11;
 
@@ -1378,8 +1376,8 @@ public class BundleAdjustment {
         double[][] cholL = Matrices.getArray(_cholL);
         double[][] cholLT = MatrixUtil.transpose(cholL);
         
-        log.fine(String.format("cholL=\n%s\n", FormatArray.toString(cholL, "%.3e")));
-        //log.fine(String.format("cholL*LT=\n%s\n", FormatArray.toString(
+        log.info(String.format("cholL=\n%s\n", FormatArray.toString(cholL, "%.3e")));
+        //log.info(String.format("cholL*LT=\n%s\n", FormatArray.toString(
         //    MatrixUtil.multiply(cholL, cholLT), "%.3e")));
 
         /* avoid inverting A by using Cholesky decomposition w/ forward and 
@@ -1410,9 +1408,9 @@ public class BundleAdjustment {
         // x is dC
         MatrixUtil.backwardSubstitution(cholLT, yM, outDC);
 //Error:  dC is too large.  error somewhere in calculating it.        
-        log.fine(String.format("yM=%s\n", FormatArray.toString(yM, "%.3e")));
+        log.info(String.format("yM=%s\n", FormatArray.toString(yM, "%.3e")));
          */
-        log.fine(String.format("outDC=dC=%s\n", FormatArray.toString(outDC, "%.3e")));
+        log.info(String.format("outDC=dC=%s\n", FormatArray.toString(outDC, "%.3e")));
 
         // tPC = HPC^T*(HPP^-1)
         // tPC^T = (HPP^-1) * HPC
@@ -1438,7 +1436,7 @@ public class BundleAdjustment {
             
         } // end loop over feature i
             
-        log.fine(String.format("outDP=%s\n", FormatArray.toString(outDP, "%.3e")));
+        log.info(String.format("outDP=%s\n", FormatArray.toString(outDP, "%.3e")));
 
     }
 
