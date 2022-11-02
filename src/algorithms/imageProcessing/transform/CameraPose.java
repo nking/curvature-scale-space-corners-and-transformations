@@ -430,12 +430,13 @@ public class CameraPose {
             soln = bouguetPoseInitPlanar(intrinsics, xc, X, svd.getVt(), XMean);
         } else {
             //%fprintf(1,'Non planar structure detected: r=%f\n',r);
-            soln = bouguetPoseInitNonPlanar(intrinsics, xc, X, XMean);
+            soln = bouguetPoseInitNonPlanar(xc, X);
         }
 
         if (refine) {
             // could return more intermediate arrays such as JJ
-            soln = bouguetPoseRefine(soln, intrinsics, xc, X);
+            //this needs image coordinates because internally it is projecting X to camera then image and comparing that to x
+            soln = bouguetPoseRefine(soln, intrinsics, x, X);
         }
 
         //computation of the homography (not useful in the end)
@@ -564,7 +565,7 @@ public class CameraPose {
          */
 
         //[Y,dYdom,dYdT] = rigid_motion(X,om,T);
-        ProjectedPoints pRM = bouguetRigidMotion(X, om, t);
+        ProjectedPoints pRM = bouguetRigidMotion(X, om, t); // in camera reference frame
         double[][] Y = pRM.xEst; // [3 X n]
         double[][] dYdom = pRM.dxdom; // [3*n X 3]
         double[][] dYdT = pRM.dxdT;   // [3*n X 3]
@@ -1024,7 +1025,7 @@ public class CameraPose {
      * %        dYdom: Derivative of Y with respect to om ((3N)x3 matrix)
      * %        dYdT: Derivative of Y with respect to T ((3N)x3 matrix)
      */
-    private static ProjectedPoints bouguetRigidMotion(double[][] X, double[] om, double[] T) {
+    static ProjectedPoints bouguetRigidMotion(double[][] X, double[] om, double[] T) {
 
         if (X.length != 3) {
             throw new IllegalArgumentException("X.length should be 3");
@@ -1097,11 +1098,11 @@ public class CameraPose {
     }
 
     public static CameraExtrinsicParameters bouguetPoseRefine(CameraExtrinsicParameters init,
-                                                               CameraIntrinsicParameters intrinsics,
-                                                               double[][] xc, double[][] X) throws NotConvergedException {
+                                                              CameraIntrinsicParameters intrinsics,
+                                                              double[][] xi, double[][] X) throws NotConvergedException {
 
-        if (xc.length != 2 && xc.length != 3) {
-            throw new IllegalArgumentException("xc length must be 3 or 2");
+        if (xi.length != 2 && xi.length != 3) {
+            throw new IllegalArgumentException("xi length must be 3 or 2");
         }
         if (X.length != 3) {
             throw new IllegalArgumentException("X length must be3");
@@ -1133,10 +1134,10 @@ public class CameraPose {
         double[] omckk = Arrays.copyOf(init.getRodriguesVector(), init.getRodriguesVector().length);
         double[] Tckk = Arrays.copyOf(init.getTranslation(), init.getTranslation().length);
 
-        int n = xc[0].length;
+        int n = xi[0].length;
 
         //[2 X n]
-        double[][] xkk = MatrixUtil.copySubMatrix(xc, 0, 1, 0, n - 1);
+        double[][] xkk = MatrixUtil.copySubMatrix(xi, 0, 1, 0, n - 1);
 
         //% Final optimization (minimize the reprojection error in pixel):
         //% through Gradient Descent:
@@ -1162,7 +1163,7 @@ public class CameraPose {
 
             //%fprintf(1,'%d...',iter+1);
             //[x,dxdom,dxdT] = project_points2(X_kk,omckk,Tckk,fc,cc,kc,alpha_c);
-            pp = bouguetProjectPoints2(X, omckk, Tckk, intrinsics);
+            pp = bouguetProjectPoints2(X, omckk, Tckk, intrinsics); // these are in image reference frame
             double[][] x = pp.xEst;  //[2 X n]
             double[][] dxdom = pp.dxdom; // [2*n X 3]
             double[][] dxdT = pp.dxdT; // [2*n X 3]
@@ -1399,9 +1400,8 @@ public class CameraPose {
 
         return new CameraExtrinsicParameters(Rckk, omckk, Tckk);
     }
-    static CameraExtrinsicParameters bouguetPoseInitNonPlanar(
-            Camera.CameraIntrinsicParameters intrinsics, double[][] xc,
-            double[][] X, double[] XMean) throws NotConvergedException, IOException {
+    static CameraExtrinsicParameters bouguetPoseInitNonPlanar(double[][] xc,
+            double[][] X) throws NotConvergedException {
 
         if (xc.length != 2 && xc.length != 3) {
             throw new IllegalArgumentException("xc length must be 3 or 2");

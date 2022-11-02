@@ -932,8 +932,8 @@ public class BundleAdjustment {
         //Qu: observed is all features of first image, then all features of next image
         
         if (useCameraFrame == 1) {
-            // this includes removing radial distortion
-            xIJCs = transformPixelToCamera(nFeatures, coordsI, intr, kRadials, useR2R4);        
+            // this includes removing radial distortion and normalizing by last coordinate
+            xIJCs = transformPixelToCamera(nFeatures, coordsI, intr, kRadials, useR2R4);
         }
 
         //size is [3 X 3*mImages] with each block being [3X3]
@@ -1707,7 +1707,7 @@ public class BundleAdjustment {
         }
 
         // 2X2.  Qu 2018 eqn (3.12)
-        double[][] dCPdC = aa.a2X2;
+        double[][] dCPdC = aa.a2X2; // this is in the image reference frame
         pdCpIJCIJ(xWCNI, intr, k1, k2, dCPdC);
         
         // 2X3.  Qu 2018 eqn (3.16)
@@ -1715,7 +1715,7 @@ public class BundleAdjustment {
         pdCIJXWIJ(xWCI, dCdX);
         
         // 2X3.  Qu 2018 eqn (3.10)
-        double[][] dCPdY = aa.c2X3;
+        double[][] dCPdY = aa.c2X3;  // this is in the image reference frame
         pdCpIJYJ(xWCNI, intr, k1, k2, dCPdY);
         
         // 3X3.  Qu 2018 eqns (3.28 - 3.33)

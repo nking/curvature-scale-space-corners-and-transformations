@@ -225,7 +225,7 @@ public class CameraPoseTest extends TestCase {
         // https://github.com/fragofer/TOOLBOX_calib/
         // compute_extrinsic.m
 
-        int Np = 100;//4;
+        int Np = 4;
         double[] s = new double[]{10, 10, 5};
 
         long seed = System.nanoTime();
