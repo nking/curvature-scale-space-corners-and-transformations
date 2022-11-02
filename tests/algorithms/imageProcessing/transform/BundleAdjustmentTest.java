@@ -37,7 +37,7 @@ public class BundleAdjustmentTest extends TestCase {
     /**
      * Test of solveUsingSparse method, of class BundleAdjustment.
      */
-    public void estSolveUsingSparse_ZhangData() throws Exception {
+    public void testSolveUsingSparse_ZhangData() throws Exception {
         
         // see testresources/zhang1998/README.txt
         /*
@@ -49,7 +49,7 @@ public class BundleAdjustmentTest extends TestCase {
         */
         
         // they use f(r) = 1 + k1*r + k2*r^2:
-        boolean useR2R4 = true;//false;
+        boolean useR2R4 = true;
         
         int nFeatures = 256;
         int nImages = 5;
@@ -72,8 +72,7 @@ public class BundleAdjustmentTest extends TestCase {
         log.log(LEVEL, String.format("coordsW dimensions = [%d X %d]\ncoordsI dimensions = [%d X %d]\n",
             coordsW.length, coordsW[0].length, coordsI.length, coordsI[0].length));
         
-        Camera.CameraMatrices cameraMatrices = CameraCalibration.estimateCamera(
-            nFeatures, coordsI, coordsW, useR2R4);
+        Camera.CameraMatrices cameraMatrices = CameraCalibration.estimateCamera(nFeatures, coordsI, coordsW, useR2R4);
         
         Camera.CameraIntrinsicParameters kIntr = cameraMatrices.getIntrinsics();
         List<Camera.CameraExtrinsicParameters> extrinsics = cameraMatrices.getExtrinsics();
@@ -109,10 +108,11 @@ public class BundleAdjustmentTest extends TestCase {
         for (int i = 0; i < nImages; ++i) {
             ex1 = extrinsics.get(i);
             log.log(LEVEL, String.format("\n"));
+            log.log(LEVEL, String.format("   rVec%d=\n%s\n", i, FormatArray.toString(ex1.getRodriguesVector(), "%.3e")));
             log.log(LEVEL, String.format("   r%d=\n%s\n", i, FormatArray.toString(ex1.getRotation(), "%.3e")));
-            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(Zhang98Data.getRotation(i), "%.3e")));
+            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(Zhang98Data.getRotation(i+1), "%.3e")));
             log.log(LEVEL, String.format("   t%d=\n%s\n", i,FormatArray.toString(ex1.getTranslation(), "%.3e")));
-            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(Zhang98Data.getTranslation(i), "%.3e")));
+            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(Zhang98Data.getTranslation(i+1), "%.3e")));
         }
         
         // now have initial parameters to refine using BundleAdjustment.java in other tests
@@ -149,15 +149,14 @@ public class BundleAdjustmentTest extends TestCase {
             //kRadials[i] = new double[2];
         }
         
-        //the extrinsic camera parameter rotation euler angles
+        //the extrinsic camera parameter rotation vectors
         //stacked along the 3 columns, that is the size is [nImages X 3] where
         //nImages is coordsI[0].length/coordsW[0].length.  each array is size [1X3]
-        double[][] extrRotThetas = new double[nImages][];
+        double[][] extrRotVecs = new double[nImages][];
         double[][] extrTrans = new double[nImages][];
         for (i = 0; i < nImages; ++i) {
             ex1 = extrinsics.get(i);
-            r = ex1.getRotation();
-            extrRotThetas[i] = Rotation.extractThetaFromZYX(r);
+            extrRotVecs[i] = Arrays.copyOf(ex1.getRodriguesVector(), ex1.getRodriguesVector().length);
             extrTrans[i] = Arrays.copyOf(ex1.getTranslation(), 3);
         }
         
@@ -169,7 +168,7 @@ public class BundleAdjustmentTest extends TestCase {
         BundleAdjustment ba = new BundleAdjustment();
         //ba.setUseHomography();
         ba.solveSparsely(coordsI, coordsW, imageFeaturesMap,
-            intr, extrRotThetas, extrTrans,
+            intr, extrRotVecs, extrTrans,
             kRadials, nMaxIter, useR2R4);
         
         log.log(LEVEL, String.format("\nAfter BundleAdjustment\n"));
@@ -191,17 +190,17 @@ public class BundleAdjustmentTest extends TestCase {
         log.log(LEVEL, String.format("[kRadial]=[%.3e, %.3e].  expected=[%.3e, %.3e]\n", 
             kRadial[0], kRadial[1], k1E, k2E));
         
-        for (i = 1; i <= nImages; ++i) {
-            r = Rotation.createRotationZYX(extrRotThetas[i]);
+        for (i = 0; i < nImages; ++i) {
+            r = Rotation.createRodriguesRotationMatrixBouguet(extrRotVecs[i]).r;
             log.log(LEVEL, String.format("\n"));
             log.log(LEVEL, String.format("   r%d=\n%s\n", i, 
                 FormatArray.toString(r, "%.3e")));
             log.log(LEVEL, String.format("ansR%d=\n%s\n", i, 
-                FormatArray.toString(Zhang98Data.getRotation(i), "%.3e")));
+                FormatArray.toString(Zhang98Data.getRotation(i+1), "%.3e")));
             log.log(LEVEL, String.format("   t%d=\n%s\n", i, 
                 FormatArray.toString(extrTrans[i], "%.3e")));
             log.log(LEVEL, String.format("ansT%d=\n%s\n", i,
-                FormatArray.toString(Zhang98Data.getTranslation(i), "%.3e")));
+                FormatArray.toString(Zhang98Data.getTranslation(i+1), "%.3e")));
         }
         
     }

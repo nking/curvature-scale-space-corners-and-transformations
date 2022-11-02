@@ -122,7 +122,7 @@ public class CameraCalibration {
         
         CameraMatrices cameraMatrices = new CameraMatrices();
         cameraMatrices.setIntrinsics(kIntr);
-        
+
         //List<CameraExtrinsicParameters> extrinsics = solveForExtrinsics(kIntr, h, nImages);        
         List<CameraExtrinsicParameters> extrinsics = solveForExtrinsics2(
             kIntr, coordsI, coordsW);
@@ -927,7 +927,6 @@ public class CameraCalibration {
         kExtr.setRotation(r);
         kExtr.setTranslation(t);
         kExtr.setRodriguesVector(Rotation.extractRodriguesRotationVectorBouguet(r).om);
-
         return kExtr;
     }
     

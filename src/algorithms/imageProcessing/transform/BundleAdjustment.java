@@ -42,9 +42,7 @@ import no.uib.cipr.matrix.*;
  * "Direct sparse odometry". 
  * IEEE transactions on pattern analysis and machine intelligence, 
  * 40(3):611–625, 2018.
- * 
- * TODO: find errors leading to such large parameter steps (dC and dP).
- * 
+ *
  * TODO:  add gauge fix.  And related to that, consider adding constraints 
  * suggested in Seliski 2010: u_0 and v_0 are close to half the image lengths 
  * and widths, respectively.  the angle between 2 image axes is close to 90.
@@ -446,7 +444,7 @@ public class BundleAdjustment {
         need to consider them further.
         */
         
-        //TODO: consider adding constraints suggested in Seliski 2010:
+        //TODO: consider adding constraints suggested in Szeliski 2010:
         // u_0 and v_0 are close to half the image lengths and widths, respectively.
         // the angle between 2 image axes is close to 90.
         // the focal lengths along both axes are greater than 0.
@@ -566,12 +564,12 @@ public class BundleAdjustment {
                 + " g.r.=%.3e\ndC=%s\ngradC=%s\n",
                 nIter, lambda, fPrev, fTest, (fPrev-fTest),
                 gainRatio,
-                FormatArray.toString(outDC, "%.11e"),
-                FormatArray.toString(outGradC, "%.11e")
+                FormatArray.toString(outDC, "%.3e"),
+                FormatArray.toString(outGradC, "%.3e")
             ));
             log.info(String.format(
-                    "dP=%s\ngradP=%s\n", FormatArray.toString(outDP, "%.11e"),
-                    FormatArray.toString(outGradP, "%.11e")
+                    "dP=%s\ngradP=%s\n", FormatArray.toString(outDP, "%.3e"),
+                    FormatArray.toString(outGradP, "%.3e")
             ));
             /*
             for large values of lambda, the update is a very steep descent and
@@ -1425,7 +1423,7 @@ public class BundleAdjustment {
         // x is dC
         double[] outDC2 = new double[9*mImages];
         MatrixUtil.backwardSubstitution(cholLT, yM, outDC2);
-//Error:  dC is too large.  error somewhere in calculating it.        
+//Error:  dC is too large.
         log.info(String.format("yM=%s\n", FormatArray.toString(yM, "%.3e")));
 
         log.info(String.format("outDC=dC=\n%s\n", FormatArray.toString(outDC, "%.3e")));
@@ -1707,8 +1705,7 @@ public class BundleAdjustment {
         for (i = 0; i < xWCI.length; ++i) {
             xWCNI[i] /= xWCNI[2];
         }
-        
-//TODO: may need sign corrections:      
+
         // 2X2.  Qu 2018 eqn (3.12)
         double[][] dCPdC = aa.a2X2;
         pdCpIJCIJ(xWCNI, intr, k1, k2, dCPdC);
@@ -1981,13 +1978,8 @@ public class BundleAdjustment {
         int i, j;
                         
         for (j = 0; j < extrRVecs.length; ++j) {
-            
-            // copy delta thetas for this image into deltaTheta array
-            //System.arraycopy(dC, j*9, dRVec, 0, 3);
-
             // apply perturbation to the rotation vector
             for (i = 0; i < 3; ++i) {
-                //extrRVecs[j][i] += dRVec[i];
                 extrRVecs[j][i] += dC[j*9 + i];
             }
         }
