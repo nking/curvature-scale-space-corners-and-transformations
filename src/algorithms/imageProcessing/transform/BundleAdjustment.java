@@ -512,7 +512,7 @@ public class BundleAdjustment {
         // set to null to prevent calculating the max of diagnonal of (J^T*J) 
         outInitLambda = null;
         
-        // sum the squares to evalute the re-projection error:
+        // sum the squares to evaluate the re-projection error:
         double fPrev = outFSqSum[0];
         
         double fTest = Double.POSITIVE_INFINITY;
@@ -529,8 +529,7 @@ public class BundleAdjustment {
                        
         double gainRatio;
                              
-        // update the features with outDP?  see step 7 of Engels
-        
+
         int nIter = 0;
         while ((nIter < nMaxIter) && (Math.abs(fPrev - fTest) >= eps) && (lambda > 1E-15)) {
                 
@@ -563,13 +562,13 @@ public class BundleAdjustment {
             }
         
             fTest = outFSqSum[0];
-                
-            gainRatio = calculateGainRatio(fTest, fPrev, outDC, outDP, lambda, 
+
+            gainRatio = calculateGainRatio(fTest, fPrev, outDC, outDP, lambda,
                 outGradC, outGradP, eps);
             
-            log.fine(String.format(
+            log.info(String.format(
                 "(nIter=%d) lambda=%.3e fPrev=%.11e fTest=%.11e diff=%.11e\n "
-                + " g.r.=%.3e\ndC=%s\ngradC=%s\n",
+                + " gain=%.3e\ndC=%s\ngradC=%s\n",
                 nIter, lambda, fPrev, fTest, (fPrev-fTest),
                 gainRatio,
                 FormatArray.toString(outDC, "%.3e"),
@@ -645,6 +644,100 @@ public class BundleAdjustment {
             }
             log.fine(String.format("new lambda=%.11e\n", lambda));           
         }        
+    }
+
+    protected double calcReprojectionErrors(double[][] coordsI, double[][] coordsW,
+        BlockMatrixIsometric intr, double[][] extrRVecs, double[][] extrTrans,
+        double[][] kRadials, final boolean useR2R4) {
+
+        int nFeatures = coordsW[0].length;
+        int mImages = coordsI[0].length / nFeatures;
+
+        if (coordsI.length != 3) {
+            throw new IllegalArgumentException("coordsI.length must be 3");
+        }
+        if (coordsW.length != 3) {
+            throw new IllegalArgumentException("coordsW.length must be 3");
+        }
+        if (coordsI[0].length != nFeatures * mImages) {
+            throw new IllegalArgumentException("coordsI[0].length must be evenly "
+                    + "divisible by nFeatures which is coordsW[0].length");
+        }
+        if (intr.getA().length != 3 * mImages) {
+            throw new IllegalArgumentException("intr.length must be 3*mImages");
+        }
+        if (intr.getA()[0].length != 3) {
+            throw new IllegalArgumentException("intr[0].length must be 3");
+        }
+        if (kRadials.length != mImages) {
+            throw new IllegalArgumentException("kRadials.length must be equal "
+                    + "to the number of cameras.");
+        }
+        if (kRadials[0].length != 2) {
+            throw new IllegalArgumentException("kRadials[0].length must be 2.");
+        }
+        if (extrRVecs[0].length != 3) {
+            throw new IllegalArgumentException("extrRVecs[0].length must be 3");
+        }
+        if (extrRVecs.length != mImages) {
+            throw new IllegalArgumentException("extrRVecs.length must be mImages "
+                    + "where mImages = coordsI[0].length/coordsW[0].length");
+        }
+        if (extrTrans[0].length != 3) {
+            throw new IllegalArgumentException("extrTrans[0].length must be 3");
+        }
+        if (extrTrans.length != mImages) {
+            throw new IllegalArgumentException("extrTrans.length must be mImages "
+                    + "where mImages = coordsI[0].length/coordsW[0].length");
+        }
+        if (nFeatures < 6) {
+            throw new IllegalArgumentException("need at least 6 features in an image");
+        }
+
+        double fSqSum = 0;
+
+        double[][] auxIntr = MatrixUtil.zeros(3, 3);
+
+        //size is [3 X 3*mImages] with each block being [3X3]
+        BlockMatrixIsometric rotMatrices = createRotationMatricesFromVectors(extrRVecs);
+        double[][] rotM = MatrixUtil.zeros(3, 3);
+
+        // [2X1]
+        double[] fIJ2 = new double[2];
+
+        // i for n features, j for m images
+        int i, j, k;
+        for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
+
+            //intr is 3 X 3*nCameras where each block is size 3X3.
+            intr.getBlock(auxIntr, j, 0);
+
+            // get the rotation matrix rotM [3X3]
+            rotMatrices.getBlock(rotM, 0, j);
+
+            double[] omckk = Arrays.copyOf(extrRVecs[j], extrRVecs[j].length);
+            double[] Tckk = Arrays.copyOf(extrTrans[j], extrTrans[j].length);
+
+            Camera.CameraIntrinsicParameters intrinsics
+                    = new Camera.CameraIntrinsicParameters(auxIntr, kRadials[j], useR2R4);
+            CameraPose.ProjectedPoints pp = CameraPose.bouguetProjectPoints2(coordsW, omckk, Tckk, intrinsics);
+            double[][] x = pp.xEst;  //[2 X n] // these are in image reference frame
+
+            double[][] xkk = MatrixUtil.copySubMatrix(coordsI, 0, 1, nFeatures * j, nFeatures * (j + 1) - 1);
+
+            //[2 X n]
+            double[][] fj = MatrixUtil.pointwiseSubtract(xkk, x);
+
+            for (i = 0; i < nFeatures; ++i) {
+                //aIJ [2X9]  camera partial derivs (rot, trans, f, k0, k1)
+                //bIJ [2X3] point partial derivs (dXW)
+                for (k = 0; k < 2; ++k) {
+                    fIJ2[k] = fj[k][i];
+                }
+                fSqSum += MatrixUtil.innerProduct(fIJ2, fIJ2);
+            }
+        }
+        return fSqSum;
     }
 
     // replacing internals to use partial derivatives from Bouguet's toolbox used in his refine method
@@ -1126,10 +1219,10 @@ public class BundleAdjustment {
             }
             // [[mImages*9 X mImages*9] * x = [mImages*9] ==> x is length mImages*9
             // x is dC
-            double[] outDC2 = new double[9*mImages];
-            MatrixUtil.backwardSubstitution(cholLT, yM, outDC2);
+            MatrixUtil.backwardSubstitution(cholLT, yM, outDC);
             log.fine(String.format("yM=%s\n", FormatArray.toString(yM, "%.3e")));
-            log.info(String.format("outDC2 from forward, backward substitution=\n%s\n", FormatArray.toString(outDC2, "%.3e")));
+            log.info(String.format("outDC from forward, backward substitution=\n%s\n", FormatArray.toString(outDC, "%.3e")));
+
         } catch (Throwable t) {
             // cholesky decomp of nearest psd to a failed.
             // use inverse
@@ -1164,6 +1257,12 @@ public class BundleAdjustment {
             //       the updated parameters and world coords.
         } // end loop over feature i
 
+        log.info(String.format("outGradC=\n%s\n", FormatArray.toString(outGradC, "%.3e")));
+        // outDB can be large, so print just a few
+        log.info(String.format("outDP=%.3e, %.3e, %.3e, %.3e, %.3e, %.3e, ...",
+                outDP[0], outDP[1], outDP[2], outDP[3], outDP[4], outDP[5]));
+        log.info(String.format("outGradP=%.3e, %.3e, %.3e, %.3e, %.3e, %.3e, ...",
+                outGradP[0], outGradP[1], outGradP[2], outGradP[3], outGradP[4], outGradP[5]));
         log.fine(String.format("outDP=%s\n", FormatArray.toString(outDP, "%.3e")));
 
         //outGradC
@@ -2468,7 +2567,7 @@ public class BundleAdjustment {
     private double calculateGainRatio(double fNew, double fPrev, 
         double[] dC, double[] dP, double lambda, 
         double[] gradC, double[] gradP, double eps) {
-                                
+
         // (M. Lourakis, A. Argyros: SBA: A Software Package For Generic
         // Sparse Bundle Adjustment. ACM Trans. Math. Softw. 36(1): (2009))
         //  gain ratio = ( fPrev - fNew) / ( deltaParams^T * (lambda * deltaParams + J^T*fPrev) )
