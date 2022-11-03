@@ -970,10 +970,6 @@ public class BundleAdjustment {
         double[][] auxMA2 = MatrixUtil.zeros(9, 9);
         double[][] auxMA3 = MatrixUtil.zeros(9, 9);
 
-        // vector B, on the rhs of eqn; a matrix acting as a vector with m blocks of size [9X1]
-        double[] vB =  new double[mImages*9];
-        double[] vBJ = new double[9];
-
         //aka (V_i)^-1; a [3X3] block
         double[][] invHPPI = null;
         // for each feature i
@@ -981,9 +977,9 @@ public class BundleAdjustment {
         // for each image j
         double[] bCJ = new double[9];
 
+        // calc tPC and tP entirely
         for (i = 0; i < nFeatures; ++i) {
             //calc tP = HPP^-1*bP = V^-1*bP and set into tPBlocks(i,0) += invVI*(Σ_j(-BIJT*F1J))
-
             //invHPPI aka V^-1 is [3X3]
             hPPIBlocks.getBlock(hPPI, i, 0);
             invHPPI = MatrixUtil.pseudoinverseRankDeficient(hPPI);
@@ -1005,27 +1001,34 @@ public class BundleAdjustment {
                 MatrixUtil.transpose(auxHPC, auxHPCT);
                 MatrixUtil.multiply(auxHPCT, invHPPI, tPC);
                 tPCBlocks.setBlock(tPC, j, i);
-
-                //mA = HCC   -  HPCT * HPP^-1 * HPC
-                //     [9X9] -  [9X3] * [3X3] * [3X9]
-                //   = HCC   -  tPC_j         * HPC
-                MatrixUtil.multiply(tPC, auxHPC, auxMA);
-                hCCJBlocks.getBlock(auxMA2, j, 0);
-                MatrixUtil.pointwiseSubtract(auxMA2, auxMA, auxMA3);
-                // mA is [9*mImages X 9*mImages] w/ block sizes [9 X 9]
-                mA.setBlock(auxMA3, j, j); <===
-
-                //vB = bC - HPCT*HPP^-1*bP
-                //   = bC - HPCT*tPI
-                //    [9X1] - [9X3]*[3X1]
-                System.arraycopy(bC, j*9, bCJ, 0, 9);
-                MatrixUtil.multiplyMatrixByColumnVector(auxHPCT, tPI, vBJ);
-                for (k = 0; k < vBJ.length; ++k) {
-                    vBJ[k] = bCJ[j] - vBJ[k];
-                }
-                System.arraycopy(vBJ, 0, vB, j*9, 9);
             } // end loop over j images
         } // end loop over i images
+
+        // mA = HCC - HPCT*HPP^-1*HPC = U - W*(V^-1)*W^T
+        //    = HCC - tPC * HPC
+        // first term of mA is the diagonal blocks of HCC
+        for (j = 0; j < mImages; ++j) {
+            hCCJBlocks.getBlock(auxHCCJ, j, 0);
+            mA.setBlock(auxHCCJ, j, j);
+        }
+        // the rest of mA subtracts from itself tPC times HPC
+        double[][] tmp = MatrixUtil.multiply(tPCBlocks.getA(), hPCBlocks.getA());
+        MatrixUtil.pointwiseSubtract(mA.getA(), tmp, mA.getA());
+
+        tmp = null;
+
+        //vB = bC - HPCT*HPP^-1*bP   = bC - W*(V^-1)*bP
+        //   = bC - HPCT * tP
+        // [9m X 1] - [9*mImages X 3*nFeatures] [3*nFeatures X 1]
+
+        //stack tPRowBlocks.getA() along rows
+        double[] tmp3 = MatrixUtil.stack(MatrixUtil.transpose(tPRowBlocks.getA()));// nFeatures X 3 => 3 X nFeatures => 3*nFeatures X 1
+        tmp3 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.transpose(hPCBlocks.getA()), tmp3);
+
+        //mImages*9
+        double[] vB = MatrixUtil.subtract(bC, tmp3);
+
+        tmp3 = null;
 
         // at this point, we have calculated mA and vB
 
