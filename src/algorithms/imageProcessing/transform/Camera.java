@@ -508,10 +508,8 @@ public class Camera {
         }
                 
         //point_camera = (1/x_z) * (R * point_world + translation) is called the normalized coordinate.
-        
-        double[] xC = Arrays.copyOf(xWPt, xWPt.length);
-      
-        MatrixUtil.multiplyMatrixByColumnVector(rot, xC, aux);
+
+        MatrixUtil.multiplyMatrixByColumnVector(rot, xWPt, aux);
         
         int j;
         for (j = 0; j < 3; ++j) {

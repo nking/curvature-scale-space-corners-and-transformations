@@ -114,7 +114,7 @@ public class BundleAdjustmentTest extends TestCase {
             log.log(LEVEL, String.format("   t%d=\n%s\n", i,FormatArray.toString(ex1.getTranslation(), "%.3e")));
             log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(Zhang98Data.getTranslation(i+1), "%.3e")));
         }
-        
+
         // now have initial parameters to refine using BundleAdjustment.java in other tests
         alphaE = 832.5010;
         gammaE = 0.2046;
@@ -124,7 +124,7 @@ public class BundleAdjustmentTest extends TestCase {
         k1E = -0.228601; 
         k2E = 0.190353;
         
-        final int nMaxIter = 100;
+        final int nMaxIter = 25;
         int i, j;
         double[][] r;
         

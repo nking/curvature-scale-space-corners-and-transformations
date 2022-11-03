@@ -64,7 +64,7 @@ import no.uib.cipr.matrix.*;
 public class BundleAdjustment {
     
     // for 0, use image (pixel) reference frame, else for 1 use camera frame.
-    private final int useCameraFrame = 1;
+    private final int useCameraFrame = 0;
         
     private int useHomography = 0;
         
@@ -74,6 +74,8 @@ public class BundleAdjustment {
     public BundleAdjustment() {
         useHomography = 0;
     }
+
+    private static final double updateSign = 1;
     
     /**
      * setting to use the homography matrix in the WCS projection to camera
@@ -497,12 +499,15 @@ public class BundleAdjustment {
             calculateLMVectorsSparsely(coordsI, coordsWTest,  
                 imageFeaturesMap, intrTest, extrRVecsTest, extrTransTest, kRadialsTest, useR2R4,
                 outDP, outDC, outGradP, outGradC, outFSqSum, 0., outInitLambda);
+
+            log.info(String.format("FSqSum=%.3e", outFSqSum[0]));
+
         } catch (NaNException e) {
             System.err.println(e.getMessage());
             return;
         }
         double lambda = outInitLambda[0];
-        log.info(String.format("max diag of Hessian lambda=%.7e\n", lambda));
+        log.fine(String.format("max diag of Hessian lambda=%.7e\n", lambda));
 
         // set to null to prevent calculating the max of diagnonal of (J^T*J) 
         outInitLambda = null;
@@ -512,12 +517,12 @@ public class BundleAdjustment {
         
         double fTest = Double.POSITIVE_INFINITY;
 
-        log.info(String.format(
+        log.fine(String.format(
             "(nIter=0) lambda=%.3e F=%.3e\n  dC=%s\n  gradC=%s\n\n",
             lambda, outFSqSum[0],
             FormatArray.toString(outDC, "%.3e"),
             FormatArray.toString(outGradC, "%.3e")));
-        log.info(String.format(
+        log.fine(String.format(
                 "dP=%s\n  gradP=%s\n", FormatArray.toString(outDP, "%.3e"),
                 FormatArray.toString(outGradP, "%.3e")
         ));
@@ -543,12 +548,15 @@ public class BundleAdjustment {
             updateRotationVectors(extrRVecsTest, outDC);
             updateIntrinsic(intrTest, outDC);
             updateRadialDistortion(kRadialsTest, outDC);
-            //updateWorldC(coordsWTest, outDP);
+            updateWorldC(coordsWTest, outDP);
 
             try {
                 calculateLMVectorsSparsely(coordsI, coordsWTest,
                     imageFeaturesMap, intrTest, extrRVecsTest, extrTransTest, kRadialsTest, useR2R4,
                     outDP, outDC, outGradP, outGradC, outFSqSum, 0, outInitLambda);
+
+                log.info(String.format("niter=%d) FSqSum=%.3e", nIter, outFSqSum[0]));
+
             } catch (NaNException e) {
                 System.err.println(e.getMessage());
                 break;
@@ -559,7 +567,7 @@ public class BundleAdjustment {
             gainRatio = calculateGainRatio(fTest, fPrev, outDC, outDP, lambda, 
                 outGradC, outGradP, eps);
             
-            log.info(String.format(
+            log.fine(String.format(
                 "(nIter=%d) lambda=%.3e fPrev=%.11e fTest=%.11e diff=%.11e\n "
                 + " g.r.=%.3e\ndC=%s\ngradC=%s\n",
                 nIter, lambda, fPrev, fTest, (fPrev-fTest),
@@ -567,7 +575,7 @@ public class BundleAdjustment {
                 FormatArray.toString(outDC, "%.3e"),
                 FormatArray.toString(outGradC, "%.3e")
             ));
-            log.info(String.format(
+            log.fine(String.format(
                     "dP=%s\ngradP=%s\n", FormatArray.toString(outDP, "%.3e"),
                     FormatArray.toString(outGradP, "%.3e")
             ));
@@ -580,8 +588,9 @@ public class BundleAdjustment {
             of a symmetric matrix.  see:
                 https://nhigham.com/2021/02/16/diagonally-perturbing-a-symmetric-matrix-to-make-it-positive-definite/
             */
+            //TODO: consider changing this to machine tolerance or larger
             if (gainRatio > 0) {
-                // near the minimimum, which is good.
+                // near the minimum, which is good.
                 // decrease lambda
                 
                 // from Algorithm 3.16 of Madsen et al. 2004, 
@@ -603,9 +612,9 @@ public class BundleAdjustment {
                         double[] dRV = MatrixUtil.subtract(extrRVecs[i0], extrRVecsTest[i0]);
                         double distT = MatrixUtil.lPSum(dT, 2);
                         double distRV = MatrixUtil.lPSum(dRV, 2);
-                        log.info(String.format("delta trans %d =%.3e, %s\n",
+                        log.fine(String.format("delta trans %d =%.3e, %s\n",
                                 i0, distT, FormatArray.toString(dT, "%.11e")));
-                        log.info(String.format("delta rot vector %d =%.3e, %s\n",
+                        log.fine(String.format("delta rot vector %d =%.3e, %s\n",
                                 i0, distRV, FormatArray.toString(dRV, "%.11e")));
                     }
 
@@ -615,25 +624,175 @@ public class BundleAdjustment {
                     MatrixUtil.copy(extrTransTest, extrTrans);
                     MatrixUtil.copy(kRadialsTest, kRadials);
                     // TODO: consider enabling the updates above and here for WCS features
-                    //MatrixUtil.copy(coordsWTest, coordsW);
+                    MatrixUtil.copy(coordsWTest, coordsW);
                 }
                 
                 // ======= stopping conditions ============
                 //   step length vanishes:  deltaParams --> 0
                 //   gradient of f(x) vanishes: -J^T * (b - fgp) --> 0
                 //MatrixUtil.multiply(gradientCheck, -1.);            
-                if (isNegligible(outDC, tolP) || isNegligible(outDP, tolP) ||
-                    isNegligible(outGradC, tolG) || isNegligible(outGradP, tolG)) {
+                if (isNegligible(outDC, tolP) || isNegligible(outGradC, tolG)) {
                     break;
                 }
+                /*if (isNegligible(outDP, tolP) || isNegligible(outGradP, tolG)) {
+                    break;
+                }*/
             } else {
                 // increase lambda to reduce step length and get closer to 
                 // steepest descent direction
                 lambda *= lambdaF;
                 lambdaF *= 2;
             }
-            log.info(String.format("new lambda=%.11e\n", lambda));           
+            log.fine(String.format("new lambda=%.11e\n", lambda));           
         }        
+    }
+
+    // replacing internals to use partial derivatives from Bouguet's toolbox used in his refine method
+    protected void _calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
+                                              TIntObjectMap<TIntSet> imageFeaturesMap,
+                                              BlockMatrixIsometric intr, double[][] extrRVecs, double[][] extrTrans,
+                                              double[][] kRadials, final boolean useR2R4,
+                                              double[] outDP, double[] outDC, double[] outGradP, double[] outGradC,
+                                              double[] outFSqSum, final double lambda,
+                                              double[] outInitLambda) throws NotConvergedException, IOException, NaNException {
+
+        int nFeatures = coordsW[0].length;
+        int mImages = coordsI[0].length/nFeatures;
+        double k1, k2;
+
+        if (coordsI.length != 3) {
+            throw new IllegalArgumentException("coordsI.length must be 3");
+        }
+        if (coordsW.length != 3) {
+            throw new IllegalArgumentException("coordsW.length must be 3");
+        }
+        if (coordsI[0].length != nFeatures*mImages) {
+            throw new IllegalArgumentException("coordsI[0].length must be evenly "
+                    + "divisible by nFeatures which is coordsW[0].length");
+        }
+        if (intr.getA().length != 3*mImages) {
+            throw new IllegalArgumentException("intr.length must be 3*mImages");
+        }
+        if (intr.getA()[0].length != 3) {
+            throw new IllegalArgumentException("intr[0].length must be 3");
+        }
+        if (kRadials.length != mImages) {
+            throw new IllegalArgumentException("kRadials.length must be equal "
+                    + "to the number of cameras.");
+        }
+        if (kRadials[0].length != 2) {
+            throw new IllegalArgumentException("kRadials[0].length must be 2.");
+        }
+        if (extrRVecs[0].length != 3) {
+            throw new IllegalArgumentException("extrRVecs[0].length must be 3");
+        }
+        if (extrRVecs.length != mImages) {
+            throw new IllegalArgumentException("extrRVecs.length must be mImages "
+                    + "where mImages = coordsI[0].length/coordsW[0].length");
+        }
+        if (extrTrans[0].length != 3) {
+            throw new IllegalArgumentException("extrTrans[0].length must be 3");
+        }
+        if (extrTrans.length != mImages) {
+            throw new IllegalArgumentException("extrTrans.length must be mImages "
+                    + "where mImages = coordsI[0].length/coordsW[0].length");
+        }
+        if (outDP.length != 3*nFeatures) {
+            throw new IllegalArgumentException("outDP.length must be 3*nFeatures "
+                    + "where nFeatures=coordsW[0].length");
+        }
+        if (outDC.length != 9*mImages) {
+            throw new IllegalArgumentException("outDC.length must be 9*mImages "
+                    + "where mImages=coordsI[0].length/coordsW[0].length");
+        }
+        if (outGradP.length != 3*nFeatures) {
+            throw new IllegalArgumentException("outGradP.length must be 3 * number of features");
+        }
+        if (outGradC.length != 9*mImages) {
+            throw new IllegalArgumentException("outGradC.length must be 9 * number of images");
+        }
+        if (outFSqSum.length != 1) {
+            throw new IllegalArgumentException("outFSqSum.length must be 1");
+        }
+        if (!(lambda  >= 0.)) {
+            throw new IllegalArgumentException("lambda must be a positive number");
+        }
+        if (imageFeaturesMap == null) {
+            throw new IllegalArgumentException("imageFeaturesMap cannot be null");
+        }
+        if (imageFeaturesMap.size() != mImages) {
+            throw new IllegalArgumentException("imageFeaturesMap size must equal "
+                    + "the number of images which = coordsI[0].length/coordsW[0].length");
+        }
+        if (nFeatures < 6) {
+            throw new IllegalArgumentException("need at least 6 features in an image");
+        }
+
+        if (outInitLambda != null) {
+            // this will hold the maximum of the diagonals of hPPI and hCCJ
+            outInitLambda[0] = Double.NEGATIVE_INFINITY;
+        }
+
+        Arrays.fill(outGradC, 0);
+        Arrays.fill(outGradP, 0);
+        Arrays.fill(outDC, 0);
+        Arrays.fill(outDP, 0);
+        Arrays.fill(outFSqSum, 0);
+
+        double[] bC = outGradC;
+        double[] bP = outGradP;
+
+        double[][] auxIntr = MatrixUtil.zeros(3, 3);
+
+        //size is [3 X 3*mImages] with each block being [3X3]
+        BlockMatrixIsometric rotMatrices = createRotationMatricesFromVectors(extrRVecs);
+
+        double[] rotAux = new double[3];
+        double[][] rotM = MatrixUtil.zeros(3, 3);
+
+        // i for n features, j for m images
+        int i, j, k;
+
+        for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
+
+            double[][] xi = MatrixUtil.copySubMatrix(coordsI, 0, 2, nFeatures*j, nFeatures*(j + 1) - 1);
+
+            //intr is 3 X 3*nCameras where each block is size 3X3.
+            intr.getBlock(auxIntr, j, 0);
+
+            // get the rotation matrix rotM [3X3]
+            rotMatrices.getBlock(rotM, 0, j);
+
+            double[] omckk = Arrays.copyOf(extrRVecs[j], extrRVecs[j].length);
+            double[] Tckk = Arrays.copyOf(extrTrans[j], extrTrans[j].length);
+            double[][] xkk = MatrixUtil.copySubMatrix(xi, 0, 1, 0, nFeatures - 1);
+
+            Camera.CameraIntrinsicParameters intrinsics = new Camera.CameraIntrinsicParameters(auxIntr, kRadials[j], useR2R4);
+            CameraPose.ProjectedPoints pp = CameraPose.bouguetProjectPoints2(coordsW, omckk, Tckk, intrinsics); // these are in image reference frame
+            double[][] x = pp.xEst;  //[2 X n]
+            double[][] dxdom = pp.dxdom; // [2*n X 3]
+            double[][] dxdT = pp.dxdT; // [2*n X 3]
+            double[][] dxdF = pp.dxdF;//[2*n X 2]
+            double[][] dxdK = pp.dxdK;//[2*n X 4]
+            //double[][] dxdC = pp.dxdC;//[2*n X 2]
+            //double[] dxdAlpha = pp.dxdAlpha;//[2*n X 1];
+            double[][] dP = MatrixUtil.multiply(dxdT, rotM); //[2*n X 3]
+
+            double[][] fj = MatrixUtil.pointwiseSubtract(xkk, x);
+
+            for (i = 0; i < nFeatures; ++i) {
+
+            }
+
+
+            //outGradC
+            //outGradP
+            //outDC
+            //outDP
+            //outFSqSum
+
+        } // end loop j over images
+
     }
 
     /**
@@ -696,8 +855,7 @@ public class BundleAdjustment {
             sparse matrix structure.
      </pre>
      * @param coordsI the features observed in different images (in coordinates
-     * of the image reference frame).  The
-     * different images may or may not be from the same camera.
+     * of the image reference frame).  The different images may or may not be from the same camera.
      * The format of coordsI is 3 X (nFeatures*nImages). Each row should
      * have nFeatures of one image, followed by nFeatures of the next image,
        etc.  The first dimension is for the x,y, and z axes.
@@ -762,7 +920,7 @@ public class BundleAdjustment {
           double[] outDP, double[] outDC, double[] outGradP, double[] outGradC,
           double[] outFSqSum, final double lambda,
           double[] outInitLambda) throws NotConvergedException, IOException, NaNException {
-        
+
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
         double k1, k2;
@@ -895,9 +1053,9 @@ public class BundleAdjustment {
         double[][] auxHPC = MatrixUtil.zeros(3, 9);
         double[][] auxHPCT = MatrixUtil.zeros(9, 3);
 
-        //[2X9]
+        //[2X9]  camera partial derivs (rot, trans, f, k0, k1)
         double[][] aIJ = MatrixUtil.zeros(2, 9);
-        //[2X3]
+        //[2X3] point partial derivs (dXW)
         double[][] bIJ = MatrixUtil.zeros(2, 3);
 
         //aka jP_I_J^T [3X2]
@@ -948,11 +1106,17 @@ public class BundleAdjustment {
         
         // i for n features, j for m images
         int i, j, k;
+
+        // this is only populated when if (useHomography == 0)
+        CameraPose.ProjectedPoints[] pp = null;
+        if (useHomography == 0) {
+            pp = new CameraPose.ProjectedPoints[mImages];
+        }
         
         //TODO: runtime complexity
                      
         for (i = 0; i < nFeatures; ++i) { // this is track p in Engels pseudocode
-                        
+
             //reset hPPI to 0's; [3x3]// a.k.a. V*_i.
             MatrixUtil.fill(hPPI, 0);
             //reset bPI to 0's; //[3X1]
@@ -960,9 +1124,9 @@ public class BundleAdjustment {
             
             //populate xWI; extract the world feature.  size [1X3]
             MatrixUtil.extractColumn(coordsW, i, xWI);
-                        
+
             for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
-                
+
                 //TODO consider how to handle feature not present in image here.
                 //   if not in image, then aIJ and bIJ are both 0, so make sure that's handled here
                 if (!imageFeaturesMap.get(j).contains(i)) {
@@ -982,17 +1146,30 @@ public class BundleAdjustment {
                 applying camera matrix - those are steps for converting from camera to pixel coordinates.
                 */
 
+                //intr is 3 X 3*nCameras where each block is size 3X3.
+                intr.getBlock(auxIntr, j, 0);
+
                 //transform to camera reference frame. size [1X3]
                 if (useHomography == 1) {
                     populateCameraProjectionHomography(rotM, extrTrans[j], h);
                     MatrixUtil.multiplyMatrixByColumnVector(h, xWI, xWCI);
                 } else {
-                    //TODO: consider replacing w/ bouguet projection.  it returns derivatives also.
+                    //R * X + t
                     Camera.worldToCameraCoordinates(xWI, rotM, extrTrans[j], rotAux, xWCI);
+
+                    if (useHomography == 0 && pp[j] == null) {
+                        // these are in camera coordinates.   note that method bouguetProjectPoints2 returns image reference frame vars
+                        if (useCameraFrame == 1) {
+                            pp[j] = CameraPose.bouguetRigidMotion(coordsW, extrRVecs[j], extrTrans[j]);
+                        } else {
+                            Camera.CameraIntrinsicParameters _intr = new Camera.CameraIntrinsicParameters(auxIntr,
+                                    kRadials[j], useR2R4);
+                            pp[j] = CameraPose.bouguetProjectPoints2(coordsW, extrRVecs[j], extrTrans[j], _intr);
+                        }
+                    }
+                    //double[] xWCI2 = MatrixUtil.extractColumn(pp[j].getXEstAs3XN(), i);
+                    //System.arraycopy(xWCI2, 0, xWCI, 0, xWCI.length);
                 }
-          
-                //intr is 3 X 3*nCameras where each block is size 3X3.
-                intr.getBlock(auxIntr, j, 0);
 
                 // normalize
                 for (k = 0; k < 3; ++k) {
@@ -1008,11 +1185,40 @@ public class BundleAdjustment {
                     // Qu eqn 2.20, used instead of xWCNDI.  world feature reprojected to camera and  distorted
                     //CameraCalibration.applyRadialDistortion(xWCNI_2_19, k1, k2, useR2R4, xWCNDI_2_20);
                 }
-         
+
+                // these aij, bij derivatives are in the image reference frame
+
                 //aIJ is [2X9].  a is partial derivative of measurement vector X w.r.t. camera portion of parameter vector P
                 //bIJ is [2X3]   b is partial derivative of measurement vector X w.r.t. position parameters
                 // populate aIJ and bIJ as output of method:
                 aIJBIJ(xWI, xWCI, auxIntr, k1, k2, extrRVecs[j], rotM, extrTrans[j], aa, aIJ, bIJ);
+
+                /*{ //DEBUG
+
+                    // compare to bouguet's values:
+                    double[][] dFdPhi = new double[2][]; //[2X3]
+                    double[][] dFdT = new double[2][];
+                    for (int i0 = 0; i0 < 2; ++i0) {
+                        dFdPhi[i0] = Arrays.copyOfRange(aIJ[i0], 0, 3);
+                        dFdT[i0] = Arrays.copyOfRange(aIJ[i0], 3, 6);
+                    }
+                    double[][] dFdPhiB = new double[2][];
+                    double[][] dFdTB = new double[2][];
+                    for (int i0 = 0; i0 < 2; ++i0) {
+                        dFdPhiB[i0] = Arrays.copyOfRange(pp[j].dxdom[j*2 + i0], 0, 3);
+                        dFdTB[i0] = Arrays.copyOfRange(pp[j].dxdT[j*2 + i0], 0, 3);
+                    }
+                    log.info(String.format(" dFdPhi=\n%s\n dFdPhiB=\n%s\n",
+                            FormatArray.toString(dFdPhi, "%.3e"),
+                            FormatArray.toString(dFdPhiB, "%.3e")));
+                    log.info(String.format(" dFdT=\n%s\n dFdTB=\n%s\n",
+                            FormatArray.toString(dFdT, "%.3e"),
+                            FormatArray.toString(dFdTB, "%.3e")));
+                   //for (int i0 = 0; i0 < 2; ++i0) {
+                   //     System.arraycopy(dFdPhiB[i0], 0, aIJ[i0], 0, dFdPhi[i0].length);
+                   //     System.arraycopy(dFdTB[i0], 0, aIJ[i0], 3, dFdT[i0].length);
+                   //}
+                }*/
                          
                 //populate  bIJT; [3X2]  aka jP^T
                 MatrixUtil.transpose(bIJ, bIJT);
@@ -1037,18 +1243,18 @@ public class BundleAdjustment {
 
                     // [1X3] - [1X3] = [1X3]
                     MatrixUtil.pointwiseSubtract(xIJ, xIJHat, fIJ);
-                    if ((i % (nFeatures/3)) == 0) {
-                        log.info(String.format("xWCNI=%s\n", FormatArray.toString(xWCNI, "%.3e")));
-                        log.info(String.format("xWCNDI=%s\n", FormatArray.toString(xWCNDI, "%.3e")));
-                        log.info(String.format("*xIJHat=%s\n", FormatArray.toString(xIJHat, "%.3e")));
-                        log.info(String.format("*xIJ=%s\n", FormatArray.toString(xIJ, "%.3e")));
-                        log.info(String.format("*diff=%s\n", FormatArray.toString(fIJ, "%.7e")));
-                        log.info(String.format("%d,%d) aIJ=%s\n", i, j, FormatArray.toString(aIJ, "%.7e")));
-                        log.info(String.format("bIJ=%s\n", FormatArray.toString(bIJ, "%.7e")));
-}                    
+                    if ((i % (nFeatures / 3)) == 0) {
+                        log.fine(String.format("xWCNI=%s\n", FormatArray.toString(xWCNI, "%.3e")));
+                        log.fine(String.format("xWCNDI=%s\n", FormatArray.toString(xWCNDI, "%.3e")));
+                        log.fine(String.format("*xIJHat=%s\n", FormatArray.toString(xIJHat, "%.3e")));
+                        log.fine(String.format("*xIJ=%s\n", FormatArray.toString(xIJ, "%.3e")));
+                        log.fine(String.format("*diff=fIJ=%s\n", FormatArray.toString(fIJ, "%.7e")));
+                        log.fine(String.format("%d,%d) aIJ=%s\n", i, j, FormatArray.toString(aIJ, "%.7e")));
+                        log.fine(String.format("bIJ=%s\n", FormatArray.toString(bIJ, "%.7e")));
+                    }
                 } else {  
                     // these are DISTORTION-FREE and in CAMERA reference frame
-                                        // populate xIJC; the observed feature i in image j transformed to camera reference frame.  [1X3]
+                    // populate xIJC; the observed feature i in image j transformed to camera reference frame.  [1X3]
                     MatrixUtil.extractColumn(xIJCs, nFeatures*j + i, xIJC);
                   
                     // xWCNI are the world scene points projected into camera frame
@@ -1058,9 +1264,10 @@ public class BundleAdjustment {
                     // [1X3] - [1X3] = [1X3]
                     MatrixUtil.pointwiseSubtract(xIJC, xWCNI, fIJ);
                 }
-                
-                //sum of squares
-                outFSqSum[0] += MatrixUtil.innerProduct(fIJ, fIJ);
+
+                if ((i % (nFeatures / 3)) == 0) {
+                    log.info(String.format("*diff=fIJ=%s\n", FormatArray.toString(fIJ, "%.7e")));
+                }
 
                 //== subtract jP^T*f (aka bP) from bP ==
                  
@@ -1068,7 +1275,40 @@ public class BundleAdjustment {
                 //bIJ is [2X3]
                 //dropping the z-axis which is value=0 (from normalized-normalized=1-1)
                 System.arraycopy(fIJ, 0, fIJ2, 0, 2);
-           
+
+                //sum of squares
+                outFSqSum[0] += MatrixUtil.innerProduct(fIJ2, fIJ2);
+
+                {//DEBUG
+                    populateCameraProjectionHomography(rotM, extrTrans[j], h);
+                    double[] xWCI_2 = MatrixUtil.multiplyMatrixByColumnVector(h, xWI);
+                    MatrixUtil.multiply(xWCI_2, 1./xWCI_2[2]);
+
+                    if (useCameraFrame == 1) {
+                        log.info(String.format(
+                                "compare %d:\n xIJC=%s\n xW=%s\n xcPW=%s\n xcPH=%s\n fIJ=%s\n fsqsum=%.3e\n",
+                                i * mImages + j,
+                                FormatArray.toString(xIJC, "%.3e"),
+                                FormatArray.toString(xWI, "%.3e"),
+                                FormatArray.toString(xWCNI, "%.3e"),
+                                FormatArray.toString(xWCI_2, "%.3e"),
+                                FormatArray.toString(fIJ, "%.3e"),
+                                outFSqSum[0]
+                        ));
+                    } else {
+                        double[] xIJPB = MatrixUtil.extractColumn(pp[j].getXEstAs3XN(), i);
+                        log.info(String.format(
+                                "compare %d:\n xIJ=%s\n xIJHat=%s\n Bouguet.xp=%s\n fIJ=%s\n fsqsum=%.3e\n",
+                                i * mImages + j,
+                                FormatArray.toString(xIJ, "%.3e"),
+                                FormatArray.toString(xIJHat, "%.3e"),
+                                FormatArray.toString(xIJPB, "%.3e"),
+                                FormatArray.toString(fIJ, "%.3e"),
+                                outFSqSum[0]
+                        ));
+                    }
+                }
+
                 //bIJTF =  bIJT * fIJ;// [3X2]*[2X1] = [3X1]
                 MatrixUtil.multiplyMatrixByColumnVector(bIJT, fIJ2, bIJTF);
                 
@@ -1087,7 +1327,7 @@ public class BundleAdjustment {
                 MatrixUtil.pointwiseSubtract(bPI, bIJTF, bPI);
                 
                 if ((i % (nFeatures / 3)) == 0) {
-                    log.info(String.format("%d,%d) bPI=gradP=%s\n", i, j, FormatArray.toString(bPI, "%.7e")));
+                    log.fine(String.format("%d,%d) bPI=gradP=%s\n", i, j, FormatArray.toString(bPI, "%.7e")));
                 }
 
                 // populate bIJsq bij^T * bij = [3X2]*[2X3] = [3X3]
@@ -1149,7 +1389,7 @@ public class BundleAdjustment {
             // update bP with the finish bPI calc
             System.arraycopy(bPI, 0, bP, i*3, 3);
 
-            log.info(String.format("%d,%d) bC=%s\n", i,j, FormatArray.toString(bC, "%.3e")));
+            log.fine(String.format("%d,%d) bC=%s\n", i,j, FormatArray.toString(bC, "%.3e")));
 
             // now HPP_i (aka V_i) is summed over all j: V_i = Σ_j(BIJT*B1J)
 
@@ -1222,11 +1462,11 @@ public class BundleAdjustment {
               b_C_j = -J_C^T * f = gradC  //[9X9]  b_C is [9*mImages X 1]
          */
 
-        log.info(String.format("HPC=W^T=\n%s\n\n", FormatArray.toString(hPCBlocks.getA(), "%.3e")));
-        log.info(String.format("HPPInv=V^-1=\n%s\n\n", FormatArray.toString(hPPIInvBlocks.getA(), "%.3e")));
-        log.info(String.format("HCC=U=\n%s\n\n", FormatArray.toString(hCCJBlocks.getA(), "%.3e")));
-        log.info(String.format("gradC=bC=\n%s\n\n", FormatArray.toString(bC, "%.3e")));
-        log.info(String.format("gradP=bP=\n%s\n\n", FormatArray.toString(bP, "%.3e")));
+        log.fine(String.format("HPC=W^T=\n%s\n\n", FormatArray.toString(hPCBlocks.getA(), "%.3e")));
+        log.fine(String.format("HPPInv=V^-1=\n%s\n\n", FormatArray.toString(hPPIInvBlocks.getA(), "%.3e")));
+        log.fine(String.format("HCC=U=\n%s\n\n", FormatArray.toString(hCCJBlocks.getA(), "%.3e")));
+        log.fine(String.format("gradC=bC=\n%s\n\n", FormatArray.toString(bC, "%.3e")));
+        log.fine(String.format("gradP=bP=\n%s\n\n", FormatArray.toString(bP, "%.3e")));
 
         /*
         solving each line here separately:
@@ -1374,8 +1614,8 @@ public class BundleAdjustment {
         //    Cholesky decomposition, so need to find the nearest or a nearest
         //    symmetric positive definite.
         
-        log.info(String.format("mA=%s\n", FormatArray.toString(mA.getA(), "%.3e")));
-        log.info(String.format("vB=%s\n", FormatArray.toString(vB, "%.3e")));
+        log.fine(String.format("mA=%s\n", FormatArray.toString(mA.getA(), "%.3e")));
+        log.fine(String.format("vB=%s\n", FormatArray.toString(vB, "%.3e")));
 
         double eps = 1.e-11;
 
@@ -1393,8 +1633,8 @@ public class BundleAdjustment {
         double[][] cholL = Matrices.getArray(_cholL);
         double[][] cholLT = MatrixUtil.transpose(cholL);
         
-        log.info(String.format("cholL=\n%s\n", FormatArray.toString(cholL, "%.3e")));
-        log.info(String.format("cholL*LT=\n%s\n", FormatArray.toString(
+        log.fine(String.format("cholL=\n%s\n", FormatArray.toString(cholL, "%.3e")));
+        log.fine(String.format("cholL*LT=\n%s\n", FormatArray.toString(
             MatrixUtil.multiply(cholL, cholLT), "%.3e")));
 
         /* avoid inverting A by using Cholesky decomposition w/ forward and backward substitution to find dC.
@@ -1424,10 +1664,10 @@ public class BundleAdjustment {
         double[] outDC2 = new double[9*mImages];
         MatrixUtil.backwardSubstitution(cholLT, yM, outDC2);
 //Error:  dC is too large.
-        log.info(String.format("yM=%s\n", FormatArray.toString(yM, "%.3e")));
+        log.fine(String.format("yM=%s\n", FormatArray.toString(yM, "%.3e")));
 
-        log.info(String.format("outDC=dC=\n%s\n", FormatArray.toString(outDC, "%.3e")));
-        log.info(String.format("outDC2 from forward, backward substitution=\n%s\n", FormatArray.toString(outDC2, "%.3e")));
+        log.fine(String.format("outDC=dC=\n%s\n", FormatArray.toString(outDC, "%.3e")));
+        log.fine(String.format("outDC2 from forward, backward substitution=\n%s\n", FormatArray.toString(outDC2, "%.3e")));
 
         // tPC = HPC^T*(HPP^-1)
         // tPC^T = (HPP^-1) * HPC
@@ -1453,7 +1693,7 @@ public class BundleAdjustment {
             
         } // end loop over feature i
 
-        log.info(String.format("outDP=%s\n", FormatArray.toString(outDP, "%.3e")));
+        log.fine(String.format("outDP=%s\n", FormatArray.toString(outDP, "%.3e")));
     }
 
     /**
@@ -1657,9 +1897,11 @@ public class BundleAdjustment {
     }
     
     /**
+     * NOTE: dFdPhi and dFdT include a partial derivative that is in the image reference frame.
+     *
      * NOTE: there may be a problem if using the homography matrix [r0 r1 t] to
      * transform world scene to camera coordinates as the partial derivatives here
-     * are assuming the use of the 3nd column of rotation too, that is R * T.
+     * are assuming the use of the 3rd column of rotation too, that is R * T.
      * 
      for aIJ creates dF/dCameraParams which are the 9 parameters of 
      extrinsic and intrinsic,
@@ -1727,11 +1969,12 @@ public class BundleAdjustment {
         // [2X3].  Qu 2018 eqn (3.35)
         double[][] dFdT = aa.e2X3;
         MatrixUtil.multiply(dCPdC, dCdX, dFdT);
-        
+        //dFdT = dCdX;// excluding the image reference frame term
+
         // [2X3].  Qu 2018 eqn (3.34)
         double[][] dFdPhi = aa.f2X3;
         MatrixUtil.multiply(dFdT, dXdP, dFdPhi);
-        
+
         // [2X3]. Qu 2018 eqn (3.36)
         double[][] dFdY = dCPdY;
     
@@ -1816,6 +2059,11 @@ public class BundleAdjustment {
         for (i = 0; i < mImages; ++i) {
             rr = Rotation.createRodriguesRotationMatrixBouguet(extrRVecs[i]);
             m.setBlock(rr.r, 0, i);
+
+            // SO3 still?
+            //double detR = MatrixUtil.determinant(rr.r);
+            //double[][] orthChk = MatrixUtil.createATransposedTimesA(rr.r);
+            //log.info(String.format("orthChk=\n%s\ndet=%.3e", FormatArray.toString(orthChk,"%.3e"), detR));
         }
         return m;
     }
@@ -1908,7 +2156,7 @@ public class BundleAdjustment {
             // vector perturbation for translation:
             for (i = 0; i < 3; ++i) {
                 //translation elements are indexes 3,4,5
-                extrTrans[j][i] += dC[j*9 + (i+3)];
+                extrTrans[j][i] += updateSign*dC[j*9 + (i+3)];
             }
         }
     }
@@ -1937,10 +2185,10 @@ public class BundleAdjustment {
         
         // using addition for updates for now
         for (j = 0; j < nImages; ++j) {
-            // focus is parameterindex 6 within the 9 for each image in dC
+            // focus is parameter index 6 within the 9 for each image in dC
             intr.getBlock(kIntr, j, 0);
-            kIntr[0][0] += dC[j*9 + 6];
-            kIntr[1][1] += dC[j*9 + 6];
+            kIntr[0][0] += updateSign*dC[j*9 + 6];
+            kIntr[1][1] += updateSign*dC[j*9 + 6];
             intr.setBlock(kIntr, j, 0);
         }
     }
@@ -1951,8 +2199,8 @@ public class BundleAdjustment {
                 
         // using addition for updates for now
         for (int i = 0; i < nImages; ++i) {
-            kRadials[i][0] += dC[i*9 + 7];
-            kRadials[i][1] += dC[i*9 + 8];
+            kRadials[i][0] += updateSign*dC[i*9 + 7];
+            kRadials[i][1] += updateSign*dC[i*9 + 8];
         }
     }
 
@@ -1980,7 +2228,7 @@ public class BundleAdjustment {
         for (j = 0; j < extrRVecs.length; ++j) {
             // apply perturbation to the rotation vector
             for (i = 0; i < 3; ++i) {
-                extrRVecs[j][i] += dC[j*9 + i];
+                extrRVecs[j][i] += updateSign*dC[j*9 + i];
             }
         }
     }
@@ -2046,9 +2294,9 @@ public class BundleAdjustment {
         
         int i;
         for (i = 0; i < nFeatures; ++i) {
-            coordsW[0][i] += deltaP[i*3 + 0];
-            coordsW[1][i] += deltaP[i*3 + 1];
-            coordsW[2][i] += deltaP[i*3 + 2];
+            coordsW[0][i] += updateSign*deltaP[i*3 + 0];
+            coordsW[1][i] += updateSign*deltaP[i*3 + 1];
+            coordsW[2][i] += updateSign*deltaP[i*3 + 2];
         }
     }
     

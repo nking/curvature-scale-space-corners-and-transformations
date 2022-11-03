@@ -485,7 +485,7 @@ public class CameraPose {
         public double[][] dxdom;
 
         /**
-         * [2*n X 3] derivatives of XP translation vector
+         * [2*n X 3] derivatives of XP w.r.t. translation vector
          */
         public double[][] dxdT;
 
@@ -497,6 +497,28 @@ public class CameraPose {
             Arrays.fill(x2[2], 1);
             return x2;
         }
+
+        /**
+         * [2*n X 2] derivatives of XP w.r.t. camera focal length
+         */
+        public double[][] dxdF;
+
+        /**
+         * [2*n X 2] derivatives of XP w.r.t. camera principal point
+         */
+        public double[][] dxdC;
+
+        /**
+         * [2*n X 4] derivatives of XP w.r.t. camera distortion coefficients
+         */
+        public double[][] dxdK;
+
+        /**
+         * [2*n X 1] derivatives of XP w.r.t. camera skew coefficient between x and y pixel
+         * (alpha = 0 <=> square pixels results in derivative of 0 also)
+         */
+        public double[] dxdAlpha;
+
     }
 
     /**
@@ -1007,6 +1029,10 @@ public class CameraPose {
         pp.xEst = xp;
         pp.dxdom = dxpdom;
         pp.dxdT = dxpdT;
+        pp.dxdF = dxpdf;
+        pp.dxdC = dxpdc;
+        pp.dxdK = dxpdk;
+        pp.dxdAlpha = dxpdalpha;
 
         return pp;
     }
