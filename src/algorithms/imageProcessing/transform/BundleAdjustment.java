@@ -746,9 +746,18 @@ public class BundleAdjustment {
 
         //size is [3 X 3*mImages] with each block being [3X3]
         BlockMatrixIsometric rotMatrices = createRotationMatricesFromVectors(extrRVecs);
-
         double[] rotAux = new double[3];
         double[][] rotM = MatrixUtil.zeros(3, 3);
+
+        //[2X9]  camera partial derivs (rot, trans, f, k0, k1)
+        double[][] aIJ = MatrixUtil.zeros(2, 9);
+        //[2X3] point partial derivs (dXW)
+        double[][] bIJ = MatrixUtil.zeros(2, 3);
+        //aka jP_I_J^T [3X2]
+        double[][] bIJT = MatrixUtil.zeros(3, 2);
+        //aka jC_I_J^T  [9X2]
+        double[][] aIJT = MatrixUtil.zeros(9, 2);
+        // aka jP^T*JP; [3X3]
 
         // i for n features, j for m images
         int i, j, k;
@@ -767,21 +776,31 @@ public class BundleAdjustment {
             double[] Tckk = Arrays.copyOf(extrTrans[j], extrTrans[j].length);
             double[][] xkk = MatrixUtil.copySubMatrix(xi, 0, 1, 0, nFeatures - 1);
 
-            Camera.CameraIntrinsicParameters intrinsics = new Camera.CameraIntrinsicParameters(auxIntr, kRadials[j], useR2R4);
-            CameraPose.ProjectedPoints pp = CameraPose.bouguetProjectPoints2(coordsW, omckk, Tckk, intrinsics); // these are in image reference frame
-            double[][] x = pp.xEst;  //[2 X n]
+            Camera.CameraIntrinsicParameters intrinsics
+                    = new Camera.CameraIntrinsicParameters(auxIntr, kRadials[j], useR2R4);
+            CameraPose.ProjectedPoints pp = CameraPose.bouguetProjectPoints2(coordsW, omckk, Tckk, intrinsics);
+            double[][] x = pp.xEst;  //[2 X n] // these are in image reference frame
             double[][] dxdom = pp.dxdom; // [2*n X 3]
             double[][] dxdT = pp.dxdT; // [2*n X 3]
             double[][] dxdF = pp.dxdF;//[2*n X 2]
             double[][] dxdK = pp.dxdK;//[2*n X 4]
-            //double[][] dxdC = pp.dxdC;//[2*n X 2]
-            //double[] dxdAlpha = pp.dxdAlpha;//[2*n X 1];
+            //double[][] dxdC = pp.dxdC;//[2*n X 2] not used
+            //double[] dxdAlpha = pp.dxdAlpha;//[2*n X 1]; not used
             double[][] dP = MatrixUtil.multiply(dxdT, rotM); //[2*n X 3]
 
             double[][] fj = MatrixUtil.pointwiseSubtract(xkk, x);
 
             for (i = 0; i < nFeatures; ++i) {
-
+                //aIJ [2X9]  camera partial derivs (rot, trans, f, k0, k1)
+                //bIJ [2X3] point partial derivs (dXW)
+                for (k = 0; k < 2; ++k) {
+                    System.arraycopy(dxdom[i*2 + k], 0, aIJ[k], 0, 3 );
+                    System.arraycopy(dxdT[i*2 + k], 0, aIJ[k], 3, 6 );
+                    aIJ[k][6] = dxdF[i*2 + k][0];
+                    aIJ[k][7] = dxdK[i*2 + k][0];
+                    aIJ[k][8] = dxdK[i*2 + k][1];
+                    System.arraycopy(dP[i*2 + k], 0, bIJ[k], 0, 3 );
+                }
             }
 
 
