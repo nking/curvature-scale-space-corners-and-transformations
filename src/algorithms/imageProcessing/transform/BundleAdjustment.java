@@ -766,11 +766,6 @@ public class BundleAdjustment {
         //aka bC [9X1]  which is aka jC_I_J^T * fIJ
         double[] aIJTF = new double[9];
 
-        // for each feature i
-        double[] bPI = new double[3];
-        // for each image j
-        double[] bCJ = new double[9];
-
         //HPC is a.k.a. J_C^T*J_P a.k.a. (W^*)^T
         //W_i_j^T are stored here as [3X9] blocks. each W_i_j^T is b_i_j^T*a_i_j
         BlockMatrixIsometric hPCBlocks /*W^T*/= new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 9*mImages), 3, 9);
@@ -835,9 +830,9 @@ public class BundleAdjustment {
                     fIJ2[k] = fj[k][i];
                 }
 
-                //populate  bIJT; [3X2]  aka jP^T
+                //bIJ^T; [3X2]  aka jP^T
                 MatrixUtil.transpose(bIJ, bIJT);
-                //populate aIJT; [9X2] aka jC^T
+                //aIJ^T; [9X2] aka jC^T
                 MatrixUtil.transpose(aIJ, aIJT);
 
                 outFSqSum[0] += MatrixUtil.innerProduct(fIJ2, fIJ2);
@@ -852,16 +847,36 @@ public class BundleAdjustment {
 
                 where each row is [3X2]*[2X1] = [3X1]
                 */
-                //bP = bIJTF =  bIJT * fIJ;// [3X2]*[2X1] = [3X1]
+                //bIJTF =  bIJT * fIJ;// [3X2]*[2X1] = [3X1]
                 MatrixUtil.multiplyMatrixByColumnVector(bIJT, fIJ2, bIJTF);
+                for (k = 0; k < 3; ++k) {
+                    // i is the current feature
+                    bP[i*3 + k] -= bIJTF[k];
+                }
 
-                // populate bIJsq bij^T * bij = [3X2]*[2X3] = [3X3]
-                MatrixUtil.multiply(bIJT, bIJ, bIJsq);
+                /*
+                gradC = bC = -JC^T * F =  [9m X 1]
+                ———————————————-
+                -A11T*F11-A21T*F21-A31T*F31-A41T*F41
+                -A12T*F12-A22T*F22-A32T*F32-A42T*F42
+                -A13T*F13-A23T*F23-A33T*F33-A43T*F43
+
+                where each row is [9X2][2X1] = [9X1]
+                */
+                //aIJTF = aIJT * fIJ.  [9X2]*[2X1]=[1X9]
+                MatrixUtil.multiplyMatrixByColumnVector(aIJT, fIJ2, aIJTF);
+                for (k = 0; k < 9; ++k) {
+                    // i is the current feature
+                    bC[i*9 + k] -= aIJTF[k];
+                }
 
                 // compute block (i,j) of hPC as hPC=jPTJC [3X9]
                 //hPC[i][j] = bIJT * aIJ;
                 MatrixUtil.multiply(bIJT, aIJ, auxHPC);
                 hPCBlocks.setBlock(auxHPC, i, j);
+
+                // bIJsq = bij^T * bij = [3X2]*[2X3] = [3X3]
+                MatrixUtil.multiply(bIJT, bIJ, bIJsq);
 
                 // HPP_i, aka V_i: for feature i, sum over all images. [3X3]
                 // fetch existing block for feature i, add BIJsq to it, update the block
@@ -874,13 +889,51 @@ public class BundleAdjustment {
             }
         } // end loop j over images
 
-        // TODO: add calcs of bP and bC to the above
+        // augment the diagonals of HPP and HCC by the dampening term.
 
-        // TODO: modify diagonals of HPP_i and HCC_j by adding the dampening term lambda.
+        // Section 2 of Engels at al., between  eqns (4) and (5)
+        // augment H_PP (and H_CC) by damping term
+        //  (J_P)^T*J_P + lambda*diag((J_P)^T*J_P).
+        // Each H_PP_i and each H_CC_j are the diagonal blocks of J^T*J.
+        // Solomon's "Numerical Algorithms" Section 12.1.2:
+        //  J^T*J is positive semi-definite and so J^T*J + λ*I_n×n must be positive definite.
+        for (j = 0; j < mImages; ++j) {
+            hCCJBlocks.getBlock(auxHCCJ, j, 0);
+            if (outInitLambda != null) {
+                if (maxDiag(auxHCCJ, outInitLambda)) {
+                    log.info(String.format("max of diagonal blocks of HCC (aka U): new lambda=%.7e\n", outInitLambda[0]));
+                }
+            }
+            for (k = 0; k < auxHCCJ.length; ++k) {
+                auxHCCJ[k][k] += lambda;
+            }
+            hCCJBlocks.setBlock(auxHCCJ, j, 0);
+        }
 
-        // TODO: if unitialized, find lambda as the max of the diagonals of HPP_i and HCC_j
+        for (i = 0; i < nFeatures; ++i) {
+            hPPIBlocks.getBlock(hPPI, i, 0);
+            if (outInitLambda != null) {
+                // find maximum of the diagonal of hPP.  the diagonal of HPP is each [3X3] block hPPI.
+                if (maxDiag(hPPI, outInitLambda)) {
+                    log.info(String.format("max diag of hPPI (aka V_i): new lambda=%.7e\n", outInitLambda[0]));
+                }
+            }
+            for (k = 0; k < 3; ++k) {
+                hPPI[k][k] += lambda;
+            }
+            hPPIBlocks.setBlock(hPPI, i, 0);
+        }
 
         //TODO: use schur decomp and cholesky to solve for dC and then dP
+
+        /*solving each line separately:
+           |dP + (HPP^-1*HPC)*dC     | = |HPP^-1*bP           |
+           |(-HPCT*HPP^-1*HPC+HCC)*dC|   |-HPCT*HPP^-1*bP + bC|
+
+         Solving the 2nd line 1st for dC:
+         mA = HCC - HPCT*HPP^-1*HPC
+         vB = bC - HPCT*HPP^-1*bP
+         */
 
         //outGradC
         //outGradP
