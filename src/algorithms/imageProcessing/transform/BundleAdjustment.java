@@ -1082,7 +1082,7 @@ public class BundleAdjustment {
         log.fine(String.format("mA=%s\n", FormatArray.toString(mA.getA(), "%.3e")));
         log.fine(String.format("vB=%s\n", FormatArray.toString(vB, "%.3e")));
 
-        boolean useInv = true;
+        boolean useInv = false;
 
         double eps = 1.e-11;
 
@@ -1127,7 +1127,7 @@ public class BundleAdjustment {
             double[] outDC2 = new double[9*mImages];
             MatrixUtil.backwardSubstitution(cholLT, yM, outDC2);
             log.fine(String.format("yM=%s\n", FormatArray.toString(yM, "%.3e")));
-            log.fine(String.format("outDC2 from forward, backward substitution=\n%s\n", FormatArray.toString(outDC2, "%.3e")));
+            log.info(String.format("outDC2 from forward, backward substitution=\n%s\n", FormatArray.toString(outDC2, "%.3e")));
         } catch (Throwable t) {
             // cholesky decomp of nearest psd to a failed.
             // use inverse
@@ -1138,7 +1138,7 @@ public class BundleAdjustment {
             // length is vB.length is [mImages*9 X 1]
             double[][] _mInv = MatrixUtil.pseudoinverseFullColumnRank(mA.getA());
             MatrixUtil.multiplyMatrixByColumnVector(_mInv, vB, outDC);
-            log.fine(String.format("outDC=dC=\n%s\n", FormatArray.toString(outDC, "%.3e")));
+            log.info(String.format("outDC from pInv(M) * B =\n%s\n", FormatArray.toString(outDC, "%.3e")));
         }
 
         // tPC = HPC^T*(HPP^-1)
