@@ -658,7 +658,6 @@ public class BundleAdjustment {
 
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length/nFeatures;
-        double k1, k2;
 
         if (coordsI.length != 3) {
             throw new IllegalArgumentException("coordsI.length must be 3");
@@ -778,7 +777,6 @@ public class BundleAdjustment {
         BlockMatrixIsometric hPPIBlocks /*VI*/= new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 3), 3, 3);
         // aka V_i; a [3X3] block
         double[][] hPPI = MatrixUtil.zeros(3, 3);
-        double[][] auxHPPI = MatrixUtil.zeros(3, 3);
 
         //HCC is a.k.a. J_C^T*J_C a.k.a. U^* (and in Qu thesis is variable B).
         //The diagonals, U_j, are stored here as [9X9] blocks. each U_j is a summation of a_i_j^T*a_i_j over all i features.
@@ -993,7 +991,7 @@ public class BundleAdjustment {
             System.arraycopy(bP, i*3, bPI, 0, 3);
             // [3X3][3X1]=[3X1]
             MatrixUtil.multiplyMatrixByColumnVector(invHPPI, bPI, tPI);
-            tPRowBlocks.setRowBlock(tPI, i, 0);
+            tPRowBlocks.addToRowBlock(tPI, i, 0);
 
             for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
                 //TODO consider how to handle feature not present in image here
@@ -1014,7 +1012,8 @@ public class BundleAdjustment {
                 MatrixUtil.multiply(tPC, auxHPC, auxMA);
                 hCCJBlocks.getBlock(auxMA2, j, 0);
                 MatrixUtil.pointwiseSubtract(auxMA2, auxMA, auxMA3);
-                mA.setBlock(auxMA3, j, j);
+                // mA is [9*mImages X 9*mImages] w/ block sizes [9 X 9]
+                mA.setBlock(auxMA3, j, j); <===
 
                 //vB = bC - HPCT*HPP^-1*bP
                 //   = bC - HPCT*tPI
@@ -1025,8 +1024,8 @@ public class BundleAdjustment {
                     vBJ[k] = bCJ[j] - vBJ[k];
                 }
                 System.arraycopy(vBJ, 0, vB, j*9, 9);
-            }
-        }
+            } // end loop over j images
+        } // end loop over i images
 
         // at this point, we have calculated mA and vB
 
@@ -1149,7 +1148,7 @@ public class BundleAdjustment {
 
         MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.transpose(tPCBlocks.getA()), outDC, outDP);
         for (i = 0; i < nFeatures; ++i) {
-            tPRowBlocks.setRowBlock(tPI, i, 0);  // tPI is length 3
+            tPRowBlocks.getRowBlock(tPI, i, 0);  // tPI is length 3
             // tPI - next 3 items of outDP
             for (k = 0; k < tPI.length; ++k) {
                 outDP[i*3 + k] = tPI[k] - outDP[i*3 + k];
@@ -1902,7 +1901,7 @@ public class BundleAdjustment {
             System.arraycopy(bP, i*3, bPI, 0, 3);
             // [3X3][3X1]=[3X1]
             MatrixUtil.multiplyMatrixByColumnVector(invHPPI, bPI, tPI);
-            tPRowBlocks.setRowBlock(tPI, i, 0);
+            tPRowBlocks.addToRowBlock(tPI, i, 0);
 
             for (j = 0; j < mImages; ++j) { // this is camera c in Engels pseudocode
                 //TODO consider how to handle feature not present in image here
@@ -2056,7 +2055,7 @@ public class BundleAdjustment {
         MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.transpose(tPCBlocks.getA()), outDC, outDP);
         // calc the rest of outDP by looping over tPRowBlocks
         for (i = 0; i < nFeatures; ++i) {
-            tPRowBlocks.setRowBlock(tPI, i, 0);  // tPI is length 3
+            tPRowBlocks.getRowBlock(tPI, i, 0);  // tPI is length 3
             // tPI - next 3 items of outDP
             for (k = 0; k < tPI.length; ++k) {
                 outDP[i*3 + k] = tPI[k] - outDP[i*3 + k];
