@@ -76,6 +76,19 @@ public class BundleAdjustmentTest extends TestCase {
         
         Camera.CameraIntrinsicParameters kIntr = cameraMatrices.getIntrinsics();
         List<Camera.CameraExtrinsicParameters> extrinsics = cameraMatrices.getExtrinsics();
+
+        // current + delta = expected (zhang)
+        double[][] rDeltas = new double[nImages][];
+        double[][] tDeltas = new double[nImages][];
+        for (int i = 0; i < nImages; ++i) {
+            // zhang data doesn't have the Rodrigues vectors, only has the rotation matrices,
+            // so this is not a unique delta for rotation:
+            double[] rz = Rotation.extractRodriguesRotationVectorBouguet(Zhang98Data.getRotation(i + 1)).om;
+            rDeltas[i] = MatrixUtil.subtract(rz, extrinsics.get(i).getRodriguesVector());
+            tDeltas[i] = MatrixUtil.subtract(Zhang98Data.getTranslation(i + 1), extrinsics.get(i).getTranslation());
+        }
+        System.out.printf("delta rVecs=\n%s\n", FormatArray.toString(rDeltas, "%.3e"));
+        System.out.printf("delta trans=\n%s\n", FormatArray.toString(tDeltas, "%.3e"));
         
         double alpha = kIntr.getIntrinsic()[0][0];
         double gamma = kIntr.getIntrinsic()[0][1];

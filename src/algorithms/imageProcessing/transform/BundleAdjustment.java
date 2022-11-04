@@ -75,7 +75,7 @@ public class BundleAdjustment {
         useHomography = 0;
     }
 
-    private static final double updateSign = 1;
+    private static final double updateSign = -1;
     
     /**
      * setting to use the homography matrix in the WCS projection to camera
@@ -211,15 +211,15 @@ public class BundleAdjustment {
         throws NotConvergedException, IOException {
 
         int nFeatures = coordsW[0].length;
-        int mImages = coordsI[0].length/nFeatures;
-                                 
+        int mImages = coordsI[0].length / nFeatures;
+
         if (nFeatures < 6) {
             throw new IllegalArgumentException("coordsW[0].length must be at least 6");
         }
         if ((coordsI[0].length % nFeatures) > 0) {
             throw new IllegalArgumentException("the number of images present in coordsI should"
-            + " be evenly divided by the number of features in coordsW (that is, coordsI should"
-            + " have that same number of features for each image)");
+                    + " be evenly divided by the number of features in coordsW (that is, coordsI should"
+                    + " have that same number of features for each image)");
         }
         if (coordsI.length != 3) {
             throw new IllegalArgumentException("coordsI must have 3 rows.");
@@ -227,11 +227,11 @@ public class BundleAdjustment {
         if (coordsW.length != 3) {
             throw new IllegalArgumentException("coordsW must have 3 rows.");
         }
-        if (coordsI[0].length != nFeatures*mImages) {
+        if (coordsI[0].length != nFeatures * mImages) {
             throw new IllegalArgumentException("coordsI[0].length must be evenly "
                     + "divisible by nFeatures which is coordsW[0].length");
         }
-        if (intr.getA().length != 3*mImages) {
+        if (intr.getA().length != 3 * mImages) {
             throw new IllegalArgumentException("intr.length must be 3*mImages");
         }
         if (intr.getA()[0].length != 3) {
@@ -239,7 +239,7 @@ public class BundleAdjustment {
         }
         if (kRadials.length != mImages) {
             throw new IllegalArgumentException("kRadials.length must be equal "
-            + "to the number of cameras.");
+                    + "to the number of cameras.");
         }
         if (kRadials[0].length != 2) {
             throw new IllegalArgumentException("kRadials[0].length must be 2.");
@@ -249,7 +249,7 @@ public class BundleAdjustment {
         }
         if (extrRVecs.length != mImages) {
             throw new IllegalArgumentException("extrRVecs.length must be mImages "
-            + "where mImages = coordsI[0].length/coordsW[0].length");
+                    + "where mImages = coordsI[0].length/coordsW[0].length");
         }
         if (extrTrans[0].length != 3) {
             throw new IllegalArgumentException("extrTrans[0].length must be 3");
@@ -263,7 +263,7 @@ public class BundleAdjustment {
         }
         if (imageFeaturesMap.size() != mImages) {
             throw new IllegalArgumentException("imageFeaturesMap size must equal "
-            + "the number of images which = coordsI[0].length/coordsW[0].length");
+                    + "the number of images which = coordsI[0].length/coordsW[0].length");
         }
 
         //TODO: as part of "fix the gauge", need to consider the first
@@ -445,100 +445,98 @@ public class BundleAdjustment {
         eliminated parameters by back-substitution. Otherwise, we do not 
         need to consider them further.
         */
-        
+
         //TODO: consider adding constraints suggested in Szeliski 2010:
         // u_0 and v_0 are close to half the image lengths and widths, respectively.
         // the angle between 2 image axes is close to 90.
         // the focal lengths along both axes are greater than 0.
-       
+
         //factor to raise or lower lambda.  
         //   consider using the eigenvalue spacing of J^T*J (Transtrum & Sethna, "Improvements to the Levenberg-Marquardt algorithm for nonlinear least-squares minimization")
         double lambdaF = 2;
         double eps = 1E-12;
 
-        // copy the parameter data structures into test (tentative) data structures
-        BlockMatrixIsometric intrTest = intr.copy();
-        double[][] extrRVecsTest = MatrixUtil.copy(extrRVecs);
-        double[][] extrTransTest = MatrixUtil.copy(extrTrans);
-        double[][] kRadialsTest = MatrixUtil.copy(kRadials);
-        double[][] coordsWTest = MatrixUtil.copy(coordsW);
-        
+        // (J^T*J + lambda*I) * deltas = -J^T*f where f is the reprojection residuals
+
         //In a single reprojection error formula, there are altogether 12 arguments 
         //   (9 camera parameters and 3 feature point positions).
-        
-        // update values for the point parameters (== world coordinate features)
-        double[] outDP = new double[3*nFeatures];
-        // update values for the camera parameters
-        double[] outDC = new double[9*mImages];
-                
+
+        // deltas the point parameters (== world coordinate features)
+        double[] outDP = new double[3 * nFeatures];
+        // deltas for the camera parameters
+        double[] outDC = new double[9 * mImages];
+
         // Qu array u for parameters is ordered: rot_0, trans_0, intr_0, ...rot_m-1, trans_m-1, intr_m-1, then x_0, ... x_n
         // but the delta parameter array for all params is ordered:
         //     dRot_0, ... dRot_m-1,  dTrans_0, ...dTrans_m-1, dIntr_0,...dIntr_m-1, dX_0, ... dX_n
         // gradient g is same length   
-        
+
         //the gradient covector for point parameters.  used in calc gain ration and stopping
-        double[] outGradP = new double[3*nFeatures];
+        double[] outGradP = new double[3 * nFeatures];
         // the gradient covector for camera parameters.  used in calc gain ration and stopping
-        double[] outGradC = new double[9*mImages];
-     
+        double[] outGradC = new double[9 * mImages];
+
         final double tolP = 1.e-3;
         final double tolG = 1.e-3;
-        
+
         // not using these as they are estimated in calculateLMVectorsSparsely
         //initDeltaPWithQu(outDP);
         //initDeltaCWithQu(outDC);
-        
+
         // evaluation of the objective re-projection error. 
         //the sum of squares of the observed feature - projected feature in camera reference frame
         final double[] outFSqSum = new double[1];
-        
+
         double[] outInitLambda = new double[1];
-        
-        // use lambda=0, evaluate objective, and get the max of diagonal of (J^T*J) as the output initLambda
-        try {
-            calculateLMVectorsSparsely(coordsI, coordsWTest,  
-                imageFeaturesMap, intrTest, extrRVecsTest, extrTransTest, kRadialsTest, useR2R4,
-                outDP, outDC, outGradP, outGradC, outFSqSum, 0., outInitLambda);
 
-            log.info(String.format("FSqSum=%.3e", outFSqSum[0]));
-
-        } catch (NaNException e) {
-            System.err.println(e.getMessage());
-            return;
-        }
-        double lambda = outInitLambda[0];
-        log.fine(String.format("max diag of Hessian lambda=%.7e\n", lambda));
-
-        // set to null to prevent calculating the max of diagnonal of (J^T*J) 
-        outInitLambda = null;
-        
-        // sum the squares to evaluate the re-projection error:
-        double fPrev = outFSqSum[0];
-        
-        double fTest = Double.POSITIVE_INFINITY;
-
-        log.fine(String.format(
-            "(nIter=0) lambda=%.3e F=%.3e\n  dC=%s\n  gradC=%s\n\n",
-            lambda, outFSqSum[0],
-            FormatArray.toString(outDC, "%.3e"),
-            FormatArray.toString(outGradC, "%.3e")));
-        log.fine(String.format(
-                "dP=%s\n  gradP=%s\n", FormatArray.toString(outDP, "%.3e"),
-                FormatArray.toString(outGradP, "%.3e")
-        ));
-                       
-        double gainRatio;
-                             
+        double lambda = 0;
+        double f;
 
         int nIter = 0;
-        while ((nIter < nMaxIter) && (Math.abs(fPrev - fTest) >= eps) && (lambda > 1E-15)) {
-                
-            nIter++;
+        while (nIter < nMaxIter) {
+            // for nIter = 0:
+            //     use lambda=0, evaluate objective, and get the max of diagonal of (J^T*J) as the output initLambda
 
-            /*
-            update the test data structures by deltaP and deltaC
+            try {
+                // solve for the out variables, given the initial solution and lambda=0:
+                calculateLMVectorsSparsely(coordsI, coordsW,
+                        imageFeaturesMap, intr, extrRVecs, extrTrans, kRadials, useR2R4,
+                        outDP, outDC, outGradP, outGradC, outFSqSum, lambda, outInitLambda);
 
-            rotation elements are indexes 0, 1, 2 of dC
+                log.info(String.format("FSqSum=%.3e", outFSqSum[0]));
+
+            } catch (NaNException e) {
+                System.err.println(e.getMessage());
+                return;
+            }
+
+            if (nIter == 0) {
+                lambda = outInitLambda[0];
+                log.info(String.format("max diag of Hessian lambda=%.7e\n", lambda));
+                // set to null to prevent re-calculating the max of diagonal of (J^T*J) again in calculateLMVectorsSparsely
+                outInitLambda = null;
+            }
+
+            // sum of the squares of the re-projection errors:
+            f = outFSqSum[0];
+
+            log.fine(String.format(
+                    "(nIter=0) lambda=%.3e F=%.3e\n  dC=%s\n  gradC=%s\n\n",
+                    lambda, outFSqSum[0],
+                    FormatArray.toString(outDC, "%.3e"),
+                    FormatArray.toString(outGradC, "%.3e")));
+            log.fine(String.format(
+                    "dP=%s\n  gradP=%s\n", FormatArray.toString(outDP, "%.3e"),
+                    FormatArray.toString(outGradP, "%.3e")
+            ));
+
+            // make a test update of the parameters and calculate fsqsum for those test params
+            BlockMatrixIsometric intrTest = intr.copy();
+            double[][] extrRVecsTest = MatrixUtil.copy(extrRVecs);
+            double[][] extrTransTest = MatrixUtil.copy(extrTrans);
+            double[][] kRadialsTest = MatrixUtil.copy(kRadials);
+            double[][] coordsWTest = MatrixUtil.copy(coordsW);
+            /*rotation elements are indexes 0, 1, 2 of dC
             translation elements are indexes 3,4,5 of dC
             focus, radial1, radial2 are indexes 6,7,8 of dC
             3D WCS of features points are indexes 0, 1, 2 of dP
@@ -549,106 +547,57 @@ public class BundleAdjustment {
             updateRadialDistortion(kRadialsTest, outDC);
             updateWorldC(coordsWTest, outDP);
 
-            try {
-                calculateLMVectorsSparsely(coordsI, coordsWTest,
-                    imageFeaturesMap, intrTest, extrRVecsTest, extrTransTest, kRadialsTest, useR2R4,
-                    outDP, outDC, outGradP, outGradC, outFSqSum, 0, outInitLambda);
+            double fTest = calcReprojectionErrors(coordsI, coordsW, intrTest, extrRVecsTest, extrTransTest,
+                    kRadialsTest, useR2R4);
 
-                log.info(String.format("niter=%d) FSqSum=%.3e", nIter, outFSqSum[0]));
+            log.info(String.format("FSqSum=%.3e, FTestSqSum=%.3e", f, fTest));
 
-            } catch (NaNException e) {
-                System.err.println(e.getMessage());
-                break;
-            }
-        
-            fTest = outFSqSum[0];
+            // calc gain ratio before potentially changing f;
+            double gainRatio = calculateGainRatio(fTest, f, outDC, outDP, lambda, outGradC, outGradP, eps);
 
-            gainRatio = calculateGainRatio(fTest, fPrev, outDC, outDP, lambda,
-                outGradC, outGradP, eps);
-            
-            log.info(String.format(
-                "(nIter=%d) lambda=%.3e fPrev=%.11e fTest=%.11e diff=%.11e\n "
-                + " gain=%.3e\ndC=%s\ngradC=%s\n",
-                nIter, lambda, fPrev, fTest, (fPrev-fTest),
-                gainRatio,
-                FormatArray.toString(outDC, "%.3e"),
-                FormatArray.toString(outGradC, "%.3e")
-            ));
-            log.fine(String.format(
-                    "dP=%s\ngradP=%s\n", FormatArray.toString(outDP, "%.3e"),
-                    FormatArray.toString(outGradP, "%.3e")
-            ));
-            /*
-            for large values of lambda, the update is a very steep descent and
-            deltaP is very small.
-            If the damping term is small the approach is a nearly linear problem.
-            
-            NOTE: the damping term is used like a factor in the perturbation
-            of a symmetric matrix.  see:
-                https://nhigham.com/2021/02/16/diagonally-perturbing-a-symmetric-matrix-to-make-it-positive-definite/
-            */
-            //TODO: consider changing this to machine tolerance or larger
-            if (gainRatio > 0) {
-                // near the minimum, which is good.
-                // decrease lambda
-                
-                // from Algorithm 3.16 of Madsen et al. 2004, 
-                //"Methods for Non-Linear Least Squares Problems"
-                // and Figure 2 of
-                // Lourakis & Argyros 2009, "SBA: A Software Package For Generic
-                // Sparse Bundle Adjustment"
-                //lambda = Math.max(1./3, 1. - Math.pow(2*gainRatio - 1, 3));
-                //lambdaF = 2;
-                
+            // calc variables needed for stopping conditions before potentially updating the parameters
+            boolean deltaCStop = isNegligible(outDC, tolP);
+            boolean gradCStop = isNegligible(outGradC, tolG);
+            boolean deltaPStop = isNegligible(outDP, tolP);
+            boolean gradPStop = isNegligible(outGradP, tolG);
+
+            boolean accept = false;
+            if (fTest < f) {
+                accept = true;
+                f = fTest;
+                //set params = test params
+                intr.set(intrTest);
+                MatrixUtil.copy(extrRVecsTest, extrRVecs);
+                MatrixUtil.copy(extrTransTest, extrTrans);
+                MatrixUtil.copy(kRadialsTest, kRadials);
+                MatrixUtil.copy(coordsWTest, coordsW);
+                // increase the step size by decreasing lambda
                 lambda /= lambdaF;
-                
-                if (fTest < fPrev) {
-                    
-                    fPrev = fTest;
-
-                    for (int i0 = 0; i0 < extrTrans.length; ++i0) {
-                        double[] dT = MatrixUtil.subtract(extrTrans[i0], extrTransTest[i0]);
-                        double[] dRV = MatrixUtil.subtract(extrRVecs[i0], extrRVecsTest[i0]);
-                        double distT = MatrixUtil.lPSum(dT, 2);
-                        double distRV = MatrixUtil.lPSum(dRV, 2);
-                        log.fine(String.format("delta trans %d =%.3e, %s\n",
-                                i0, distT, FormatArray.toString(dT, "%.11e")));
-                        log.fine(String.format("delta rot vector %d =%.3e, %s\n",
-                                i0, distRV, FormatArray.toString(dRV, "%.11e")));
-                    }
-
-                    //copy test data structures into the original in-out datastructures
-                    intr.set(intrTest);
-                    MatrixUtil.copy(extrRVecsTest, extrRVecs);
-                    MatrixUtil.copy(extrTransTest, extrTrans);
-                    MatrixUtil.copy(kRadialsTest, kRadials);
-                    // TODO: consider enabling the updates above and here for WCS features
-                    MatrixUtil.copy(coordsWTest, coordsW);
-                }
-                
-                // ======= stopping conditions ============
-                //   step length vanishes:  deltaParams --> 0
-                //   gradient of f(x) vanishes: -J^T * (b - fgp) --> 0
-                //MatrixUtil.multiply(gradientCheck, -1.);            
-                if (isNegligible(outDC, tolP) || isNegligible(outGradC, tolG)) {
-                    break;
-                }
-                /*if (isNegligible(outDP, tolP) || isNegligible(outGradP, tolG)) {
-                    break;
-                }*/
             } else {
-                // increase lambda to reduce step length and get closer to 
-                // steepest descent direction
+                // decrease the step size by increasing lambda
                 lambda *= lambdaF;
                 lambdaF *= 2;
             }
-            log.fine(String.format("new lambda=%.11e\n", lambda));           
-        }        
+
+            log.info("accept =" + accept + ".  gain ratio=" + gainRatio);
+
+            log.info(String.format("new lambda=%.11e\n", lambda));
+
+            // check for convergence
+            if (deltaCStop || gradCStop || (gainRatio > 0)) {
+                break;
+            }
+            if (lambda < eps) {
+                break;
+            }
+            ++nIter;
+        }
+
     }
 
     protected double calcReprojectionErrors(double[][] coordsI, double[][] coordsW,
         BlockMatrixIsometric intr, double[][] extrRVecs, double[][] extrTrans,
-        double[][] kRadials, final boolean useR2R4) {
+        double[][] kRadials, final boolean useR2R4) throws IOException, NotConvergedException {
 
         int nFeatures = coordsW[0].length;
         int mImages = coordsI[0].length / nFeatures;
@@ -720,8 +669,15 @@ public class BundleAdjustment {
 
             Camera.CameraIntrinsicParameters intrinsics
                     = new Camera.CameraIntrinsicParameters(auxIntr, kRadials[j], useR2R4);
+
+            // since the derivatives aren't needed for projection, can just use rigid motion and then transform to image frame
             CameraPose.ProjectedPoints pp = CameraPose.bouguetProjectPoints2(coordsW, omckk, Tckk, intrinsics);
             double[][] x = pp.xEst;  //[2 X n] // these are in image reference frame
+            //CameraPose.ProjectedPoints pp  = CameraPose.bouguetRigidMotion(coordsW, extrRVecs[j], extrTrans[j]);
+            //double[][] x = pp.xEst;
+            //if (useCameraFrame == 0) {
+            //    x = Camera.cameraToPixelCoordinates(x, intrinsics);
+            //}
 
             double[][] xkk = MatrixUtil.copySubMatrix(coordsI, 0, 1, nFeatures * j, nFeatures * (j + 1) - 1);
 
@@ -920,6 +876,7 @@ public class BundleAdjustment {
                     System.arraycopy(dP[i*2 + k], 0, bIJ[k], 0, 3 );
                     fIJ2[k] = fj[k][i];
                 }
+                System.out.printf("AIJ=%s\n", FormatArray.toString(aIJ,"%.3e"));
 
                 //bIJ^T; [3X2]  aka jP^T
                 MatrixUtil.transpose(bIJ, bIJT);
@@ -980,6 +937,10 @@ public class BundleAdjustment {
             } // end loop i over features
         } // end loop j over images
 
+        log.info(String.format("outGradC=\n%s\n", FormatArray.toString(outGradC, "%.3e")));
+        log.info(String.format("outGradP=%.3e, %.3e, %.3e, %.3e, %.3e, %.3e, ...",
+                outGradP[0], outGradP[1], outGradP[2], outGradP[3], outGradP[4], outGradP[5]));
+
         // augment the diagonals of HPP and HCC by the dampening term.
 
         // Section 2 of Engels at al., between  eqns (4) and (5)
@@ -1003,12 +964,13 @@ public class BundleAdjustment {
 
         for (i = 0; i < nFeatures; ++i) {
             hPPIBlocks.getBlock(hPPI, i, 0);
-            if (outInitLambda != null) {
+            // excluding the very large delta P's for now...
+            /*if (outInitLambda != null) {
                 // find maximum of the diagonal of hPP.  the diagonal of HPP is each [3X3] block hPPI.
                 if (maxDiag(hPPI, outInitLambda)) {
                     log.info(String.format("max diag of hPPI (aka V_i): new lambda=%.7e\n", outInitLambda[0]));
                 }
-            }
+            }*/
             for (k = 0; k < 3; ++k) {
                 hPPI[k][k] += lambda;
             }
@@ -1059,16 +1021,11 @@ public class BundleAdjustment {
         // U_J is stored it in alone until i and j loops complete the first time, then
         //     the rest of mA is subtracted in.
         BlockMatrixIsometric mA = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9*mImages), 9, 9);
-        double[][] auxMA = MatrixUtil.zeros(9, 9);
-        double[][] auxMA2 = MatrixUtil.zeros(9, 9);
-        double[][] auxMA3 = MatrixUtil.zeros(9, 9);
 
         //aka (V_i)^-1; a [3X3] block
         double[][] invHPPI = null;
         // for each feature i
         double[] bPI = new double[3];
-        // for each image j
-        double[] bCJ = new double[9];
 
         // calc tPC and tP entirely
         for (i = 0; i < nFeatures; ++i) {
@@ -1257,12 +1214,9 @@ public class BundleAdjustment {
             //       the updated parameters and world coords.
         } // end loop over feature i
 
-        log.info(String.format("outGradC=\n%s\n", FormatArray.toString(outGradC, "%.3e")));
-        // outDB can be large, so print just a few
+        // outDP can be large, so print just a few
         log.info(String.format("outDP=%.3e, %.3e, %.3e, %.3e, %.3e, %.3e, ...",
                 outDP[0], outDP[1], outDP[2], outDP[3], outDP[4], outDP[5]));
-        log.info(String.format("outGradP=%.3e, %.3e, %.3e, %.3e, %.3e, %.3e, ...",
-                outGradP[0], outGradP[1], outGradP[2], outGradP[3], outGradP[4], outGradP[5]));
         log.fine(String.format("outDP=%s\n", FormatArray.toString(outDP, "%.3e")));
 
         //outGradC
@@ -1670,7 +1624,7 @@ public class BundleAdjustment {
                 //bIJ is [2X3]   b is partial derivative of measurement vector X w.r.t. position parameters
                 // populate aIJ and bIJ as output of method:
                 aIJBIJ(xWI, xWCI, auxIntr, k1, k2, extrRVecs[j], rotM, extrTrans[j], aa, aIJ, bIJ);
-
+//System.out.printf("AIJ=%s\n", FormatArray.toString(aIJ,"%.3e"));
                 /*{ //DEBUG
 
                     // compare to bouguet's values:
@@ -2549,10 +2503,10 @@ public class BundleAdjustment {
     /**
      * gain = (f(p) - f(p + delta p)) / ell(delta p)
              where ell(delta p) is (delta p)^T * (lambda * (delta p)) + J^T * ( b - f))
-       gain = (f - fPrev) / ( (delta p)^T * (lambda * (delta p) + J^T * ( b - f)) )
+       gain = (f - fTest) / ( (delta p)^T * (lambda * (delta p) + J^T * ( b - f)) )
              
-     * @param fNew
-     * @param fPrev
+     * @param fTest
+     * @param f
      * @param dC steps of change for the camera parameters in array of length
      * 9*mImages.  dC contains 3 rotation, 3 translation, 3 intrinsic parameters for one
      * image, followed by the same 9 for the next image, etc.
@@ -2564,8 +2518,7 @@ public class BundleAdjustment {
      * @param eps
      * @return 
      */
-    private double calculateGainRatio(double fNew, double fPrev, 
-        double[] dC, double[] dP, double lambda, 
+    private double calculateGainRatio(double fTest, double f, double[] dC, double[] dP, double lambda,
         double[] gradC, double[] gradP, double eps) {
 
         // (M. Lourakis, A. Argyros: SBA: A Software Package For Generic
@@ -2582,12 +2535,10 @@ public class BundleAdjustment {
         double[] gradient = new double[gradC.length + gradP.length];
         System.arraycopy(gradC, 0, gradient, 0, gradC.length);
         System.arraycopy(gradP, 0, gradient, gradC.length, gradP.length);
+        MatrixUtil.multiply(gradient, -1); // our gradC and gradP are g = (-J^T * f) while Lourakis uses g = (J^T * f)
 
         double[] denom = Arrays.copyOf(dParams, dParams.length);
-        for (int i = 0; i < denom.length; ++i) {
-            denom[i] *= lambda;
-        }
-
+        MatrixUtil.multiply(denom, lambda);
         denom = MatrixUtil.add(denom, gradient);
       
         double d = MatrixUtil.innerProduct(dParams, denom);
@@ -2596,7 +2547,7 @@ public class BundleAdjustment {
             return Double.NEGATIVE_INFINITY;
         }
 
-        double gain = (fNew - fPrev)/d;
+        double gain = (f - fTest)/d;
 
         return gain;
     }
