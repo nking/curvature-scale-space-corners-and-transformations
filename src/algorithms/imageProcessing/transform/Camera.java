@@ -379,6 +379,43 @@ public class Camera {
         
         return cc;
     }
+
+    /**
+     * applies radial distortion to distortion-free camera centered coordinates
+     * then multiplies by the camera intrinsics to result in distorted coordinates
+     * in the image reference frame in units of pixels.
+     * In terms of Table 1 of Ma et al. 2004, the input is a double array of (x, y)
+     * and the output is a double array of (u_d, v_d).
+     * Also useful reading is NVM Tools by Alex Locher
+     https://github.com/alexlocher/nvmtools.git
+     * @param xC distortion-free camera centered coordinates.
+     * format is 3XN for N points.
+     * In terms of Table 1 of Ma et al. 2004, this is a double array of (x, y).
+     * @param kIntr
+     *
+     */
+    public static double[] cameraToPixelCoordinates(double[] xC,
+                                                      CameraIntrinsicParameters kIntr) {
+
+        // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
+
+        double[] cc = Arrays.copyOf(xC, xC.length);
+        for (int i = 0; i < cc.length; ++i) {
+            // normalized pinhole projection X_c/Z_c and
+            cc[i] /= cc[2];
+        }
+
+        if (kIntr.getRadialDistortionCoeffs() != null && kIntr.getRadialDistortionCoeffs().length >= 2) {
+            // input and output cc are in camera reference frame
+            cc = CameraCalibration.applyRadialDistortion(cc, kIntr.getRadialDistortionCoeffs()[0],
+                    kIntr.getRadialDistortionCoeffs()[1],
+                    kIntr.useR2R4());
+        }
+
+        cc = MatrixUtil.multiplyMatrixByColumnVector(kIntr.getIntrinsic(), cc);
+
+        return cc;
+    }
     
      /** converts pixel coordinates to normalized camera coordinates by transforming them to camera 
     reference frame then applying Lp2-normalization.

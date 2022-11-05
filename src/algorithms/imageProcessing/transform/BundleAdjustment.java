@@ -68,14 +68,16 @@ public class BundleAdjustment {
         
     private int useHomography = 0;
         
-    //private static final Level LEVEL = Level.INFO;
+    //private static qfinal Level LEVEL = Level.INFO;
     private static final Logger log = Logger.getLogger(CameraCalibration.class.getSimpleName());
     
     public BundleAdjustment() {
         useHomography = 0;
     }
 
-    private static final double updateSign = -1;
+    private static final double updateSign = 1;
+
+    private static final boolean useBouguetDerivs = true;
     
     /**
      * setting to use the homography matrix in the WCS projection to camera
@@ -476,7 +478,7 @@ public class BundleAdjustment {
         // the gradient covector for camera parameters.  used in calc gain ration and stopping
         double[] outGradC = new double[9 * mImages];
 
-        final double tolP = 1.e-3;
+        final double tolP = 1.e-2;
         final double tolG = 1.e-3;
 
         // not using these as they are estimated in calculateLMVectorsSparsely
@@ -491,6 +493,7 @@ public class BundleAdjustment {
 
         double lambda = 0;
         double f;
+        double fBest = Double.POSITIVE_INFINITY;
 
         int nIter = 0;
         while (nIter < nMaxIter) {
@@ -510,15 +513,16 @@ public class BundleAdjustment {
                 return;
             }
 
+            // sum of the squares of the re-projection errors:
+            f = outFSqSum[0];
+
             if (nIter == 0) {
                 lambda = outInitLambda[0];
                 log.info(String.format("max diag of Hessian lambda=%.7e\n", lambda));
                 // set to null to prevent re-calculating the max of diagonal of (J^T*J) again in calculateLMVectorsSparsely
                 outInitLambda = null;
+                fBest = f;
             }
-
-            // sum of the squares of the re-projection errors:
-            f = outFSqSum[0];
 
             log.fine(String.format(
                     "(nIter=0) lambda=%.3e F=%.3e\n  dC=%s\n  gradC=%s\n\n",
@@ -550,10 +554,8 @@ public class BundleAdjustment {
             double fTest = calcReprojectionErrors(coordsI, coordsW, intrTest, extrRVecsTest, extrTransTest,
                     kRadialsTest, useR2R4);
 
-            log.info(String.format("FSqSum=%.3e, FTestSqSum=%.3e", f, fTest));
-
             // calc gain ratio before potentially changing f;
-            double gainRatio = calculateGainRatio(fTest, f, outDC, outDP, lambda, outGradC, outGradP, eps);
+            double gainRatio = calculateGainRatio(fTest, fBest, outDC, outDP, lambda, outGradC, outGradP, eps);
 
             // calc variables needed for stopping conditions before potentially updating the parameters
             boolean deltaCStop = isNegligible(outDC, tolP);
@@ -561,10 +563,13 @@ public class BundleAdjustment {
             boolean deltaPStop = isNegligible(outDP, tolP);
             boolean gradPStop = isNegligible(outGradP, tolG);
 
+            log.info(String.format("%d) FBest=%.3e, F=%.3e, FTest=%.3e accept=%b  gain ratio=%.3e",
+                    nIter, fBest, f, fTest, (fTest < fBest), gainRatio));
+
             boolean accept = false;
-            if (fTest < f) {
+            if (fTest < fBest) {
                 accept = true;
-                f = fTest;
+                fBest = fTest;
                 //set params = test params
                 intr.set(intrTest);
                 MatrixUtil.copy(extrRVecsTest, extrRVecs);
@@ -573,18 +578,22 @@ public class BundleAdjustment {
                 MatrixUtil.copy(coordsWTest, coordsW);
                 // increase the step size by decreasing lambda
                 lambda /= lambdaF;
+           // } else if (nIter > 1 && fTest > f) {
+                //TODO: check that this is a valid stopping condition
+         //       break;
             } else {
+                //log.info(String.format("%d) FSqSum=%.3e, FTestSqSum=%.3e accept=%b gain ratio=%.3e", nIter, f, fTest, accept, gainRatio));
                 // decrease the step size by increasing lambda
                 lambda *= lambdaF;
                 lambdaF *= 2;
             }
 
-            log.info("accept =" + accept + ".  gain ratio=" + gainRatio);
-
             log.info(String.format("new lambda=%.11e\n", lambda));
 
             // check for convergence
-            if (deltaCStop || gradCStop || (gainRatio > 0)) {
+            if (deltaCStop || gradCStop
+                    //|| (gainRatio > 0)
+            ) {
                 break;
             }
             if (lambda < eps) {
@@ -593,6 +602,7 @@ public class BundleAdjustment {
             ++nIter;
         }
 
+        log.info("nIter=" + nIter);
     }
 
     protected double calcReprojectionErrors(double[][] coordsI, double[][] coordsW,
@@ -696,7 +706,8 @@ public class BundleAdjustment {
         return fSqSum;
     }
 
-    // replacing internals to use partial derivatives from Bouguet's toolbox used in his refine method
+    // method that uses the partial derivatives from the Bouguet toolbox projectPoints2.m
+    // add references for it.
     protected void calculateLMVectorsSparsely(double[][] coordsI, double[][] coordsW,
                                               TIntObjectMap<TIntSet> imageFeaturesMap,
                                               BlockMatrixIsometric intr, double[][] extrRVecs, double[][] extrTrans,
@@ -849,15 +860,23 @@ public class BundleAdjustment {
 
             Camera.CameraIntrinsicParameters intrinsics
                     = new Camera.CameraIntrinsicParameters(auxIntr, kRadials[j], useR2R4);
-            CameraPose.ProjectedPoints pp = CameraPose.bouguetProjectPoints2(coordsW, omckk, Tckk, intrinsics);
+            CameraPose.ProjectedPoints pp;
+            if (useBouguetDerivs) {
+                pp = CameraPose.bouguetProjectPoints2(coordsW, omckk, Tckk, intrinsics);
+            } else {
+                pp = quProjectPoints(coordsW, omckk, Tckk, intrinsics);
+            }
             double[][] x = pp.xEst;  //[2 X n] // these are in image reference frame
             double[][] dxdom = pp.dxdom; // [2*n X 3]
             double[][] dxdT = pp.dxdT; // [2*n X 3]
             double[][] dxdF = pp.dxdF;//[2*n X 2]
             double[][] dxdK = pp.dxdK;//[2*n X 4]
-            //double[][] dxdC = pp.dxdC;//[2*n X 2] not used
-            //double[] dxdAlpha = pp.dxdAlpha;//[2*n X 1]; not used
-            double[][] dP = MatrixUtil.multiply(dxdT, rotM); //[2*n X 3]
+            double[][] dP;
+            if (useBouguetDerivs) {
+                dP = MatrixUtil.multiply(dxdT, rotM); //[2*n X 3]
+            } else {
+                dP = pp.dxdX;
+            }
 
             double[][] xkk = MatrixUtil.copySubMatrix(coordsI, 0, 1, nFeatures*j, nFeatures*(j + 1) - 1);
 
@@ -876,7 +895,7 @@ public class BundleAdjustment {
                     System.arraycopy(dP[i*2 + k], 0, bIJ[k], 0, 3 );
                     fIJ2[k] = fj[k][i];
                 }
-                System.out.printf("AIJ=%s\n", FormatArray.toString(aIJ,"%.3e"));
+                //System.out.printf("AIJ=%s\n", FormatArray.toString(aIJ,"%.3e"));
 
                 //bIJ^T; [3X2]  aka jP^T
                 MatrixUtil.transpose(bIJ, bIJT);
@@ -964,13 +983,12 @@ public class BundleAdjustment {
 
         for (i = 0; i < nFeatures; ++i) {
             hPPIBlocks.getBlock(hPPI, i, 0);
-            // excluding the very large delta P's for now...
-            /*if (outInitLambda != null) {
+            if (outInitLambda != null) {
                 // find maximum of the diagonal of hPP.  the diagonal of HPP is each [3X3] block hPPI.
                 if (maxDiag(hPPI, outInitLambda)) {
                     log.info(String.format("max diag of hPPI (aka V_i): new lambda=%.7e\n", outInitLambda[0]));
                 }
-            }*/
+            }
             for (k = 0; k < 3; ++k) {
                 hPPI[k][k] += lambda;
             }
@@ -1225,6 +1243,98 @@ public class BundleAdjustment {
         //outDP
         //outFSqSum
 
+    }
+
+    // for one image
+    private CameraPose.ProjectedPoints quProjectPoints(double[][] coordsW, double[] om, double[] t,
+        Camera.CameraIntrinsicParameters intrinsics) {
+
+        int nFeatures = coordsW[0].length;
+
+        double[] xWI = new double[3];
+        double[] xWCI = new double[3];
+        double[] xWII;
+
+        double[][] rotM = Rotation.createRodriguesRotationMatrixBouguet(om).r;
+        double[] rotAux = new double[3];
+
+        AuxiliaryArrays aa = new AuxiliaryArrays();
+        //[2X9]  camera partial derivs (rot, trans, f, k0, k1)
+        double[][] aIJ = MatrixUtil.zeros(2, 9);
+        //[2X3] point partial derivs (dXW)
+        double[][] bIJ = MatrixUtil.zeros(2, 3);
+
+        double[][] intr = intrinsics.getIntrinsic();
+        double k1;
+        double k2;
+        if (intrinsics.getRadialDistortionCoeffs() != null) {
+            k1 = intrinsics.getRadialDistortionCoeffs()[0];
+            k2 = intrinsics.getRadialDistortionCoeffs()[1];
+        } else {
+            k1 = 0;
+            k2 = 0;
+        }
+
+        CameraPose.ProjectedPoints p = new CameraPose.ProjectedPoints();
+
+        //[2 X n] projected points xEst = R*X+T, where R = rodrigues(om), X is world coordinates of object, and T is translation
+        p.xEst = MatrixUtil.zeros(2, nFeatures);
+        //[2*n X 3] derivatives of XP w.r.t. rotation vector om
+        p.dxdom = MatrixUtil.zeros(2*nFeatures, 3);
+        //[2*n X 3] derivatives of XP w.r.t. translation vector
+        p.dxdT = MatrixUtil.zeros(2*nFeatures, 3);
+        //[2*n X 2] derivatives of XP w.r.t. camera focal length
+        p.dxdF = MatrixUtil.zeros(2*nFeatures, 2);
+        //[2*n X 2] derivatives of XP w.r.t. camera principal point
+        p.dxdC = MatrixUtil.zeros(2*nFeatures, 2);
+        //[2*n X 4] derivatives of XP w.r.t. camera distortion coefficients
+        p.dxdK = MatrixUtil.zeros(2*nFeatures, 4);
+        //[2*n X 1] derivatives of XP w.r.t. camera skew coefficient between x and y pixel
+        p.dxdAlpha = new double[2*nFeatures];
+        //[2*n X 3] derivatives of XP w.r.t. the real world point
+        p.dxdX = MatrixUtil.zeros(2*nFeatures, 3);
+
+        int i, k;
+        for (i = 0; i < nFeatures; ++i) {
+            //populate xWI; extract the world feature.  size [1X3]
+            MatrixUtil.extractColumn(coordsW, i, xWI);
+
+            //R * X + t
+            Camera.worldToCameraCoordinates(xWI, rotM, t, rotAux, xWCI);
+
+            aIJBIJ(xWI, xWCI, intr, k1, k2, om, rotM, t, aa, aIJ, bIJ);
+
+            //transpose to image frame, includes radial distortion corrections
+            xWII = Camera.cameraToPixelCoordinates(xWCI, intrinsics);
+            p.xEst[0][i] = xWII[0];
+            p.xEst[1][i] = xWII[1];
+
+            //set aIJ and bIJ into output arrays. [2X9], [2X3] into [2*n X 3]  ...
+            for (k = 0; k < 3; ++k) {
+                p.dxdom[i*2][k]     = aIJ[0][k];
+                p.dxdom[i*2 + 1][k] = aIJ[1][k];
+                p.dxdT[i*2][k]     = aIJ[0][k + 3];
+                p.dxdT[i*2 + 1][k] = aIJ[1][k + 3];
+
+                p.dxdX[i*2][k]     = bIJ[0][k];
+                p.dxdX[i*2 + 1][k]     = bIJ[1][k];
+            }
+            p.dxdF[i*2][0] = aIJ[0][6];
+            p.dxdF[i*2 + 1][1] = aIJ[1][6];
+
+            //[2*n X 2] derivatives of XP w.r.t. camera principal point
+            //p.dxdC
+            //[2*n X 1] derivatives of XP w.r.t. camera skew coefficient between x and y pixel
+            //p.dxdAlpha
+
+            //[2*n X 4] derivatives of XP w.r.t. camera distortion coefficients
+            p.dxdK[i*2][0] = aIJ[0][7];
+            p.dxdK[i*2 + 1][0] = aIJ[1][7];
+            p.dxdK[i*2][1] = aIJ[0][8];
+            p.dxdK[i*2 + 1][1] = aIJ[1][8];
+        }
+
+        return p;
     }
 
     /**

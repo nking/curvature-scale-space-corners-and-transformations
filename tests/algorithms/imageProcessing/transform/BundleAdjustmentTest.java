@@ -7,6 +7,8 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
@@ -109,18 +111,28 @@ public class BundleAdjustmentTest extends TestCase {
         double betaE = 871.1251;
         double v0E = 220.8684;
         double k1E = 0.1371;
-        double k2E = -0.20101;        
-       
+        double k2E = -0.20101;
+
+        log.log(LEVEL, "From CameraCalibration.estimateCamera:\n");
         log.log(LEVEL, String.format("\n(fX, fY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", fX, fY, alphaE, betaE));
         log.log(LEVEL, String.format("(oX, oY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", oX, oY, u0E, v0E));
         log.log(LEVEL, String.format("skew=%.3e.  expected=%.3e\n", skew, gammaE));
         log.log(LEVEL, String.format("[kRadial]=[%.3e, %.3e].  expected=[%.3e, %.3e]\n", 
             kRadial[0], kRadial[1], k1E, k2E));
-                
+
+        List<String> distances = new ArrayList<String>();
+
+        double distR, distT;
         Camera.CameraExtrinsicParameters ex1;
         for (int i = 0; i < nImages; ++i) {
             ex1 = extrinsics.get(i);
+            distR = MatrixUtil.spectralNorm(MatrixUtil.pointwiseSubtract(Zhang98Data.getRotation(i+1), ex1.getRotation()));
+            distT = MatrixUtil.lPSum(
+                    MatrixUtil.subtract(Zhang98Data.getTranslation(i+1), ex1.getTranslation()), 2
+            );
             log.log(LEVEL, String.format("\n"));
+            distances.add(String.format("%d) dist R = %.3e, dist T = %.3e", i, distR, distT));
+            log.log(LEVEL, String.format("%d) dist R = %.3e, dist T = %.3e", i, distR, distT));
             log.log(LEVEL, String.format("   rVec%d=\n%s\n", i, FormatArray.toString(ex1.getRodriguesVector(), "%.3e")));
             log.log(LEVEL, String.format("   r%d=\n%s\n", i, FormatArray.toString(ex1.getRotation(), "%.3e")));
             log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(Zhang98Data.getRotation(i+1), "%.3e")));
@@ -137,7 +149,7 @@ public class BundleAdjustmentTest extends TestCase {
         k1E = -0.228601; 
         k2E = 0.190353;
         
-        final int nMaxIter = 25;
+        final int nMaxIter = 100;
         int i, j;
         double[][] r;
         
@@ -202,10 +214,18 @@ public class BundleAdjustmentTest extends TestCase {
             skew, gammaE));
         log.log(LEVEL, String.format("[kRadial]=[%.3e, %.3e].  expected=[%.3e, %.3e]\n", 
             kRadial[0], kRadial[1], k1E, k2E));
-        
+
         for (i = 0; i < nImages; ++i) {
             r = Rotation.createRodriguesRotationMatrixBouguet(extrRotVecs[i]).r;
+
+            distR = MatrixUtil.spectralNorm(MatrixUtil.pointwiseSubtract(Zhang98Data.getRotation(i+1), r));
+            distT = MatrixUtil.lPSum(
+                    MatrixUtil.subtract(Zhang98Data.getTranslation(i+1), extrTrans[i]), 2
+            );
+
             log.log(LEVEL, String.format("\n"));
+            distances.add(String.format("%d) dist R = %.3e, dist T = %.3e", i, distR, distT));
+            log.log(LEVEL, String.format("%d) dist R = %.3e, dist T = %.3e", i, distR, distT));
             log.log(LEVEL, String.format("   r%d=\n%s\n", i, 
                 FormatArray.toString(r, "%.3e")));
             log.log(LEVEL, String.format("ansR%d=\n%s\n", i, 
@@ -214,6 +234,10 @@ public class BundleAdjustmentTest extends TestCase {
                 FormatArray.toString(extrTrans[i], "%.3e")));
             log.log(LEVEL, String.format("ansT%d=\n%s\n", i,
                 FormatArray.toString(Zhang98Data.getTranslation(i+1), "%.3e")));
+        }
+
+        for (String str : distances) {
+            log.log(LEVEL, str);
         }
         
     }

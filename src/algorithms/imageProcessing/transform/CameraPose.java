@@ -504,9 +504,10 @@ public class CameraPose {
         public double[][] dxdF;
 
         /**
-         * [2*n X 2] derivatives of XP w.r.t. camera principal point
+         * [2*n X 2] derivatives of XP w.r.t. camera principal point.
+         * Not all methods produce output for this.
          */
-        public double[][] dxdC;
+        public double[][] dxdC = null;
 
         /**
          * [2*n X 4] derivatives of XP w.r.t. camera distortion coefficients
@@ -515,10 +516,16 @@ public class CameraPose {
 
         /**
          * [2*n X 1] derivatives of XP w.r.t. camera skew coefficient between x and y pixel
-         * (alpha = 0 <=> square pixels results in derivative of 0 also)
+         * (alpha = 0 <=> square pixels results in derivative of 0 also).
+         * Not all methods produce output for this.
          */
-        public double[] dxdAlpha;
+        public double[] dxdAlpha = null;
 
+        /**
+         * [2*n X 3] derivatives of XP w.r.t. the real world point.
+         * Not all methods produce output for this.
+         */
+        public double[][] dxdX = null;
     }
 
     /**
