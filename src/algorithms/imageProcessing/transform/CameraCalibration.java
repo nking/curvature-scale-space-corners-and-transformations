@@ -56,7 +56,8 @@ public class CameraCalibration {
     /**
      * estimate the intrinsic and extrinsic camera parameters.
      To refine the returned values, follow with PNP.solveForPose(...).
-     * 
+     * The method uses double[] rVec = Rotation.extractRodriguesRotationVector(r);
+     * to extract the included rotation vectors.
      * @param n n is the number of points in each image which is the
               same for all images.  n is number of features.
      * @param coordsI  holds the image coordinates in pixels of
@@ -805,6 +806,8 @@ public class CameraCalibration {
      * Tracking with the VRduino"
      * estimate the extrinsic parameters.
      * Added the Rodrigues Rotation vector to the fit.
+     *  using this method:
+     *   double[] rVec = Rotation.extractRodriguesRotationVector(r);
      * @param kIntr camera intrinsic parameters
      * @param coordsI holds the image coordinates in pixels of features present in image i
      * @param coordsW holds the world coordinates of features present in image 1 corresponding
@@ -922,11 +925,21 @@ public class CameraCalibration {
         double chk = MatrixUtil.innerProduct(r1, r2);
         System.out.printf("asserting that r1 dot r2 ~ 0: %.4e\n", chk);
         assert(Math.abs(chk) < 1.e-7);
-       
+
+        //Rotation.RodriguesRotation rr = Rotation.extractRodriguesRotationVectorBouguet(r);
+        double[] rVec = Rotation.extractRodriguesRotationVector(r);
+        //double[][] rRVec = Rotation.createRodriguesFormulaRotationMatrix(rVec);
+        //double[][] rRVecB = Rotation.createRodriguesRotationMatrixBouguet(rr.om).r;
+        //double normR = MatrixUtil.spectralNorm(r);
+        //double normRRom = MatrixUtil.spectralNorm(rRVecB);
+        //double normRRVec = MatrixUtil.spectralNorm(rRVec);
+
         CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();
         kExtr.setRotation(r);
         kExtr.setTranslation(t);
-        kExtr.setRodriguesVector(Rotation.extractRodriguesRotationVectorBouguet(r).om);
+        kExtr.setRodriguesVector(rVec);
+
+
         return kExtr;
     }
     
@@ -2044,7 +2057,9 @@ public class CameraCalibration {
     
     /**
      * following EE 267 Virtual Reality Course Notes: 6-DOF Pose Tracking with the VRduino
-       by Gordon Wetzstein
+       by Gordon Wetzstein.
+     This method uses double[] rVec = Rotation.extractRodriguesRotationVector(r);
+     to extract the rotation vectors.
      * @param kIntr
      * @param coordsI
      * @param coordsW

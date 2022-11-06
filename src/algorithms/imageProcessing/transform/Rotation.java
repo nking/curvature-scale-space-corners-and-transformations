@@ -1018,6 +1018,8 @@ public class Rotation {
      *
      *      rodrigues.m includes the comment: Copyright (c) March 1993 -- Pietro Perona, CalTech, before a brief
      *      changelist by Bouguet.
+     *
+     *      </pre>
      * @param in [3X1] rotation vector
      * @return
      */
@@ -1642,6 +1644,36 @@ public class Rotation {
         double p = Math.abs(MatrixUtil.innerProduct(q1, q2));
         double d = Math.acos(p);
         return d;
+    }
+
+    /**
+     * estimate the
+     * <pre>
+     *     reference:
+     *     Huynh 2009, J Math Imaging Vis, 35, 155-164, eqn (21)
+     * </pre>
+     * @param r1 a 3X3 rotation matrix
+     * @param r2 a 3X3 rotation matrix
+     * @param useFrobenius if true, uses Frobenius norm internally, else uses the spectral norm.
+     * @return return the distance defined as ∥ I − r1 * r2 ∥_F if useFrobenious is true.
+     * In that case the distance is within the range [0, 2sqrt(2)].
+     * If useFrobenious is false, the result is spectralNorm(I − r1 * r2) which results in a distance in the range [0, 2].
+     */
+    public static double distanceUsingRigidBodyDisplacements(double[][] r1, double[][] r2, boolean useFrobenius) throws NotConvergedException {
+
+        if (r1.length != 3 || r1[0].length != 3) {
+            throw new IllegalArgumentException("r1 must be 3X3");
+        }
+        if (r2.length != 3 || r2[0].length != 3) {
+            throw new IllegalArgumentException("r2 must be 3X3");
+        }
+        //Φ5(R1,R2)= ∥I−R1R2∥F,
+        double[][] t = MatrixUtil.multiply(r1, r2);
+        t = MatrixUtil.pointwiseSubtract(MatrixUtil.createIdentityMatrix(3), t);
+        if (useFrobenius) {
+            return MatrixUtil.frobeniusNorm(t);
+        }
+        return MatrixUtil.spectralNorm(t);
     }
     
     /*

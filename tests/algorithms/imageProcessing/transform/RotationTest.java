@@ -710,4 +710,16 @@ public class RotationTest extends TestCase {
                 )
         );
     }
+
+    public void testDistanceUsingRigidBodyDisplacements() throws NotConvergedException {
+
+        double[] theta1 = new double[]{20, 35, 55};
+        double[] theta2 = new double[]{30, 45, 60};
+
+        double[][] r1 = Rotation.createRotationZYX(theta1);
+        double[][] r2 = Rotation.createRotationZYX(theta2);
+
+        double d12 = Rotation.distanceUsingRigidBodyDisplacements(r1, r2, false);
+
+    }
 }

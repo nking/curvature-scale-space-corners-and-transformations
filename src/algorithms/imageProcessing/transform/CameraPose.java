@@ -361,13 +361,14 @@ public class CameraPose {
      * @param x objects in image coordinate reference frame.  size [3Xn].  if given [2Xn], will stack a row of 1's onto it
      *          internally.
      * @param X objects in world coordinate reference frame.  size [3Xn]
+     * @param useBouguetForRodrigues if true, uses only the Bouguet algoirthms for Rodrigues rotation matrices and vectors
      * @return
      * @throws NotConvergedException
      * @throws IOException
      */
     public static CameraExtrinsicParameters calculatePoseUsingBouguet(
             Camera.CameraIntrinsicParameters intrinsics, double[][] x,
-            double[][] X, boolean refine) throws NotConvergedException, IOException {
+            double[][] X, boolean refine, boolean useBouguetForRodrigues) throws NotConvergedException, IOException {
 
         if (x.length != 2 && x.length != 3) {
             throw new IllegalArgumentException("x.length must be 3 or 2");
@@ -427,16 +428,16 @@ public class CameraPose {
         if ((r < 1e-3)|| (n < 5)) { // test of planarity
             // planar structure
             //Transform the plane to bring it in the Z=0 plane:
-            soln = bouguetPoseInitPlanar(intrinsics, xc, X, svd.getVt(), XMean);
+            soln = bouguetPoseInitPlanar(intrinsics, xc, X, svd.getVt(), XMean, useBouguetForRodrigues);
         } else {
             //%fprintf(1,'Non planar structure detected: r=%f\n',r);
-            soln = bouguetPoseInitNonPlanar(xc, X);
+            soln = bouguetPoseInitNonPlanar(xc, X, useBouguetForRodrigues);
         }
 
         if (refine) {
             // could return more intermediate arrays such as JJ
             //this needs image coordinates because internally it is projecting X to camera then image and comparing that to x
-            soln = bouguetPoseRefine(soln, intrinsics, x, X);
+            soln = bouguetPoseRefine(soln, intrinsics, x, X, useBouguetForRodrigues);
         }
 
         //computation of the homography (not useful in the end)
@@ -448,7 +449,8 @@ public class CameraPose {
             }
             //% Computes the reprojection error in pixels:
             //x = project_points2(X_kk, omckk, Tckk, fc, cc, kc, alpha_c);
-            ProjectedPoints pp = bouguetProjectPoints2(X, soln.getRodriguesVector(), soln.getTranslation(), intrinsics);
+            ProjectedPoints pp = bouguetProjectPoints2(X, soln.getRodriguesVector(), soln.getTranslation(),
+                    intrinsics, useBouguetForRodrigues);
 
             //ex = x_kk - x;
             double[][] ex = MatrixUtil.pointwiseSubtract(x, pp.getXEstAs3XN());
@@ -536,13 +538,14 @@ public class CameraPose {
      * @param om rotation vector (3x1 vector) between world coordinate frame and camera reference frame.
      * @param t translation vector (3x1 vector) between world coordinate frame and camera reference frame.
      * @param intrinsics camera intrinsic parameters
+*    @param useBouguetForRodrigues if true, uses only the Bouguet algoirthms for Rodrigues rotation matrices and vectors
      * @return [xp, dxpdom, dxpdT] where xp are the Projected pixel coordinates (2xN matrix for N points)
      * dxpdom are the Derivatives of xp with respect to om ((2N)x3 matrix), and
      * dxpdT are the derivatives of xp with respect to T ((2N)x3 matrix).
      */
     @SuppressWarnings({"fallthrough"})
     public static ProjectedPoints bouguetProjectPoints2(double[][] X, double[] om, double[] t,
-                                                         CameraIntrinsicParameters intrinsics) {
+         CameraIntrinsicParameters intrinsics, boolean useBouguetForRodrigues) {
 
         //[m,n] = size(X);
         int m = X.length;
@@ -594,7 +597,7 @@ public class CameraPose {
          */
 
         //[Y,dYdom,dYdT] = rigid_motion(X,om,T);
-        ProjectedPoints pRM = bouguetRigidMotion(X, om, t); // in camera reference frame
+        ProjectedPoints pRM = bouguetRigidMotion(X, om, t, useBouguetForRodrigues); // in camera reference frame
         double[][] Y = pRM.xEst; // [3 X n]
         double[][] dYdom = pRM.dxdom; // [3*n X 3]
         double[][] dYdT = pRM.dxdT;   // [3*n X 3]
@@ -1053,12 +1056,13 @@ public class CameraPose {
      * @param X
      * @param om
      * @param T
+     * @param useBouguetForRodrigues if true, uses only the Bouguet algoirthms for Rodrigues rotation matrices and vectors
      * @return Y = R*X+T, where R = rodrigues(om).  returns
      * Y: 3D coordinates of the structure points in the camera reference frame (3xN matrix for N points)
      * %        dYdom: Derivative of Y with respect to om ((3N)x3 matrix)
      * %        dYdT: Derivative of Y with respect to T ((3N)x3 matrix)
      */
-    static ProjectedPoints bouguetRigidMotion(double[][] X, double[] om, double[] T) {
+    static ProjectedPoints bouguetRigidMotion(double[][] X, double[] om, double[] T, boolean useBouguetForRodrigues) {
 
         if (X.length != 3) {
             throw new IllegalArgumentException("X.length should be 3");
@@ -1072,13 +1076,19 @@ public class CameraPose {
 
         //[R, dRdom] = rodrigues(om);
         Rotation.RodriguesRotation rRot = Rotation.createRodriguesRotationMatrixBouguet(om);
+        double[][] r;
+        if (useBouguetForRodrigues) {
+            r = rRot.r;
+        } else {
+            r = Rotation.createRodriguesFormulaRotationMatrix(om);
+        }
 
         //[m,n] = size(X);
         int m = X.length;
         int n = X[0].length;
 
         //Y = R*X + repmat(T,[1 n]);
-        double[][] Y = MatrixUtil.multiply(rRot.r, X);
+        double[][] Y = MatrixUtil.multiply(r, X);
         int i, j;
         double tmp;
         for (j = 0; j < m; ++j) {
@@ -1130,9 +1140,20 @@ public class CameraPose {
         return pp;
     }
 
+    /**
+     *
+     * @param init
+     * @param intrinsics
+     * @param xi
+     * @param X
+     * @param useBouguetsRodrigues if true,uses the Bouguet algorithms for Rodrigues Rotation matrix and vector,
+     *                             else, uses the other Rotation.java Rodrigues methods.
+     * @return
+     * @throws NotConvergedException
+     */
     public static CameraExtrinsicParameters bouguetPoseRefine(CameraExtrinsicParameters init,
-                                                              CameraIntrinsicParameters intrinsics,
-                                                              double[][] xi, double[][] X) throws NotConvergedException {
+          CameraIntrinsicParameters intrinsics, double[][] xi, double[][] X,
+          boolean useBouguetsRodrigues) throws NotConvergedException {
 
         if (xi.length != 2 && xi.length != 3) {
             throw new IllegalArgumentException("xi length must be 3 or 2");
@@ -1141,7 +1162,7 @@ public class CameraPose {
             throw new IllegalArgumentException("X length must be3");
         }
 
-        if (init == null || init.getRodriguesVector() == null || init.getRotation() == null) {
+        if (init == null || init.getRodriguesVector() == null || init.getTranslation() == null) {
             throw new IllegalArgumentException("inital solution must have the Rodrigues rotation vector" +
                     " and translation");
         }
@@ -1196,7 +1217,7 @@ public class CameraPose {
 
             //%fprintf(1,'%d...',iter+1);
             //[x,dxdom,dxdT] = project_points2(X_kk,omckk,Tckk,fc,cc,kc,alpha_c);
-            pp = bouguetProjectPoints2(X, omckk, Tckk, intrinsics); // these are in image reference frame
+            pp = bouguetProjectPoints2(X, omckk, Tckk, intrinsics, useBouguetsRodrigues); // these are in image reference frame
             double[][] x = pp.xEst;  //[2 X n]
             double[][] dxdom = pp.dxdom; // [2*n X 3]
             double[][] dxdT = pp.dxdT; // [2*n X 3]
@@ -1247,13 +1268,19 @@ public class CameraPose {
             }// end if
         } // end while
 
+        System.out.printf("bouguet refine iter=%d\n", iter);
         //%fprintf(1,'\n');
 
         //Rckk = rodrigues(omckk);
-        Rotation.RodriguesRotation rRot = Rotation.createRodriguesRotationMatrixBouguet(omckk);
+        double[][] r;
+        if (useBouguetsRodrigues) {
+            r = Rotation.createRodriguesRotationMatrixBouguet(omckk).r;
+        } else {
+            r = Rotation.createRodriguesFormulaRotationMatrix(omckk);
+        }
 
         //can return [omckk,Tckk,Rckk,JJ]
-        CameraExtrinsicParameters extr = new CameraExtrinsicParameters(rRot.r, omckk, Tckk);
+        CameraExtrinsicParameters extr = new CameraExtrinsicParameters(r, omckk, Tckk);
         return extr;
     }
 
@@ -1268,13 +1295,14 @@ public class CameraPose {
      * @param X objects in real world coordinates
      * @param vT formed from the SVD of X (hence, the last column is orthogonal to X)
      * @param XMean
+     * @param useBouguetForRodrigues if true, uses only the Bouguet algoirthms for Rodrigues rotation matrices and vectors
      * @return
      * @throws NotConvergedException
      * @throws IOException
      */
     static CameraExtrinsicParameters bouguetPoseInitPlanar(
             Camera.CameraIntrinsicParameters intrinsics, double[][] xc,
-            double[][] X, DenseMatrix vT, double[] XMean) throws NotConvergedException, IOException {
+            double[][] X, DenseMatrix vT, double[] XMean, boolean useBouguetForRodrigues) throws NotConvergedException, IOException {
 
         if (xc.length != 2 && xc.length != 3) {
             throw new IllegalArgumentException("xc length must be 3 or 2");
@@ -1406,13 +1434,23 @@ public class CameraPose {
         RRR = MatrixUtil.transpose(RRR);
 
         //omckk = rodrigues(RRR);
-        Rotation.RodriguesRotation rRot = Rotation.extractRodriguesRotationVectorBouguet(RRR);
-        double[] omckk = rRot.om;
+        double[] omckk;
+        if (useBouguetForRodrigues) {
+            Rotation.RodriguesRotation rRot = Rotation.extractRodriguesRotationVectorBouguet(RRR);
+            omckk = rRot.om;
+        } else {
+            omckk = Rotation.extractRodriguesRotationVector(RRR);
+        }
 
         //%omckk = rodrigues([H(:,1:2) cross(H(:,1),H(:,2))]);
         //Rckk = rodrigues(omckk);
-        Rotation.RodriguesRotation rRot2 = Rotation.createRodriguesRotationMatrixBouguet(omckk);
-        double[][] Rckk = rRot2.r;
+        double[][] Rckk;
+        if (useBouguetForRodrigues) {
+            Rotation.RodriguesRotation rRot2 = Rotation.createRodriguesRotationMatrixBouguet(omckk);
+            Rckk = rRot2.r;
+        } else {
+            Rckk = Rotation.createRodriguesFormulaRotationMatrix(omckk);
+        }
 
         //Tckk = H(:,3);
         double[] Tckk = MatrixUtil.extractColumn(H, 2);
@@ -1427,14 +1465,29 @@ public class CameraPose {
         //Rckk = Rckk * R_transform;
         Rckk = MatrixUtil.multiply(Rckk, Rtransform);
         //omckk = rodrigues(Rckk);
-        omckk = Rotation.extractRodriguesRotationVectorBouguet(Rckk).om;
-        //Rckk = rodrigues(omckk);
-        Rckk = Rotation.createRodriguesRotationMatrixBouguet(omckk).r;
+        if (useBouguetForRodrigues) {
+            omckk = Rotation.extractRodriguesRotationVectorBouguet(Rckk).om;
+            //Rckk = rodrigues(omckk);
+            Rckk = Rotation.createRodriguesRotationMatrixBouguet(omckk).r;
+        } else {
+            omckk = Rotation.extractRodriguesRotationVector(Rckk);
+            // this should be the same.  TODO: follow up on simplifying this method w.o. losing accuracy though
+            Rckk = Rotation.createRodriguesFormulaRotationMatrix(omckk);
+        }
 
         return new CameraExtrinsicParameters(Rckk, omckk, Tckk);
     }
+
+    /**
+     *
+     * @param xc
+     * @param X
+     * @param useBouguetForRodrigues if true, uses only the Bouguet algoirthms for Rodrigues rotation matrices and vectors
+     * @return
+     * @throws NotConvergedException
+     */
     static CameraExtrinsicParameters bouguetPoseInitNonPlanar(double[][] xc,
-            double[][] X) throws NotConvergedException {
+            double[][] X, boolean useBouguetForRodrigues) throws NotConvergedException {
 
         if (xc.length != 2 && xc.length != 3) {
             throw new IllegalArgumentException("xc length must be 3 or 2");
@@ -1556,10 +1609,15 @@ public class CameraPose {
         double[] Tckk = Arrays.copyOfRange(orth, 9, 12);
         MatrixUtil.multiply(Tckk, 1./sc);
         //omckk = rodrigues(Rckk);
-        double[] omckk = Rotation.extractRodriguesRotationVectorBouguet(Rckk).om;
-
-        //Rckk = rodrigues(omckk);
-        Rckk = Rotation.createRodriguesRotationMatrixBouguet(omckk).r;
+        double[] omckk;
+        if (useBouguetForRodrigues) {
+            omckk = Rotation.extractRodriguesRotationVectorBouguet(Rckk).om;
+            //Rckk = rodrigues(omckk);
+            Rckk = Rotation.createRodriguesRotationMatrixBouguet(omckk).r;
+        } else {
+            omckk = Rotation.extractRodriguesRotationVector(Rckk);
+            Rckk = Rotation.createRodriguesFormulaRotationMatrix(omckk);
+        }
 
         return new CameraExtrinsicParameters(Rckk, omckk, Tckk);
     }
