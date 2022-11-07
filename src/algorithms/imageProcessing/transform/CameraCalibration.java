@@ -39,6 +39,18 @@ import no.uib.cipr.matrix.SVD;
  * the distortion coefficients (k1,k2), and put every initial guess of these 
  * parameters into some nonlinear optimization routine to get the final estimations. 
  * </pre>
+ <pre>
+   Note, if need to estimate the instrinsic camera for initial conditions, one can generally
+   start with:
+   MASKS Algorithm 11.6, step 1:
+   Guess a calibration matrix K by choosing the optical center at the center of the image,
+   assuming the pixels to be square, and guessing the focal length f. For example, for
+   an image plane of size (Dx X Dy) pixels, a typical guess is
+       | f O Dx/2
+   K = | 0 f Dy/2
+       | 0 0 1
+   with f = k X Dx, where k is typically chosen in the interval [0.5, 2].
+ </pre>
  * @author nichole
  */
 public class CameraCalibration {

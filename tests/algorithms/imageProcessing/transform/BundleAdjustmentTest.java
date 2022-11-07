@@ -81,50 +81,6 @@ public class BundleAdjustmentTest extends TestCase {
         Camera.CameraIntrinsicParameters kIntr = cameraMatrices.getIntrinsics();
         List<Camera.CameraExtrinsicParameters> extrinsics = cameraMatrices.getExtrinsics();
 
-        //TODO:
-        // for unit tests for BundleAdjustment, would like to have rotation vectors, but the estimate camera
-        //   extracts rotation matrices from the homology and any rotaton vector extracted from that is ambiguous.
-        //   so will use Bouguet's refine method to estimate the rotation vectors,
-        // (1) Bouguet's refine => rotation vectors
-        //     -- assert that the rotation matrices created from the rotation vectors are close to the
-        //        Xhang 98 values.
-        // (2) add option to add noise to the vectors to give BundleAdjustment an amount to improve.
-
-        System.out.printf("using Bouguet's refine method to estimate rotation vectors:\n");
-        Camera.CameraExtrinsicParameters[] refined = new Camera.CameraExtrinsicParameters[nImages];
-        for (int i = 0; i < nImages; ++i) {
-            Camera.CameraExtrinsicParameters init = extrinsics.get(i);
-            double[][] xi = Zhang98Data.getObservedFeaturesInImage(i + 1);
-            //this needs image coordinates because internally it is projecting X to camera then image and comparing that to x
-
-            refined[i] = CameraPose.bouguetPoseRefine(init, kIntr, xi, coordsW, useBouguetForRodrigues);
-
-            // print camera calib, bouguet refined rot(rVec), then zhang98
-            double[] cCalibRVec = init.getRodriguesVector();
-            double[] bRefinedRVec = refined[i].getRodriguesVector();
-            double[][] cCalibRot = init.getRotation();
-            double[][] bRefinedRot = refined[i].getRotation();
-            double[][] zhangRot = Zhang98Data.getRotation(i + 1);
-            System.out.printf("%d) camera calib:\n  rVec=%s\n  rot=\n%s\n", i,
-                    FormatArray.toString(cCalibRVec, "%.3e"), FormatArray.toString(cCalibRot, "%.3e"));
-            System.out.printf("%d) bouguet refined:\n  rVec=%s\n  rot=\n%s\n", i,
-                    FormatArray.toString(bRefinedRVec, "%.3e"), FormatArray.toString(bRefinedRot, "%.3e"));
-            System.out.printf("%d) zhangRot:\n    rot=\n%s\n", i,
-                    FormatArray.toString(zhangRot, "%.3e"));
-        }
-        // current + delta = expected (zhang)
-        double[][] rDeltas = new double[nImages][];
-        double[][] tDeltas = new double[nImages][];
-        for (int i = 0; i < nImages; ++i) {
-            // zhang data doesn't have the Rodrigues vectors, only has the rotation matrices,
-            // so this is not a unique delta for rotation:
-            double[] rz = Rotation.extractRodriguesRotationVector(Zhang98Data.getRotation(i + 1));
-            rDeltas[i] = MatrixUtil.subtract(rz, extrinsics.get(i).getRodriguesVector());
-            tDeltas[i] = MatrixUtil.subtract(Zhang98Data.getTranslation(i + 1), extrinsics.get(i).getTranslation());
-        }
-        System.out.printf("delta rVecs=\n%s\n", FormatArray.toString(rDeltas, "%.3e"));
-        System.out.printf("delta trans=\n%s\n", FormatArray.toString(tDeltas, "%.3e"));
-
         double alpha = kIntr.getIntrinsic()[0][0];
         double gamma = kIntr.getIntrinsic()[0][1];
         double u0 = kIntr.getIntrinsic()[0][2];
@@ -154,24 +110,6 @@ public class BundleAdjustmentTest extends TestCase {
             kRadial[0], kRadial[1], k1E, k2E));
 
         List<String> distances = new ArrayList<String>();
-
-        double distR, distT;
-        Camera.CameraExtrinsicParameters ex1;
-        for (int i = 0; i < nImages; ++i) {
-            ex1 = extrinsics.get(i);
-            distR = Rotation.distanceUsingRigidBodyDisplacements(Zhang98Data.getRotation(i+1), ex1.getRotation(), false);
-            distT = MatrixUtil.lPSum(
-                    MatrixUtil.subtract(Zhang98Data.getTranslation(i+1), ex1.getTranslation()), 2
-            );
-            log.log(LEVEL, String.format("\n"));
-            distances.add(String.format("%d) dist R = %.3e, dist T = %.3e", i, distR, distT));
-            log.log(LEVEL, String.format("%d) dist R = %.3e, dist T = %.3e", i, distR, distT));
-            log.log(LEVEL, String.format("   rVec%d=\n%s\n", i, FormatArray.toString(ex1.getRodriguesVector(), "%.3e")));
-            log.log(LEVEL, String.format("   r%d=\n%s\n", i, FormatArray.toString(ex1.getRotation(), "%.3e")));
-            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(Zhang98Data.getRotation(i+1), "%.3e")));
-            log.log(LEVEL, String.format("   t%d=\n%s\n", i,FormatArray.toString(ex1.getTranslation(), "%.3e")));
-            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(Zhang98Data.getTranslation(i+1), "%.3e")));
-        }
 
         // now have initial parameters to refine using BundleAdjustment.java in other tests
         alphaE = 832.5010;
@@ -206,16 +144,16 @@ public class BundleAdjustmentTest extends TestCase {
             kRadials[i] = new double[]{kRadial[0], kRadial[1]};
             //kRadials[i] = new double[2];
         }
-        
+
         //the extrinsic camera parameter rotation vectors
         //stacked along the 3 columns, that is the size is [nImages X 3] where
         //nImages is coordsI[0].length/coordsW[0].length.  each array is size [1X3]
         double[][] extrRotVecs = new double[nImages][];
         double[][] extrTrans = new double[nImages][];
         for (i = 0; i < nImages; ++i) {
-            ex1 = extrinsics.get(i);
-            extrRotVecs[i] = Arrays.copyOf(ex1.getRodriguesVector(), ex1.getRodriguesVector().length);
-            extrTrans[i] = Arrays.copyOf(ex1.getTranslation(), 3);
+            Camera.CameraExtrinsicParameters init = extrinsics.get(i);
+            extrRotVecs[i] = Arrays.copyOf(init.getRodriguesVector(), init.getRodriguesVector().length);
+            extrTrans[i] = Arrays.copyOf(init.getTranslation(), 3);
         }
         
         //Zhang98Data.printObservedMinusProjected_Camera_Frame();
@@ -248,30 +186,57 @@ public class BundleAdjustmentTest extends TestCase {
         log.log(LEVEL, String.format("[kRadial]=[%.3e, %.3e].  expected=[%.3e, %.3e]\n", 
             kRadial[0], kRadial[1], k1E, k2E));
 
+        System.out.printf("Compare method results to Zhang 1998:\n");
+        Camera.CameraExtrinsicParameters[] refined = new Camera.CameraExtrinsicParameters[nImages];
         for (i = 0; i < nImages; ++i) {
-            r = Rotation.createRodriguesFormulaRotationMatrix(extrRotVecs[i]);
-            distR = Rotation.distanceUsingRigidBodyDisplacements(Zhang98Data.getRotation(i+1), r, false);
-            distT = MatrixUtil.lPSum(
-                    MatrixUtil.subtract(Zhang98Data.getTranslation(i+1), extrTrans[i]), 2
-            );
+            Camera.CameraExtrinsicParameters init = extrinsics.get(i);
+            double[][] xi = Zhang98Data.getObservedFeaturesInImage(i + 1);
+            //this needs image coordinates because internally it is projecting X to camera then image and comparing that to x
 
-            log.log(LEVEL, String.format("\n"));
-            distances.add(String.format("%d) dist R = %.3e, dist T = %.3e", i, distR, distT));
-            log.log(LEVEL, String.format("%d) dist R = %.3e, dist T = %.3e", i, distR, distT));
-            log.log(LEVEL, String.format("   r%d=\n%s\n", i, 
-                FormatArray.toString(r, "%.3e")));
-            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, 
-                FormatArray.toString(Zhang98Data.getRotation(i+1), "%.3e")));
-            log.log(LEVEL, String.format("   t%d=\n%s\n", i, 
-                FormatArray.toString(extrTrans[i], "%.3e")));
-            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,
-                FormatArray.toString(Zhang98Data.getTranslation(i+1), "%.3e")));
+            refined[i] = CameraPose.bouguetPoseRefine(init, kIntr, xi, coordsW, useBouguetForRodrigues);
+
+            // print camera calib, bouguet refined rot(rVec), then zhang98
+            double[] cCalibRVec = init.getRodriguesVector();
+            double[] bRefinedRVec = refined[i].getRodriguesVector();
+            double[] bARefinedRVec = extrRotVecs[i];
+            double[][] cCalibRot = init.getRotation();
+            double[][] bRefinedRot = refined[i].getRotation();
+            double[][] zhangRot = Zhang98Data.getRotation(i + 1);
+            double[][] bARefinedRot = Rotation.createRodriguesFormulaRotationMatrix(bARefinedRVec);
+
+            System.out.printf("%d) camera calib:\n  rVec=%s\n  rot=\n%s\n   distZhangR=%.3e\n", i,
+                    FormatArray.toString(cCalibRVec, "%.3e"), FormatArray.toString(cCalibRot, "%.3e"),
+                    Rotation.distanceUsingRigidBodyDisplacements(Zhang98Data.getRotation(i+1), cCalibRot, false));
+            System.out.printf("%d) bouguet refined:\n  rVec=%s\n  rot=\n%s\n   distZhangR=%.3e\n", i,
+                    FormatArray.toString(bRefinedRVec, "%.3e"), FormatArray.toString(bRefinedRot, "%.3e"),
+                    Rotation.distanceUsingRigidBodyDisplacements(Zhang98Data.getRotation(i+1), bRefinedRot, false));
+            System.out.printf("%d) bundle adjustment:\n  rVec=%s\n  rot=\n%s\n   distZhangR=%.3e\n", i,
+                    FormatArray.toString(bARefinedRVec, "%.3e"), FormatArray.toString(bARefinedRot, "%.3e"),
+                    Rotation.distanceUsingRigidBodyDisplacements(Zhang98Data.getRotation(i+1), bARefinedRot, false));
+            System.out.printf("%d) zhang:\n    rot=\n%s\n", i,
+                    FormatArray.toString(zhangRot, "%.3e"));
+
+            // translations
+            double[] cCalibT = init.getTranslation();
+            double[] bRefinedT = refined[i].getTranslation();
+            double[] bARefinedT = extrTrans[i];
+
+            System.out.printf("\n%d) camera calib:\n  T=%s\n  distZhangT=%.3e\n", i,
+                    FormatArray.toString(cCalibT, "%.3e"),
+                    MatrixUtil.lPSum(MatrixUtil.subtract(Zhang98Data.getTranslation(i+1),
+                            cCalibT), 2));
+            System.out.printf("%d) bouguet refined:\n  T=%s\n  distZhangT=%.3e\n", i,
+                    FormatArray.toString(bRefinedT, "%.3e"),
+                    MatrixUtil.lPSum(MatrixUtil.subtract(Zhang98Data.getTranslation(i+1),
+                            bRefinedT), 2));
+            System.out.printf("%d) bundle adjustment:\n  T=%s\n  distZhangT=%.3e\n", i,
+                    FormatArray.toString(bARefinedT, "%.3e"),
+                    MatrixUtil.lPSum(MatrixUtil.subtract(Zhang98Data.getTranslation(i+1),
+                            bARefinedT), 2));
+            System.out.printf("%d) zhang:\n    trans=\n%s\n", i,
+                    FormatArray.toString(Zhang98Data.getTranslation(i+1), "%.3e"));
         }
 
-        for (String str : distances) {
-            log.log(LEVEL, str);
-        }
-        
     }
 
 }

@@ -20,6 +20,8 @@ import no.uib.cipr.matrix.*;
  and calculates the re-projection error to form the parameter update steps,
  the gradient covector, and the evaluation of the objective (sum of squares of
  the re-projection error).
+
+ The main method is solveSparsely(...).
  
  * From Triggs et al. 2000, "Bundle Adjustment - A Modern Synthesis"
  * "Bundle adjustment is the problem of refining a visual reconstruction to 
@@ -59,6 +61,18 @@ import no.uib.cipr.matrix.*;
  * "An Invitation to 3-D Vision").
  * Also see Chap 5.2, pp 127-128 of MASKS for constrained optimization.
  * </pre>
+ <pre>
+ Note, if need to estimate the instrinsic camera for initial conditions, one can generally
+ start with:
+ MASKS Algorithm 11.6, step 1:
+ Guess a calibration matrix K by choosing the optical center at the center of the image,
+ assuming the pixels to be square, and guessing the focal length f. For example, for
+ an image plane of size (Dx X Dy) pixels, a typical guess is
+     | f O Dx/2
+ K = | 0 f Dy/2
+     | 0 0 1
+ with f = k X Dx, where k is typically chosen in the interval [0.5, 2].
+ </pre>
  * @author nichole
  */
 public class BundleAdjustment {
@@ -94,7 +108,8 @@ public class BundleAdjustment {
     }
     
     /**
-     * NOT READY FOR USE.
+     * NOTE: this method could use improvements and more testing.
+     *
      * given world scene features, the features observed in images,
      * initial camera calibration and extrinsic parameters, use the 
      * iterative non-linear Levenberg-Marquardt (L-M)
@@ -168,6 +183,7 @@ public class BundleAdjustment {
         UnweightedGraphCommunityFinder.java
         
      </pre>
+     TODO: review nad improve the derivatives.
      * @param coordsI the features observed in different images (in coordinates
      * of the image reference frame).
      * The format of coordsI is 3 X (nFeatures*nImages). Each row should
