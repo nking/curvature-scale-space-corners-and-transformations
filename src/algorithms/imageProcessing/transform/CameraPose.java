@@ -15,7 +15,9 @@ import java.util.Arrays;
  given a set of features in image coordinates and world coordinate space with
   known camera intrinsic parameters, estimate the camera pose, that is
   extract the camera extrinsic parameters.
- <em>See also PNP.java</em>
+ <em>See also PNP.java when it's ready for use.</em>
+
+ Recommended method to use: calculatePoseUsingBouguet(...)
 
  TODO: write overloaded methods to use quaternion rotation.
  see
@@ -348,14 +350,14 @@ public class CameraPose {
      <pre>
      The Bouguet toolbox webpage is currently at http://robots.stanford.edu/cs223b04/JeanYvesCalib/
      and states that the source code is freely available.
-     The github repositories with the Bouguet Matlab code that the individual authors have modified do not have license
-     information.  Those references are here and the method this is adapted from.
-     compute_extrinsic_init.m, normalize_pixel.m, compute_homography.m,
-     compute_extrinsic_refine.m,  project_points2.m, rigid_motion.m
-
+     The github repositories with forked Bouguet Matlab code do not have license
+     information.  Those references are
      https://github.com/fragofer/TOOLBOX_calib
      and
      https://github.com/hunt0r/Bouguet_cam_cal_toolbox
+     and the methods adapted from are
+     compute_extrinsic_init.m, normalize_pixel.m, compute_homography.m,
+     compute_extrinsic_refine.m,  project_points2.m, rigid_motion.m
      </pre>
      * @param intrinsics
      * @param x objects in image coordinate reference frame.  size [3Xn].  if given [2Xn], will stack a row of 1's onto it
@@ -1148,6 +1150,7 @@ public class CameraPose {
      * @param X
      * @param useBouguetsRodrigues if true,uses the Bouguet algorithms for Rodrigues Rotation matrix and vector,
      *                             else, uses the other Rotation.java Rodrigues methods.
+     *                             Recommend using false at this time.
      * @return
      * @throws NotConvergedException
      */

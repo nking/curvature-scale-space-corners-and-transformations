@@ -737,8 +737,6 @@ public class BundleAdjustment {
     }
 
     /**
-     * NOT READY FOR USE.
-     * NOT YET TESTED.
      * solve for bundle adjustment data structures needed by the Levenberg-Marquardt
      * algorithm to refine the intrinsic and extrinsic camera parameters.
      * The algorithms uses the sparse structure of the jacobian to reduce
@@ -794,8 +792,18 @@ public class BundleAdjustment {
      -- one of the 2 examples is interesting for the problem of pose for
      a pair of stereo-images.  it also uses cholesky factoring of block
      sparse matrix structure.
+
+     The partial derivatives are from Bouguet's Camera Calibration Toolbox.
+     The Bouguet toolbox webpage is currently at http://robots.stanford.edu/cs223b04/JeanYvesCalib/
+     and states that the source code is freely available.
+     The github repositories with forked Bouguet Matlab code do not have license
+     information.  Those references are
+     https://github.com/fragofer/TOOLBOX_calib
+     and
+     https://github.com/hunt0r/Bouguet_cam_cal_toolbox
+     and the code adapted from is compute_extrinsic_refine.m which depends upon other code from the toolbox.
      </pre>
-     TODO: add Bouguet references and license information
+     TODO: review and improve the derivatives here.  e.g. re-do porting of the Qu derivs...
      * @param coordsI the features observed in different images (in coordinates
      * of the image reference frame).  The different images may or may not be from the same camera.
      * The format of coordsI is 3 X (nFeatures*nImages). Each row should

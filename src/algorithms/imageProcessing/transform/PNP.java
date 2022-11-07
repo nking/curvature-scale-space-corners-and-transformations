@@ -251,8 +251,9 @@ public class PNP {
         CameraExtrinsicParameters kExtr, final int nMaxIter)
         throws NotConvergedException, Exception {
 
+        boolean useBouguetsRodrigues = false;
         if (true) {
-            return CameraPose.bouguetPoseRefine(kExtr, kIntr, imageC, worldC);
+            return CameraPose.bouguetPoseRefine(kExtr, kIntr, imageC, worldC, useBouguetsRodrigues);
         }
 
         if (imageC.length != 3) {
