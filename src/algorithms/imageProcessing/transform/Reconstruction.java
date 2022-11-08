@@ -820,10 +820,7 @@ public class Reconstruction {
         int n2 = vT.length;//9
         double[][] hEst = new double[3][3];
         for (i = 0; i < 3; i++) {
-            hEst[i] = new double[3];
-            hEst[i][0] = vT[n2 - 1][(i * 3) + 0];
-            hEst[i][1] = vT[n2 - 1][(i * 3) + 1];
-            hEst[i][2] = vT[n2 - 1][(i * 3) + 2];
+            hEst[i] = new double[]{vT[n2 - 1][(i * 3) + 0], vT[n2 - 1][(i * 3) + 1], vT[n2 - 1][(i * 3) + 2]};
         }
 
         //decomposition of H into motion and structure in case of calibration case
@@ -849,9 +846,9 @@ public class Reconstruction {
         }
         // V1, V2, V3 are the e2 from SVD(H^T*H), which is V from SVD(H)
         double[][] uT = MatrixUtil.transpose(u);
-        double[] v1 = uT[0];
-        double[] v2 = uT[1];
-        double[] v3 = uT[2];
+        double[] v1 = Arrays.copyOf(uT[0], uT[0].length);
+        double[] v2 = Arrays.copyOf(uT[1], uT[1].length);
+        double[] v3 = Arrays.copyOf(uT[2], uT[2].length);
 
         //v1*sqrt(1-s3)
         double[] v1t0 = Arrays.copyOf(v1, v1.length);
@@ -961,9 +958,11 @@ public class Reconstruction {
         double[][] camera2 = MatrixUtil.zeros(3, 4);
         double[][] h2;
         int[] countZ = new int[4];
+        int[] countNZ = new int[4];
         int[] idxs = new int[4];
+        // try each of the 4 solutions to find which has more points in front of the camera
         for (i = 0; i < ms.length; ++i) {
-            System.out.printf("%d) N=%s\n", i, FormatArray.toString(ms[i].nHat, "%.3e"));
+            //System.out.printf("%d) N=%s\n", i, FormatArray.toString(ms[i].nHat, "%.3e"));
             // form projection matrix for camera2 from ms[i].   H = (R+ (1/d)T*N^T)
             h2 = MatrixUtil.outerProduct(ms[i].tDivD, ms[i].nHat);
             h2 = MatrixUtil.pointwiseAdd(ms[i].r, h2);
@@ -994,6 +993,8 @@ public class Reconstruction {
                 MatrixUtil.multiply(wcsPt.X, 1./wcsPt.X[3]);
                 if (wcsPt.X[2] > 0) {
                     ++countZ[i];
+                } else if (wcsPt.X[2] < 0) {
+                    ++countNZ[i];
                 }
                 for (j = 0; j < 4; ++j) {
                     results[i].XW[j][ii] = wcsPt.X[j];
@@ -1001,10 +1002,14 @@ public class Reconstruction {
             }
             idxs[i] = i;
             System.out.printf("%d) count(z>0)=%d out of %d\n\n", i, countZ[i], n);
+            System.out.printf("%d) count(z<0)=%d out of %d\n\n", i, countNZ[i], n);
         }
+
+        int[] idxs2 = Arrays.copyOf(idxs, idxs.length);
 
         // ascending sort, so take the last 2
         MiscSorter.sortBy1stArg(countZ, idxs);
+        MiscSorter.sortBy1stArg(countNZ, idxs2);
         ProjectionResults[] r2 = new ProjectionResults[2];
         r2[0] = new ProjectionResults();
         r2[0].projectionMatrices = MatrixUtil.copy(results[idxs[3]].projectionMatrices);
