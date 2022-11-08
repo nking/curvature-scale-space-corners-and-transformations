@@ -261,7 +261,8 @@ public class CameraPoseTest extends TestCase {
         double[] radial = new double[]{1e-7, 1e-7};
         Camera.CameraIntrinsicParameters intr = new Camera.CameraIntrinsicParameters(
             MatrixUtil.createIdentityMatrix(3), radial, true);
-        CameraPose.ProjectedPoints pp = CameraPose.bouguetProjectPoints2(XX, om, T, intr);
+        boolean useBouguetsRodrigues = false;
+        CameraPose.ProjectedPoints pp = CameraPose.bouguetProjectPoints2(XX, om, T, intr, useBouguetsRodrigues);
         double[][] xx = pp.xEst;
 
         System.out.printf("om=\n%s\n", FormatArray.toString(om, "%.3e"));
@@ -286,7 +287,7 @@ public class CameraPoseTest extends TestCase {
 
         //[omckk,Tckk] = compute_extrinsic(xxn,XX);
         boolean refine = true;
-        Camera.CameraExtrinsicParameters c = CameraPose.calculatePoseUsingBouguet(intr, xxn, XX, refine);
+        Camera.CameraExtrinsicParameters c = CameraPose.calculatePoseUsingBouguet(intr, xxn, XX, refine, useBouguetsRodrigues);
         //[om omckk om-omckk]
         //[T Tckk T-Tckk]
         System.out.printf("om=\n  %s\n", FormatArray.toString(om, "%.4e"));
