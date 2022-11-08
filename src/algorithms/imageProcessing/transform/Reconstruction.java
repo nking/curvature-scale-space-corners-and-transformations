@@ -799,10 +799,18 @@ public class Reconstruction {
         see Figure 5.10 of MASKS.
          */
 
+        /*
+        B = [];
+        for i = 1:NPOINTS
+             B = [B; makeRows(p(:,i), q(:,i))];
+        end;
+        0        0      0      -x1[0]  -x1[1]  -x1[2]   x2[1]*x1[0]  x2[1]*x1[1]  x2[1]*x1[2]
+        x1[0]  x1[1]  x1[2]      0      0        0     -x2[0]*x1[0]  -x2[0]*x1[1]  -x2[0]*x1[2]
+         */
         double[][] ell = new double[2*n][12];
         for (i = 0; i < n; ++i) {
-            ell[2*i] = new double[]{0, 0, 0, -x1[0][i], -x1[1][i], -1, -x2[1][i]*x1[0][i], -x2[1][i]*x1[1][i], -x2[1][i]};
-            ell[2*i + 1] = new double[]{x1[0][i], x1[1][i], 1, 0, 0, 0, -x2[0][i]*x1[0][i], -x2[0][i]*x1[1][i], -x2[0][i]};
+            ell[2*i] = new double[]{0, 0, 0, -x1[0][i], -x1[1][i], -x1[2][i],   x2[1][i]*x1[0][i],  x2[1][i]*x1[1][i],  x2[1][i]};
+            ell[2*i + 1] = new double[]{x1[0][i], x1[1][i], x1[2][i], 0, 0, 0, -x2[0][i]*x1[0][i], -x2[0][i]*x1[1][i], -x2[0][i]};
         }
 
         SVD svd = SVD.factorize(new DenseMatrix(ell));
