@@ -52,8 +52,10 @@ public class ReconstructionTest extends TestCase {
         double[] t1 = Zhang98Data.getTranslation(idx1);
         double[][] r2 = Zhang98Data.getRotation(idx2);
         double[] t2 = Zhang98Data.getTranslation(idx2);
-        double[][] camera1 = Camera.createCamera(intr, r1, t1);
-        double[][] camera2 = Camera.createCamera(intr, r2, t2);
+        double[][] camera1 = Camera.createCamera(intr, r1, t1); //P = intr * [R | t]
+        double[][] camera2 = Camera.createCamera(intr, r2, t2); //P = intr * [R | t]
+        double[][] p1 = Camera.createExtrinsicCameraMatrix(r1, t1);
+        double[][] p2 = Camera.createExtrinsicCameraMatrix(r2, t2);
         double[][] x1c = Camera.pixelToCameraCoordinates(x1, intr, radial, true);
         double[][] x2c = Camera.pixelToCameraCoordinates(x2, intr, radial, true);
         double[][] XW = Zhang98Data.getFeatureWCS();
@@ -75,19 +77,19 @@ public class ReconstructionTest extends TestCase {
         double[][] x1Pt = MatrixUtil.zeros(3, 1);
         double[][] x2Pt = MatrixUtil.zeros(3, 1);
         int ii, j, i;
+
+        // put x into camera coordinates reference frame:
+        Triangulation.WCSPt wcsPt;
         for (ii = 0; ii < n; ++ii) {
             for (j = 0; j < 3; ++j) {
                 x1Pt[j][0] = x1c[j][ii];
                 x2Pt[j][0] = x2c[j][ii];
             }
             // better answer produced by using camera coords xc, yc and extrinsic projection matrix P=[R|t]
-
-            Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(camera1, camera2, x1Pt, x2Pt);
-            //Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(intr, r1, t1, intr, r2, t2, x1Pt, x2Pt);
-            if (wcsPt == null) {
-                continue;
-            }
+            wcsPt = Triangulation.calculateWCSPoint(camera1, camera2, x1Pt, x2Pt);
+            //wcsPt = Triangulation.calculateWCSPoint(intr, r1, t1, intr, r2, t2, x1Pt, x2Pt);
             MatrixUtil.multiply(wcsPt.X, 1. / wcsPt.X[3]);
+
             System.out.printf("WCS[%d]=%s,\t alpha=%.3e\n",
                     ii, FormatArray.toString(wcsPt.X, "%.3e"),
                     wcsPt.alpha);
@@ -104,6 +106,7 @@ public class ReconstructionTest extends TestCase {
             System.out.printf("pXW[%d]=%s\n",
                     ii, FormatArray.toString(MatrixUtil.transpose(pXW), "%.3e"));
         }
+
     }
 
         public void estProjectiveWithBouguetIm2LeftRight() throws IOException, NotConvergedException {

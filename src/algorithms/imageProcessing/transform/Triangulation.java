@@ -3,7 +3,7 @@ package algorithms.imageProcessing.transform;
 import algorithms.imageProcessing.transform.Camera.CameraParameters;
 import algorithms.imageProcessing.transform.Camera.CameraProjection;
 import algorithms.matrix.MatrixUtil;
-import algorithms.util.FormatArray;
+
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -12,7 +12,8 @@ import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.SVD;
 
 /**
- * given correspondence between two images and intrinsic and extrinsic camera 
+ * given correspondence between two images (in camera reference frame, a.k.a. calibrated coordinates)
+ * and given the intrinsic and extrinsic camera
  * parameters, determine the real world position.
  * 
  * useful reading:
@@ -33,7 +34,7 @@ public class Triangulation {
 
         /**
          * a scale factor between x and X: x = alpha * P * X
-         * where P = K * R * [I | -t] or P = [ R | t ].
+         * where P = K * R * [I | -t];
          * the term 1/alpha is sometimes used as lambda, the multiple of x instead.
          */
         public double alpha;
@@ -42,7 +43,8 @@ public class Triangulation {
 
     /**
      * given the intrinsic and extrinsic camera matrices for 2 images
-     * and given the matching correspondence of points between the 2 images where the correspondence are observations
+     * and given the matching correspondence of points between the 2 images (in camera reference frame)
+     * where the correspondence are observations
      * of the same object,
      * calculate the real world coordinate of the object.
      * 
@@ -55,12 +57,12 @@ public class Triangulation {
      * @param k2 intrinsic camera matrix for image 2 in units of pixels.
      * @param r2 the rotation matrix for the extrinsic camera matrix for image 2.
      * @param t2 the translation vector for the extrinsic camera matrix for image 2.
-     * @param x1 the image 1 set of correspondence points.  format is 3 x N where
+     * @param x1 the camera 1 set of correspondence points.  format is 3 x N where
      * N is the number of points.  all points are observations of real world point X
-     *           and should be in image coordinates (pixels).
-     * @param x2 the image 2 set of correspondence points.  format is 3 x N where
-     * N is the number of points. .  all points are observations of real world point X
-     *           and should be in image coordinates (pixels).
+     *           and should be in camera reference frame.
+     * @param x2 the camera 2 set of correspondence points.  format is 3 x N where
+     *      * N is the number of points.  all points are observations of real world point X
+     *      *           and should be in camera reference frame.
      * @return the point coordinates in world coordinate reference frame
      */
     public static WCSPt calculateWCSPoint(
@@ -103,14 +105,14 @@ public class Triangulation {
     }
     
     /**
-     given the projection matrices and matching correspondence of points between the 2 images
+     given the projection matrices and matching correspondence of points between the 2 cameras
      * (measurements of the same object, that is, as a single 3D point is returned) calculate the real world
      * coordinate of the observations.
      *
      * <pre>
      *     NOTE the projection matrix is formed using P = K * [ R | t ]
      *     and x = alpha * P * X
-     *     so x1 and x2 should be in image coordinates (pixels).
+     *     so x1 and x2 should be in camera coordinates.
      *
      * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
      * </pre>
@@ -118,20 +120,20 @@ public class Triangulation {
      *                the data are used to construct P = K * [ R | t ].
      * @param camera2 camera matrix for image 2. the size is 3X4.
      *                the data are used to construct P = K * [ R | t ].
-     * @param x1 the set of measurements of 1 real world point X from image 1 in images coordinates (pixels).
-     * The corresponding measurements of the same point in image 2 are in x2.
+     * @param x1c the set of measurements of 1 real world point X from image 1 in camera coordinate reference frame.
+     * The corresponding measurements of the same point in camera 2 are in x2.
      * format is 3 x N where N is the number of measurements.
      *
-     * @param x2 the set of measurements of 1 real world point X from image 2 in image coordinates (pixels).
-     * The corresponding measurements of the same point in image 1 are in x1.
-     * format is 3 x N where N is the number of measurements.
+     * @param x2c the set of measurements of 1 real world point X from image 2 in camera coordinate reference frame.
+     *      * The corresponding measurements of the same point in camera 1 are in x2.
+     *      * format is 3 x N where N is the number of measurements.
      *
      * @return the 3D coordinate of the point in world scene.  note that
      * the entire array can be normalized by the last element.
      */
     public static WCSPt calculateWCSPoint(
         CameraParameters camera1, CameraParameters camera2,
-        double[][] x1, double[][] x2) {
+        double[][] x1c, double[][] x2c) {
         
         return calculateWCSPoint(camera1.getIntrinsicParameters().getIntrinsic(),
             camera1.getExtrinsicParameters().getRotation(),
@@ -139,7 +141,7 @@ public class Triangulation {
             camera2.getIntrinsicParameters().getIntrinsic(),
             camera2.getExtrinsicParameters().getRotation(),
             camera2.getExtrinsicParameters().getTranslation(),
-            x1, x2);
+            x1c, x2c);
     }
     
     /**
@@ -148,58 +150,41 @@ public class Triangulation {
      * coordinate of the observations.
      *
      * <pre>
-     *     NOTE that if the camera matrices are in format:
-     *     if P = [ R | t ], then x1 and x2 must be in camera coordinates.
-     *     else if P = K * [ R | t ], then x1 and x2 must be in image coordinates.
-     *
-     *     x = alpha * P * X
-     *     x_c = K * x_im
+     *     P = K * [ R | t ], and x1 and x2 must be in camera coordinate reference frame.
      *
      * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
      * </pre>
      * @param camera1 camera matrix for image 1.   the size is 3X4.
-     *                P = [ R | t ] or P = K * [ R | t ] and must be consistent with camera2.
+     *                P = K * [ R | t ].
      * @param camera2 camera matrix for image 2. the size is 3X4.
-     *                 P = [ R | t ] or P = K * [ R | t ] and must be consistent with camera1.
-     * @param x1 the set of measurements of 1 real world point X from image 1.
-     * The corresponding measurements of the same point in image 2 are in x2.
+     *                P = K * [ R | t ].
+     * @param x1c the set of measurements of 1 real world point X from camera 1 in camera coordinates.
+     * The corresponding measurements of the same point in camera 2 are in x2.
      * format is 3 x N where N is the number of measurements.
      * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
      * If the data are not perfect, need more than 1 pair for best fit.
-     * NOTE that x1 must be in camera coordinate frame if the camera matrix P = [ R | t ]
-     * where R is the rotation between camera1 and camera2 and t is the translation between them,
-     * else if  P = K * [ R | t ], then x1 has to be in image coordinates (pixels).
-     * @param x2 the set of measurements of 1 real world point X from image 2.
-     * The corresponding measurements of the same point in image 1 are in x1.
+     * @param x2c the set of measurements of 1 real world point X from camera 2 in camera coordinates.
+     * The corresponding measurements of the same point in camera 1 are in x1.
      * format is 3 x N where N is the number of measurements.
      * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
      * If the data are not perfect, need more than 1 pair for best fit.
-     * NOTE that x2 must be in camera coordinate frame if the camera matrix P = [ R | t ]
-     * where R is the rotation between camera1 and camera2 and t is the translation between them,
-     * else if  P = K * [ R | t ], then x2 has to be in image coordinates (pixels).
      * @return the 3D coordinate of the point in world scene.  note that
      * the entire array can be normalized by the last element.
      */
     public static WCSPt calculateWCSPoint(
         CameraProjection camera1, CameraProjection camera2,
-        double[][] x1, double[][] x2) {
+        double[][] x1c, double[][] x2c) {
         
-        return calculateWCSPoint(camera1.getP(), camera2.getP(), x1, x2);
+        return calculateWCSPoint(camera1.getP(), camera2.getP(), x1c, x2c);
     }
     
      /**
-     * given the projection matrices and matching correspondence of points between the 2 images
+     * given the projection matrices and matching correspondence of points between the 2 cameras
       * (measurements of the same object, that is, as a single 3D point is returned) calculate the real world
       * coordinate of the observations.
      *
      * <pre>
-      *     NOTE that if the camera matrices are in format:
-      *     if P = [ R | t ], then x1 and x2 must be in camera coordinates.
-      *     else if P = K * [ R | t ], then x1 and x2 must be in iamge coordinates(pixels).
-      *
-      *     x_c = R * xw + t
-      *         = [R | t] xw
-      *     x_im = K*x_c = K*[R|t]*xw
+      *     P = K * [ R | t ], and x1 and x2 must be in camera coordinates(pixels).
       *
       *     NOTE: sometimes the rotation is applied before translation, then P = K * [ R | -R*t].
       *     This method uses the projection matrix rows and does not decompose it into K and R components
@@ -208,30 +193,26 @@ public class Triangulation {
      * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
      * </pre>
      * @param camera1 camera matrix for image 1.   the size is 3X4
-      *                P = [ R | t ] or P = K * [ R | t ] and must be consistent with camera2.
+      *                P = K * [ R | t ].
      * @param camera2 camera matrix for image 2. the size is 3X4.
-      *                 P = [ R | t ] or P = K * [ R | t ] and must be consistent with camera1.
-     * @param x1 the set of measurements of 1 real world point X from image 1.
-     * The corresponding measurements of the same point in image 2 are in x2.
+      *                 P = K * [ R | t ].
+     * @param x1c the set of measurements of 1 real world point X from camera 1 in camera coordinates.
+     * The corresponding measurements of the same point in camera 2 are in x2.
      * format is 3 x N where N is the number of measurements.
      * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
      * If the data are not perfect, need more than 1 pair for best fit.
-      * NOTE that x1 must be in camera coordinate frame if the camera matrix P = [ R | t ]
-      * where R is the rotation between camera1 and camera2 and t is the translation between them,
-      * else if  P = K * [ R | t ], then x1 has to be in image coordinates (pixels).
-     * @param x2 the set of measurements of 1 real world point X from image 2.
-      * The corresponding measurements of the same point in image 1 are in x1.
-      * format is 3 x N where N is the number of measurements.
-      * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
-      * If the data are not perfect, need more than 1 pair for best fit.
-      * NOTE that x2 must be in camera coordinate frame if the camera matrix P = [ R | t ]
-      * where R is the rotation between camera1 and camera2 and t is the translation between them,
-      * else if  P = K * [ R | t ], then x2 has to be in image coordinates (pixels).
+     * @param x2c the set of measurements of 1 real world point X from camera 2 in camera coordinates.
+     * The corresponding measurements of the same point in camera 1 are in x1.
+     * format is 3 x N where N is the number of measurements.
+     * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
+     * If the data are not perfect, need more than 1 pair for best fit.
+     * @return the 3D coordinate of the point in world scene.  note that
+     * the entire array can be normalized by the last element.
      * @return the 3D coordinate of the point in world scene.  note that
      * the entire array can be normalized by the last element.
      */
     public static WCSPt calculateWCSPoint(double[][] camera1, double[][] camera2,
-        double[][] x1, double[][] x2) {
+                                          double[][] x1c, double[][] x2c) {
         
         if (camera1.length != 3 || camera1[0].length != 4) {
             throw new IllegalArgumentException("camera1 must be 3 x 4");
@@ -239,11 +220,11 @@ public class Triangulation {
         if (camera2.length != 3 || camera2[0].length != 4) {
             throw new IllegalArgumentException("camera2 must be 3 x 4");
         }
-        if (x1.length != 3 || x2.length != 3) {
+        if (x1c.length != 3 || x2c.length != 3) {
             throw new IllegalArgumentException("x1.length must be 3 and so must x2.length");
         }
-        int n = x1[0].length;
-        if (x2[0].length != n) {
+        int n = x1c[0].length;
+        if (x2c[0].length != n) {
             throw new IllegalArgumentException("x1 and x2 must be same dimensions");
         }
       
@@ -367,27 +348,27 @@ public class Triangulation {
         double[][] a = new double[4*n][4];
         int i, j;
         for (i = 0, j = 0; i < n; ++i, j+=4) {
-            u1x = x1[0][i];
-            u1y = x1[1][i];
-            u2x = x2[0][i];
-            u2y = x2[1][i];
+            u1x = x1c[0][i];
+            u1y = x1c[1][i];
+            u2x = x2c[0][i];
+            u2y = x2c[1][i];
                         
-            //y1 * p1vec_3^T - p1vec_2^T
+            //y1 * p1vec[2]^T - p1vec[1]^T
             tmp = Arrays.copyOf(camera1[2], 4);
             MatrixUtil.multiply(tmp, u1y);
             a[j] = MatrixUtil.subtract(tmp, camera1[1]);
             
-            //p1vec_1^T - x1 * p1vec_3^T
+            //p1vec[0]^T - x1 * p1vec[2]^T
             tmp = Arrays.copyOf(camera1[2], 4);
             MatrixUtil.multiply(tmp, u1x);
             a[j+1] = MatrixUtil.subtract(camera1[0], tmp);
             
-            //y2 * p2vec_3^T - p2vec_2^T
+            //y2 * p2vec[2]^T - p2vec[1]^T
             tmp = Arrays.copyOf(camera2[2], 4);
             MatrixUtil.multiply(tmp, u2y);
             a[j+2] = MatrixUtil.subtract(tmp, camera2[1]);
             
-            //p2vec_1^T - x2 * p2vec_3^T
+            //p2vec[0]^T - x2 * p2vec[2]^T
             tmp = Arrays.copyOf(camera2[2], 4);
             MatrixUtil.multiply(tmp, u2x);
             a[j+3] = MatrixUtil.subtract(camera2[0], tmp);
