@@ -39,7 +39,74 @@ public class ReconstructionTest extends TestCase {
     public ReconstructionTest() {
     }
 
-    public void testProjectiveWithBouguetIm2LeftRight() throws IOException, NotConvergedException {
+    public void testProjectiveWithZhang() throws IOException, NotConvergedException {
+
+        int idx1 = 1;
+        int idx2 = 2;
+
+        double[][] x1 = Zhang98Data.getObservedFeaturesInImage(idx1);
+        double[][] x2 = Zhang98Data.getObservedFeaturesInImage(idx2);
+        double[][] intr = Zhang98Data.getIntrinsicCameraMatrix();
+        double[] radial = Zhang98Data.getRadialDistortionR2R4();
+        double[][] r1 = Zhang98Data.getRotation(idx1);
+        double[] t1 = Zhang98Data.getTranslation(idx1);
+        double[][] r2 = Zhang98Data.getRotation(idx2);
+        double[] t2 = Zhang98Data.getTranslation(idx2);
+        double[][] camera1 = Camera.createCamera(intr, r1, t1);
+        double[][] camera2 = Camera.createCamera(intr, r2, t2);
+        double[][] x1c = Camera.pixelToCameraCoordinates(x1, intr, radial, true);
+        double[][] x2c = Camera.pixelToCameraCoordinates(x2, intr, radial, true);
+        double[][] XW = Zhang98Data.getFeatureWCS();
+
+        double[] r1Vec = Rotation.extractRodriguesRotationVector(r1);
+        double[] r2Vec = Rotation.extractRodriguesRotationVector(r2);
+        double[][] r1Transposed = MatrixUtil.transpose(r1);
+        double[][] r1I = MatrixUtil.multiply(r1Transposed, r1);
+        double[][] r2RelToR1 = MatrixUtil.multiply(r1Transposed, r2);
+        System.out.printf("t1=%s\n", FormatArray.toString(t1, "%.3e"));
+        System.out.printf("t2=%s\n", FormatArray.toString(t2, "%.3e"));
+        System.out.printf("diff t=%s\n", FormatArray.toString(MatrixUtil.subtract(t2, t1), "%.3e"));
+        System.out.printf("r1=%s\n", FormatArray.toString(r1, "%.3e"));
+        System.out.printf("r2=%s\n", FormatArray.toString(r2, "%.3e"));
+        System.out.printf("r2RelToR1=%s\n", FormatArray.toString(r2RelToR1, "%.3e"));
+
+        int n = x1[0].length;
+
+        double[][] x1Pt = MatrixUtil.zeros(3, 1);
+        double[][] x2Pt = MatrixUtil.zeros(3, 1);
+        int ii, j, i;
+        for (ii = 0; ii < n; ++ii) {
+            for (j = 0; j < 3; ++j) {
+                x1Pt[j][0] = x1c[j][ii];
+                x2Pt[j][0] = x2c[j][ii];
+            }
+            // better answer produced by using camera coords xc, yc and extrinsic projection matrix P=[R|t]
+
+            Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(camera1, camera2, x1Pt, x2Pt);
+            //Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(intr, r1, t1, intr, r2, t2, x1Pt, x2Pt);
+            if (wcsPt == null) {
+                continue;
+            }
+            MatrixUtil.multiply(wcsPt.X, 1. / wcsPt.X[3]);
+            System.out.printf("WCS[%d]=%s,\t alpha=%.3e\n",
+                    ii, FormatArray.toString(wcsPt.X, "%.3e"),
+                    wcsPt.alpha);
+            System.out.printf("expected=%s\n",
+                    FormatArray.toString(MatrixUtil.extractColumn(XW, ii), "%.3e"));
+        }
+
+        Reconstruction.ProjectionResults[] pr = Reconstruction.calculateProjectiveReconstruction(x1c, x2c);
+        for (ii = 0; ii < pr.length; ++ii) {
+            double[][] p = pr[ii].projectionMatrices;
+            System.out.printf("pProj=\n%s\n", FormatArray.toString(p, "%.3e"));
+            System.out.printf("r2RelToR1=%s\n", FormatArray.toString(r2RelToR1, "%.3e"));
+            double[][] pXW = pr[ii].XW;
+            System.out.printf("pXW[%d]=%s\n",
+                    ii, FormatArray.toString(MatrixUtil.transpose(pXW), "%.3e"));
+        }
+    }
+
+        public void estProjectiveWithBouguetIm2LeftRight() throws IOException, NotConvergedException {
 
         //test data from:
         //http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example5.html
@@ -90,8 +157,29 @@ public class ReconstructionTest extends TestCase {
         camera2RT[1] = new double[]{7.48996521e-01,  1.96836697e-01,  6.32660673e-01, -8.15340647e+01};
         camera2RT[2] = new double[]{6.56388713e-01, -9.02683572e-02, -7.49002992e-01,  2.66971558e+02};
 
-        double[][] camera1KRT = MatrixUtil.multiply(k1Intr, camera1RT);
-        double[][] camera2KRT = MatrixUtil.multiply(k2Intr, camera2RT);
+        double[][] bouguetR1 = MatrixUtil.copySubMatrix(camera1RT, 0, 2, 0,2);
+        double[][] bouguetR2 = MatrixUtil.copySubMatrix(camera2RT, 0, 2, 0,2);
+        double[][] bouguetR1Orth = Rotation.orthonormalizeUsingSVD(bouguetR1);
+        double[][] bouguetR2Orth = Rotation.orthonormalizeUsingSVD(bouguetR2);
+        double[] bougetT1 = MatrixUtil.extractColumn(camera1RT, 3);
+        double[] bougetT2 = MatrixUtil.extractColumn(camera2RT, 3);
+        double[][] bouguetR1Transposed = MatrixUtil.transpose(bouguetR1);
+        double[][] bouguetR1I = MatrixUtil.multiply(bouguetR1Transposed, bouguetR1);
+        double[][] bouguetR2RelToR1 = MatrixUtil.multiply(bouguetR1Transposed, bouguetR2);
+        double[] bouguetT12 = MatrixUtil.subtract(bougetT2, bougetT1);
+        double[] bouguetR1Vec = Rotation.extractRodriguesRotationVector(bouguetR1);
+        double[] bouguetR2Vec = Rotation.extractRodriguesRotationVector(bouguetR2);
+        double[] bouguetR2RelToR1Vec = Rotation.extractRodriguesRotationVector(bouguetR2RelToR1);
+        double[] bouguetR1IVec = Rotation.extractRodriguesRotationVector(bouguetR1I);
+        double[][] bouguetRot12 = Rotation.rotationBetweenTwoDirections0(bouguetR1Vec, bouguetR2Vec);
+        double[] bouguetRVec12 = Rotation.extractRodriguesRotationVector(bouguetRot12);
+
+        double[][] chk1 = MatrixUtil.multiply(bouguetRot12, bouguetR1); // same as R2?
+        double[][] chk2 = MatrixUtil.multiply(bouguetRot12, bouguetR2); // same as R1?
+        double[][] chk3 = MatrixUtil.multiply(MatrixUtil.transpose(bouguetRot12), bouguetR2); // same as R1?
+
+        //expected om = 0.00611, 0.00489, -0.00359   +- 0.0027, 0.00308, 0.00029
+        //expected t = -99.84929, 0.82221, 0.43647   +- 0.142, 0.11352, 0.49773
 
         double[][] x1 = MatrixUtil.zeros(3, 13);
         double[][] x2 = MatrixUtil.zeros(3, 13);
@@ -194,36 +282,43 @@ public class ReconstructionTest extends TestCase {
         double[][] x2Pt = MatrixUtil.zeros(3, 1);
         for (ii = 0; ii < n; ++ii) {
             for (j = 0; j < 3; ++j) {
-                x1Pt[j][0] = x1c[j][ii]; // use image coordinates
+                x1Pt[j][0] = x1c[j][ii];
                 x2Pt[j][0] = x2c[j][ii];
             }
-            // better answer produced by using camera coords xc, yc and extrinsic projection matrix P=]T|t]
+            // better answer produced by using camera coords xc, yc and extrinsic projection matrix P=[R|t]
+
             Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(camera1RT, camera2RT, x1Pt, x2Pt);
             if (wcsPt == null) {
                 continue;
             }
             MatrixUtil.multiply(wcsPt.X, 1. / wcsPt.X[3]);
-            System.out.printf("WCS[%d]=%s,\t alpha=%.3e\n", ii, FormatArray.toString(wcsPt.X, "%.3e"),
+            System.out.printf("xc=(%s, %s) ==> WCS[%d]=%s,\t alpha=%.3e\n",
+                FormatArray.toString(MatrixUtil.transpose(x1Pt), "%.3e"),
+                FormatArray.toString(MatrixUtil.transpose(x2Pt), "%.3e"),
+                ii, FormatArray.toString(wcsPt.X, "%.3e"),
                wcsPt.alpha);
         }
 
+        // the MASKS method:
         Reconstruction.ProjectionResults[] results = Reconstruction.calculateProjectiveReconstruction(x1c, x2c);
         for (Reconstruction.ProjectionResults result : results) {
             System.out.printf("projectionMatrix: \n%s\n", FormatArray.toString(result.projectionMatrices, "%.3e"));
-            System.out.printf("XM=\n%s\n", FormatArray.toString(MatrixUtil.transpose(result.XW), "%.3e"));
+            System.out.printf("PR XW=\n%s\n", FormatArray.toString(MatrixUtil.transpose(result.XW), "%.3e"));
         }
 
         // needs x1 and x2 in image coordinates:
         Reconstruction.ReconstructionResults results2 = Reconstruction.calculateUsingEssentialMatrix(
             k1Intr, k2Intr, x1, x2);
-        System.out.printf("\nMethod calculateUsingEssentialMatrix(): \nRot2=\n%s\nTrans2=\n%s\nXW=\n%s\n",
+        System.out.printf("\nMethod calculateUsingEssentialMatrix(): \nRot2=\n%s\nTrans2=\n%s\nEM XW=\n%s\n",
                 FormatArray.toString(results2.k2ExtrRot, "%.3e"),
                 FormatArray.toString(results2.k2ExtrTrans, "%.3e"),
                 FormatArray.toString(MatrixUtil.transpose(results2.XW), "%.3e"));
 
     }
 
-    public void testProjectiveWithBouguetLeftIm1Im2() throws IOException, NotConvergedException {
+    public void _testProjectiveWithBouguetLeftIm1Im2() throws IOException, NotConvergedException {
+
+        System.out.printf("testProjectiveWithBouguetLeftIm1Im2\n");
 
         //test data from:
         //http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example5.html
@@ -286,15 +381,6 @@ public class ReconstructionTest extends TestCase {
         assertNotNull(extrCalc);
         assertNotNull(extrCalc.getRotation());
         double[][] extrCalcRot = extrCalc.getRotation();
-        double[] extrCalcThetas = new double[3];
-        Rotation.extractThetaFromZYX(extrCalcRot, extrCalcThetas);
-        double[] extrCalcThetaDegrees = Arrays.copyOf(extrCalcThetas, extrCalcThetas.length);
-        MatrixUtil.multiply(extrCalcThetaDegrees, 180./Math.PI);
-
-        System.out.printf("calculateProjectiveMotion: derived rot=\n%s\ndegrees=\n%s\ntrans=\n%s\n",
-                FormatArray.toString(extrCalcRot, "%.3e"),
-                FormatArray.toString(extrCalcThetaDegrees, "%.3e"),
-                FormatArray.toString(extrCalc.getTranslation(), "%.3e"));
 
         // test triangulation, given the values that Bouguet found for R and T
         System.out.printf("\ngiven Bouguet P1, P2, check triangulation:\n");
