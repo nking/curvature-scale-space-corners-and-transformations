@@ -70,12 +70,15 @@ public class ReconstructionTest extends TestCase {
         System.out.printf("diff t=%s\n", FormatArray.toString(MatrixUtil.subtract(t2, t1), "%.3e"));
         System.out.printf("r1=%s\n", FormatArray.toString(r1, "%.3e"));
         System.out.printf("r2=%s\n", FormatArray.toString(r2, "%.3e"));
+        System.out.printf("r1Tr1=%s\n", FormatArray.toString(r1I, "%.3e"));
         System.out.printf("r2RelToR1=%s\n", FormatArray.toString(r2RelToR1, "%.3e"));
 
         int n = x1[0].length;
 
         double[][] x1Pt = MatrixUtil.zeros(3, 1);
         double[][] x2Pt = MatrixUtil.zeros(3, 1);
+        double[][] x1iPt = MatrixUtil.zeros(3, 1);
+        double[][] x2iPt = MatrixUtil.zeros(3, 1);
         int ii, j, i;
 
         // put x into camera coordinates reference frame:
@@ -97,7 +100,8 @@ public class ReconstructionTest extends TestCase {
                     FormatArray.toString(MatrixUtil.extractColumn(XW, ii), "%.3e"));
         }
 
-        Reconstruction.ProjectionResults[] pr = Reconstruction.calculateProjectiveReconstruction(x1c, x2c);
+        Reconstruction.ProjectionResults[] pr = Reconstruction.calculateProjectiveReconstruction(
+                intr, intr, x1c, x2c);
         for (ii = 0; ii < pr.length; ++ii) {
             double[][] p = pr[ii].projectionMatrices;
             System.out.printf("pProj=\n%s\n", FormatArray.toString(p, "%.3e"));
@@ -110,6 +114,8 @@ public class ReconstructionTest extends TestCase {
     }
 
         public void estProjectiveWithBouguetIm2LeftRight() throws IOException, NotConvergedException {
+
+        //TODO: correct for xc and P=K[R|t]
 
         //test data from:
         //http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example5.html
@@ -303,7 +309,8 @@ public class ReconstructionTest extends TestCase {
         }
 
         // the MASKS method:
-        Reconstruction.ProjectionResults[] results = Reconstruction.calculateProjectiveReconstruction(x1c, x2c);
+        Reconstruction.ProjectionResults[] results = Reconstruction.calculateProjectiveReconstruction(
+                k1Intr, k2Intr, x1c, x2c);
         for (Reconstruction.ProjectionResults result : results) {
             System.out.printf("projectionMatrix: \n%s\n", FormatArray.toString(result.projectionMatrices, "%.3e"));
             System.out.printf("PR XW=\n%s\n", FormatArray.toString(MatrixUtil.transpose(result.XW), "%.3e"));
@@ -677,7 +684,7 @@ public class ReconstructionTest extends TestCase {
 
         // should be 2 solutions
         Reconstruction.ProjectionResults[] results =
-                Reconstruction.calculateProjectiveReconstruction(x1C, x2C);
+                Reconstruction.calculateProjectiveReconstruction(k1, k2, x1C, x2C);
 
         Camera.CameraExtrinsicParameters kExtr2 = Reconstruction.calculateProjectiveMotion(x1C, x2C);
 

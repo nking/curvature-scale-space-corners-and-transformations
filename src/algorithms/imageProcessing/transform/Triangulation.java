@@ -57,18 +57,18 @@ public class Triangulation {
      * @param k2 intrinsic camera matrix for image 2 in units of pixels.
      * @param r2 the rotation matrix for the extrinsic camera matrix for image 2.
      * @param t2 the translation vector for the extrinsic camera matrix for image 2.
-     * @param x1 the camera 1 set of correspondence points.  format is 3 x N where
+     * @param x1c the camera 1 set of correspondence points.  format is 3 x N where
      * N is the number of points.  all points are observations of real world point X
      *           and should be in camera reference frame.
-     * @param x2 the camera 2 set of correspondence points.  format is 3 x N where
+     * @param x2c the camera 2 set of correspondence points.  format is 3 x N where
      *      * N is the number of points.  all points are observations of real world point X
      *      *           and should be in camera reference frame.
      * @return the point coordinates in world coordinate reference frame
      */
     public static WCSPt calculateWCSPoint(
-        double[][] k1, double[][] r1, double[] t1,
-        double[][] k2, double[][] r2, double[] t2,
-        double[][] x1, double[][] x2) {
+            double[][] k1, double[][] r1, double[] t1,
+            double[][] k2, double[][] r2, double[] t2,
+            double[][] x1c, double[][] x2c) {
         
         if (k1.length != 3 || k1[0].length != 3) {
             throw new IllegalArgumentException("k1 must be 3 x 3");
@@ -88,11 +88,11 @@ public class Triangulation {
         if (t2.length != 3 ) {
             throw new IllegalArgumentException("t2 must be length 3");
         }
-        if (x1.length != 3 || x2.length != 3) {
+        if (x1c.length != 3 || x2c.length != 3) {
             throw new IllegalArgumentException("x1.length must be 3 and so must x2.length");
         }
-        int n = x1[0].length;
-        if (x2[0].length != n) {
+        int n = x1c[0].length;
+        if (x2c[0].length != n) {
             throw new IllegalArgumentException("x1 and x2 must be same dimensions");
         }
 
@@ -101,7 +101,7 @@ public class Triangulation {
         
         double[][] camera2 = Camera.createCamera(k2, r2, t2);
         
-        return calculateWCSPoint(camera1, camera2, x1, x2);
+        return calculateWCSPoint(camera1, camera2, x1c, x2c);
     }
     
     /**
@@ -286,7 +286,7 @@ public class Triangulation {
                     [ p9  p10 p11 p12 ]   [ Z ]
                                           [ 1 ]
         
-        similarity relations are solvedby DLT:
+        similarity relations are solved by DLT:
         (Remove scale factor, convert to linear system and solve with SVD)
         
            let pvec_1^T = [ p1 p2 p3 p4 ], pvec_2^T = [ p5 p6 p7 p8 ] etc. 
@@ -430,7 +430,7 @@ public class Triangulation {
 
         return w;
     }
-       
+
     /*
      * not finished
      * 

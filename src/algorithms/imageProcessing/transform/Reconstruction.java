@@ -753,6 +753,7 @@ public class Reconstruction {
      * denormalize the results such as the translation column of P2 which is the last column of P2.
      */
     public static ProjectionResults[] calculateProjectiveReconstruction(
+            double[][] intr1, double[][] intr2,
             double[][] x1, double[][] x2) throws NotConvergedException {
 
         if (x1.length != 3 || x2.length != 3) {
@@ -779,10 +780,174 @@ public class Reconstruction {
             }
         }
 
+        double[] v3 = new double[3];
+        MotionAndStructure[] ms = solveFor4Projective(x1, x2, v3);
+
         // camera matrix P for left image = [I | 0 ]
         double[][] camera1 = MatrixUtil.zeros(3, 4);
         for (i = 0; i < 3; ++i) {
             camera1[i][i] = 1;
+        }
+        // transform to K*[I|0]
+        //camera1 = MatrixUtil.multiply(intr1, camera1);
+
+        //H = +- (R+ (1/d)T*N^T)
+        //x2 ~ H * x1
+        // and [x2]_x * H * x1 = 0
+
+        // find the 2 solutions which project points in front of the cameras
+
+        ProjectionResults[] results = new ProjectionResults[4];
+
+        double[][] x1Pt = MatrixUtil.zeros(3, 1);
+        double[][] x2Pt = MatrixUtil.zeros(3, 1);
+
+        //[3X4]
+        double[][] camera2 = new double[3][];
+        double[][] h2;
+        int[] countZ = new int[4];
+        int[] countNZ = new int[4];
+        int[] idxs = new int[4];
+        // try each of the 4 solutions to find which has more points in front of the camera
+        for (i = 0; i < ms.length; ++i) {
+            //System.out.printf("%d) N=%s\n", i, FormatArray.toString(ms[i].nHat, "%.3e"));
+            // form projection matrix for camera2 from ms[i].   H = (R+ (1/d)T*N^T)
+            h2 = MatrixUtil.outerProduct(ms[i].tDivD, ms[i].nHat);
+            h2 = MatrixUtil.pointwiseAdd(ms[i].r, h2);
+
+            // camera2 is K*[R|t]
+            for (j = 0; j < 3; ++j) {
+                camera2[j] = new double[]{h2[j][0], h2[j][1], h2[j][2], v3[j]};
+            }
+            camera2 = MatrixUtil.multiply(intr2, camera2);
+
+            results[i] = new ProjectionResults();
+            results[i].XW = MatrixUtil.zeros(4, n);
+            results[i].projectionMatrices = MatrixUtil.zeros(3*2, 4);
+            for (j = 0; j < 3; ++j) {
+                System.arraycopy(camera1[j], 0, results[i].projectionMatrices[j], 0, 4);
+                System.arraycopy(camera2[j], 0, results[i].projectionMatrices[3 + j], 0, 4);
+            }
+            System.out.printf("Solution %d) camera2_2=\n%s\n", i, FormatArray.toString(camera2, "%.3e"));
+
+            //triangulation to look at depth
+            for (int ii = 0; ii < n; ++ii) {
+                for (j = 0; j < 3; ++j) {
+                    x1Pt[j][0] = x1[j][ii];
+                    x2Pt[j][0] = x2[j][ii];
+                }
+                Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(camera1, camera2, x1Pt, x2Pt);
+                if (wcsPt == null) {
+                    continue;
+                }
+                MatrixUtil.multiply(wcsPt.X, 1./wcsPt.X[3]);
+                if (wcsPt.X[2] > 0) {
+                    ++countZ[i];
+                } else if (wcsPt.X[2] < 0) {
+                    ++countNZ[i];
+                }
+                for (j = 0; j < 4; ++j) {
+                    results[i].XW[j][ii] = wcsPt.X[j];
+                }
+            }
+            idxs[i] = i;
+            System.out.printf("%d) count(z>0)=%d out of %d\n\n", i, countZ[i], n);
+            System.out.printf("%d) count(z<0)=%d out of %d\n\n", i, countNZ[i], n);
+        }
+
+        int[] idxs2 = Arrays.copyOf(idxs, idxs.length);
+
+        // ascending sort, so take the last 2
+        MiscSorter.sortBy1stArg(countZ, idxs);
+        MiscSorter.sortBy1stArg(countNZ, idxs2);
+        ProjectionResults[] r2 = new ProjectionResults[2];
+        r2[0] = new ProjectionResults();
+        r2[0].projectionMatrices = MatrixUtil.copy(results[idxs[3]].projectionMatrices);
+        r2[0].XW = MatrixUtil.copy(results[idxs[3]].XW);
+        r2[1] = new ProjectionResults();
+        r2[1].projectionMatrices = MatrixUtil.copy(results[idxs[2]].projectionMatrices);
+        r2[1].XW = MatrixUtil.copy(results[idxs[2]].XW);
+
+        /*
+        Sol(:,:,1) = [W1*U1', (H - W1*U1')*N1, N1];
+ Sol(:,:,2) = [W2*U2', (H - W2*U2')*N2, N2];
+ Sol(:,:,3) = [W1*U1', -(H - W1*U1')*N1, -N1];
+ Sol(:,:,4) = [W2*U2', -(H - W2*U2')*N2, -N2];
+         */
+
+        return r2;
+    }
+
+    /**
+     * estimate the projection matrices P1 and P2 using planar homography.
+     * This is also called Projective Structure From Motion for the
+     * Two-camera case.   it's a distorted version of euclidean 3d.
+     * 4 solutions are returned and the user should decide between them by which produces
+     * the larger number of points in front of the camera via triangulation of each pair of
+     * correspondence.
+     *
+     * NOTE that because the camera calibration, that is, intrinsic parameters,
+     * are not known, only the projective reconstruction is possible,
+     * but this can be upgraded to
+     affine (parallelism preserved) and Euclidean (parallelism and orthogonality preserved)
+     reconstructions.
+     To upgrade to an affine projection, need 3 vanishing points
+     (see Example 6.5 of MASKS).
+     To directly upgrade from projective to euclidean projection, need
+     5 ground truth points in general position, that is, no 4 points
+     are coplanar (see Section 9.3 of Belongie lec 9. and MASKS chap 5 "Historical Notes" and Algorithm 11.7).
+
+     * <pre>
+     * following "An Invitation to 3-D Vision" by Ma,  Soatto,  Kosecká, and Sastry
+     * noted as MASKS.
+     * Algorithm 5.2 in Chapter 5 and their code homography2Motion.m from
+     * https://cs.gmu.edu/~kosecka/bookcode.html
+     * which is free for non-commercial use.
+     * </pre>
+     * @param x1 the image 1 set of correspondence points.  format is 3 x N where
+     * N is the number of points.
+     * NOTE: since intrinsic parameters are not known, users of this method should
+     * presumably center the coordinates in some manner
+     * (e.g. unit standard normalization) since internally
+     * an identity matrix is used for K.
+     * @param x2 the image 1 set of correspondence points.  format is 3 x N where
+     *      * N is the number of points.
+     *      * NOTE: since intrinsic parameters are not known, users of this method should
+     *      * presumably center the coordinates in some manner
+     *      * (e.g. unit standard normalization) since internally
+     *      * an identity matrix is used for K.
+     * @param outV3 is the last row of SVD(H).V where H is the homography built from x1 and x2.  it should be length 3.
+     * @return the top 2 solutions for the set of {estimated projections P1 and P2, and the triangulation of x1 and x2 in WCS}
+     * Note that if normalization was performed on x1, and x2, you may want to
+     * denormalize the results such as the translation column of P2 which is the last column of P2.
+     */
+    public static MotionAndStructure[] solveFor4Projective(double[][] x1, double[][] x2, double[] outV3) throws NotConvergedException {
+
+        if (x1.length != 3 || x2.length != 3) {
+            throw new IllegalArgumentException("x1.length must be 3 and so must x2.length");
+        }
+        int n0 = x1[0].length;
+        if (x2[0].length != n0) {
+            throw new IllegalArgumentException("x1 and x2 must be same dimensions");
+        }
+        if (n0 < 4) {
+            throw new IllegalArgumentException("need at least 4 points to solve for the homography");
+        }
+        if (outV3.length != 3) {
+            throw new IllegalArgumentException("outV3 length should be 3");
+        }
+
+        int n = x1[0].length;
+        int i, j;
+
+        // just in case, normalize so that z=1
+        x1 = MatrixUtil.copy(x1);
+        x2 = MatrixUtil.copy(x2);
+        for (i = 0; i < n; ++i) {
+            for (j = 0; j < 3; ++j) {
+                x1[j][i] /= x1[2][i];
+                x2[j][i] /= x2[2][i];
+            }
         }
 
         /*
@@ -849,6 +1014,7 @@ public class Reconstruction {
         double[] v1 = Arrays.copyOf(uT[0], uT[0].length);
         double[] v2 = Arrays.copyOf(uT[1], uT[1].length);
         double[] v3 = Arrays.copyOf(uT[2], uT[2].length);
+        System.arraycopy(v3, 0, outV3, 0, 3);
 
         //v1*sqrt(1-s3)
         double[] v1t0 = Arrays.copyOf(v1, v1.length);
@@ -944,88 +1110,7 @@ public class Reconstruction {
         ms[3].nHat = Arrays.copyOf(N2, N2.length);
         MatrixUtil.multiply(ms[3].nHat, -1);
 
-        //H = +- (R+ (1/d)T*N^T)
-        //x2 ~ H * x1
-        // and [x2]_x * H * x1 = 0
-
-        // find the 2 solutions which project points in front of the cameras
-
-        ProjectionResults[] results = new ProjectionResults[4];
-
-        double[][] x1Pt = MatrixUtil.zeros(3, 1);
-        double[][] x2Pt = MatrixUtil.zeros(3, 1);
-
-        double[][] camera2 = MatrixUtil.zeros(3, 4);
-        double[][] h2;
-        int[] countZ = new int[4];
-        int[] countNZ = new int[4];
-        int[] idxs = new int[4];
-        // try each of the 4 solutions to find which has more points in front of the camera
-        for (i = 0; i < ms.length; ++i) {
-            //System.out.printf("%d) N=%s\n", i, FormatArray.toString(ms[i].nHat, "%.3e"));
-            // form projection matrix for camera2 from ms[i].   H = (R+ (1/d)T*N^T)
-            h2 = MatrixUtil.outerProduct(ms[i].tDivD, ms[i].nHat);
-            h2 = MatrixUtil.pointwiseAdd(ms[i].r, h2);
-            for (j = 0; j < 3; ++j) {
-                System.arraycopy(h2[j], 0, camera2[j], 0, 3);
-                // camera2_2[j][3] = e2[j];
-                camera2[j][3] = v3[j];
-            }
-            results[i] = new ProjectionResults();
-            results[i].XW = MatrixUtil.zeros(4, n);
-            results[i].projectionMatrices = MatrixUtil.zeros(3*2, 4);
-            for (j = 0; j < 3; ++j) {
-                System.arraycopy(camera1[j], 0, results[i].projectionMatrices[j], 0, 4);
-                System.arraycopy(camera2[j], 0, results[i].projectionMatrices[3 + j], 0, 4);
-            }
-            System.out.printf("Solution %d) camera2_2=\n%s\n", i, FormatArray.toString(camera2, "%.3e"));
-
-            //triangulation to look at depth
-            for (int ii = 0; ii < n; ++ii) {
-                for (j = 0; j < 3; ++j) {
-                    x1Pt[j][0] = x1[j][ii];
-                    x2Pt[j][0] = x2[j][ii];
-                }
-                Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(camera1, camera2, x1Pt, x2Pt);
-                if (wcsPt == null) {
-                    continue;
-                }
-                MatrixUtil.multiply(wcsPt.X, 1./wcsPt.X[3]);
-                if (wcsPt.X[2] > 0) {
-                    ++countZ[i];
-                } else if (wcsPt.X[2] < 0) {
-                    ++countNZ[i];
-                }
-                for (j = 0; j < 4; ++j) {
-                    results[i].XW[j][ii] = wcsPt.X[j];
-                }
-            }
-            idxs[i] = i;
-            System.out.printf("%d) count(z>0)=%d out of %d\n\n", i, countZ[i], n);
-            System.out.printf("%d) count(z<0)=%d out of %d\n\n", i, countNZ[i], n);
-        }
-
-        int[] idxs2 = Arrays.copyOf(idxs, idxs.length);
-
-        // ascending sort, so take the last 2
-        MiscSorter.sortBy1stArg(countZ, idxs);
-        MiscSorter.sortBy1stArg(countNZ, idxs2);
-        ProjectionResults[] r2 = new ProjectionResults[2];
-        r2[0] = new ProjectionResults();
-        r2[0].projectionMatrices = MatrixUtil.copy(results[idxs[3]].projectionMatrices);
-        r2[0].XW = MatrixUtil.copy(results[idxs[3]].XW);
-        r2[1] = new ProjectionResults();
-        r2[1].projectionMatrices = MatrixUtil.copy(results[idxs[2]].projectionMatrices);
-        r2[1].XW = MatrixUtil.copy(results[idxs[2]].XW);
-
-        /*
-        Sol(:,:,1) = [W1*U1', (H - W1*U1')*N1, N1];
- Sol(:,:,2) = [W2*U2', (H - W2*U2')*N2, N2];
- Sol(:,:,3) = [W1*U1', -(H - W1*U1')*N1, -N1];
- Sol(:,:,4) = [W2*U2', -(H - W2*U2')*N2, -N2];
-         */
-
-        return r2;
+        return ms;
     }
 
     /**
@@ -1369,18 +1454,18 @@ public class Reconstruction {
      Szeliski 2010, Chapter 7, and eqn (7.25).
      Ma, Soatto, Kosecká, and Sastry 2012, "An Invitation to 3-D Vision", pg 121 
      * </pre>
-     * @param k1 intrinsic camera matrix for image 1 in units of pixels.
-     * @param k2 intrinsic camera matrix for image 2 in units of pixels.
-     * @param x1 the image 1 set of correspondence points in image reference frame.  
+     * @param intr1 intrinsic camera matrix for image 1 in units of pixels.
+     * @param intr2 intrinsic camera matrix for image 2 in units of pixels.
+     * @param x1 the image 1 set of correspondence points in image reference frame.
      * format is 3 x N where N is the number of points.
-     * @param x2 the image 2 set of correspondence points in image reference frame.  
+     * @param x2 the image 2 set of correspondence points in image reference frame.
      * format is 3 x N where N is the number of points.
-     * @return 
+     * @return
      * @throws no.uib.cipr.matrix.NotConvergedException 
      */
     public static ReconstructionResults calculateUsingEssentialMatrix(
-        double[][] k1, double[][] k2,
-        double[][] x1, double[][] x2) throws NotConvergedException {
+            double[][] intr1, double[][] intr2,
+            double[][] x1, double[][] x2) throws NotConvergedException {
                 
         if (x1.length != 3 || x2.length != 3) {
             throw new IllegalArgumentException("x1.length must be 3 and so must x2.length");
@@ -1398,8 +1483,8 @@ public class Reconstruction {
         (3) For each point correspondence, compute the point X in 3D space (triangularization)
         */
         
-        double[][] k1IntrInv = Camera.createIntrinsicCameraMatrixInverse(k1);
-        double[][] k2IntrInv = Camera.createIntrinsicCameraMatrixInverse(k2);
+        double[][] k1IntrInv = Camera.createIntrinsicCameraMatrixInverse(intr1);
+        double[][] k2IntrInv = Camera.createIntrinsicCameraMatrixInverse(intr2);
         
         // the direction of the points is calculated by K^-1 * x
         double[][] x1C = MatrixUtil.multiply(k1IntrInv, x1);
@@ -1508,16 +1593,16 @@ public class Reconstruction {
         double[] tSelected = new double[3];
         double[][] XW = MatrixUtil.zeros(4, x1[0].length);
         // this method needs x1 and x2 in image coordinates (pixels)
-        bestInCheiralityTest(x1, x2, k1, k2, r1, r2, t1, t2, rSelected, tSelected, XW);  
+        bestInCheiralityTest(x1, x2, intr1, intr2, r1, r2, t1, t2, rSelected, tSelected, XW);
         
         ReconstructionResults rr = new ReconstructionResults();
         rr.XW = XW;
         rr.k1ExtrRot = MatrixUtil.createIdentityMatrix(3);
         rr.k1ExtrTrans = new double[]{0, 0, 0};
-        rr.k1Intr = k1;
+        rr.k1Intr = intr1;
         rr.k2ExtrRot = rSelected;
         rr.k2ExtrTrans = tSelected;
-        rr.k2Intr = k2;
+        rr.k2Intr = intr2;
         rr.essentialMatrix = MatrixUtil.convertToRowMajor(em);
         rr.fundamentalMatrix = null;
         rr.svdU = u;
@@ -3219,7 +3304,8 @@ public class Reconstruction {
      * @return
      * @throws NotConvergedException
      */
-    public static double[][] calculateProjectiveHomographyWithLeastSquares(double[][] x1P, double[][] x2P, double[][] fm, double[] e2) throws NotConvergedException {
+    public static double[][] calculateProjectiveHomographyWithLeastSquares(
+            double[][] x1P, double[][] x2P, double[][] fm, double[] e2) throws NotConvergedException {
         
         /*
         Compute the least-squares solution v from equation (11.30) using the
