@@ -423,6 +423,7 @@ public class Reconstruction {
         for (i = 0; i < e1.length; ++i) {
             e1[i] = (Math.round(1.0e+10*e1[i]))*(1.0e-10);
         }
+        // essential matrix
         double[][] em = new double[3][3];
         for (i = 0; i < 3; i++) {
             em[i] = new double[3];
@@ -988,6 +989,8 @@ public class Reconstruction {
             hEst[i] = new double[]{vT[n2 - 1][(i * 3) + 0], vT[n2 - 1][(i * 3) + 1], vT[n2 - 1][(i * 3) + 2]};
         }
 
+        System.out.printf("HEst=\n%s\n", FormatArray.toString(hEst, "%.3e"));
+
         //decomposition of H into motion and structure in case of calibration case
         svd = SVD.factorize(new DenseMatrix(hEst));
         //System.out.printf("SVD(hEst).U=\n%s\n", svd.getU().toString());
@@ -996,6 +999,8 @@ public class Reconstruction {
 
         double[][] h = MatrixUtil.copy(hEst);
         MatrixUtil.multiply(h, 1./svd.getS()[1]);
+
+        System.out.printf("HEst/svd(HEst).s[1]=\n%s\n", FormatArray.toString(h, "%.3e"));
 
         // U and V here are equal SVD(hEst).V because SVD(A^T*A).VT == SVD(A^T*A).U == SVD(A).VT
         svd = SVD.factorize(new DenseMatrix(MatrixUtil.createATransposedTimesA(h)));
@@ -1592,8 +1597,12 @@ public class Reconstruction {
         double[][] rSelected = MatrixUtil.zeros(3, 3);
         double[] tSelected = new double[3];
         double[][] XW = MatrixUtil.zeros(4, x1[0].length);
-        // this method needs x1 and x2 in image coordinates (pixels)
-        bestInCheiralityTest(x1, x2, intr1, intr2, r1, r2, t1, t2, rSelected, tSelected, XW);
+
+        x1C = MatrixUtil.multiply(k1IntrInv, x1);
+        x2C = MatrixUtil.multiply(k2IntrInv, x2);
+
+        // this method needs x1 and x2 in camera coordinates
+        bestInCheiralityTest(x1C, x2C, intr1, intr2, r1, r2, t1, t2, rSelected, tSelected, XW);
         
         ReconstructionResults rr = new ReconstructionResults();
         rr.XW = XW;
@@ -3244,6 +3253,9 @@ public class Reconstruction {
     }
 
     /**
+     * NOT READY FOR USE YET.  Looks like there's an error in the last column of the result as
+     * the numbers are too large.
+     *
      * calculates the homography as the canonical pose for the un-calibrated camera
      * (the projective projection as the 2nd image's projection
      * in the canonical decomposition, pg 189 of MASKS).
@@ -3279,7 +3291,7 @@ public class Reconstruction {
     since F = [T']_x * K *R * K^-1,
        fitting for the projection |(K*R*K^-1 + T'*v^T), v_4*T'|
     one can then approximate the uncalibrated camera pose.
-    this is a 4-parameter family of ambiguous decompositions.
+     choosing solution  this is a 4-parameter family of ambiguous decompositions.
     pg 187 of MASKS.
     This method implements point 4 in algorithm 11.9 on pg 405, Section 11.5 of MASKS.    
      * </pre>
@@ -3653,8 +3665,8 @@ public class Reconstruction {
      * NOTE that inaccuracies in this chirality are larger for points further 
      * away from the cameras and closer to the plane at infinity.
      * NOTE that the determinants of R1 and R2 should have already been checked to be +1.
-     * @param x1 image 1 portion of the correspondence pairs in pixels.
-     * @param x2 image 2 portion of the correspondence pairs in pixels.
+     * @param x1 image 1 portion of the correspondence pairs in camera reference frame.
+     * @param x2 image 2 portion of the correspondence pairs in camera reference frame.
      * @param k1 intrinsic camera matrix for camera 1
      * @param k2 intrinsic camera matrix for camera 2
      * @param R1 rotation matrix whose determinant is +1
@@ -3715,8 +3727,9 @@ public class Reconstruction {
             x2Pt[i] = new double[1];
         }
         
-        int nPosZ; 
-        
+        int nPosZ;
+        int nPosNZ;
+
         for (j = 0; j < 4; ++j) {
             switch(j) {
                 case 0: {
@@ -3745,24 +3758,28 @@ public class Reconstruction {
                 }
             }
             nPosZ = 0;
+            nPosNZ = 0;
             for (i = 0; i < n; ++i) {
                 for (ii = 0; ii < 3; ++ii) {
-                    x1Pt[ii][0] = x1[ii][i]; // use image coordinates
+                    x1Pt[ii][0] = x1[ii][i];
                     x2Pt[ii][0] = x2[ii][i];
                 }
-
                 Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(
                     k1, k1ExtrRot, k1ExtrTrans, 
                     k2, rTst, tTst, 
                     x1Pt, x2Pt);
                 XWPt = wcsPt.X;
+                MatrixUtil.multiply(wcsPt.X, 1./wcsPt.X[3]);
                 if (XWPt[2] >= 0) {
                     nPosZ++;
+                } else {
+                    nPosNZ++;
                 }
                 for (ii = 0; ii < 4; ++ii) {
                     XW[ii][i] = XWPt[ii];
                 } 
             }
+            System.out.printf("Soln %d %s) N+=%d, N-=%d\n", j, label, nPosZ, nPosNZ);
             if (nPosZ > bestNPosZ) {
                 bestNPosZ = nPosZ;
                 bestR = rTst;

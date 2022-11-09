@@ -26,6 +26,7 @@ import static junit.framework.TestCase.assertNotNull;
 
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
+import no.uib.cipr.matrix.SVD;
 
 /**
  *
@@ -282,8 +283,8 @@ public class ReconstructionTest extends TestCase {
                     wcsPt.alpha);
         }
 
-        /*
-        boolean calibrated = false;
+
+        boolean calibrated = true;
         double[][] x1n, x2n;
         if (calibrated) {
             x1n = MatrixUtil.copy(x1c);
@@ -303,7 +304,13 @@ public class ReconstructionTest extends TestCase {
         double[][] h = Reconstruction.calculateProjectiveHomographyWithLeastSquares(
             x1, x2, fm, e1e2[1]);
         System.out.printf("H=\n%s\n", FormatArray.toString(h, "%.3e"));
-        */
+        {
+            SVD svdH = SVD.factorize(new DenseMatrix(h));
+            MatrixUtil.multiply(h,1./svdH.getS()[1]);
+            System.out.printf("H/s[1]=\n%s\n", FormatArray.toString(h, "%.3e"));
+        }
+        double[][] camera2PH = MatrixUtil.multiply(k2IntrRight, h);
+
 
         // non-planar, so this is not working so well...
         Reconstruction.ProjectionResults[] pr = Reconstruction.calculateProjectiveReconstruction(
@@ -337,7 +344,7 @@ public class ReconstructionTest extends TestCase {
                     ii, FormatArray.toString(MatrixUtil.transpose(pXW), "%.3e"));
         }
 
-        /*
+
         Reconstruction.ReconstructionResults rr = Reconstruction.calculateUsingEssentialMatrix(
                 k2IntrLeft, k2IntrRight, x1, x2);
         System.out.printf("EM: r1=\n%s\n", FormatArray.toString(rr.k1ExtrRot, "%.3e"));
@@ -346,10 +353,9 @@ public class ReconstructionTest extends TestCase {
         System.out.printf("EM: t2=\n%s\n", FormatArray.toString(rr.k2ExtrTrans, "%.3e"));
         double[][] XW = rr.XW;
         for (ii = 0; ii < XW[0].length; ++ii) {
-            double[][] pXW = pr[ii].XW;
             System.out.printf("EM XW[%d]=%s\n",
                     ii, FormatArray.toString(MatrixUtil.extractColumn(XW, ii), "%.3e"));
-        }*/
+        }
 
     }
 
@@ -1104,12 +1110,13 @@ public class ReconstructionTest extends TestCase {
         if (!f.exists()) {
             throw new IOException("could not find file at " + path);
         }
+        /*
         ImageExt leftImage = ImageIOHelper.readImageExt(path);
         ImageExt rightImage = ImageIOHelper.readImageExt(ResourceFinder.findTestResourcesDirectory() + sep + "bouguet_stereo"
                 + sep + "right02_masked.png");
 
         CorrespondencePlotter plotter = new CorrespondencePlotter(leftImage, rightImage);
-
+*/
         left2 = getBouguetIm2LeftCorresDouble();
         right2 = getBouguetIm2RightCorresDouble();
 
@@ -1126,91 +1133,91 @@ public class ReconstructionTest extends TestCase {
             y1 = (int)left2[1][idx1];
             x2 = (int)right2[0][idx1];
             y2 = (int)right2[1][idx1];
-            plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
+           // plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
             for (j = 0; j < 2; ++j) {
                 corres.x1[j][i] = left2[j][idx1];
                 corres.x2[j][i] = right2[j][idx1];
             }
         }
-        plotter.writeImage("_bouguet_left2_right2_corres");
+        //plotter.writeImage("_bouguet_left2_right2_corres");
 
         return corres;
     }
 
     public static double[][] getBouguetIm2LeftCorresDouble() {
         double[][] x = new double[72][];
-        x[0] = new double[]{206, 165, 0};
-        x[1] = new double[]{213, 241, 0};
-        x[2] = new double[]{218, 301, 0};
-        x[3] = new double[]{221, 325, 0};
-        x[4] = new double[]{224, 351, 0};
-        x[5] = new double[]{253, 54, 0};
-        x[6] = new double[]{252, 79, 0};
-        x[7] = new double[]{249, 129, 0};
-        x[8] = new double[]{252, 174, 0};
-        x[9] = new double[]{252, 214, 0};
-        x[10] = new double[]{252, 247, 0};
-        x[11] = new double[]{254, 281, 0};
-        x[12] = new double[]{253, 308, 0};
-        x[13] = new double[]{256, 335, 0};
-        x[14] = new double[]{254, 355, 0};
-        x[15] = new double[]{256, 368, 0};
-        x[16] = new double[]{306, 87, 0};
-        x[17] = new double[]{304, 138, 0};
-        x[18] = new double[]{302, 182, 0};
-        x[19] = new double[]{298, 221, 0};
-        x[20] = new double[]{297, 259, 0};
-        x[21] = new double[]{294, 289, 0};
-        x[22] = new double[]{295, 317, 0};
-        x[23] = new double[]{292, 342, 0};
-        x[24] = new double[]{290, 367, 0};
-        x[25] = new double[]{292, 377, 0};
-        x[26] = new double[]{369, 73, 0};
-        x[27] = new double[]{366, 99, 0};
-        x[28] = new double[]{358, 146, 0};
-        x[29] = new double[]{353, 193, 0};
-        x[30] = new double[]{348, 232, 0};
-        x[31] = new double[]{343, 269, 0};
-        x[32] = new double[]{339, 299, 0};
-        x[33] = new double[]{336, 329, 0};
-        x[34] = new double[]{330, 353, 0};
-        x[35] = new double[]{326, 372, 0};
-        x[36] = new double[]{326, 384, 0};
-        x[37] = new double[]{428, 83, 0};
-        x[38] = new double[]{424, 109, 0};
-        x[39] = new double[]{414, 159, 0};
-        x[40] = new double[]{405, 203, 0};
-        x[41] = new double[]{396, 241, 0};
-        x[42] = new double[]{389, 277, 0};
-        x[43] = new double[]{382, 310, 0};
-        x[44] = new double[]{373, 337, 0};
-        x[45] = new double[]{370, 362, 0};
-        x[46] = new double[]{363, 383, 0};
-        x[47] = new double[]{362, 393, 0};
-        x[48] = new double[]{485, 121, 0};
-        x[49] = new double[]{469, 169, 0};
-        x[50] = new double[]{457, 215, 0};
-        x[51] = new double[]{443, 254, 0};
-        x[52] = new double[]{435, 288, 0};
-        x[53] = new double[]{427, 317, 0};
-        x[54] = new double[]{416, 343, 0};
-        x[55] = new double[]{406, 370, 0};
-        x[56] = new double[]{540, 134, 0};
-        x[57] = new double[]{524, 184, 0};
-        x[58] = new double[]{510, 223, 0};
-        x[59] = new double[]{493, 261, 0};
-        x[60] = new double[]{478, 297, 0};
-        x[61] = new double[]{468, 325, 0};
-        x[62] = new double[]{454, 354, 0};
-        x[63] = new double[]{445, 375, 0};
-        x[64] = new double[]{605, 118, 0};
-        x[65] = new double[]{591, 147, 0};
-        x[66] = new double[]{553, 235, 0};
-        x[67] = new double[]{539, 270, 0};
-        x[68] = new double[]{521, 305, 0};
-        x[69] = new double[]{509, 333, 0};
-        x[70] = new double[]{486, 382, 0};
-        x[71] = new double[]{468, 416, 0};
+        x[0] = new double[]{206, 165, 1};
+        x[1] = new double[]{213, 241, 1};
+        x[2] = new double[]{218, 301, 1};
+        x[3] = new double[]{221, 325, 1};
+        x[4] = new double[]{224, 351, 1};
+        x[5] = new double[]{253, 54, 1};
+        x[6] = new double[]{252, 79, 1};
+        x[7] = new double[]{249, 129, 1};
+        x[8] = new double[]{252, 174, 1};
+        x[9] = new double[]{252, 214, 1};
+        x[10] = new double[]{252, 247, 1};
+        x[11] = new double[]{254, 281, 1};
+        x[12] = new double[]{253, 308, 1};
+        x[13] = new double[]{256, 335, 1};
+        x[14] = new double[]{254, 355, 1};
+        x[15] = new double[]{256, 368, 1};
+        x[16] = new double[]{306, 87, 1};
+        x[17] = new double[]{304, 138, 1};
+        x[18] = new double[]{302, 182, 1};
+        x[19] = new double[]{298, 221, 1};
+        x[20] = new double[]{297, 259, 1};
+        x[21] = new double[]{294, 289, 1};
+        x[22] = new double[]{295, 317, 1};
+        x[23] = new double[]{292, 342, 1};
+        x[24] = new double[]{290, 367, 1};
+        x[25] = new double[]{292, 377, 1};
+        x[26] = new double[]{369, 73, 1};
+        x[27] = new double[]{366, 99, 1};
+        x[28] = new double[]{358, 146, 1};
+        x[29] = new double[]{353, 193, 1};
+        x[30] = new double[]{348, 232, 1};
+        x[31] = new double[]{343, 269, 1};
+        x[32] = new double[]{339, 299, 1};
+        x[33] = new double[]{336, 329, 1};
+        x[34] = new double[]{330, 353, 1};
+        x[35] = new double[]{326, 372, 1};
+        x[36] = new double[]{326, 384, 1};
+        x[37] = new double[]{428, 83, 1};
+        x[38] = new double[]{424, 109, 1};
+        x[39] = new double[]{414, 159, 1};
+        x[40] = new double[]{405, 203, 1};
+        x[41] = new double[]{396, 241, 1};
+        x[42] = new double[]{389, 277, 1};
+        x[43] = new double[]{382, 310, 1};
+        x[44] = new double[]{373, 337, 1};
+        x[45] = new double[]{370, 362, 1};
+        x[46] = new double[]{363, 383, 1};
+        x[47] = new double[]{362, 393, 1};
+        x[48] = new double[]{485, 121, 1};
+        x[49] = new double[]{469, 169, 1};
+        x[50] = new double[]{457, 215, 1};
+        x[51] = new double[]{443, 254, 1};
+        x[52] = new double[]{435, 288, 1};
+        x[53] = new double[]{427, 317, 1};
+        x[54] = new double[]{416, 343, 1};
+        x[55] = new double[]{406, 370, 1};
+        x[56] = new double[]{540, 134, 1};
+        x[57] = new double[]{524, 184, 1};
+        x[58] = new double[]{510, 223, 1};
+        x[59] = new double[]{493, 261, 1};
+        x[60] = new double[]{478, 297, 1};
+        x[61] = new double[]{468, 325, 1};
+        x[62] = new double[]{454, 354, 1};
+        x[63] = new double[]{445, 375, 1};
+        x[64] = new double[]{605, 118, 1};
+        x[65] = new double[]{591, 147, 1};
+        x[66] = new double[]{553, 235, 1};
+        x[67] = new double[]{539, 270, 1};
+        x[68] = new double[]{521, 305, 1};
+        x[69] = new double[]{509, 333, 1};
+        x[70] = new double[]{486, 382, 1};
+        x[71] = new double[]{468, 416, 1};
         // make it [3 X 72]
         x = MatrixUtil.transpose(x);
         return x;
@@ -1218,79 +1225,78 @@ public class ReconstructionTest extends TestCase {
 
     public static double[][] getBouguetIm2RightCorresDouble() {
         double[][] x = new double[72][];
-
-        x[0] = new double[]{43, 183, 0};
-        x[1] = new double[]{62, 255, 0};
-        x[2] = new double[]{81, 311, 0};
-        x[3] = new double[]{89, 336, 0};
-        x[4] = new double[]{96, 360, 0};
-        x[5] = new double[]{57, 77, 0};
-        x[6] = new double[]{64, 103, 0};
-        x[7] = new double[]{72, 147, 0};
-        x[8] = new double[]{77, 188, 0};
-        x[9] = new double[]{90, 227, 0};
-        x[10] = new double[]{95, 259, 0};
-        x[11] = new double[]{106, 291, 0};
-        x[12] = new double[]{115, 322, 0};
-        x[13] = new double[]{119, 345, 0};
-        x[14] = new double[]{124, 364, 0};
-        x[15] = new double[]{130, 379, 0};
-        x[16] = new double[]{109, 105, 0};
-        x[17] = new double[]{115, 156, 0};
-        x[18] = new double[]{119, 199, 0};
-        x[19] = new double[]{127, 235, 0};
-        x[20] = new double[]{134, 271, 0};
-        x[21] = new double[]{144, 303, 0};
-        x[22] = new double[]{147, 330, 0};
-        x[23] = new double[]{151, 351, 0};
-        x[24] = new double[]{158, 377, 0};
-        x[25] = new double[]{160, 388, 0};
-        x[26] = new double[]{154, 88, 0};
-        x[27] = new double[]{158, 115, 0};
-        x[28] = new double[]{160, 163, 0};
-        x[29] = new double[]{167, 208, 0};
-        x[30] = new double[]{170, 246, 0};
-        x[31] = new double[]{177, 282, 0};
-        x[32] = new double[]{182, 313, 0};
-        x[33] = new double[]{183, 337, 0};
-        x[34] = new double[]{190, 363, 0};
-        x[35] = new double[]{190, 383, 0};
-        x[36] = new double[]{194, 397, 0};
-        x[37] = new double[]{209, 96, 0};
-        x[38] = new double[]{209, 122, 0};
-        x[39] = new double[]{210, 169, 0};
-        x[40] = new double[]{215, 215, 0};
-        x[41] = new double[]{218, 257, 0};
-        x[42] = new double[]{218, 291, 0};
-        x[43] = new double[]{223, 323, 0};
-        x[44] = new double[]{222, 349, 0};
-        x[45] = new double[]{224, 370, 0};
-        x[46] = new double[]{229, 392, 0};
-        x[47] = new double[]{227, 405, 0};
-        x[48] = new double[]{270, 132, 0};
-        x[49] = new double[]{265, 181, 0};
-        x[50] = new double[]{264, 225, 0};
-        x[51] = new double[]{264, 266, 0};
-        x[52] = new double[]{266, 302, 0};
-        x[53] = new double[]{263, 331, 0};
-        x[54] = new double[]{264, 359, 0};
-        x[55] = new double[]{265, 380, 0};
-        x[56] = new double[]{327, 141, 0};
-        x[57] = new double[]{322, 190, 0};
-        x[58] = new double[]{317, 237, 0};
-        x[59] = new double[]{315, 277, 0};
-        x[60] = new double[]{309, 311, 0};
-        x[61] = new double[]{305, 338, 0};
-        x[62] = new double[]{303, 368, 0};
-        x[63] = new double[]{304, 394, 0};
-        x[64] = new double[]{395, 121, 0};
-        x[65] = new double[]{386, 153, 0};
-        x[66] = new double[]{368, 247, 0};
-        x[67] = new double[]{361, 285, 0};
-        x[68] = new double[]{354, 320, 0};
-        x[69] = new double[]{349, 348, 0};
-        x[70] = new double[]{339, 398, 0};
-        x[71] = new double[]{336, 431, 0};
+        x[0] = new double[]{43, 183, 1};
+        x[1] = new double[]{62, 255, 1};
+        x[2] = new double[]{81, 311, 1};
+        x[3] = new double[]{89, 336, 1};
+        x[4] = new double[]{96, 360, 1};
+        x[5] = new double[]{57, 77, 1};
+        x[6] = new double[]{64, 103, 1};
+        x[7] = new double[]{72, 147, 1};
+        x[8] = new double[]{77, 188, 1};
+        x[9] = new double[]{90, 227, 1};
+        x[10] = new double[]{95, 259, 1};
+        x[11] = new double[]{106, 291, 1};
+        x[12] = new double[]{115, 322, 1};
+        x[13] = new double[]{119, 345, 1};
+        x[14] = new double[]{124, 364, 1};
+        x[15] = new double[]{130, 379, 1};
+        x[16] = new double[]{109, 105, 1};
+        x[17] = new double[]{115, 156, 1};
+        x[18] = new double[]{119, 199, 1};
+        x[19] = new double[]{127, 235, 1};
+        x[20] = new double[]{134, 271, 1};
+        x[21] = new double[]{144, 303, 1};
+        x[22] = new double[]{147, 330, 1};
+        x[23] = new double[]{151, 351, 1};
+        x[24] = new double[]{158, 377, 1};
+        x[25] = new double[]{160, 388, 1};
+        x[26] = new double[]{154, 88, 1};
+        x[27] = new double[]{158, 115, 1};
+        x[28] = new double[]{160, 163, 1};
+        x[29] = new double[]{167, 208, 1};
+        x[30] = new double[]{170, 246, 1};
+        x[31] = new double[]{177, 282, 1};
+        x[32] = new double[]{182, 313, 1};
+        x[33] = new double[]{183, 337, 1};
+        x[34] = new double[]{190, 363, 1};
+        x[35] = new double[]{190, 383, 1};
+        x[36] = new double[]{194, 397, 1};
+        x[37] = new double[]{209, 96, 1};
+        x[38] = new double[]{209, 122, 1};
+        x[39] = new double[]{210, 169, 1};
+        x[40] = new double[]{215, 215, 1};
+        x[41] = new double[]{218, 257, 1};
+        x[42] = new double[]{218, 291, 1};
+        x[43] = new double[]{223, 323, 1};
+        x[44] = new double[]{222, 349, 1};
+        x[45] = new double[]{224, 370, 1};
+        x[46] = new double[]{229, 392, 1};
+        x[47] = new double[]{227, 405, 1};
+        x[48] = new double[]{270, 132, 1};
+        x[49] = new double[]{265, 181, 1};
+        x[50] = new double[]{264, 225, 1};
+        x[51] = new double[]{264, 266, 1};
+        x[52] = new double[]{266, 302, 1};
+        x[53] = new double[]{263, 331, 1};
+        x[54] = new double[]{264, 359, 1};
+        x[55] = new double[]{265, 380, 1};
+        x[56] = new double[]{327, 141, 1};
+        x[57] = new double[]{322, 190, 1};
+        x[58] = new double[]{317, 237, 1};
+        x[59] = new double[]{315, 277, 1};
+        x[60] = new double[]{309, 311, 1};
+        x[61] = new double[]{305, 338, 1};
+        x[62] = new double[]{303, 368, 1};
+        x[63] = new double[]{304, 394, 1};
+        x[64] = new double[]{395, 121, 1};
+        x[65] = new double[]{386, 153, 1};
+        x[66] = new double[]{368, 247, 1};
+        x[67] = new double[]{361, 285, 1};
+        x[68] = new double[]{354, 320, 1};
+        x[69] = new double[]{349, 348, 1};
+        x[70] = new double[]{339, 398, 1};
+        x[71] = new double[]{336, 431, 1};
         // make it [3 X 72]
         x = MatrixUtil.transpose(x);
         return x;
