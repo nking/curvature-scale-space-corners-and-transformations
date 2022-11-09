@@ -6,7 +6,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.ImageSegmentation;
-import algorithms.imageProcessing.features.RANSACEuclideanSolver;
+import algorithms.imageProcessing.features.RANSACSolver;
 import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.matching.CorrespondenceMaker;
 import algorithms.imageProcessing.matching.CorrespondenceMaker.CorrespondenceList;
@@ -15,33 +15,30 @@ import algorithms.imageProcessing.matching.ORBMatcher;
 import static algorithms.imageProcessing.transform.Rotation.extractThetaFromZYX;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
 import algorithms.util.*;
 
+import java.io.File;
 import java.io.IOException;
-import java.text.Normalizer;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import junit.framework.TestCase;
 import static junit.framework.TestCase.assertNotNull;
 
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
-import org.junit.Test;
 
 /**
  *
  * @author nichole
  */
 public class ReconstructionTest extends TestCase {
-    
+
+    protected final static String sep = System.getProperty("file.separator");
+
     public ReconstructionTest() {
     }
 
-    public void testProjectiveWithZhang() throws IOException, NotConvergedException {
+    public void eestProjectiveWithZhang() throws IOException, NotConvergedException {
 
         int idx1 = 1;
         int idx2 = 2;
@@ -252,30 +249,16 @@ public class ReconstructionTest extends TestCase {
             System.out.printf("\n");
         }
 
-        double[][] x1 = MatrixUtil.zeros(3, 13);
-        double[][] x2 = MatrixUtil.zeros(3, 13);
-        Arrays.fill(x1[2], 1);
-        Arrays.fill(x2[2], 1);
-        x1[0][0]=5.8400e+02;  x1[1][0]=1.4800e+02;  x2[0][0]=3.8000e+02;  x2[1][0]=1.5200e+02;
-        x1[0][1]=3.9600e+02;  x1[1][1]=3.9800e+02;  x2[0][1]=2.6200e+02;  x2[1][1]=4.1000e+02;
-        x1[0][2]=5.9000e+02;  x1[1][2]=1.4700e+02;  x2[0][2]=3.8500e+02;  x2[1][2]=1.5400e+02;
-        x1[0][3]=2.5400e+02;  x1[1][3]=3.5400e+02;  x2[0][3]=1.2400e+02;  x2[1][3]=3.6400e+02;
-        x1[0][4]=5.4600e+02;  x1[1][4]=2.3200e+02;  x2[0][4]=3.6700e+02;  x2[1][4]=2.4600e+02;
-        x1[0][4]=4.9000e+02;  x1[1][5]=9.6000e+01;  x2[0][5]=2.7000e+02;  x2[1][5]=1.0400e+02;
-        x1[0][6]=4.8000e+02;  x1[1][6]=3.8000e+02;  x2[0][6]=3.3600e+02;  x2[1][7]=3.9600e+02;
-        x1[0][7]=2.5300e+02;  x1[1][7]=7.9000e+01;  x2[0][7]=6.5000e+01;  x2[1][7]=1.0400e+02;
-        x1[0][8]=3.6100e+02;  x1[1][8]=3.8300e+02;  x2[0][8]=2.2800e+02;  x2[1][8]=3.9600e+02;
-        x1[0][9]=4.0200e+02;  x1[1][9]=3.8800e+02;  x2[0][9]=2.6000e+02;  x2[1][9]=4.0000e+02;
-        x1[0][10]=2.0800e+02;  x1[1][10]=1.6400e+02;  x2[0][10]=4.8000e+01;  x2[1][10]=1.8400e+02;
-        x1[0][11]=4.0400e+02;  x1[1][11]=3.8800e+02;  x2[0][11]=2.6400e+02;  x2[1][11]=4.0400e+02;
-        x1[0][12]=4.4800e+02;  x1[1][12]=2.4800e+02;  x2[0][12]=2.6400e+02;  x2[1][12]=2.6400e+02;
-        double[][] x1c = Camera.pixelToCameraCoordinates(x1, k2IntrLeft, null /*radial1*/, useR2R4);
-        double[][] x2c = Camera.pixelToCameraCoordinates(x2, k2IntrRight, null /*radial2*/, useR2R4);
-
         System.out.printf("K1Inv = \n%s\n",
                 FormatArray.toString(Camera.createIntrinsicCameraMatrixInverse(k2IntrLeft), "%.3e"));
         System.out.printf("K2Inv = \n%s\n",
                 FormatArray.toString(Camera.createIntrinsicCameraMatrixInverse(k2IntrRight), "%.3e"));
+
+        Corres corres = makeBouguetIm2LeftRightCorres();
+        double[][] x1 = corres.x1;
+        double[][] x2 = corres.x2;
+        double[][] x1c = Camera.pixelToCameraCoordinates(x1, k2IntrLeft, radial2Left, useR2R4);
+        double[][] x2c = Camera.pixelToCameraCoordinates(x2, k2IntrRight, radial2Right, useR2R4);
 
         double[][] x1Pt = MatrixUtil.zeros(3, 1);
         double[][] x2Pt = MatrixUtil.zeros(3, 1);
@@ -284,7 +267,7 @@ public class ReconstructionTest extends TestCase {
         int ii;
         int n = x1[0].length;
 
-        // put x into camera coordinates reference frame:
+        // put x into camera coordinates reference frame.  radial distortion has been removed.
         Triangulation.WCSPt wcsPt;
         for (ii = 0; ii < n; ++ii) {
             for (j = 0; j < 3; ++j) {
@@ -322,10 +305,10 @@ public class ReconstructionTest extends TestCase {
         System.out.printf("H=\n%s\n", FormatArray.toString(h, "%.3e"));
         */
 
-        // possibly need more points
+        // non-planar, so this is not working so well...
         Reconstruction.ProjectionResults[] pr = Reconstruction.calculateProjectiveReconstruction(
                 k2IntrLeft, k2IntrRight, x1c, x2c);
-        //and refine/optimize the rotation and translation...
+        // TODO: consider refine/optimize the rotation and translation
 
         for (ii = 0; ii < pr.length; ++ii) {
             double[][] p = pr[ii].projectionMatrices;
@@ -1089,4 +1072,383 @@ public class ReconstructionTest extends TestCase {
         return x;
     }
 
+    private static class Corres {
+        double[][] x1;
+        double[][] x2;
+    }
+
+    public Corres makeBouguetIm2LeftRightCorres() throws IOException {
+
+        boolean calibrated = false;
+        double[][] left2 = getBouguetIm2LeftCorresDouble();
+        double[][] right2 = getBouguetIm2RightCorresDouble();
+        double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(left2);
+        double[][] t2 = EpipolarNormalizationHelper.unitStandardNormalize(right2);
+        RANSACSolver solver = new RANSACSolver();
+
+        boolean useToleranceAsStatFactor = true;
+        boolean reCalcIterations = false;// possibly faster if set to true
+        double tol = 2.;
+        ErrorType errorType = ErrorType.SAMPSONS;
+
+        EpipolarTransformationFit fit = solver.calculateEpipolarProjection(
+                new DenseMatrix(left2), new DenseMatrix(right2), errorType, useToleranceAsStatFactor,
+                tol, reCalcIterations, calibrated);
+
+        System.out.printf("epipolar fit=%s\n", fit.toString());
+
+        int i;
+        String path = ResourceFinder.findTestResourcesDirectory() + sep + "bouguet_stereo"
+                + sep + "left02_masked.png";
+        File f = new File(path);
+        if (!f.exists()) {
+            throw new IOException("could not find file at " + path);
+        }
+        ImageExt leftImage = ImageIOHelper.readImageExt(path);
+        ImageExt rightImage = ImageIOHelper.readImageExt(ResourceFinder.findTestResourcesDirectory() + sep + "bouguet_stereo"
+                + sep + "right02_masked.png");
+
+        CorrespondencePlotter plotter = new CorrespondencePlotter(leftImage, rightImage);
+
+        left2 = getBouguetIm2LeftCorresDouble();
+        right2 = getBouguetIm2RightCorresDouble();
+
+        Corres corres = new Corres();
+        corres.x1 = MatrixUtil.zeros(3, fit.getInlierIndexes().size());
+        corres.x2 = MatrixUtil.zeros(3, fit.getInlierIndexes().size());
+        Arrays.fill(corres.x1[2], 1);
+        Arrays.fill(corres.x2[2], 1);
+
+        int idx1, x1, y1, x2, y2, j;
+        for (i = 0; i < fit.inlierIndexes.size(); ++i) {
+            idx1 = fit.getInlierIndexes().get(i);
+            x1 = (int)left2[0][idx1];
+            y1 = (int)left2[1][idx1];
+            x2 = (int)right2[0][idx1];
+            y2 = (int)right2[1][idx1];
+            plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
+            for (j = 0; j < 2; ++j) {
+                corres.x1[j][i] = left2[j][idx1];
+                corres.x2[j][i] = right2[j][idx1];
+            }
+        }
+        plotter.writeImage("_bouguet_left2_right2_corres");
+
+        return corres;
+    }
+
+    public static double[][] getBouguetIm2LeftCorresDouble() {
+        double[][] x = new double[72][];
+        x[0] = new double[]{206, 165, 0};
+        x[1] = new double[]{213, 241, 0};
+        x[2] = new double[]{218, 301, 0};
+        x[3] = new double[]{221, 325, 0};
+        x[4] = new double[]{224, 351, 0};
+        x[5] = new double[]{253, 54, 0};
+        x[6] = new double[]{252, 79, 0};
+        x[7] = new double[]{249, 129, 0};
+        x[8] = new double[]{252, 174, 0};
+        x[9] = new double[]{252, 214, 0};
+        x[10] = new double[]{252, 247, 0};
+        x[11] = new double[]{254, 281, 0};
+        x[12] = new double[]{253, 308, 0};
+        x[13] = new double[]{256, 335, 0};
+        x[14] = new double[]{254, 355, 0};
+        x[15] = new double[]{256, 368, 0};
+        x[16] = new double[]{306, 87, 0};
+        x[17] = new double[]{304, 138, 0};
+        x[18] = new double[]{302, 182, 0};
+        x[19] = new double[]{298, 221, 0};
+        x[20] = new double[]{297, 259, 0};
+        x[21] = new double[]{294, 289, 0};
+        x[22] = new double[]{295, 317, 0};
+        x[23] = new double[]{292, 342, 0};
+        x[24] = new double[]{290, 367, 0};
+        x[25] = new double[]{292, 377, 0};
+        x[26] = new double[]{369, 73, 0};
+        x[27] = new double[]{366, 99, 0};
+        x[28] = new double[]{358, 146, 0};
+        x[29] = new double[]{353, 193, 0};
+        x[30] = new double[]{348, 232, 0};
+        x[31] = new double[]{343, 269, 0};
+        x[32] = new double[]{339, 299, 0};
+        x[33] = new double[]{336, 329, 0};
+        x[34] = new double[]{330, 353, 0};
+        x[35] = new double[]{326, 372, 0};
+        x[36] = new double[]{326, 384, 0};
+        x[37] = new double[]{428, 83, 0};
+        x[38] = new double[]{424, 109, 0};
+        x[39] = new double[]{414, 159, 0};
+        x[40] = new double[]{405, 203, 0};
+        x[41] = new double[]{396, 241, 0};
+        x[42] = new double[]{389, 277, 0};
+        x[43] = new double[]{382, 310, 0};
+        x[44] = new double[]{373, 337, 0};
+        x[45] = new double[]{370, 362, 0};
+        x[46] = new double[]{363, 383, 0};
+        x[47] = new double[]{362, 393, 0};
+        x[48] = new double[]{485, 121, 0};
+        x[49] = new double[]{469, 169, 0};
+        x[50] = new double[]{457, 215, 0};
+        x[51] = new double[]{443, 254, 0};
+        x[52] = new double[]{435, 288, 0};
+        x[53] = new double[]{427, 317, 0};
+        x[54] = new double[]{416, 343, 0};
+        x[55] = new double[]{406, 370, 0};
+        x[56] = new double[]{540, 134, 0};
+        x[57] = new double[]{524, 184, 0};
+        x[58] = new double[]{510, 223, 0};
+        x[59] = new double[]{493, 261, 0};
+        x[60] = new double[]{478, 297, 0};
+        x[61] = new double[]{468, 325, 0};
+        x[62] = new double[]{454, 354, 0};
+        x[63] = new double[]{445, 375, 0};
+        x[64] = new double[]{605, 118, 0};
+        x[65] = new double[]{591, 147, 0};
+        x[66] = new double[]{553, 235, 0};
+        x[67] = new double[]{539, 270, 0};
+        x[68] = new double[]{521, 305, 0};
+        x[69] = new double[]{509, 333, 0};
+        x[70] = new double[]{486, 382, 0};
+        x[71] = new double[]{468, 416, 0};
+        // make it [3 X 72]
+        x = MatrixUtil.transpose(x);
+        return x;
+    }
+
+    public static double[][] getBouguetIm2RightCorresDouble() {
+        double[][] x = new double[72][];
+
+        x[0] = new double[]{43, 183, 0};
+        x[1] = new double[]{62, 255, 0};
+        x[2] = new double[]{81, 311, 0};
+        x[3] = new double[]{89, 336, 0};
+        x[4] = new double[]{96, 360, 0};
+        x[5] = new double[]{57, 77, 0};
+        x[6] = new double[]{64, 103, 0};
+        x[7] = new double[]{72, 147, 0};
+        x[8] = new double[]{77, 188, 0};
+        x[9] = new double[]{90, 227, 0};
+        x[10] = new double[]{95, 259, 0};
+        x[11] = new double[]{106, 291, 0};
+        x[12] = new double[]{115, 322, 0};
+        x[13] = new double[]{119, 345, 0};
+        x[14] = new double[]{124, 364, 0};
+        x[15] = new double[]{130, 379, 0};
+        x[16] = new double[]{109, 105, 0};
+        x[17] = new double[]{115, 156, 0};
+        x[18] = new double[]{119, 199, 0};
+        x[19] = new double[]{127, 235, 0};
+        x[20] = new double[]{134, 271, 0};
+        x[21] = new double[]{144, 303, 0};
+        x[22] = new double[]{147, 330, 0};
+        x[23] = new double[]{151, 351, 0};
+        x[24] = new double[]{158, 377, 0};
+        x[25] = new double[]{160, 388, 0};
+        x[26] = new double[]{154, 88, 0};
+        x[27] = new double[]{158, 115, 0};
+        x[28] = new double[]{160, 163, 0};
+        x[29] = new double[]{167, 208, 0};
+        x[30] = new double[]{170, 246, 0};
+        x[31] = new double[]{177, 282, 0};
+        x[32] = new double[]{182, 313, 0};
+        x[33] = new double[]{183, 337, 0};
+        x[34] = new double[]{190, 363, 0};
+        x[35] = new double[]{190, 383, 0};
+        x[36] = new double[]{194, 397, 0};
+        x[37] = new double[]{209, 96, 0};
+        x[38] = new double[]{209, 122, 0};
+        x[39] = new double[]{210, 169, 0};
+        x[40] = new double[]{215, 215, 0};
+        x[41] = new double[]{218, 257, 0};
+        x[42] = new double[]{218, 291, 0};
+        x[43] = new double[]{223, 323, 0};
+        x[44] = new double[]{222, 349, 0};
+        x[45] = new double[]{224, 370, 0};
+        x[46] = new double[]{229, 392, 0};
+        x[47] = new double[]{227, 405, 0};
+        x[48] = new double[]{270, 132, 0};
+        x[49] = new double[]{265, 181, 0};
+        x[50] = new double[]{264, 225, 0};
+        x[51] = new double[]{264, 266, 0};
+        x[52] = new double[]{266, 302, 0};
+        x[53] = new double[]{263, 331, 0};
+        x[54] = new double[]{264, 359, 0};
+        x[55] = new double[]{265, 380, 0};
+        x[56] = new double[]{327, 141, 0};
+        x[57] = new double[]{322, 190, 0};
+        x[58] = new double[]{317, 237, 0};
+        x[59] = new double[]{315, 277, 0};
+        x[60] = new double[]{309, 311, 0};
+        x[61] = new double[]{305, 338, 0};
+        x[62] = new double[]{303, 368, 0};
+        x[63] = new double[]{304, 394, 0};
+        x[64] = new double[]{395, 121, 0};
+        x[65] = new double[]{386, 153, 0};
+        x[66] = new double[]{368, 247, 0};
+        x[67] = new double[]{361, 285, 0};
+        x[68] = new double[]{354, 320, 0};
+        x[69] = new double[]{349, 348, 0};
+        x[70] = new double[]{339, 398, 0};
+        x[71] = new double[]{336, 431, 0};
+        // make it [3 X 72]
+        x = MatrixUtil.transpose(x);
+        return x;
+    }
+
+    public PairIntArray getBouguetIm2LeftCorresPairInt() {
+
+        PairIntArray leftX = new PairIntArray();
+        leftX.add(206, 165);
+        leftX.add(213, 241);
+        leftX.add(218, 301);
+        leftX.add(221, 325);
+        leftX.add(224, 351);
+        leftX.add(249, 129);
+        leftX.add(252, 79);
+        leftX.add(252, 174);
+        leftX.add(252, 214);
+        leftX.add(252, 247);
+        leftX.add(253, 54);
+        leftX.add(253, 308);
+        leftX.add(254, 281);
+        leftX.add(254, 355);
+        leftX.add(256, 335);
+        leftX.add(256, 368);
+        leftX.add(290, 367);
+        leftX.add(292, 342);
+        leftX.add(292, 377);
+        leftX.add(294, 289);
+        leftX.add(295, 317);
+        leftX.add(297, 259);
+        leftX.add(298, 221);
+        leftX.add(302, 182);
+        leftX.add(304, 138);
+        leftX.add(306, 87);
+        leftX.add(326, 372);
+        leftX.add(326, 384);
+        leftX.add(330, 353);
+        leftX.add(336, 329);
+        leftX.add(339, 299);
+        leftX.add(343, 269);
+        leftX.add(348, 232);
+        leftX.add(353, 193);
+        leftX.add(358, 146);
+        leftX.add(362, 393);
+        leftX.add(363, 383);
+        leftX.add(366, 99);
+        leftX.add(369, 73);
+        leftX.add(370, 362);
+        leftX.add(373, 337);
+        leftX.add(382, 310);
+        leftX.add(389, 277);
+        leftX.add(396, 241);
+        leftX.add(405, 203);
+        leftX.add(406, 370);
+        leftX.add(414, 159);
+        leftX.add(416, 343);
+        leftX.add(424, 109);
+        leftX.add(427, 317);
+        leftX.add(428, 83);
+        leftX.add(435, 288);
+        leftX.add(443, 254);
+        leftX.add(445, 375);
+        leftX.add(454, 354);
+        leftX.add(457, 215);
+        leftX.add(468, 325);
+        leftX.add(468, 416);
+        leftX.add(469, 169);
+        leftX.add(478, 297);
+        leftX.add(485, 121);
+        leftX.add(486, 382);
+        leftX.add(493, 261);
+        leftX.add(509, 333);
+        leftX.add(510, 223);
+        leftX.add(521, 305);
+        leftX.add(524, 184);
+        leftX.add(539, 270);
+        leftX.add(540, 134);
+        leftX.add(553, 235);
+        leftX.add(591, 147);
+        leftX.add(605, 118);
+        return leftX;
+    }
+
+    public PairIntArray getBouguetIm2RightCorresPairInt() {
+        PairIntArray rightX = new PairIntArray();
+
+        rightX.add(43, 183);
+        rightX.add(57, 77);
+        rightX.add(62, 255);
+        rightX.add(64, 103);
+        rightX.add(72, 147);
+        rightX.add(77, 188);
+        rightX.add(81, 311);
+        rightX.add(89, 336);
+        rightX.add(90, 227);
+        rightX.add(95, 259);
+        rightX.add(96, 360);
+        rightX.add(106, 291);
+        rightX.add(109, 105);
+        rightX.add(115, 156);
+        rightX.add(115, 322);
+        rightX.add(119, 199);
+        rightX.add(119, 345);
+        rightX.add(124, 364);
+        rightX.add(127, 235);
+        rightX.add(130, 379);
+        rightX.add(134, 271);
+        rightX.add(144, 303);
+        rightX.add(147, 330);
+        rightX.add(151, 351);
+        rightX.add(154, 88);
+        rightX.add(158, 115);
+        rightX.add(158, 377);
+        rightX.add(160, 163);
+        rightX.add(160, 388);
+        rightX.add(167, 208);
+        rightX.add(170, 246);
+        rightX.add(177, 282);
+        rightX.add(182, 313);
+        rightX.add(183, 337);
+        rightX.add(190, 363);
+        rightX.add(190, 383);
+        rightX.add(194, 397);
+        rightX.add(209, 96);
+        rightX.add(209, 122);
+        rightX.add(210, 169);
+        rightX.add(215, 215);
+        rightX.add(218, 257);
+        rightX.add(218, 291);
+        rightX.add(222, 349);
+        rightX.add(223, 323);
+        rightX.add(224, 370);
+        rightX.add(227, 405);
+        rightX.add(229, 392);
+        rightX.add(263, 331);
+        rightX.add(264, 225);
+        rightX.add(264, 266);
+        rightX.add(264, 359);
+        rightX.add(265, 181);
+        rightX.add(265, 380);
+        rightX.add(266, 302);
+        rightX.add(270, 132);
+        rightX.add(303, 368);
+        rightX.add(304, 394);
+        rightX.add(305, 338);
+        rightX.add(309, 311);
+        rightX.add(315, 277);
+        rightX.add(317, 237);
+        rightX.add(322, 190);
+        rightX.add(327, 141);
+        rightX.add(336, 431);
+        rightX.add(339, 398);
+        rightX.add(349, 348);
+        rightX.add(354, 320);
+        rightX.add(361, 285);
+        rightX.add(368, 247);
+        rightX.add(386, 153);
+        rightX.add(395, 121);
+        return rightX;
+    }
 }
