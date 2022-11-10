@@ -39,7 +39,7 @@ public class ReconstructionTest extends TestCase {
     public ReconstructionTest() {
     }
 
-    public void eestProjectiveWithZhang() throws IOException, NotConvergedException {
+    public void testProjectiveWithZhang() throws IOException, NotConvergedException {
 
         int idx1 = 1;
         int idx2 = 2;

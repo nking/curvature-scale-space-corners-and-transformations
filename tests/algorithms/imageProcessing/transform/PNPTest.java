@@ -104,9 +104,9 @@ public class PNPTest extends TestCase {
             ex1 = extrinsics.get(i);
             log.log(LEVEL, String.format("\n"));
             log.log(LEVEL, String.format("   r%d=\n%s\n", i, FormatArray.toString(ex1.getRotation(), pr)));
-            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(Zhang98Data.getRotation(i), pr)));
+            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(Zhang98Data.getRotation(i+1), pr)));
             log.log(LEVEL, String.format("   t%d=\n%s\n", i,FormatArray.toString(ex1.getTranslation(), pr)));
-            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(Zhang98Data.getTranslation(i), pr)));
+            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(Zhang98Data.getTranslation(i+1), pr)));
         }
         
         // now have initial parameters to refine using BundleAdjustment.java in other tests
@@ -130,13 +130,13 @@ public class PNPTest extends TestCase {
                 
         for (int i = 1; i <= nImages; ++i) {
             log.log(LEVEL, String.format("\n"));
-            log.log(LEVEL, String.format("PNP   r%d=\n%s\n", i, 
-                    FormatArray.toString(refinedExtr.get(i).getRotation(), pr)));
-            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, 
+            log.log(LEVEL, String.format("PNP   r%d=\n%s\n", i-1,
+                    FormatArray.toString(refinedExtr.get(i-1).getRotation(), pr)));
+            log.log(LEVEL, String.format("ansR%d=\n%s\n", i-1,
                     FormatArray.toString(Zhang98Data.getRotation(i), pr)));
-            log.log(LEVEL, String.format("PNP   t%d=\n%s\n", i,
-                    FormatArray.toString(refinedExtr.get(i).getTranslation(), pr)));
-            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,
+            log.log(LEVEL, String.format("PNP   t%d=\n%s\n", i-1,
+                    FormatArray.toString(refinedExtr.get(i-1).getTranslation(), pr)));
+            log.log(LEVEL, String.format("ansT%d=\n%s\n", i-1,
                     FormatArray.toString(Zhang98Data.getTranslation(i), pr)));
         }
     }
