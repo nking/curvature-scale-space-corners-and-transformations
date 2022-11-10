@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CorrespondenceMaker.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.matching</a> &gt; <span class="el_source">CorrespondenceMaker.java</span></div><h1>CorrespondenceMaker.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.matching;
+
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageExt;
+import algorithms.imageProcessing.ImageIOHelper;
+import algorithms.imageProcessing.features.orb.ORB;
+import algorithms.imageProcessing.features.orb.ORB.Descriptors;
+import algorithms.imageProcessing.transform.EpipolarNormalizationHelper;
+import algorithms.matrix.MatrixUtil;
+import algorithms.misc.MiscDebug;
+import algorithms.util.CorrespondencePlotter;
+
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+/**
+ * a class to use harris corners filtered to local maxima and ORB descriptors to find matching
+ * keypoints between 2 images.  Not that the images may need pre-processing so that at least
+ * 50% of the potential features are common to both.
+ * Texture matching with HOGs may return better results.
+ * Also note that alternative means may be necessary for extremely repetetive patterns.
+ */
+<span class="nc" id="L25">public class CorrespondenceMaker {</span>
+
+    public static class CorrespondenceList {
+        /**
+         * points from image 1 that are matched to x2 from image 2.
+         * points in format [3XN] where N is the number of matched points.
+         * the first row is x-axis values, the second row is 'y-axis' values,
+         * and the third row is z-axis values.
+         * the z-axis is all '1's for homogeneous coordinates.
+         */
+        public double[][] x1;
+        /**
+         * points from image 2 that are matched to x1 from image 1.
+         * points in format [3XN] where N is the number of matched points.
+         * the first row is x-axis values, the second row is 'y-axis' values,
+         * and the third row is z-axis values.
+         * the z-axis is all '1's for homogeneous coordinates.
+         */
+        public double[][] x2;
+
+        /**
+         * if epipolar fit succeeded at RANSAC stage of outlier removal, the epipolar fits the fundamental matrix fm
+         */
+        public double[][] fm;
+
+        /**
+         * if epipolar fit succeeded at RANSAC stage of outlier removal, the errors for the fit were
+         * calculated.
+         */
+        public double[] errors;
+    }
+
+    public static CorrespondenceList findUsingORB(String filePath1, String filePath2, int nCorners,
+                  boolean debug) throws IOException {
+
+<span class="nc" id="L60">        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);</span>
+<span class="nc" id="L61">        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);</span>
+
+<span class="nc" id="L63">        boolean useToleranceAsStatFactor = true;</span>
+<span class="nc" id="L64">        boolean recalcIterations = false;// possibly faster if set to true</span>
+<span class="nc" id="L65">        double tol = 2.;</span>
+<span class="nc" id="L66">        ErrorType errorType = ErrorType.SAMPSONS;</span>
+
+<span class="nc" id="L68">        return _findUsingORB(img1.copyToGreyscale2(), img2.copyToGreyscale2(), nCorners, useToleranceAsStatFactor,</span>
+                recalcIterations, tol, errorType, debug);
+    }
+
+    public static CorrespondenceList findUsingORB(GreyscaleImage image1, GreyscaleImage image2, int nCorners,
+                                                  boolean debug) throws IOException {
+
+<span class="nc" id="L75">        boolean useToleranceAsStatFactor = true;</span>
+<span class="nc" id="L76">        boolean recalcIterations = false;// possibly faster if set to true</span>
+<span class="nc" id="L77">        double tol = 2.;</span>
+<span class="nc" id="L78">        ErrorType errorType = ErrorType.SAMPSONS;</span>
+
+<span class="nc" id="L80">        return _findUsingORB(image1, image2, nCorners, useToleranceAsStatFactor,</span>
+                recalcIterations, tol, errorType, debug);
+    }
+    public static CorrespondenceList findUsingORB(String filePath1, String filePath2, int nCorners,
+        boolean useToleranceAsStatFactor, boolean recalcIterations, double tol, ErrorType errorType,
+        boolean debug) throws IOException {
+
+<span class="nc" id="L87">        ImageExt img1 = ImageIOHelper.readImageExt(filePath1);</span>
+<span class="nc" id="L88">        ImageExt img2 = ImageIOHelper.readImageExt(filePath2);</span>
+
+<span class="nc" id="L90">        return _findUsingORB(img1.copyToGreyscale2(), img2.copyToGreyscale2(), nCorners, useToleranceAsStatFactor,</span>
+                recalcIterations, tol, errorType, debug);
+    }
+
+    public static CorrespondenceList findUsingORB(GreyscaleImage image1, GreyscaleImage image2, int nCorners,
+        boolean useToleranceAsStatFactor, boolean recalcIterations, double tol, ErrorType errorType,
+        boolean debug) throws IOException {
+
+<span class="nc" id="L98">        return _findUsingORB(image1, image2, nCorners, useToleranceAsStatFactor,</span>
+                recalcIterations, tol, errorType, debug);
+    }
+
+    private static CorrespondenceList _findUsingORB(GreyscaleImage image1, GreyscaleImage image2, int nCorners,
+        boolean useToleranceAsStatFactor, boolean recalcIterations, double tol, ErrorType errorType,
+        boolean debug) throws IOException {
+
+<span class="nc" id="L106">        ORB orb1 = new ORB(image1, nCorners);</span>
+<span class="nc" id="L107">        orb1.detectAndExtract();</span>
+
+<span class="nc" id="L109">        ORB orb2 = new ORB(image2, nCorners);</span>
+<span class="nc" id="L110">        orb2.detectAndExtract();</span>
+
+<span class="nc" id="L112">        ORB.Descriptors d1 = orb1.getAllDescriptors();</span>
+<span class="nc" id="L113">        Descriptors d2 = orb2.getAllDescriptors();</span>
+<span class="nc" id="L114">        double[][] xKP1 = orb1.getAllKeyPointsHomogenous();</span>
+<span class="nc" id="L115">        double[][] xKP2 = orb2.getAllKeyPointsHomogenous();</span>
+
+<span class="nc bnc" id="L117" title="All 6 branches missed.">        if (xKP1 == null || xKP1.length == 0 || xKP1[0].length == 0){</span>
+<span class="nc" id="L118">            System.err.println(&quot;could not find corners in image 1&quot;);</span>
+<span class="nc" id="L119">            return null;</span>
+        }
+<span class="nc bnc" id="L121" title="All 6 branches missed.">        if (xKP2 == null || xKP2.length == 0 || xKP2[0].length == 0){</span>
+<span class="nc" id="L122">            System.err.println(&quot;could not find corners in image 2&quot;);</span>
+<span class="nc" id="L123">            return null;</span>
+        }
+
+<span class="nc" id="L126">        double[][] x1 = MatrixUtil.copy(xKP1);</span>
+<span class="nc" id="L127">        double[][] x2 = MatrixUtil.copy(xKP2);</span>
+<span class="nc" id="L128">        double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(x1);</span>
+<span class="nc" id="L129">        double[][] t2 = EpipolarNormalizationHelper.unitStandardNormalize(x2);</span>
+
+        int i, j;
+<span class="nc" id="L132">        String ts = null;</span>
+
+<span class="nc bnc" id="L134" title="All 2 branches missed.">        if (debug) {</span>
+            // print the corners lists onto images
+<span class="nc" id="L136">            ts = (new SimpleDateFormat(&quot;yyyyddMMHHmmss&quot;)).format(new Date());</span>
+
+<span class="nc" id="L138">            Image tmp1 = image1.copyToColorGreyscale();</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">            for (i = 0; i &lt; xKP1[0].length; ++i) {</span>
+<span class="nc" id="L140">                ImageIOHelper.addPointToImage((int)xKP1[0][i], (int)xKP1[1][i], tmp1, 2, 255, 0, 0);</span>
+                //System.out.printf(&quot;x1[0][%d]=%d;  x1[1][%d]=%d;\n&quot;,
+                //        i, (int)xKP1[0][i], i, (int)xKP1[1][i]);
+            }
+<span class="nc" id="L144">            MiscDebug.writeImage(tmp1, &quot;_&quot; + ts + &quot;_corners_im1&quot;);</span>
+<span class="nc" id="L145">            tmp1 = image2.copyToColorGreyscale();</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">            for (i = 0; i &lt; xKP2[0].length; ++i) {</span>
+<span class="nc" id="L147">                ImageIOHelper.addPointToImage((int)xKP2[0][i], (int)xKP2[1][i], tmp1, 2, 255, 0, 0);</span>
+                //System.out.printf(&quot;x2[0][%d]=%d;  x2[1][%d]=%d;\n&quot;,
+                //        i, (int)xKP2[0][i], i, (int)xKP2[1][i]);
+            }
+<span class="nc" id="L151">            MiscDebug.writeImage(tmp1, &quot;_&quot; + ts + &quot;_corners_im2&quot;);</span>
+        }
+
+        // greedy, local max match of points:
+<span class="nc" id="L155">        ORBMatcher.FitAndCorres fitAndCorres = ORBMatcher.matchDescriptors(d1, d2, x1, x2, useToleranceAsStatFactor,</span>
+                tol, errorType, recalcIterations, false);
+
+<span class="nc bnc" id="L158" title="All 2 branches missed.">        if (fitAndCorres == null) {</span>
+<span class="nc" id="L159">            return null;</span>
+        }
+
+        int idx1, idx2;
+        double[][] x1M, x2M;
+        int nM;
+<span class="nc" id="L165">        double[][] fm = null;</span>
+<span class="nc" id="L166">        double[] errors = null;</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">        CorrespondencePlotter plotter = debug ?</span>
+<span class="nc" id="L168">                new CorrespondencePlotter(image1.copyToColorGreyscale(), image2.copyToColorGreyscale()) : null;</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">        if (fitAndCorres.mIF != null) {</span>
+<span class="nc" id="L170">            System.out.printf(&quot;%s) #Matched = %d\n&quot;, ts, fitAndCorres.mI.length);</span>
+<span class="nc" id="L171">            nM = fitAndCorres.mIF.length;</span>
+<span class="nc" id="L172">            x1M = MatrixUtil.zeros(3, nM);</span>
+<span class="nc" id="L173">            x2M = MatrixUtil.zeros(3, nM);</span>
+<span class="nc" id="L174">            fm = MatrixUtil.copy(fitAndCorres.fm);</span>
+<span class="nc" id="L175">            EpipolarNormalizationHelper.denormalizeFM(fm, t1, t2);</span>
+<span class="nc" id="L176">            errors = new double[nM];</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">            for (i = 0; i &lt; nM; ++i) {</span>
+<span class="nc" id="L178">                errors[i] = fitAndCorres.errors.get(i);</span>
+<span class="nc" id="L179">                idx1 = fitAndCorres.mIF[i][0];</span>
+<span class="nc" id="L180">                idx2 = fitAndCorres.mIF[i][1];</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">                for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L182">                    x1M[j][i] = (int) xKP1[j][idx1];</span>
+<span class="nc" id="L183">                    x2M[j][i] = (int) xKP2[j][idx2];</span>
+                }
+<span class="nc bnc" id="L185" title="All 2 branches missed.">                if (debug) {</span>
+<span class="nc" id="L186">                    plotter.drawLineInAlternatingColors((int)x1M[0][i], (int)x1M[1][i],</span>
+                            (int)x2M[0][i], (int)x2M[1][i], 1);
+                }
+            }
+<span class="nc" id="L190">            System.out.printf(&quot;%s) #outlierRemovedMatched = %d\n&quot;, ts, nM);</span>
+        } else {
+            // fit failed, but we have the ORBMatcher greedy matching points as the 'mI' array.
+<span class="nc" id="L193">            nM = fitAndCorres.mI.length;</span>
+<span class="nc" id="L194">            x1M = MatrixUtil.zeros(3, nM);</span>
+<span class="nc" id="L195">            x2M = MatrixUtil.zeros(3, nM);</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">            for (i = 0; i &lt; nM; ++i) {</span>
+<span class="nc" id="L197">                idx1 = fitAndCorres.mI[i][0];</span>
+<span class="nc" id="L198">                idx2 = fitAndCorres.mI[i][1];</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">                for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L200">                    x1M[j][i] = (int) xKP1[j][idx1];</span>
+<span class="nc" id="L201">                    x2M[j][i] = (int) xKP2[j][idx2];</span>
+                }
+<span class="nc bnc" id="L203" title="All 2 branches missed.">                if (debug) {</span>
+<span class="nc" id="L204">                    plotter.drawLineInAlternatingColors((int)x1M[0][i], (int)x1M[1][i],</span>
+                            (int)x2M[0][i], (int)x2M[1][i], 1);
+                }
+            }
+        }
+<span class="nc bnc" id="L209" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L210">            plotter.writeImage(&quot;_&quot; + ts + &quot;_corres&quot;);</span>
+        }
+
+<span class="nc" id="L213">        CorrespondenceList c = new CorrespondenceList();</span>
+<span class="nc" id="L214">        c.x1 = x1M;</span>
+<span class="nc" id="L215">        c.x2 = x2M;</span>
+<span class="nc" id="L216">        c.fm = fm;</span>
+<span class="nc" id="L217">        c.errors = errors;</span>
+<span class="nc" id="L218">        return c;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

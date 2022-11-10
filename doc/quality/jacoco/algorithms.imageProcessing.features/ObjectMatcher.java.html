@@ -57,9 +57,7 @@ import java.util.Set;
 <span class="nc" id="L57">        debug = true;</span>
 <span class="nc" id="L58">    }</span>
 
-    /**
-     * NOT READY FOR USE
-     * 
+    /***
      * 
      * @param img0
      * @param shape0
@@ -70,26 +68,26 @@ import java.util.Set;
     public List&lt;CorrespondenceList&gt; findObject12(ImageExt img0, 
         Set&lt;PairInt&gt; shape0, ImageExt img1, Settings settings) {
 
-<span class="fc" id="L73">        long ts = 0;</span>
-<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L75">            ts = MiscDebug.getCurrentTimeFormatted();</span>
+<span class="fc" id="L71">        long ts = 0;</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L73">            ts = MiscDebug.getCurrentTimeFormatted();</span>
         }
 
-<span class="fc" id="L78">        TrimmedImage img0Trim = trim(img0, shape0, 20);</span>
+<span class="fc" id="L76">        TrimmedImage img0Trim = trim(img0, shape0, 20);</span>
 
-<span class="fc" id="L80">        Set&lt;PairInt&gt; shape0Trimmed = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (PairInt p : shape0) {</span>
-<span class="fc" id="L82">            PairInt p2 = new PairInt(p.getX() - img0Trim.getXOffset(),</span>
-<span class="fc" id="L83">                p.getY() - img0Trim.getYOffset());</span>
-<span class="fc" id="L84">            shape0Trimmed.add(p2);</span>
-<span class="fc" id="L85">        }</span>
+<span class="fc" id="L78">        Set&lt;PairInt&gt; shape0Trimmed = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        for (PairInt p : shape0) {</span>
+<span class="fc" id="L80">            PairInt p2 = new PairInt(p.getX() - img0Trim.getXOffset(),</span>
+<span class="fc" id="L81">                p.getY() - img0Trim.getYOffset());</span>
+<span class="fc" id="L82">            shape0Trimmed.add(p2);</span>
+<span class="fc" id="L83">        }</span>
 
-<span class="fc" id="L87">        ImageExt img0Trimmed = (ImageExt)img0Trim.getTrimmed();</span>
+<span class="fc" id="L85">        ImageExt img0Trimmed = (ImageExt)img0Trim.getTrimmed();</span>
 
-<span class="fc" id="L89">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L87">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
-<span class="fc" id="L91">        mask(img0Trimmed, shape0Trimmed);</span>
-<span class="fc" id="L92">        CMODE clrMode = CMODE.determineColorMode(img0Trimmed, shape0Trimmed);</span>
+<span class="fc" id="L89">        mask(img0Trimmed, shape0Trimmed);</span>
+<span class="fc" id="L90">        CMODE clrMode = CMODE.determineColorMode(img0Trimmed, shape0Trimmed);</span>
         
         /*
         convert the image to cie luv and then calculate polar angle of u and v
@@ -100,60 +98,60 @@ import java.util.Set;
         //System.out.println(&quot;template clrMode=&quot; + clrMode.name());
         GreyscaleImage luvTheta0;
         GreyscaleImage luvTheta1;
-<span class="fc bfc" id="L103" title="All 2 branches covered.">        if (clrMode.equals(CMODE.WHITE)) {</span>
-<span class="fc" id="L104">            luvTheta0 = imageProcessor.createCIELUVTheta_WideRangeLightness(img0Trimmed, 255);</span>
-<span class="fc" id="L105">            luvTheta1 = imageProcessor.createCIELUVTheta_WideRangeLightness(img1, 255);</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        if (clrMode.equals(CMODE.WHITE)) {</span>
+<span class="fc" id="L102">            luvTheta0 = imageProcessor.createCIELUVTheta_WideRangeLightness(img0Trimmed, 255);</span>
+<span class="fc" id="L103">            luvTheta1 = imageProcessor.createCIELUVTheta_WideRangeLightness(img1, 255);</span>
         } else {
-<span class="fc" id="L107">            luvTheta0 = imageProcessor.createCIELUVTheta(img0Trimmed, 255);</span>
-<span class="fc" id="L108">            luvTheta1 = imageProcessor.createCIELUVTheta(img1, 255);</span>
+<span class="fc" id="L105">            luvTheta0 = imageProcessor.createCIELUVTheta(img0Trimmed, 255);</span>
+<span class="fc" id="L106">            luvTheta1 = imageProcessor.createCIELUVTheta(img1, 255);</span>
         }
         
-<span class="fc" id="L111">        imageProcessor.singlePixelFilter(luvTheta0);</span>
-<span class="fc" id="L112">        imageProcessor.singlePixelFilter(luvTheta1);</span>
+<span class="fc" id="L109">        imageProcessor.singlePixelFilter(luvTheta0);</span>
+<span class="fc" id="L110">        imageProcessor.singlePixelFilter(luvTheta1);</span>
 
-<span class="fc" id="L114">        mask(luvTheta0, shape0Trimmed);</span>
-<span class="fc" id="L115">        CMODE ptMode = CMODE.determinePolarThetaMode(luvTheta0, shape0Trimmed);</span>
+<span class="fc" id="L112">        mask(luvTheta0, shape0Trimmed);</span>
+<span class="fc" id="L113">        CMODE ptMode = CMODE.determinePolarThetaMode(luvTheta0, shape0Trimmed);</span>
         
         // ----- create the cRegions for a masked image pyramid of img 0 ====
         
-<span class="fc" id="L119">        GreyscaleImage gsImg0 = img0Trimmed.copyToGreyscale2();</span>
-<span class="fc" id="L120">        GreyscaleImage gsImg1 = img1.copyToGreyscale2();</span>
+<span class="fc" id="L117">        GreyscaleImage gsImg0 = img0Trimmed.copyToGreyscale2();</span>
+<span class="fc" id="L118">        GreyscaleImage gsImg1 = img1.copyToGreyscale2();</span>
         
-<span class="fc" id="L122">        boolean fewerMSER = true;</span>
+<span class="fc" id="L120">        boolean fewerMSER = true;</span>
        
-<span class="fc" id="L124">        GreyscaleImage tmp00 = gsImg0.copyImage();</span>
-<span class="fc" id="L125">        imageProcessor.enhanceContrast(tmp00, 4);</span>
-<span class="fc" id="L126">        GreyscaleImage tmp01 = luvTheta0.copyImage();</span>
-<span class="fc" id="L127">        imageProcessor.enhanceContrast(tmp01, 4);</span>
+<span class="fc" id="L122">        GreyscaleImage tmp00 = gsImg0.copyImage();</span>
+<span class="fc" id="L123">        imageProcessor.enhanceContrast(tmp00, 4);</span>
+<span class="fc" id="L124">        GreyscaleImage tmp01 = luvTheta0.copyImage();</span>
+<span class="fc" id="L125">        imageProcessor.enhanceContrast(tmp01, 4);</span>
         
         // build combined list of regions
-<span class="fc" id="L130">        List&lt;Region&gt; regionsComb0 = createCombinedMSERRegions(</span>
+<span class="fc" id="L128">        List&lt;Region&gt; regionsComb0 = createCombinedMSERRegions(</span>
             tmp00, tmp01,
             //gsImg0, luvTheta0, 
-<span class="fc" id="L133">            clrMode, ptMode, fewerMSER, settings.getDebugLabel() + &quot;_0_&quot;);</span>
+<span class="fc" id="L131">            clrMode, ptMode, fewerMSER, settings.getDebugLabel() + &quot;_0_&quot;);</span>
 
-<span class="fc" id="L135">        int[] xy = new int[2];</span>
+<span class="fc" id="L133">        int[] xy = new int[2];</span>
         //remove all regions with centers outside of shape0 points
-<span class="fc bfc" id="L137" title="All 2 branches covered.">        for (int i = (regionsComb0.size() - 1); i &gt; -1; --i) {</span>
-<span class="fc" id="L138">            Region r = regionsComb0.get(i);</span>
-<span class="fc" id="L139">            r.calculateXYCentroid(xy, img0Trimmed.getWidth(), img0Trimmed.getHeight());</span>
-<span class="fc" id="L140">            PairInt p = new PairInt(xy[0], xy[1]);</span>
-<span class="pc bpc" id="L141" title="1 of 2 branches missed.">            if (!shape0Trimmed.contains(p)) {</span>
-<span class="nc" id="L142">                regionsComb0.remove(i);</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        for (int i = (regionsComb0.size() - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L136">            Region r = regionsComb0.get(i);</span>
+<span class="fc" id="L137">            r.calculateXYCentroid(xy, img0Trimmed.getWidth(), img0Trimmed.getHeight());</span>
+<span class="fc" id="L138">            PairInt p = new PairInt(xy[0], xy[1]);</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">            if (!shape0Trimmed.contains(p)) {</span>
+<span class="nc" id="L140">                regionsComb0.remove(i);</span>
             }
         }
 
-<span class="fc" id="L146">        fewerMSER = false;</span>
+<span class="fc" id="L144">        fewerMSER = false;</span>
         
-<span class="fc" id="L148">        GreyscaleImage tmp10 = gsImg1.copyImage();</span>
-<span class="fc" id="L149">        imageProcessor.enhanceContrast(tmp10, 4);</span>
-<span class="fc" id="L150">        GreyscaleImage tmp11 = luvTheta1.copyImage();</span>
-<span class="fc" id="L151">        imageProcessor.enhanceContrast(tmp11, 4);</span>
+<span class="fc" id="L146">        GreyscaleImage tmp10 = gsImg1.copyImage();</span>
+<span class="fc" id="L147">        imageProcessor.enhanceContrast(tmp10, 4);</span>
+<span class="fc" id="L148">        GreyscaleImage tmp11 = luvTheta1.copyImage();</span>
+<span class="fc" id="L149">        imageProcessor.enhanceContrast(tmp11, 4);</span>
         
-<span class="pc bpc" id="L153" title="1 of 2 branches missed.">        if (debug) {            </span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">        if (debug) {            </span>
             //MiscDebug.writeImage(img0Trimmed, &quot;_shape0_mask_&quot;);
-<span class="nc" id="L155">            MiscDebug.writeImage(luvTheta0, &quot;_luv_mask_&quot; + ts);</span>
-<span class="nc" id="L156">            MiscDebug.writeImage(luvTheta1, &quot;_luv_srch_&quot; + ts);</span>
+<span class="nc" id="L153">            MiscDebug.writeImage(luvTheta0, &quot;_luv_mask_&quot; + ts);</span>
+<span class="nc" id="L154">            MiscDebug.writeImage(luvTheta1, &quot;_luv_srch_&quot; + ts);</span>
             
             //MiscDebug.writeImage(tmp00, &quot;_gs_enhanced_0_&quot;);
             //MiscDebug.writeImage(tmp01, &quot;_luv_enhanced_0_&quot;);
@@ -161,19 +159,19 @@ import java.util.Set;
             //MiscDebug.writeImage(tmp11, &quot;_luv_enhanced_1_&quot;);
         }
         
-<span class="fc" id="L164">        List&lt;Region&gt; regionsComb1 = createCombinedMSERRegions(</span>
+<span class="fc" id="L162">        List&lt;Region&gt; regionsComb1 = createCombinedMSERRegions(</span>
             tmp10, tmp11,
             //gsImg1, luvTheta1, 
-<span class="fc" id="L167">            clrMode, ptMode, fewerMSER, settings.getDebugLabel() + &quot;_1_&quot;);</span>
+<span class="fc" id="L165">            clrMode, ptMode, fewerMSER, settings.getDebugLabel() + &quot;_1_&quot;);</span>
                 
-<span class="fc" id="L169">        int critSep = 1;//5;</span>
-<span class="fc" id="L170">        Canonicalizer.filterBySpatialProximity(critSep, regionsComb0, </span>
-<span class="fc" id="L171">            img0Trimmed.getWidth(), img0Trimmed.getHeight());</span>
+<span class="fc" id="L167">        int critSep = 1;//5;</span>
+<span class="fc" id="L168">        Canonicalizer.filterBySpatialProximity(critSep, regionsComb0, </span>
+<span class="fc" id="L169">            img0Trimmed.getWidth(), img0Trimmed.getHeight());</span>
         
-<span class="fc" id="L173">        Canonicalizer.filterBySpatialProximity(critSep, regionsComb1, </span>
-<span class="fc" id="L174">            img1.getWidth(), img1.getHeight());</span>
+<span class="fc" id="L171">        Canonicalizer.filterBySpatialProximity(critSep, regionsComb1, </span>
+<span class="fc" id="L172">            img1.getWidth(), img1.getHeight());</span>
         
-<span class="fc" id="L176">        Canonicalizer canonicalizer = new Canonicalizer();</span>
+<span class="fc" id="L174">        Canonicalizer canonicalizer = new Canonicalizer();</span>
 
         // ----- create the cRegions for a masked image pyramid of img 0 ====
 
@@ -215,41 +213,41 @@ import java.util.Set;
         }
         */
         
-<span class="fc" id="L218">        TIntObjectMap&lt;RegionPoints&gt; regionPoints0 =</span>
-<span class="fc" id="L219">            canonicalizer.canonicalizeRegions2(regionsComb0, </span>
-<span class="fc" id="L220">            img0Trimmed.getWidth(), img0Trimmed.getHeight());</span>
+<span class="fc" id="L216">        TIntObjectMap&lt;RegionPoints&gt; regionPoints0 =</span>
+<span class="fc" id="L217">            canonicalizer.canonicalizeRegions2(regionsComb0, </span>
+<span class="fc" id="L218">            img0Trimmed.getWidth(), img0Trimmed.getHeight());</span>
    
-<span class="fc" id="L222">        TIntObjectMap&lt;RegionPoints&gt; regionPoints1 =</span>
-<span class="fc" id="L223">            canonicalizer.canonicalizeRegions2(regionsComb1, img1.getWidth(),</span>
-<span class="fc" id="L224">            img1.getHeight());</span>
+<span class="fc" id="L220">        TIntObjectMap&lt;RegionPoints&gt; regionPoints1 =</span>
+<span class="fc" id="L221">            canonicalizer.canonicalizeRegions2(regionsComb1, img1.getWidth(),</span>
+<span class="fc" id="L222">            img1.getHeight());</span>
   
         // filter by color hist of hsv, cielab and CIECH
-<span class="pc bpc" id="L227" title="1 of 2 branches missed.">        if (settings.useColorFilter()) {</span>
-<span class="fc" id="L228">            filterByColorHistograms(img0Trimmed, shape0Trimmed, img1, </span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">        if (settings.useColorFilter()) {</span>
+<span class="fc" id="L226">            filterByColorHistograms(img0Trimmed, shape0Trimmed, img1, </span>
                 regionPoints1);
         }
         
         //NOTE: not sure this is the best approach, but wanting to keep the 
         //   template shapes as 1 full shape and then the 2 largest 
         //   parts of it to allow a finer fragmented search.
-<span class="fc" id="L235">        filterToLargestPartitions(regionPoints0, img0Trimmed, shape0Trimmed);</span>
+<span class="fc" id="L233">        filterToLargestPartitions(regionPoints0, img0Trimmed, shape0Trimmed);</span>
         
-<span class="pc bpc" id="L237" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L238">            int[] xyCen = new int[2];</span>
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L236">            int[] xyCen = new int[2];</span>
             Image im0Cp, im1Cp;
-<span class="nc" id="L240">            im0Cp = img0Trimmed.copyImage();</span>
-<span class="nc" id="L241">            TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints0.iterator();</span>
-<span class="nc bnc" id="L242" title="All 2 branches missed.">            for (int i = 0; i &lt; regionPoints0.size(); ++i) {</span>
-<span class="nc" id="L243">                iter.advance();</span>
-<span class="nc" id="L244">                int rIdx = iter.key();</span>
-<span class="nc" id="L245">                Region r = regionsComb0.get(rIdx);</span>
-<span class="nc" id="L246">                int[] clr = ImageIOHelper.getNextRGB(i);</span>
-<span class="nc" id="L247">                r.drawEllipse(im0Cp, 0, clr[0], clr[1], clr[2]);</span>
-<span class="nc" id="L248">                r.calculateXYCentroid(xyCen, im0Cp.getWidth(), im0Cp.getHeight());</span>
-<span class="nc" id="L249">                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp,</span>
+<span class="nc" id="L238">            im0Cp = img0Trimmed.copyImage();</span>
+<span class="nc" id="L239">            TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints0.iterator();</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">            for (int i = 0; i &lt; regionPoints0.size(); ++i) {</span>
+<span class="nc" id="L241">                iter.advance();</span>
+<span class="nc" id="L242">                int rIdx = iter.key();</span>
+<span class="nc" id="L243">                Region r = regionsComb0.get(rIdx);</span>
+<span class="nc" id="L244">                int[] clr = ImageIOHelper.getNextRGB(i);</span>
+<span class="nc" id="L245">                r.drawEllipse(im0Cp, 0, clr[0], clr[1], clr[2]);</span>
+<span class="nc" id="L246">                r.calculateXYCentroid(xyCen, im0Cp.getWidth(), im0Cp.getHeight());</span>
+<span class="nc" id="L247">                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im0Cp,</span>
                     1, 255, 0, 0);
             }
-<span class="nc" id="L252">            MiscDebug.writeImage(im0Cp, &quot;_&quot; + settings.getDebugLabel() + </span>
+<span class="nc" id="L250">            MiscDebug.writeImage(im0Cp, &quot;_&quot; + settings.getDebugLabel() + </span>
                 &quot;_regions_0_filterP_&quot;);
         }
         
@@ -261,23 +259,23 @@ import java.util.Set;
         (2) used just the accumulated points instead of the ellipse filled points.
         */
         
-<span class="fc" id="L264">        replaceWithAccumulatedPoints(regionPoints1);</span>
+<span class="fc" id="L262">        replaceWithAccumulatedPoints(regionPoints1);</span>
         
-<span class="pc bpc" id="L266" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L267">            int[] xyCen = new int[2];</span>
-<span class="nc" id="L268">            Image im1Cp = img1.copyImage();</span>
-<span class="nc" id="L269">            TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints1.iterator();</span>
-<span class="nc bnc" id="L270" title="All 2 branches missed.">            for (int i = 0; i &lt; regionPoints1.size(); ++i) {</span>
-<span class="nc" id="L271">                iter.advance();</span>
-<span class="nc" id="L272">                int rIdx = iter.key();</span>
-<span class="nc" id="L273">                Region r = regionsComb1.get(rIdx);</span>
-<span class="nc" id="L274">                int[] clr = ImageIOHelper.getNextRGB(i);</span>
-<span class="nc" id="L275">                r.drawEllipse(im1Cp, 0, clr[0], clr[1], clr[2]);</span>
-<span class="nc" id="L276">                r.calculateXYCentroid(xyCen, im1Cp.getWidth(), im1Cp.getHeight());</span>
-<span class="nc" id="L277">                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im1Cp,</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L265">            int[] xyCen = new int[2];</span>
+<span class="nc" id="L266">            Image im1Cp = img1.copyImage();</span>
+<span class="nc" id="L267">            TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints1.iterator();</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">            for (int i = 0; i &lt; regionPoints1.size(); ++i) {</span>
+<span class="nc" id="L269">                iter.advance();</span>
+<span class="nc" id="L270">                int rIdx = iter.key();</span>
+<span class="nc" id="L271">                Region r = regionsComb1.get(rIdx);</span>
+<span class="nc" id="L272">                int[] clr = ImageIOHelper.getNextRGB(i);</span>
+<span class="nc" id="L273">                r.drawEllipse(im1Cp, 0, clr[0], clr[1], clr[2]);</span>
+<span class="nc" id="L274">                r.calculateXYCentroid(xyCen, im1Cp.getWidth(), im1Cp.getHeight());</span>
+<span class="nc" id="L275">                ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], im1Cp,</span>
                     1, 255, 0, 0);
             }
-<span class="nc" id="L280">            MiscDebug.writeImage(im1Cp, &quot;_&quot; + settings.getDebugLabel() </span>
+<span class="nc" id="L278">            MiscDebug.writeImage(im1Cp, &quot;_&quot; + settings.getDebugLabel() </span>
                 + &quot;_regions_1_filtered_&quot;);
             
             /*
@@ -305,23 +303,23 @@ import java.util.Set;
         }
         
           //DEBUG: mask out all pixels not in a region
-<span class="fc" id="L308">        TLongSet pix0 = createAccumulatedPixels(regionPoints0, img0Trimmed.getWidth());</span>
-<span class="fc" id="L309">        TLongSet pix1 = createAccumulatedPixels(regionPoints1, img1.getWidth());</span>
-<span class="fc" id="L310">        maskOutNonRegion(img0Trimmed, pix0);</span>
-<span class="fc" id="L311">        maskOutNonRegion(luvTheta0, pix0);</span>
-<span class="fc" id="L312">        maskOutNonRegion(img1, pix1);</span>
-<span class="fc" id="L313">        maskOutNonRegion(luvTheta1, pix1);</span>
+<span class="fc" id="L306">        TLongSet pix0 = createAccumulatedPixels(regionPoints0, img0Trimmed.getWidth());</span>
+<span class="fc" id="L307">        TLongSet pix1 = createAccumulatedPixels(regionPoints1, img1.getWidth());</span>
+<span class="fc" id="L308">        maskOutNonRegion(img0Trimmed, pix0);</span>
+<span class="fc" id="L309">        maskOutNonRegion(luvTheta0, pix0);</span>
+<span class="fc" id="L310">        maskOutNonRegion(img1, pix1);</span>
+<span class="fc" id="L311">        maskOutNonRegion(luvTheta1, pix1);</span>
                 
-<span class="fc" id="L315">        List&lt;List&lt;GreyscaleImage&gt;&gt; pyrRGB0 = imageProcessor.buildColorPyramid(</span>
+<span class="fc" id="L313">        List&lt;List&lt;GreyscaleImage&gt;&gt; pyrRGB0 = imageProcessor.buildColorPyramid(</span>
             img0Trimmed, settings.useLargerPyramid0);
         
-<span class="fc" id="L318">        List&lt;GreyscaleImage&gt; pyrPT0 = imageProcessor.buildPyramid(</span>
+<span class="fc" id="L316">        List&lt;GreyscaleImage&gt; pyrPT0 = imageProcessor.buildPyramid(</span>
             luvTheta0, settings.useLargerPyramid0);
 
-<span class="fc" id="L321">        List&lt;List&lt;GreyscaleImage&gt;&gt; pyrRGB1 = imageProcessor.buildColorPyramid(</span>
+<span class="fc" id="L319">        List&lt;List&lt;GreyscaleImage&gt;&gt; pyrRGB1 = imageProcessor.buildColorPyramid(</span>
             img1, settings.useLargerPyramid1);
 
-<span class="fc" id="L324">        List&lt;GreyscaleImage&gt; pyrPT1 = imageProcessor.buildPyramid(</span>
+<span class="fc" id="L322">        List&lt;GreyscaleImage&gt; pyrPT1 = imageProcessor.buildPyramid(</span>
             luvTheta1, settings.useLargerPyramid1);
        
         //// applyWindowedMean(pyrRGB0, 1);
@@ -329,166 +327,166 @@ import java.util.Set;
         ////applyWindowedMean2(pyrPT0, 1);
         ////applyWindowedMean2(pyrPT1, 1);
         
-<span class="fc" id="L332">        MSERMatcher matcher = new MSERMatcher();</span>
+<span class="fc" id="L330">        MSERMatcher matcher = new MSERMatcher();</span>
 
-<span class="pc bpc" id="L334" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L335">            matcher.setToDebug();</span>
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L333">            matcher.setToDebug();</span>
         }
         
-<span class="fc" id="L338">        List&lt;CorrespondenceList&gt; corList = matcher.matchObject0(</span>
+<span class="fc" id="L336">        List&lt;CorrespondenceList&gt; corList = matcher.matchObject0(</span>
             clrMode, pyrRGB0, pyrPT0, regionPoints0,
             pyrRGB1, pyrPT1, regionPoints1, settings);
         
-<span class="pc bpc" id="L342" title="1 of 2 branches missed.">        if (corList == null) {</span>
-<span class="nc" id="L343">            return null;</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">        if (corList == null) {</span>
+<span class="nc" id="L341">            return null;</span>
         }
         
         // apply offsets for having trimmed image 0
-<span class="fc bfc" id="L347" title="All 2 branches covered.">        for (int i0 = 0; i0 &lt; corList.size(); ++i0) {</span>
-<span class="fc" id="L348">            CorrespondenceList topC = corList.get(i0);</span>
-<span class="fc bfc" id="L349" title="All 2 branches covered.">            for (int i = 0; i &lt; topC.getPoints1().size(); ++i) {</span>
-<span class="fc" id="L350">                PairInt p = topC.getPoints1().get(i);</span>
-<span class="fc" id="L351">                int x = p.getX();</span>
-<span class="fc" id="L352">                int y = p.getY();</span>
-<span class="fc" id="L353">                p.setX(x + img0Trim.getXOffset());</span>
-<span class="fc" id="L354">                p.setY(y + img0Trim.getYOffset());</span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">        for (int i0 = 0; i0 &lt; corList.size(); ++i0) {</span>
+<span class="fc" id="L346">            CorrespondenceList topC = corList.get(i0);</span>
+<span class="fc bfc" id="L347" title="All 2 branches covered.">            for (int i = 0; i &lt; topC.getPoints1().size(); ++i) {</span>
+<span class="fc" id="L348">                PairInt p = topC.getPoints1().get(i);</span>
+<span class="fc" id="L349">                int x = p.getX();</span>
+<span class="fc" id="L350">                int y = p.getY();</span>
+<span class="fc" id="L351">                p.setX(x + img0Trim.getXOffset());</span>
+<span class="fc" id="L352">                p.setY(y + img0Trim.getYOffset());</span>
             }
         }
 
-<span class="fc" id="L358">        return corList;</span>
+<span class="fc" id="L356">        return corList;</span>
     }
     
     
     private void filterCloseToBounds2(List&lt;Region&gt; regions,
         int width, int height, int border) {
 
-<span class="fc" id="L365">        int[] xy = new int[2];</span>
-<span class="fc bfc" id="L366" title="All 2 branches covered.">        for (int i = (regions.size() - 1); i &gt; -1; --i) {</span>
-<span class="fc" id="L367">            Region r = regions.get(i);</span>
-<span class="fc" id="L368">            r.calculateXYCentroid(xy, width, height);</span>
-<span class="fc bfc" id="L369" title="All 8 branches covered.">            if (xy[0] &lt; border || xy[1] &lt; border ||</span>
+<span class="fc" id="L363">        int[] xy = new int[2];</span>
+<span class="fc bfc" id="L364" title="All 2 branches covered.">        for (int i = (regions.size() - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L365">            Region r = regions.get(i);</span>
+<span class="fc" id="L366">            r.calculateXYCentroid(xy, width, height);</span>
+<span class="fc bfc" id="L367" title="All 8 branches covered.">            if (xy[0] &lt; border || xy[1] &lt; border ||</span>
                 (xy[0] &gt;= (width - border)) ||
                 (xy[1] &gt;= (height - border))) {
-<span class="fc" id="L372">                regions.remove(i);</span>
+<span class="fc" id="L370">                regions.remove(i);</span>
             }
         }
-<span class="fc" id="L375">    }</span>
+<span class="fc" id="L373">    }</span>
 
     private TrimmedImage trim(ImageExt img, Set&lt;PairInt&gt; shape,
         int buffer) {
 
-<span class="fc" id="L380">        int[] minMaxXY = MiscMath.findMinMaxXY(shape);</span>
+<span class="fc" id="L378">        int[] minMaxXY = MiscMath.findMinMaxXY(shape);</span>
 
-<span class="fc" id="L382">        int x0 = minMaxXY[0] - buffer;</span>
-<span class="fc bfc" id="L383" title="All 2 branches covered.">        if (x0 &lt; 0) {</span>
-<span class="fc" id="L384">            x0 = 0;</span>
+<span class="fc" id="L380">        int x0 = minMaxXY[0] - buffer;</span>
+<span class="fc bfc" id="L381" title="All 2 branches covered.">        if (x0 &lt; 0) {</span>
+<span class="fc" id="L382">            x0 = 0;</span>
         }
-<span class="fc" id="L386">        int x1 = minMaxXY[1] + buffer;</span>
-<span class="pc bpc" id="L387" title="1 of 2 branches missed.">        if (x1 &gt; img.getWidth()) {</span>
-<span class="nc" id="L388">            x1 = img.getWidth();</span>
+<span class="fc" id="L384">        int x1 = minMaxXY[1] + buffer;</span>
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">        if (x1 &gt; img.getWidth()) {</span>
+<span class="nc" id="L386">            x1 = img.getWidth();</span>
         }
-<span class="fc" id="L390">        int y0 = minMaxXY[2] - buffer;</span>
-<span class="fc bfc" id="L391" title="All 2 branches covered.">        if (y0 &lt; 0) {</span>
-<span class="fc" id="L392">            y0 = 0;</span>
+<span class="fc" id="L388">        int y0 = minMaxXY[2] - buffer;</span>
+<span class="fc bfc" id="L389" title="All 2 branches covered.">        if (y0 &lt; 0) {</span>
+<span class="fc" id="L390">            y0 = 0;</span>
         }
-<span class="fc" id="L394">        int y1 = minMaxXY[3] + buffer;</span>
-<span class="fc bfc" id="L395" title="All 2 branches covered.">        if (y1 &gt; img.getHeight()) {</span>
-<span class="fc" id="L396">            y1 = img.getHeight();</span>
+<span class="fc" id="L392">        int y1 = minMaxXY[3] + buffer;</span>
+<span class="fc bfc" id="L393" title="All 2 branches covered.">        if (y1 &gt; img.getHeight()) {</span>
+<span class="fc" id="L394">            y1 = img.getHeight();</span>
         }
 
-<span class="fc" id="L399">        TrimmedImage trImg = new TrimmedImage(img, x0, x1, y0, y1);</span>
+<span class="fc" id="L397">        TrimmedImage trImg = new TrimmedImage(img, x0, x1, y0, y1);</span>
 
-<span class="fc" id="L401">        return trImg;</span>
+<span class="fc" id="L399">        return trImg;</span>
     }
 
     private void mask(Image img, Set&lt;PairInt&gt; shape0) {
 
-<span class="fc bfc" id="L406" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getWidth(); ++i) {</span>
-<span class="fc bfc" id="L407" title="All 2 branches covered.">            for (int j = 0; j &lt; img.getHeight(); ++j) {</span>
-<span class="fc" id="L408">                PairInt p = new PairInt(i, j);</span>
-<span class="fc bfc" id="L409" title="All 2 branches covered.">                if (!shape0.contains(p)) {</span>
-<span class="fc" id="L410">                    img.setRGB(i, j, 0, 0, 0);</span>
+<span class="fc bfc" id="L404" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getWidth(); ++i) {</span>
+<span class="fc bfc" id="L405" title="All 2 branches covered.">            for (int j = 0; j &lt; img.getHeight(); ++j) {</span>
+<span class="fc" id="L406">                PairInt p = new PairInt(i, j);</span>
+<span class="fc bfc" id="L407" title="All 2 branches covered.">                if (!shape0.contains(p)) {</span>
+<span class="fc" id="L408">                    img.setRGB(i, j, 0, 0, 0);</span>
                 }
             }
         }
-<span class="fc" id="L414">    }</span>
+<span class="fc" id="L412">    }</span>
 
     private void mask(GreyscaleImage img, Set&lt;PairInt&gt; shape0) {
 
-<span class="fc bfc" id="L418" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getWidth(); ++i) {</span>
-<span class="fc bfc" id="L419" title="All 2 branches covered.">            for (int j = 0; j &lt; img.getHeight(); ++j) {</span>
-<span class="fc" id="L420">                PairInt p = new PairInt(i, j);</span>
-<span class="fc bfc" id="L421" title="All 2 branches covered.">                if (!shape0.contains(p)) {</span>
-<span class="fc" id="L422">                    img.setValue(i, j, 0);</span>
+<span class="fc bfc" id="L416" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getWidth(); ++i) {</span>
+<span class="fc bfc" id="L417" title="All 2 branches covered.">            for (int j = 0; j &lt; img.getHeight(); ++j) {</span>
+<span class="fc" id="L418">                PairInt p = new PairInt(i, j);</span>
+<span class="fc bfc" id="L419" title="All 2 branches covered.">                if (!shape0.contains(p)) {</span>
+<span class="fc" id="L420">                    img.setValue(i, j, 0);</span>
                 }
             }
         }
-<span class="fc" id="L426">    }</span>
+<span class="fc" id="L424">    }</span>
 
     private List&lt;Region&gt; createCombinedMSERRegions(GreyscaleImage gsImg,
         GreyscaleImage luvTheta, CMODE clrMode, CMODE ptMode,
         boolean fewerMSER, String debugLabel) {
 
-<span class="fc" id="L432">        MSER mser = new MSER();</span>
+<span class="fc" id="L430">        MSER mser = new MSER();</span>
 
-<span class="fc" id="L434">        List&lt;List&lt;Region&gt;&gt; regionsT = new ArrayList&lt;List&lt;Region&gt;&gt;();</span>
-<span class="fc" id="L435">        List&lt;List&lt;Region&gt;&gt; regions = new ArrayList&lt;List&lt;Region&gt;&gt;();</span>
+<span class="fc" id="L432">        List&lt;List&lt;Region&gt;&gt; regionsT = new ArrayList&lt;List&lt;Region&gt;&gt;();</span>
+<span class="fc" id="L433">        List&lt;List&lt;Region&gt;&gt; regions = new ArrayList&lt;List&lt;Region&gt;&gt;();</span>
         Threshold thrGs;
         Threshold thrPt;
-<span class="fc bfc" id="L438" title="All 2 branches covered.">        if (fewerMSER) {</span>
-<span class="fc" id="L439">            thrGs = Threshold.LEAST_SENSITIVE;</span>
-<span class="fc" id="L440">            thrPt = Threshold.LESS_SENSITIVE;</span>
+<span class="fc bfc" id="L436" title="All 2 branches covered.">        if (fewerMSER) {</span>
+<span class="fc" id="L437">            thrGs = Threshold.LEAST_SENSITIVE;</span>
+<span class="fc" id="L438">            thrPt = Threshold.LESS_SENSITIVE;</span>
         } else {
-<span class="fc" id="L442">            thrGs = Threshold.SLIGHTLY_LESS_SENSITIVE;</span>
-<span class="fc" id="L443">            thrPt = Threshold.DEFAULT;</span>
+<span class="fc" id="L440">            thrGs = Threshold.SLIGHTLY_LESS_SENSITIVE;</span>
+<span class="fc" id="L441">            thrPt = Threshold.DEFAULT;</span>
         }
         
-<span class="pc bpc" id="L446" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L447">            System.out.println(debugLabel + &quot;  clrMode=&quot; + clrMode.name() </span>
-<span class="nc" id="L448">                + &quot; ptMode=&quot; + ptMode.name());</span>
+<span class="pc bpc" id="L444" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L445">            System.out.println(debugLabel + &quot;  clrMode=&quot; + clrMode.name() </span>
+<span class="nc" id="L446">                + &quot; ptMode=&quot; + ptMode.name());</span>
         }
         
-<span class="fc bfc" id="L451" title="All 2 branches covered.">        if (clrMode.equals(CMODE.WHITE)) {</span>
-<span class="fc" id="L452">            int[] gsA = MSER.readIntoArray(gsImg);</span>
-<span class="fc" id="L453">            List&lt;Region&gt; list = mser.findRegionsNeg(gsA,</span>
-<span class="fc" id="L454">                gsImg.getWidth(), gsImg.getHeight(), thrGs);</span>
-<span class="fc" id="L455">            regions.add(new ArrayList&lt;Region&gt;());</span>
-<span class="fc" id="L456">            regions.add(list);</span>
-<span class="pc bpc" id="L457" title="1 of 2 branches missed.">        } else if (clrMode.equals(CMODE.BLACK)) {</span>
-<span class="nc" id="L458">            int[] gsA = MSER.readIntoArray(gsImg);</span>
-<span class="nc" id="L459">            List&lt;Region&gt; list = mser.findRegionsPos(gsA,</span>
-<span class="nc" id="L460">                gsImg.getWidth(), gsImg.getHeight(), thrGs);</span>
-<span class="nc" id="L461">            regions.add(list);</span>
-<span class="nc" id="L462">            regions.add(new ArrayList&lt;Region&gt;());</span>
-<span class="nc" id="L463">        } else {</span>
-<span class="fc" id="L464">            regions = mser.findRegions(gsImg, thrGs);</span>
+<span class="fc bfc" id="L449" title="All 2 branches covered.">        if (clrMode.equals(CMODE.WHITE)) {</span>
+<span class="fc" id="L450">            int[] gsA = MSER.readIntoArray(gsImg);</span>
+<span class="fc" id="L451">            List&lt;Region&gt; list = mser.findRegionsNeg(gsA,</span>
+<span class="fc" id="L452">                gsImg.getWidth(), gsImg.getHeight(), thrGs);</span>
+<span class="fc" id="L453">            regions.add(new ArrayList&lt;Region&gt;());</span>
+<span class="fc" id="L454">            regions.add(list);</span>
+<span class="pc bpc" id="L455" title="1 of 2 branches missed.">        } else if (clrMode.equals(CMODE.BLACK)) {</span>
+<span class="nc" id="L456">            int[] gsA = MSER.readIntoArray(gsImg);</span>
+<span class="nc" id="L457">            List&lt;Region&gt; list = mser.findRegionsPos(gsA,</span>
+<span class="nc" id="L458">                gsImg.getWidth(), gsImg.getHeight(), thrGs);</span>
+<span class="nc" id="L459">            regions.add(list);</span>
+<span class="nc" id="L460">            regions.add(new ArrayList&lt;Region&gt;());</span>
+<span class="nc" id="L461">        } else {</span>
+<span class="fc" id="L462">            regions = mser.findRegions(gsImg, thrGs);</span>
         }
         
-<span class="pc bpc" id="L467" title="1 of 2 branches missed.">        if (ptMode.equals(CMODE.WHITE)) {</span>
-<span class="nc" id="L468">            int[] ptA = MSER.readIntoArray(luvTheta);</span>
-<span class="nc" id="L469">            List&lt;Region&gt; list = mser.findRegionsNeg(ptA,</span>
-<span class="nc" id="L470">                luvTheta.getWidth(), luvTheta.getHeight(), thrPt);</span>
-<span class="nc" id="L471">            regionsT.add(new ArrayList&lt;Region&gt;());</span>
-<span class="nc" id="L472">            regionsT.add(list);</span>
-<span class="pc bpc" id="L473" title="1 of 2 branches missed.">        } else if (ptMode.equals(CMODE.BLACK)) {</span>
-<span class="nc" id="L474">            int[] ptA = MSER.readIntoArray(luvTheta);</span>
-<span class="nc" id="L475">            List&lt;Region&gt; list = mser.findRegionsPos(ptA,</span>
-<span class="nc" id="L476">                luvTheta.getWidth(), luvTheta.getHeight(), thrPt);</span>
-<span class="nc" id="L477">            regionsT.add(list);</span>
-<span class="nc" id="L478">            regionsT.add(new ArrayList&lt;Region&gt;());</span>
-<span class="nc" id="L479">        } else {</span>
-<span class="fc" id="L480">            regionsT = mser.findRegions(luvTheta, thrPt);</span>
+<span class="pc bpc" id="L465" title="1 of 2 branches missed.">        if (ptMode.equals(CMODE.WHITE)) {</span>
+<span class="nc" id="L466">            int[] ptA = MSER.readIntoArray(luvTheta);</span>
+<span class="nc" id="L467">            List&lt;Region&gt; list = mser.findRegionsNeg(ptA,</span>
+<span class="nc" id="L468">                luvTheta.getWidth(), luvTheta.getHeight(), thrPt);</span>
+<span class="nc" id="L469">            regionsT.add(new ArrayList&lt;Region&gt;());</span>
+<span class="nc" id="L470">            regionsT.add(list);</span>
+<span class="pc bpc" id="L471" title="1 of 2 branches missed.">        } else if (ptMode.equals(CMODE.BLACK)) {</span>
+<span class="nc" id="L472">            int[] ptA = MSER.readIntoArray(luvTheta);</span>
+<span class="nc" id="L473">            List&lt;Region&gt; list = mser.findRegionsPos(ptA,</span>
+<span class="nc" id="L474">                luvTheta.getWidth(), luvTheta.getHeight(), thrPt);</span>
+<span class="nc" id="L475">            regionsT.add(list);</span>
+<span class="nc" id="L476">            regionsT.add(new ArrayList&lt;Region&gt;());</span>
+<span class="nc" id="L477">        } else {</span>
+<span class="fc" id="L478">            regionsT = mser.findRegions(luvTheta, thrPt);</span>
         
-<span class="fc" id="L482">            int[] xyCen = new int[2];</span>
+<span class="fc" id="L480">            int[] xyCen = new int[2];</span>
             
             // filter to remove all w/ variation &gt; 0
-<span class="fc bfc" id="L485" title="All 2 branches covered.">            for (int type = 0; type &lt; 2; ++type) {</span>
-<span class="fc" id="L486">                List&lt;Region&gt; list = regionsT.get(type);</span>
-<span class="fc bfc" id="L487" title="All 2 branches covered.">                for (int i = (list.size() - 1); i &gt; -1; --i) {</span>
-<span class="fc" id="L488">                    Region r = list.get(i);</span>
-<span class="fc bfc" id="L489" title="All 4 branches covered.">                    if ((type == 1) &amp;&amp; r.getVariation() &gt; 0.001) {</span>
-<span class="fc" id="L490">                        list.remove(i);</span>
-<span class="fc bfc" id="L491" title="All 4 branches covered.">                    } else if ((type == 0) &amp;&amp; r.getVariation() == 0.0) {</span>
+<span class="fc bfc" id="L483" title="All 2 branches covered.">            for (int type = 0; type &lt; 2; ++type) {</span>
+<span class="fc" id="L484">                List&lt;Region&gt; list = regionsT.get(type);</span>
+<span class="fc bfc" id="L485" title="All 2 branches covered.">                for (int i = (list.size() - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L486">                    Region r = list.get(i);</span>
+<span class="fc bfc" id="L487" title="All 4 branches covered.">                    if ((type == 1) &amp;&amp; r.getVariation() &gt; 0.001) {</span>
+<span class="fc" id="L488">                        list.remove(i);</span>
+<span class="fc bfc" id="L489" title="All 4 branches covered.">                    } else if ((type == 0) &amp;&amp; r.getVariation() == 0.0) {</span>
                         //r.calculateXYCentroid(xyCen, gsImg.getWidth(), 
                         //    gsImg.getHeight());
                        // list.remove(i);
@@ -541,23 +539,23 @@ import java.util.Set;
         }
         */
  
-<span class="fc" id="L544">        List&lt;Region&gt; combined = new ArrayList&lt;Region&gt;();</span>
+<span class="fc" id="L542">        List&lt;Region&gt; combined = new ArrayList&lt;Region&gt;();</span>
         
-<span class="fc bfc" id="L546" title="All 2 branches covered.">        for (int i = 0; i &lt; 2; ++i) {</span>
-<span class="fc bfc" id="L547" title="All 2 branches covered.">            for (Region r : regions.get(i)) {</span>
-<span class="fc" id="L548">                combined.add(r);</span>
-<span class="fc" id="L549">            }</span>
+<span class="fc bfc" id="L544" title="All 2 branches covered.">        for (int i = 0; i &lt; 2; ++i) {</span>
+<span class="fc bfc" id="L545" title="All 2 branches covered.">            for (Region r : regions.get(i)) {</span>
+<span class="fc" id="L546">                combined.add(r);</span>
+<span class="fc" id="L547">            }</span>
         }
         
-<span class="fc bfc" id="L552" title="All 2 branches covered.">        for (int i = 0; i &lt; 2; ++i) {</span>
-<span class="fc bfc" id="L553" title="All 2 branches covered.">            for (Region r : regionsT.get(i)) {</span>
-<span class="fc" id="L554">                combined.add(r);</span>
-<span class="fc" id="L555">            }</span>
+<span class="fc bfc" id="L550" title="All 2 branches covered.">        for (int i = 0; i &lt; 2; ++i) {</span>
+<span class="fc bfc" id="L551" title="All 2 branches covered.">            for (Region r : regionsT.get(i)) {</span>
+<span class="fc" id="L552">                combined.add(r);</span>
+<span class="fc" id="L553">            }</span>
         }
 
-<span class="fc" id="L558">        filterCloseToBounds2(combined, gsImg.getWidth(), gsImg.getHeight(), 10);</span>
+<span class="fc" id="L556">        filterCloseToBounds2(combined, gsImg.getWidth(), gsImg.getHeight(), 10);</span>
 
-<span class="fc" id="L560">        return combined;</span>
+<span class="fc" id="L558">        return combined;</span>
     }
 
     private void filterByColorHistograms(ImageExt img0, Set&lt;PairInt&gt; shape0, 
@@ -565,116 +563,116 @@ import java.util.Set;
         
         //filter by color hist of hsv, cielab and by CIECH
 
-<span class="fc" id="L568">        ColorHistogram clrHist = new ColorHistogram();</span>
+<span class="fc" id="L566">        ColorHistogram clrHist = new ColorHistogram();</span>
 
-<span class="fc" id="L570">        float upperLimit = 0.27f;// 0.33f;</span>
+<span class="fc" id="L568">        float upperLimit = 0.27f;// 0.33f;</span>
         
         // make the template histograms from the first scale only
-<span class="fc" id="L573">        int[][] template_ch_HSV = clrHist.histogramHSV(img0, shape0);</span>
-<span class="fc" id="L574">        int[][] template_ch_LAB = clrHist.histogramCIELAB(img0, shape0);</span>
-<span class="fc" id="L575">        int[] tHist = clrHist.histogramCIECH64(img0, shape0);</span>
+<span class="fc" id="L571">        int[][] template_ch_HSV = clrHist.histogramHSV(img0, shape0);</span>
+<span class="fc" id="L572">        int[][] template_ch_LAB = clrHist.histogramCIELAB(img0, shape0);</span>
+<span class="fc" id="L573">        int[] tHist = clrHist.histogramCIECH64(img0, shape0);</span>
         
-<span class="fc" id="L577">        TIntObjectIterator&lt;RegionPoints&gt; iter = regions1.iterator();</span>
+<span class="fc" id="L575">        TIntObjectIterator&lt;RegionPoints&gt; iter = regions1.iterator();</span>
         
-<span class="fc" id="L579">        TIntSet rmSet = new TIntHashSet();</span>
+<span class="fc" id="L577">        TIntSet rmSet = new TIntHashSet();</span>
         
-<span class="fc bfc" id="L581" title="All 2 branches covered.">        for (int i = 0; i &lt; regions1.size(); ++i) {</span>
-<span class="fc" id="L582">            iter.advance();</span>
+<span class="fc bfc" id="L579" title="All 2 branches covered.">        for (int i = 0; i &lt; regions1.size(); ++i) {</span>
+<span class="fc" id="L580">            iter.advance();</span>
             
-<span class="fc" id="L584">            int rIdx = iter.key();</span>
-<span class="fc" id="L585">            RegionPoints r = iter.value();</span>
+<span class="fc" id="L582">            int rIdx = iter.key();</span>
+<span class="fc" id="L583">            RegionPoints r = iter.value();</span>
             
-<span class="fc" id="L587">            int[][] ch = clrHist.histogramHSV(img1, r.accX, r.accY);</span>
-<span class="fc" id="L588">            float intersection = clrHist.intersection(template_ch_HSV, ch);</span>
-<span class="fc bfc" id="L589" title="All 2 branches covered.">            if (intersection &lt; upperLimit) {</span>
-<span class="fc" id="L590">                rmSet.add(rIdx);</span>
+<span class="fc" id="L585">            int[][] ch = clrHist.histogramHSV(img1, r.accX, r.accY);</span>
+<span class="fc" id="L586">            float intersection = clrHist.intersection(template_ch_HSV, ch);</span>
+<span class="fc bfc" id="L587" title="All 2 branches covered.">            if (intersection &lt; upperLimit) {</span>
+<span class="fc" id="L588">                rmSet.add(rIdx);</span>
             } else {
-<span class="fc" id="L592">                ch = clrHist.histogramCIELAB(img1, r.accX, r.accY);</span>
-<span class="fc" id="L593">                intersection = clrHist.intersection(template_ch_LAB, ch);</span>
-<span class="fc bfc" id="L594" title="All 2 branches covered.">                if (intersection &lt; upperLimit) {</span>
-<span class="fc" id="L595">                    rmSet.add(rIdx);</span>
+<span class="fc" id="L590">                ch = clrHist.histogramCIELAB(img1, r.accX, r.accY);</span>
+<span class="fc" id="L591">                intersection = clrHist.intersection(template_ch_LAB, ch);</span>
+<span class="fc bfc" id="L592" title="All 2 branches covered.">                if (intersection &lt; upperLimit) {</span>
+<span class="fc" id="L593">                    rmSet.add(rIdx);</span>
                 } else {
-<span class="fc" id="L597">                    int[] tHist1 = clrHist.histogramCIECH64(img1, r.accX, r.accY);</span>
-<span class="fc" id="L598">                    intersection = clrHist.intersection(tHist, tHist1);</span>
-<span class="fc bfc" id="L599" title="All 2 branches covered.">                    if (intersection &lt; upperLimit) {</span>
-<span class="fc" id="L600">                        rmSet.add(rIdx);</span>
+<span class="fc" id="L595">                    int[] tHist1 = clrHist.histogramCIECH64(img1, r.accX, r.accY);</span>
+<span class="fc" id="L596">                    intersection = clrHist.intersection(tHist, tHist1);</span>
+<span class="fc bfc" id="L597" title="All 2 branches covered.">                    if (intersection &lt; upperLimit) {</span>
+<span class="fc" id="L598">                        rmSet.add(rIdx);</span>
                     }
                 }
             }
         }
         
-<span class="fc" id="L606">        TIntIterator iter2 = rmSet.iterator();</span>
-<span class="fc bfc" id="L607" title="All 2 branches covered.">        while (iter2.hasNext()) {</span>
-<span class="fc" id="L608">            int rmIdx = iter2.next();</span>
-<span class="fc" id="L609">            regions1.remove(rmIdx);</span>
-<span class="fc" id="L610">        }</span>
+<span class="fc" id="L604">        TIntIterator iter2 = rmSet.iterator();</span>
+<span class="fc bfc" id="L605" title="All 2 branches covered.">        while (iter2.hasNext()) {</span>
+<span class="fc" id="L606">            int rmIdx = iter2.next();</span>
+<span class="fc" id="L607">            regions1.remove(rmIdx);</span>
+<span class="fc" id="L608">        }</span>
         
-<span class="fc" id="L612">        System.out.println(&quot;chist filter removed &quot; + rmSet.size());</span>
-<span class="fc" id="L613">    }</span>
+<span class="fc" id="L610">        System.out.println(&quot;chist filter removed &quot; + rmSet.size());</span>
+<span class="fc" id="L611">    }</span>
 
     static void replaceWithAccumulatedPoints(TIntObjectMap&lt;RegionPoints&gt; regionPoints) {
     
-<span class="fc" id="L617">        PerimeterFinder2 finder = new PerimeterFinder2();</span>
+<span class="fc" id="L615">        PerimeterFinder2 finder = new PerimeterFinder2();</span>
         
-<span class="fc" id="L619">        TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints.iterator();</span>
-<span class="fc bfc" id="L620" title="All 2 branches covered.">        for (int i = 0; i &lt; regionPoints.size(); ++i) {</span>
+<span class="fc" id="L617">        TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints.iterator();</span>
+<span class="fc bfc" id="L618" title="All 2 branches covered.">        for (int i = 0; i &lt; regionPoints.size(); ++i) {</span>
             
-<span class="fc" id="L622">            iter.advance();</span>
-<span class="fc" id="L623">            int rIdx = iter.key();</span>
+<span class="fc" id="L620">            iter.advance();</span>
+<span class="fc" id="L621">            int rIdx = iter.key();</span>
             
-<span class="fc" id="L625">            RegionPoints rp = iter.value();</span>
+<span class="fc" id="L623">            RegionPoints rp = iter.value();</span>
             
             //NOTE this may need to be revised.
             //  wanting to trim down the points outside of the ellipse if
             //  they are too far away, such as a line of pixels blended into
             //  what is otherwise a more compact object.
             
-<span class="fc" id="L632">            TIntList xPointsE = new TIntArrayList();</span>
-<span class="fc" id="L633">            TIntList yPointsE = new TIntArrayList();</span>
+<span class="fc" id="L630">            TIntList xPointsE = new TIntArrayList();</span>
+<span class="fc" id="L631">            TIntList yPointsE = new TIntArrayList();</span>
             
-<span class="fc" id="L635">            Set&lt;PairInt&gt; ellipse = new HashSet&lt;PairInt&gt;(rp.accX.size());</span>
-<span class="fc bfc" id="L636" title="All 2 branches covered.">            for (int ii = 0; ii &lt; rp.accX.size(); ++ii) {</span>
-<span class="fc" id="L637">                ellipse.add(new PairInt(rp.accX.get(ii), rp.accY.get(ii)));</span>
+<span class="fc" id="L633">            Set&lt;PairInt&gt; ellipse = new HashSet&lt;PairInt&gt;(rp.accX.size());</span>
+<span class="fc bfc" id="L634" title="All 2 branches covered.">            for (int ii = 0; ii &lt; rp.accX.size(); ++ii) {</span>
+<span class="fc" id="L635">                ellipse.add(new PairInt(rp.accX.get(ii), rp.accY.get(ii)));</span>
             }
                         
-<span class="fc bfc" id="L640" title="All 2 branches covered.">            for (int j = 0; j &lt; rp.accX.size(); ++j) {</span>
-<span class="fc" id="L641">                int x = rp.accX.get(j);</span>
-<span class="fc" id="L642">                int y = rp.accY.get(j);</span>
-<span class="fc" id="L643">                PairInt p2 = new PairInt(x, y);</span>
-<span class="pc bpc" id="L644" title="1 of 2 branches missed.">                if (!ellipse.contains(p2)) {</span>
+<span class="fc bfc" id="L638" title="All 2 branches covered.">            for (int j = 0; j &lt; rp.accX.size(); ++j) {</span>
+<span class="fc" id="L639">                int x = rp.accX.get(j);</span>
+<span class="fc" id="L640">                int y = rp.accY.get(j);</span>
+<span class="fc" id="L641">                PairInt p2 = new PairInt(x, y);</span>
+<span class="pc bpc" id="L642" title="1 of 2 branches missed.">                if (!ellipse.contains(p2)) {</span>
                     // if far away from center, past major axis, do not add
-<span class="nc" id="L646">                    int diffX = x - rp.ellipseParams.xC;</span>
-<span class="nc" id="L647">                    int diffY = y - rp.ellipseParams.yC;</span>
-<span class="nc" id="L648">                    double d = Math.sqrt(diffX * diffX + diffY * diffY);</span>
-<span class="nc bnc" id="L649" title="All 2 branches missed.">                    if (d &gt; 1.2 * rp.ellipseParams.major) {</span>
-<span class="nc" id="L650">                        continue;</span>
+<span class="nc" id="L644">                    int diffX = x - rp.ellipseParams.xC;</span>
+<span class="nc" id="L645">                    int diffY = y - rp.ellipseParams.yC;</span>
+<span class="nc" id="L646">                    double d = Math.sqrt(diffX * diffX + diffY * diffY);</span>
+<span class="nc bnc" id="L647" title="All 2 branches missed.">                    if (d &gt; 1.2 * rp.ellipseParams.major) {</span>
+<span class="nc" id="L648">                        continue;</span>
                     }
                 }
-<span class="fc" id="L653">                xPointsE.add(x);</span>
-<span class="fc" id="L654">                yPointsE.add(y);</span>
+<span class="fc" id="L651">                xPointsE.add(x);</span>
+<span class="fc" id="L652">                yPointsE.add(y);</span>
             }
             
             // fill in embedded spaces.
             // NOTE: this may need to be reconsidered in special cases.
-<span class="fc" id="L659">            Set&lt;PairInt&gt; embedded = finder.findEmbeddedGaps(rp.accX, rp.accY);</span>
-<span class="pc bpc" id="L660" title="1 of 2 branches missed.">            if (embedded != null) {</span>
-<span class="pc bpc" id="L661" title="1 of 2 branches missed.">                for (PairInt pE : embedded) {</span>
-<span class="nc" id="L662">                    xPointsE.add(pE.getX());</span>
-<span class="nc" id="L663">                    yPointsE.add(pE.getY());</span>
-<span class="nc" id="L664">                }</span>
+<span class="fc" id="L657">            Set&lt;PairInt&gt; embedded = finder.findEmbeddedGaps(rp.accX, rp.accY);</span>
+<span class="pc bpc" id="L658" title="1 of 2 branches missed.">            if (embedded != null) {</span>
+<span class="pc bpc" id="L659" title="1 of 2 branches missed.">                for (PairInt pE : embedded) {</span>
+<span class="nc" id="L660">                    xPointsE.add(pE.getX());</span>
+<span class="nc" id="L661">                    yPointsE.add(pE.getY());</span>
+<span class="nc" id="L662">                }</span>
             }
-<span class="fc" id="L666">            rp.accX.clear();</span>
-<span class="fc" id="L667">            rp.accY.clear();</span>
-<span class="fc" id="L668">            rp.accX.addAll(xPointsE);</span>
-<span class="fc" id="L669">            rp.accY.addAll(yPointsE);</span>
+<span class="fc" id="L664">            rp.accX.clear();</span>
+<span class="fc" id="L665">            rp.accY.clear();</span>
+<span class="fc" id="L666">            rp.accX.addAll(xPointsE);</span>
+<span class="fc" id="L667">            rp.accY.addAll(yPointsE);</span>
         }
-<span class="fc" id="L671">    }</span>
+<span class="fc" id="L669">    }</span>
 
     private void filterToLargestPartitions(TIntObjectMap&lt;RegionPoints&gt; 
         regionPoints, ImageExt img, Set&lt;PairInt&gt; shape) {
         
-<span class="fc bfc" id="L676" title="All 2 branches covered.">        if (regionPoints.size() &lt; 4) {</span>
-<span class="fc" id="L677">            return;</span>
+<span class="fc bfc" id="L674" title="All 2 branches covered.">        if (regionPoints.size() &lt; 4) {</span>
+<span class="fc" id="L675">            return;</span>
         }
         
         // keep the largest region, which is usually the entire shape
@@ -683,71 +681,71 @@ import java.util.Set;
         // some original regions are present in multiplocity due to having 
         // diferent orientation angles, so need to extract only the unique
         // centers
-<span class="fc" id="L686">        Map&lt;PairInt, TIntList&gt; centerRIdxMap = new HashMap&lt;PairInt, TIntList&gt;();</span>
+<span class="fc" id="L684">        Map&lt;PairInt, TIntList&gt; centerRIdxMap = new HashMap&lt;PairInt, TIntList&gt;();</span>
         
-<span class="fc" id="L688">        int maxV = Integer.MIN_VALUE;</span>
-<span class="fc" id="L689">        PairInt maxVXY = null;</span>
-<span class="fc" id="L690">        TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints.iterator();</span>
-<span class="fc bfc" id="L691" title="All 2 branches covered.">        for (int i = 0; i &lt; regionPoints.size(); ++i) {</span>
-<span class="fc" id="L692">            iter.advance();</span>
-<span class="fc" id="L693">            RegionPoints r = iter.value();</span>
-<span class="fc" id="L694">            int rIdx = iter.key();</span>
-<span class="fc" id="L695">            PairInt xy = new PairInt(r.ellipseParams.xC, r.ellipseParams.yC);</span>
-<span class="fc" id="L696">            TIntList rList = centerRIdxMap.get(xy);</span>
-<span class="pc bpc" id="L697" title="1 of 2 branches missed.">            if (rList == null) {</span>
-<span class="fc" id="L698">                rList = new TIntArrayList();</span>
-<span class="fc" id="L699">                centerRIdxMap.put(xy, rList);</span>
+<span class="fc" id="L686">        int maxV = Integer.MIN_VALUE;</span>
+<span class="fc" id="L687">        PairInt maxVXY = null;</span>
+<span class="fc" id="L688">        TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints.iterator();</span>
+<span class="fc bfc" id="L689" title="All 2 branches covered.">        for (int i = 0; i &lt; regionPoints.size(); ++i) {</span>
+<span class="fc" id="L690">            iter.advance();</span>
+<span class="fc" id="L691">            RegionPoints r = iter.value();</span>
+<span class="fc" id="L692">            int rIdx = iter.key();</span>
+<span class="fc" id="L693">            PairInt xy = new PairInt(r.ellipseParams.xC, r.ellipseParams.yC);</span>
+<span class="fc" id="L694">            TIntList rList = centerRIdxMap.get(xy);</span>
+<span class="pc bpc" id="L695" title="1 of 2 branches missed.">            if (rList == null) {</span>
+<span class="fc" id="L696">                rList = new TIntArrayList();</span>
+<span class="fc" id="L697">                centerRIdxMap.put(xy, rList);</span>
             }
-<span class="fc" id="L701">            rList.add(rIdx);</span>
-<span class="fc" id="L702">            int n = r.accX.size();</span>
-<span class="pc bpc" id="L703" title="1 of 2 branches missed.">            if (n &gt; maxV) {</span>
-<span class="fc" id="L704">                maxV = n;</span>
-<span class="fc" id="L705">                maxVXY = xy;</span>
+<span class="fc" id="L699">            rList.add(rIdx);</span>
+<span class="fc" id="L700">            int n = r.accX.size();</span>
+<span class="pc bpc" id="L701" title="1 of 2 branches missed.">            if (n &gt; maxV) {</span>
+<span class="fc" id="L702">                maxV = n;</span>
+<span class="fc" id="L703">                maxVXY = xy;</span>
             }
         }
         
-<span class="fc" id="L709">        TIntList keep = new TIntArrayList();</span>
-<span class="fc" id="L710">        keep.add(centerRIdxMap.get(maxVXY).iterator().next());</span>
+<span class="fc" id="L707">        TIntList keep = new TIntArrayList();</span>
+<span class="fc" id="L708">        keep.add(centerRIdxMap.get(maxVXY).iterator().next());</span>
        
         // skipping the max value, single partition
-<span class="fc" id="L713">        int[] ns = new int[centerRIdxMap.size() - 1];</span>
-<span class="fc" id="L714">        int[] rIdxs = new int[ns.length];</span>
-<span class="fc" id="L715">        int count = 0;</span>
+<span class="fc" id="L711">        int[] ns = new int[centerRIdxMap.size() - 1];</span>
+<span class="fc" id="L712">        int[] rIdxs = new int[ns.length];</span>
+<span class="fc" id="L713">        int count = 0;</span>
         
-<span class="fc" id="L717">        Set&lt;PairInt&gt; added = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L715">        Set&lt;PairInt&gt; added = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc" id="L719">        iter = regionPoints.iterator();</span>
-<span class="fc bfc" id="L720" title="All 2 branches covered.">        for (int i = 0; i &lt; regionPoints.size(); ++i) {</span>
-<span class="fc" id="L721">            iter.advance();</span>
-<span class="fc" id="L722">            RegionPoints r = iter.value();</span>
-<span class="fc" id="L723">            int rIdx = iter.key();</span>
-<span class="fc" id="L724">            PairInt xy = new PairInt(r.ellipseParams.xC, r.ellipseParams.yC);</span>
-<span class="pc bpc" id="L725" title="1 of 4 branches missed.">            if (xy.equals(maxVXY) || added.contains(xy)) {</span>
-<span class="nc" id="L726">                continue;</span>
+<span class="fc" id="L717">        iter = regionPoints.iterator();</span>
+<span class="fc bfc" id="L718" title="All 2 branches covered.">        for (int i = 0; i &lt; regionPoints.size(); ++i) {</span>
+<span class="fc" id="L719">            iter.advance();</span>
+<span class="fc" id="L720">            RegionPoints r = iter.value();</span>
+<span class="fc" id="L721">            int rIdx = iter.key();</span>
+<span class="fc" id="L722">            PairInt xy = new PairInt(r.ellipseParams.xC, r.ellipseParams.yC);</span>
+<span class="pc bpc" id="L723" title="1 of 4 branches missed.">            if (xy.equals(maxVXY) || added.contains(xy)) {</span>
+<span class="nc" id="L724">                continue;</span>
             }
-<span class="fc" id="L728">            added.add(xy);</span>
+<span class="fc" id="L726">            added.add(xy);</span>
             
-<span class="fc" id="L730">            ns[count] = r.accX.size();</span>
-<span class="fc" id="L731">            rIdxs[count] = rIdx;</span>
-<span class="fc" id="L732">            count++;</span>
+<span class="fc" id="L728">            ns[count] = r.accX.size();</span>
+<span class="fc" id="L729">            rIdxs[count] = rIdx;</span>
+<span class="fc" id="L730">            count++;</span>
         }
-<span class="pc bnc" id="L734" title="All 2 branches missed.">        assert(ns.length == count);</span>
+<span class="pc bnc" id="L732" title="All 2 branches missed.">        assert(ns.length == count);</span>
         
-<span class="fc" id="L736">        QuickSort.sortBy1stArg(ns, rIdxs);</span>
+<span class="fc" id="L734">        QuickSort.sortBy1stArg(ns, rIdxs);</span>
          
-<span class="fc" id="L738">        int sum = 0;</span>
-<span class="fc bfc" id="L739" title="All 2 branches covered.">        for (int i = 0; i &lt; ns.length; ++i) {</span>
-<span class="fc" id="L740">            sum += ns[i];</span>
+<span class="fc" id="L736">        int sum = 0;</span>
+<span class="fc bfc" id="L737" title="All 2 branches covered.">        for (int i = 0; i &lt; ns.length; ++i) {</span>
+<span class="fc" id="L738">            sum += ns[i];</span>
         }
-<span class="fc" id="L742">        int half = sum/2;</span>
+<span class="fc" id="L740">        int half = sum/2;</span>
         
-<span class="fc" id="L744">        int mIdx = Arrays.binarySearch(ns, half);</span>
-<span class="pc bpc" id="L745" title="1 of 2 branches missed.">        if (mIdx &lt; 0) {</span>
+<span class="fc" id="L742">        int mIdx = Arrays.binarySearch(ns, half);</span>
+<span class="pc bpc" id="L743" title="1 of 2 branches missed.">        if (mIdx &lt; 0) {</span>
             //(-(insertion point) - 1)
-<span class="fc" id="L747">            mIdx = -mIdx - 2;</span>
+<span class="fc" id="L745">            mIdx = -mIdx - 2;</span>
         }
-<span class="pc bpc" id="L749" title="1 of 2 branches missed.">        if (mIdx == (ns.length - 1)) {</span>
-<span class="fc" id="L750">            mIdx--;</span>
+<span class="pc bpc" id="L747" title="1 of 2 branches missed.">        if (mIdx == (ns.length - 1)) {</span>
+<span class="fc" id="L748">            mIdx--;</span>
         }
         
         // the sum is actually the sum of non-intersecting points to the
@@ -755,96 +753,96 @@ import java.util.Set;
         //   place to make a partition to choose one from either side
         //   which total to max sum.
         
-<span class="fc" id="L758">        PixelHelper ph = new PixelHelper();</span>
-<span class="fc" id="L759">        int imgW = img.getWidth();</span>
+<span class="fc" id="L756">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L757">        int imgW = img.getWidth();</span>
         
-<span class="fc" id="L761">        int maxSum = Integer.MIN_VALUE;</span>
-<span class="fc" id="L762">        int maxIdxA = -1;</span>
-<span class="fc" id="L763">        int maxIdxB = -1;</span>
-<span class="fc bfc" id="L764" title="All 2 branches covered.">        for (int i = 0; i &lt;= mIdx; ++i) {</span>
-<span class="fc" id="L765">            int rIdxA = rIdxs[i];</span>
-<span class="fc" id="L766">            TLongSet setA = regionPoints.get(rIdxA).createAccPixelCoords(imgW);</span>
-<span class="fc bfc" id="L767" title="All 2 branches covered.">            for (int j = (mIdx + 1); j &lt; ns.length; ++j) {</span>
-<span class="fc" id="L768">                int rIdxB = rIdxs[j];</span>
-<span class="fc" id="L769">                TLongSet setB = regionPoints.get(rIdxB).createAccPixelCoords(imgW);</span>
-<span class="fc" id="L770">                TLongSet aMinusB = new TLongHashSet(setA);</span>
-<span class="fc" id="L771">                aMinusB.removeAll(setB);</span>
+<span class="fc" id="L759">        int maxSum = Integer.MIN_VALUE;</span>
+<span class="fc" id="L760">        int maxIdxA = -1;</span>
+<span class="fc" id="L761">        int maxIdxB = -1;</span>
+<span class="fc bfc" id="L762" title="All 2 branches covered.">        for (int i = 0; i &lt;= mIdx; ++i) {</span>
+<span class="fc" id="L763">            int rIdxA = rIdxs[i];</span>
+<span class="fc" id="L764">            TLongSet setA = regionPoints.get(rIdxA).createAccPixelCoords(imgW);</span>
+<span class="fc bfc" id="L765" title="All 2 branches covered.">            for (int j = (mIdx + 1); j &lt; ns.length; ++j) {</span>
+<span class="fc" id="L766">                int rIdxB = rIdxs[j];</span>
+<span class="fc" id="L767">                TLongSet setB = regionPoints.get(rIdxB).createAccPixelCoords(imgW);</span>
+<span class="fc" id="L768">                TLongSet aMinusB = new TLongHashSet(setA);</span>
+<span class="fc" id="L769">                aMinusB.removeAll(setB);</span>
                 
-<span class="fc" id="L773">                TLongSet bMinusA = new TLongHashSet(setB);</span>
-<span class="fc" id="L774">                bMinusA.removeAll(setA);</span>
+<span class="fc" id="L771">                TLongSet bMinusA = new TLongHashSet(setB);</span>
+<span class="fc" id="L772">                bMinusA.removeAll(setA);</span>
                 
-<span class="fc" id="L776">                int sum2 = aMinusB.size() + bMinusA.size();</span>
+<span class="fc" id="L774">                int sum2 = aMinusB.size() + bMinusA.size();</span>
                 
-<span class="pc bpc" id="L778" title="1 of 2 branches missed.">                if (sum2 &gt; maxSum) {</span>
-<span class="fc" id="L779">                    maxSum = sum2;</span>
-<span class="fc" id="L780">                    maxIdxA = rIdxA;</span>
-<span class="fc" id="L781">                    maxIdxB = rIdxB;</span>
+<span class="pc bpc" id="L776" title="1 of 2 branches missed.">                if (sum2 &gt; maxSum) {</span>
+<span class="fc" id="L777">                    maxSum = sum2;</span>
+<span class="fc" id="L778">                    maxIdxA = rIdxA;</span>
+<span class="fc" id="L779">                    maxIdxB = rIdxB;</span>
                 }
             }
         }
-<span class="pc bnc" id="L785" title="All 2 branches missed.">        assert(maxIdxA &gt; -1);</span>
-<span class="pc bnc" id="L786" title="All 2 branches missed.">        assert(maxIdxB &gt; -1);</span>
-<span class="fc" id="L787">        keep.add(maxIdxA);</span>
-<span class="fc" id="L788">        keep.add(maxIdxB);</span>
+<span class="pc bnc" id="L783" title="All 2 branches missed.">        assert(maxIdxA &gt; -1);</span>
+<span class="pc bnc" id="L784" title="All 2 branches missed.">        assert(maxIdxB &gt; -1);</span>
+<span class="fc" id="L785">        keep.add(maxIdxA);</span>
+<span class="fc" id="L786">        keep.add(maxIdxB);</span>
         
-<span class="fc" id="L790">        TIntObjectMap&lt;RegionPoints&gt; regionPoints2 </span>
+<span class="fc" id="L788">        TIntObjectMap&lt;RegionPoints&gt; regionPoints2 </span>
             = new TIntObjectHashMap&lt;RegionPoints&gt;();
-<span class="fc bfc" id="L792" title="All 2 branches covered.">        for (int i = 0; i &lt; keep.size(); ++i) {</span>
-<span class="fc" id="L793">            int idx = keep.get(i);</span>
-<span class="fc" id="L794">            RegionPoints r = regionPoints.get(idx);</span>
-<span class="fc" id="L795">            PairInt xy = new PairInt(r.ellipseParams.xC, r.ellipseParams.yC);</span>
-<span class="fc" id="L796">            TIntList idxs = centerRIdxMap.get(xy);</span>
-<span class="fc bfc" id="L797" title="All 2 branches covered.">            for (int j = 0; j &lt; idxs.size(); ++j) {</span>
-<span class="fc" id="L798">                int idx2 = idxs.get(j);</span>
-<span class="fc" id="L799">                regionPoints2.put(idx2, regionPoints.get(idx2));</span>
+<span class="fc bfc" id="L790" title="All 2 branches covered.">        for (int i = 0; i &lt; keep.size(); ++i) {</span>
+<span class="fc" id="L791">            int idx = keep.get(i);</span>
+<span class="fc" id="L792">            RegionPoints r = regionPoints.get(idx);</span>
+<span class="fc" id="L793">            PairInt xy = new PairInt(r.ellipseParams.xC, r.ellipseParams.yC);</span>
+<span class="fc" id="L794">            TIntList idxs = centerRIdxMap.get(xy);</span>
+<span class="fc bfc" id="L795" title="All 2 branches covered.">            for (int j = 0; j &lt; idxs.size(); ++j) {</span>
+<span class="fc" id="L796">                int idx2 = idxs.get(j);</span>
+<span class="fc" id="L797">                regionPoints2.put(idx2, regionPoints.get(idx2));</span>
             }
         }
-<span class="fc" id="L802">        regionPoints.clear();</span>
-<span class="fc" id="L803">        regionPoints.putAll(regionPoints2);</span>
-<span class="fc" id="L804">    }</span>
+<span class="fc" id="L800">        regionPoints.clear();</span>
+<span class="fc" id="L801">        regionPoints.putAll(regionPoints2);</span>
+<span class="fc" id="L802">    }</span>
 
     private TLongSet createAccumulatedPixels(TIntObjectMap&lt;RegionPoints&gt; 
         regionPoints, int width) {
         
-<span class="fc" id="L809">        TLongSet out = new TLongHashSet();</span>
-<span class="fc" id="L810">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L807">        TLongSet out = new TLongHashSet();</span>
+<span class="fc" id="L808">        PixelHelper ph = new PixelHelper();</span>
         
-<span class="fc" id="L812">        TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints.iterator();</span>
-<span class="fc bfc" id="L813" title="All 2 branches covered.">        for (int i = 0; i &lt; regionPoints.size(); ++i) {</span>
-<span class="fc" id="L814">            iter.advance();</span>
-<span class="fc" id="L815">            RegionPoints r = iter.value();</span>
-<span class="fc bfc" id="L816" title="All 2 branches covered.">            for (int j = 0; j &lt; r.accX.size(); ++j) {</span>
-<span class="fc" id="L817">                long pixIdx = ph.toPixelIndex(r.accX.get(j), r.accY.get(j), width);</span>
-<span class="fc" id="L818">                out.add(pixIdx);</span>
+<span class="fc" id="L810">        TIntObjectIterator&lt;RegionPoints&gt; iter = regionPoints.iterator();</span>
+<span class="fc bfc" id="L811" title="All 2 branches covered.">        for (int i = 0; i &lt; regionPoints.size(); ++i) {</span>
+<span class="fc" id="L812">            iter.advance();</span>
+<span class="fc" id="L813">            RegionPoints r = iter.value();</span>
+<span class="fc bfc" id="L814" title="All 2 branches covered.">            for (int j = 0; j &lt; r.accX.size(); ++j) {</span>
+<span class="fc" id="L815">                long pixIdx = ph.toPixelIndex(r.accX.get(j), r.accY.get(j), width);</span>
+<span class="fc" id="L816">                out.add(pixIdx);</span>
             }
         }
         
-<span class="fc" id="L822">        return out;</span>
+<span class="fc" id="L820">        return out;</span>
     }
 
     private void maskOutNonRegion(ImageExt img, TLongSet pixs) {
-<span class="fc" id="L826">        PixelHelper ph = new PixelHelper();</span>
-<span class="fc" id="L827">        int w = img.getWidth();</span>
-<span class="fc bfc" id="L828" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
-<span class="fc bfc" id="L829" title="All 2 branches covered.">            for (int y = 0; y &lt; img.getHeight(); ++y) {</span>
-<span class="fc bfc" id="L830" title="All 2 branches covered.">                if (!pixs.contains(ph.toPixelIndex(x, y, w))) {</span>
-<span class="fc" id="L831">                    img.setRGB(x, y, 0, 0, 0);</span>
+<span class="fc" id="L824">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L825">        int w = img.getWidth();</span>
+<span class="fc bfc" id="L826" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="fc bfc" id="L827" title="All 2 branches covered.">            for (int y = 0; y &lt; img.getHeight(); ++y) {</span>
+<span class="fc bfc" id="L828" title="All 2 branches covered.">                if (!pixs.contains(ph.toPixelIndex(x, y, w))) {</span>
+<span class="fc" id="L829">                    img.setRGB(x, y, 0, 0, 0);</span>
                 }
             }
         }
-<span class="fc" id="L835">    }</span>
+<span class="fc" id="L833">    }</span>
 
     private void maskOutNonRegion(GreyscaleImage img, TLongSet pixs) {
-<span class="fc" id="L838">        PixelHelper ph = new PixelHelper();</span>
-<span class="fc" id="L839">        int w = img.getWidth();</span>
-<span class="fc bfc" id="L840" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
-<span class="fc bfc" id="L841" title="All 2 branches covered.">            for (int y = 0; y &lt; img.getHeight(); ++y) {</span>
-<span class="fc bfc" id="L842" title="All 2 branches covered.">                if (!pixs.contains(ph.toPixelIndex(x, y, w))) {</span>
-<span class="fc" id="L843">                    img.setValue(x, y, 0);</span>
+<span class="fc" id="L836">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L837">        int w = img.getWidth();</span>
+<span class="fc bfc" id="L838" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="fc bfc" id="L839" title="All 2 branches covered.">            for (int y = 0; y &lt; img.getHeight(); ++y) {</span>
+<span class="fc bfc" id="L840" title="All 2 branches covered.">                if (!pixs.contains(ph.toPixelIndex(x, y, w))) {</span>
+<span class="fc" id="L841">                    img.setValue(x, y, 0);</span>
                 }
             }
         }
-<span class="fc" id="L847">    }</span>
+<span class="fc" id="L845">    }</span>
 
     public static class Settings {
         private boolean useLargerPyramid0 = false;

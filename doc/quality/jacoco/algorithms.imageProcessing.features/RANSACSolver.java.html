@@ -324,9 +324,9 @@ an important part of the algorithm to keep the runtime tractable.
 <span class="fc" id="L324">        int t = (int)Math.ceil((1. - (outlierPercent/100.))*nPoints);</span>
         
         long nMaxIter;
-<span class="fc bfc" id="L327" title="All 2 branches covered.">        if (nPoints == nSet) {</span>
-<span class="fc" id="L328">            nMaxIter = 1;</span>
-<span class="fc" id="L329">            useAllSubsets = true;</span>
+<span class="pc bpc" id="L327" title="1 of 2 branches missed.">        if (nPoints == nSet) {</span>
+<span class="nc" id="L328">            nMaxIter = 1;</span>
+<span class="nc" id="L329">            useAllSubsets = true;</span>
         } else {
             /* The number of subsamples required to ensure T &gt;= 0.95 
             for given outlierPercent as fraction of contaminated data, 
@@ -343,9 +343,9 @@ an important part of the algorithm to keep the runtime tractable.
 
         // max iter for nSet=7 is 382 for 50%.  11!/(7!*(11-7)!)=330
         // max iter for nSet=8 is 766 for 50%.  12!/(8!*(12-8)!)=495
-<span class="fc bfc" id="L346" title="All 2 branches covered.">        if ((nSet==7 &amp;&amp; nPoints &lt; 12) || (nSet == 8 &amp;&amp; nPoints &lt; 13)) {</span>
-<span class="fc" id="L347">            nMaxIter = Math.min(nMaxIter, MiscMath0.computeNDivKTimesNMinusK(nPoints, nSet));</span>
-<span class="fc" id="L348">            useAllSubsets = true;</span>
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">        if ((nSet==7 &amp;&amp; nPoints &lt; 12) || (nSet == 8 &amp;&amp; nPoints &lt; 13)) {</span>
+<span class="nc" id="L347">            nMaxIter = Math.min(nMaxIter, MiscMath0.computeNDivKTimesNMinusK(nPoints, nSet));</span>
+<span class="nc" id="L348">            useAllSubsets = true;</span>
         }
         
 <span class="fc" id="L351">        int nIter = 0;</span>
@@ -375,19 +375,19 @@ an important part of the algorithm to keep the runtime tractable.
 <span class="fc" id="L375">        int[] selectedIndexes = new int[nSet];</span>
 
 <span class="fc" id="L377">        SubsetChooser chooser = null;</span>
-<span class="fc bfc" id="L378" title="All 2 branches covered.">        if (useAllSubsets) {</span>
-<span class="fc" id="L379">            chooser = new SubsetChooser(nPoints, nSet);</span>
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">        if (useAllSubsets) {</span>
+<span class="nc" id="L379">            chooser = new SubsetChooser(nPoints, nSet);</span>
         }
 
 <span class="fc" id="L382">        Distances distances = new Distances();</span>
         
 <span class="fc bfc" id="L384" title="All 2 branches covered.">        while (nIter &lt; nMaxIter) {</span>
-<span class="fc bfc" id="L385" title="All 2 branches covered.">            if (useAllSubsets) {</span>
-<span class="fc" id="L386">                int chk = chooser.getNextSubset(selectedIndexes);</span>
-<span class="pc bpc" id="L387" title="1 of 2 branches missed.">                if (chk == -1) {</span>
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">            if (useAllSubsets) {</span>
+<span class="nc" id="L386">                int chk = chooser.getNextSubset(selectedIndexes);</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">                if (chk == -1) {</span>
 <span class="nc" id="L388">                    throw new IllegalStateException(&quot;have overrun subsets in chooser.&quot;);</span>
                 }                
-<span class="fc" id="L390">            } else {</span>
+<span class="nc" id="L390">            } else {</span>
 <span class="fc" id="L391">                MiscMath.chooseRandomly(rand, selectedIndexes, nPoints);</span>
             }
             
@@ -405,13 +405,13 @@ an important part of the algorithm to keep the runtime tractable.
 <span class="fc" id="L405">                sampleRight.set(1, count, rightCorres.get(1, bitIndex));</span>
 <span class="fc" id="L406">                count++;</span>
             }
-
-<span class="fc bfc" id="L409" title="All 2 branches covered.">            if (MiscMath0.areColinear(MatrixUtil.convertToRowMajor(sampleLeft), eps)</span>
-<span class="fc bfc" id="L410" title="All 2 branches covered.">                    || MiscMath0.areColinear(MatrixUtil.convertToRowMajor(sampleRight), eps)) {</span>
-<span class="fc" id="L411">                ++nIter;</span>
-<span class="fc" id="L412">                continue;</span>
+/*
+            if (MiscMath0.areColinear(MatrixUtil.convertToRowMajor(sampleLeft), eps)
+                    || MiscMath0.areColinear(MatrixUtil.convertToRowMajor(sampleRight), eps)) {
+                ++nIter;
+                continue;
             }
-
+*/
             // calculates 7-point solutions then filters using chirality checks.
 <span class="fc" id="L416">            List&lt;DenseMatrix&gt; fms = spTransformer</span>
 <span class="fc" id="L417">                .calculateEpipolarProjectionFor7Points(new DenseMatrix(sampleLeft), new DenseMatrix(sampleRight));</span>
@@ -453,7 +453,7 @@ an important part of the algorithm to keep the runtime tractable.
                 
 <span class="fc" id="L454">                int nInliers = fitI.getInlierIndexes().size();</span>
 <span class="fc bfc" id="L455" title="All 4 branches covered.">                if (nInliers &gt;= nSet &amp;&amp; fitI.isBetter(fit)) {</span>
-<span class="fc bfc" id="L456" title="All 4 branches covered.">                    if (nInliers &gt; t &amp;&amp; nInliers &gt; nSet) {</span>
+<span class="pc bpc" id="L456" title="1 of 4 branches missed.">                    if (nInliers &gt; t &amp;&amp; nInliers &gt; nSet) {</span>
                         // redo the FM transformation with all inliers
 <span class="fc" id="L458">                        DenseMatrix inliersLeftXY = EpipolarTransformer</span>
 <span class="fc" id="L459">                            .extractIndices(leftCorres, fitI.getInlierIndexes());</span>
@@ -503,7 +503,7 @@ an important part of the algorithm to keep the runtime tractable.
 <span class="fc" id="L503">                        (double)(nPoints - bestFit.getInlierIndexes().size()) / (double)nPoints;</span>
 <span class="pc bpc" id="L504" title="1 of 2 branches missed.">                    if (outlierPercentI &lt; outlierPercent) {</span>
 <span class="fc" id="L505">                        outlierPercent = (int)Math.ceil(outlierPercentI);</span>
-<span class="pc bpc" id="L506" title="1 of 2 branches missed.">                        if (outlierPercent &lt; 5) {</span>
+<span class="fc bfc" id="L506" title="All 2 branches covered.">                        if (outlierPercent &lt; 5) {</span>
 <span class="fc" id="L507">                            outlierPercent = 5;</span>
                         }
 <span class="pc bnc" id="L509" title="All 2 branches missed.">                        assert(outlierPercent &lt; 50);</span>
@@ -524,9 +524,9 @@ an important part of the algorithm to keep the runtime tractable.
 <span class="fc" id="L524">            nIter++;</span>
 <span class="fc" id="L525">        }</span>
         
-<span class="fc bfc" id="L527" title="All 2 branches covered.">        if (bestFit == null) {</span>
-<span class="fc" id="L528">            log.info(&quot;no solution.  nIter=&quot; + nIter);</span>
-<span class="fc" id="L529">            return null;</span>
+<span class="pc bpc" id="L527" title="1 of 2 branches missed.">        if (bestFit == null) {</span>
+<span class="nc" id="L528">            log.info(&quot;no solution.  nIter=&quot; + nIter);</span>
+<span class="nc" id="L529">            return null;</span>
         }
         
 <span class="fc" id="L532">        log.info(&quot;nIter=&quot; + nIter);</span>

@@ -554,61 +554,61 @@ import no.uib.cipr.matrix.DenseMatrix;
     double[][] x1, double[][] x2,
     double[] outErrors, TIntList outInlierIndexes, boolean useXToo) {
         
-<span class="fc" id="L557">        int n = x1[0].length;</span>
-<span class="pc bpc" id="L558" title="3 of 4 branches missed.">        if (x1.length !=3 &amp;&amp; x1.length != 2) {</span>
+<span class="nc" id="L557">        int n = x1[0].length;</span>
+<span class="nc bnc" id="L558" title="All 4 branches missed.">        if (x1.length !=3 &amp;&amp; x1.length != 2) {</span>
 <span class="nc" id="L559">            throw new IllegalArgumentException(&quot;x1.length must be 3 or 2&quot;);</span>
         }
-<span class="pc bpc" id="L561" title="3 of 4 branches missed.">        if (x2.length !=3 &amp;&amp; x2.length != 2) {</span>
+<span class="nc bnc" id="L561" title="All 4 branches missed.">        if (x2.length !=3 &amp;&amp; x2.length != 2) {</span>
 <span class="nc" id="L562">            throw new IllegalArgumentException(&quot;x2.length  must be 3 or 2&quot;);</span>
         }
-<span class="pc bpc" id="L564" title="1 of 2 branches missed.">        if (x2[0].length != n) {</span>
+<span class="nc bnc" id="L564" title="All 2 branches missed.">        if (x2[0].length != n) {</span>
 <span class="nc" id="L565">            throw new IllegalArgumentException(&quot;x2 must be size 3Xn and the same as size of x1&quot;);</span>
         }
-<span class="pc bpc" id="L567" title="1 of 2 branches missed.">        if (outErrors.length !=n) {</span>
+<span class="nc bnc" id="L567" title="All 2 branches missed.">        if (outErrors.length !=n) {</span>
 <span class="nc" id="L568">            throw new IllegalArgumentException(&quot;outErrors.length  must be n&quot;);</span>
         }
-<span class="pc bpc" id="L570" title="1 of 2 branches missed.">        if (outInlierIndexes == null) {</span>
+<span class="nc bnc" id="L570" title="All 2 branches missed.">        if (outInlierIndexes == null) {</span>
 <span class="nc" id="L571">            throw new IllegalArgumentException(&quot;outInlierIndexes cannot be null&quot;);</span>
         }
         double diff;
-<span class="fc" id="L574">        double sum = 0;</span>
+<span class="nc" id="L574">        double sum = 0;</span>
         double sumI;
         int i;
-<span class="fc bfc" id="L577" title="All 2 branches covered.">        for (i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L578">            diff = x1[1][i] - x2[1][i];</span>
-<span class="fc" id="L579">            sumI = diff*diff;</span>
-<span class="pc bpc" id="L580" title="1 of 2 branches missed.">            if (useXToo) {</span>
-<span class="fc" id="L581">                diff = x1[0][i] - x2[0][i];</span>
-<span class="fc" id="L582">                sumI += diff*diff;</span>
+<span class="nc bnc" id="L577" title="All 2 branches missed.">        for (i = 0; i &lt; n; ++i) {</span>
+<span class="nc" id="L578">            diff = x1[1][i] - x2[1][i];</span>
+<span class="nc" id="L579">            sumI = diff*diff;</span>
+<span class="nc bnc" id="L580" title="All 2 branches missed.">            if (useXToo) {</span>
+<span class="nc" id="L581">                diff = x1[0][i] - x2[0][i];</span>
+<span class="nc" id="L582">                sumI += diff*diff;</span>
             }
-<span class="fc" id="L584">            sum += sumI;</span>
-<span class="fc" id="L585">            outErrors[i] = Math.sqrt(sumI);</span>
+<span class="nc" id="L584">            sum += sumI;</span>
+<span class="nc" id="L585">            outErrors[i] = Math.sqrt(sumI);</span>
         }
-<span class="fc" id="L587">        sum = Math.sqrt(sum);</span>
+<span class="nc" id="L587">        sum = Math.sqrt(sum);</span>
         
         // use MAD or Tukey fences
                 
         //median of absolute deviation of x, median, min, and max.
-<span class="fc" id="L592">        double[] mADMinMax = MiscMath0.calculateMedianOfAbsoluteDeviation(outErrors);</span>
-<span class="fc" id="L593">        double kMAD = 1.4826;</span>
-<span class="fc" id="L594">        double s = kMAD*mADMinMax[0];</span>
-<span class="fc" id="L595">        double r0 = mADMinMax[1] - 3*s;</span>
-<span class="fc" id="L596">        double r1 = mADMinMax[1] + 3*s;</span>
+<span class="nc" id="L592">        double[] mADMinMax = MiscMath0.calculateMedianOfAbsoluteDeviation(outErrors);</span>
+<span class="nc" id="L593">        double kMAD = 1.4826;</span>
+<span class="nc" id="L594">        double s = kMAD*mADMinMax[0];</span>
+<span class="nc" id="L595">        double r0 = mADMinMax[1] - 3*s;</span>
+<span class="nc" id="L596">        double r1 = mADMinMax[1] + 3*s;</span>
         
-<span class="fc" id="L598">        int[] inliers2 = MiscMath0.findInliersUsingTukeyFences(outErrors);</span>
+<span class="nc" id="L598">        int[] inliers2 = MiscMath0.findInliersUsingTukeyFences(outErrors);</span>
         
-<span class="fc bfc" id="L600" title="All 2 branches covered.">        for (i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L601">            diff = outErrors[i];</span>
-<span class="pc bpc" id="L602" title="1 of 4 branches missed.">            if (diff &gt;= r0 &amp;&amp; diff &lt;= r1) {</span>
-<span class="fc" id="L603">                outInlierIndexes.add(i);</span>
+<span class="nc bnc" id="L600" title="All 2 branches missed.">        for (i = 0; i &lt; n; ++i) {</span>
+<span class="nc" id="L601">            diff = outErrors[i];</span>
+<span class="nc bnc" id="L602" title="All 4 branches missed.">            if (diff &gt;= r0 &amp;&amp; diff &lt;= r1) {</span>
+<span class="nc" id="L603">                outInlierIndexes.add(i);</span>
             }
         }
         
-<span class="fc" id="L607">        System.out.printf(&quot;inliers using MAD=\n%s\ninliers using Tukey fences=\n%s\n&quot;, </span>
-<span class="fc" id="L608">            Arrays.toString(outInlierIndexes.toArray()),</span>
-<span class="fc" id="L609">            Arrays.toString(inliers2));</span>
+<span class="nc" id="L607">        System.out.printf(&quot;inliers using MAD=\n%s\ninliers using Tukey fences=\n%s\n&quot;, </span>
+<span class="nc" id="L608">            Arrays.toString(outInlierIndexes.toArray()),</span>
+<span class="nc" id="L609">            Arrays.toString(inliers2));</span>
         
-<span class="fc" id="L611">        return sum;</span>
+<span class="nc" id="L611">        return sum;</span>
     }
     
     /**

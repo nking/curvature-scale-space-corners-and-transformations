@@ -263,32 +263,32 @@ import java.util.logging.Logger;
         
 <span class="fc" id="L264">        boolean hasChanged = false;</span>
 <span class="fc bfc" id="L265" title="All 2 branches covered.">        for (int i = 0; i &lt; values.length; ++i) {</span>
-<span class="pc bpc" id="L266" title="1 of 2 branches missed.">            if (lastImgSeedIndexes[i] != imgSeedIndexes[i]) {</span>
-<span class="nc" id="L267">                hasChanged = true;</span>
-<span class="nc" id="L268">                break;</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">            if (lastImgSeedIndexes[i] != imgSeedIndexes[i]) {</span>
+<span class="fc" id="L267">                hasChanged = true;</span>
+<span class="fc" id="L268">                break;</span>
             }
         }
-<span class="pc bpc" id="L271" title="1 of 2 branches missed.">        if (!hasChanged) {</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">        if (!hasChanged) {</span>
 <span class="fc" id="L272">            return true;</span>
         }
          
-<span class="nc" id="L275">        float[] sumVariance = new float[nSeeds];</span>
-<span class="nc" id="L276">        int[] nSumVariance = new int[nSeeds];</span>
+<span class="fc" id="L275">        float[] sumVariance = new float[nSeeds];</span>
+<span class="fc" id="L276">        int[] nSumVariance = new int[nSeeds];</span>
 
-<span class="nc bnc" id="L278" title="All 2 branches missed.">        for (int xyIndex = 0; xyIndex &lt; values.length; xyIndex++) {</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">        for (int xyIndex = 0; xyIndex &lt; values.length; xyIndex++) {</span>
 
-<span class="nc" id="L280">            int seedIndex = imgSeedIndexes[xyIndex];</span>
+<span class="fc" id="L280">            int seedIndex = imgSeedIndexes[xyIndex];</span>
 
-<span class="nc" id="L282">            int d = values[xyIndex] - seed[seedIndex];</span>
+<span class="fc" id="L282">            int d = values[xyIndex] - seed[seedIndex];</span>
             
-<span class="nc" id="L284">            sumVariance[seedIndex] += (d * d);</span>
+<span class="fc" id="L284">            sumVariance[seedIndex] += (d * d);</span>
             
-<span class="nc" id="L286">            nSumVariance[seedIndex]++;</span>
+<span class="fc" id="L286">            nSumVariance[seedIndex]++;</span>
         }
 
-<span class="nc bnc" id="L289" title="All 2 branches missed.">        for (int i = 0; i &lt; sumVariance.length; i++) {</span>
-<span class="nc bnc" id="L290" title="All 2 branches missed.">            if ((float)nSumVariance[i] &gt; 0) {</span>
-<span class="nc" id="L291">                sumVariance[i] /= (float)nSumVariance[i];</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">        for (int i = 0; i &lt; sumVariance.length; i++) {</span>
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">            if ((float)nSumVariance[i] &gt; 0) {</span>
+<span class="fc" id="L291">                sumVariance[i] /= (float)nSumVariance[i];</span>
             } else {
 <span class="nc" id="L293">                sumVariance[i] = 0;</span>
             }
@@ -296,20 +296,20 @@ import java.util.logging.Logger;
 
         // store in the instance fields
 
-<span class="nc" id="L299">        boolean allAreBelowCriticalLimit = true;</span>
+<span class="fc" id="L299">        boolean allAreBelowCriticalLimit = true;</span>
 
-<span class="nc bnc" id="L301" title="All 2 branches missed.">        for (int i = 0; i &lt; nSeeds; i++) {</span>
-<span class="nc" id="L302">            float diff = seedVariances[i] - sumVariance[i];</span>
-<span class="nc bnc" id="L303" title="All 2 branches missed.">            if (diff &lt; 0 ) {</span>
-<span class="nc" id="L304">                allAreBelowCriticalLimit = false;</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">        for (int i = 0; i &lt; nSeeds; i++) {</span>
+<span class="fc" id="L302">            float diff = seedVariances[i] - sumVariance[i];</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">            if (diff &lt; 0 ) {</span>
+<span class="fc" id="L304">                allAreBelowCriticalLimit = false;</span>
             }
             
-<span class="nc" id="L307">            seedVariances[i] = sumVariance[i];</span>
+<span class="fc" id="L307">            seedVariances[i] = sumVariance[i];</span>
         }
 
-<span class="nc" id="L310">        lastImgSeedIndexes = imgSeedIndexes;</span>
+<span class="fc" id="L310">        lastImgSeedIndexes = imgSeedIndexes;</span>
         
-<span class="nc" id="L312">        return allAreBelowCriticalLimit;</span>
+<span class="fc" id="L312">        return allAreBelowCriticalLimit;</span>
     }
     
     protected void calculateFinalStats(final int[] values, 
@@ -565,7 +565,7 @@ import java.util.logging.Logger;
         }
         
 <span class="fc" id="L567">        long v = nDistrC[idx];</span>
-<span class="pc bfc" id="L568" title="All 2 branches covered.">        for (int i = (idx - 1); i &gt; -1; --i) {</span>
+<span class="pc bpc" id="L568" title="1 of 2 branches missed.">        for (int i = (idx - 1); i &gt; -1; --i) {</span>
 <span class="pc bpc" id="L569" title="1 of 2 branches missed.">            if (nDistrC[i] == v) {</span>
 <span class="nc" id="L570">                idx = i;</span>
             } else {

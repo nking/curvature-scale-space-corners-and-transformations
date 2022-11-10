@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Misc.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry</a> &gt; <span class="el_source">Misc.java</span></div><h1>Misc.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry;
+
+import algorithms.matrix.MatrixUtil;
+import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.NotConvergedException;
+import no.uib.cipr.matrix.SVD;
+
+<span class="nc" id="L8">public class Misc {</span>
+
+    /**
+     * given a set of 3D points (format [4Xn] where n is the number of points),
+     * calculate the plane normal to the points and the distance from the
+     * origin to the plane.
+     * &lt;pre&gt;
+     * extracted from  homography2Motion.m from the example code from the book
+     * Chapter 5, &quot;An introduction to 3-D Vision&quot;
+     * by Y. Ma, S. Soatto, J. Kosecka, S. Sastry (MASKS)
+     * Code distributed free for non-commercial use
+     * Copyright (c) MASKS, 2003
+     * &lt;/pre&gt;
+     * @param xWCS
+     * @return an array holding the plane normal to the points xWCS and the distance of the
+     * plane from the origin.
+     * the first 3 elements are the plane perpendicular to the points.
+     * the last element is the distance of the place from the origin.
+     */
+    public static double[] orthogonalPlaneAndDistance(double[][] xWCS) throws NotConvergedException {
+<span class="nc bnc" id="L28" title="All 2 branches missed.">        if (xWCS.length != 4) {</span>
+<span class="nc" id="L29">            throw new IllegalArgumentException(&quot;xWCS length must be 4&quot;);</span>
+        }
+<span class="nc" id="L31">        double[][] p = MatrixUtil.copy(xWCS);</span>
+        int i, j;
+<span class="nc bnc" id="L33" title="All 2 branches missed.">        for (i = 0; i &lt; p[0].length; ++i) {</span>
+<span class="nc bnc" id="L34" title="All 2 branches missed.">            for (j = 0; j &lt; 4; ++j) {</span>
+<span class="nc" id="L35">                p[j][i] /= p[3][i];</span>
+            }
+        }
+        // [nX4]
+<span class="nc" id="L39">        p = MatrixUtil.transpose(p);</span>
+
+<span class="nc" id="L41">        SVD svd = SVD.factorize(new DenseMatrix(p));</span>
+
+        // V is [4X4]
+        // the first 3 elements are the plane perpendicular to the points.
+        // the last element is the distance of the place from the origin.
+<span class="nc" id="L46">        double[] orth = new double[4];</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        for (i = 0; i &lt; 4; ++i) {</span>
+<span class="nc" id="L48">            orth[i] = svd.getVt().get(3, i);</span>
+        }
+<span class="nc" id="L50">        return orth;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

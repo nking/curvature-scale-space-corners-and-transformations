@@ -105,12 +105,12 @@ import no.uib.cipr.matrix.NotConvergedException;
     public static double[][] createIntrinsicCameraMatrixInverse(double focalLength,
         double centerX, double centerY) {
         
-<span class="fc" id="L108">        double[][] k = new double[3][3];</span>
-<span class="fc" id="L109">        k[0] = new double[]{1./focalLength, 0, -centerX/focalLength};</span>
-<span class="fc" id="L110">        k[1] = new double[]{0, 1./focalLength, -centerY/focalLength};</span>
-<span class="fc" id="L111">        k[2] = new double[]{0, 0, 1};</span>
+<span class="nc" id="L108">        double[][] k = new double[3][3];</span>
+<span class="nc" id="L109">        k[0] = new double[]{1./focalLength, 0, -centerX/focalLength};</span>
+<span class="nc" id="L110">        k[1] = new double[]{0, 1./focalLength, -centerY/focalLength};</span>
+<span class="nc" id="L111">        k[2] = new double[]{0, 0, 1};</span>
         
-<span class="fc" id="L113">        return k;</span>
+<span class="nc" id="L113">        return k;</span>
     }
     
     /**
@@ -174,10 +174,10 @@ import no.uib.cipr.matrix.NotConvergedException;
     }
    
     /**
-     * 
+     * create the camera projection matrix as P = K * [R | t].
      * @param k camera intrinsics matrix of size 3 x 3.
      * @param r camera extrinsic rotation matrix of size 3 x 3.
-     * @param t camera extrinsic translation vector of length 2.
+     * @param t camera extrinsic translation vector of length 3 in homogeneous coordinates (z-axis has value 1).
      * @return the camera matrix resulting from intrinsic and extrinsic parameters.
      * the size is 3 x 4.
      */
@@ -192,30 +192,41 @@ import no.uib.cipr.matrix.NotConvergedException;
 <span class="nc" id="L192">            throw new IllegalArgumentException(&quot;t must be length 3&quot;);</span>
         }
 
-        /*
-            4x4     
-        [ R  -R*t ]
-        [ 0   1   ]
+<span class="fc" id="L195">        double[][] rt = createExtrinsicCameraMatrix(r, t);</span>
+
+<span class="fc" id="L197">        double[][] p = MatrixUtil.multiply(k, rt);</span>
         
-        P = K * R * [I | -t]
-        
-        alternately, can write as P = K * [ R | -R*t]
-        */
-<span class="fc" id="L204">        double[] rt = MatrixUtil.multiplyMatrixByColumnVector(r, t);</span>
-        
-<span class="fc" id="L206">        double[][] kExtr = new double[3][4];</span>
-<span class="fc bfc" id="L207" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L208">            kExtr[i] = new double[4];</span>
-<span class="fc" id="L209">            System.arraycopy(r[i], 0, kExtr[i], 0, 3);</span>
-<span class="fc" id="L210">            kExtr[i][3] = rt[i];</span>
-        }
-        
-<span class="fc" id="L213">        double[][] p = MatrixUtil.multiply(k, kExtr);</span>
-        
-<span class="fc" id="L215">        return p;</span>
+<span class="fc" id="L199">        return p;</span>
     }
 
     /**
+     * create extrinsic camera matrix assuming the relation x = R * XW + t.
+     * the resulting matrix is [R | t]
+     * @param r camera extrinsic rotation matrix of size 3 x 3.
+     * @param t camera extrinsic translation vector of length 3 in homogenous coordinates (the
+     *          z-axis holds value 1).
+     * @return the extrinsic camera matrix. the size is 3 x 4.
+     */
+    public static double[][] createExtrinsicCameraMatrix(double[][] r, double[] t) {
+
+<span class="pc bpc" id="L212" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
+<span class="nc" id="L213">            throw new IllegalArgumentException(&quot;r must be 3 x 3&quot;);</span>
+        }
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">        if (t.length != 3) {</span>
+<span class="nc" id="L216">            throw new IllegalArgumentException(&quot;t must be length 3&quot;);</span>
+        }
+
+        //P = [R | t]
+<span class="fc" id="L220">        double[][] kExtr = new double[3][4];</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L222">            kExtr[i] = new double[] {r[i][0], r[i][1], r[i][2], t[i]};</span>
+        }
+
+<span class="fc" id="L225">        return kExtr;</span>
+    }
+
+    /**
+     * TODO: revise and test.
      * not ready for use.  a quick rough method to estimate the 3D homogeneous point
      * from the 2D-homogenous point and this inverse camera matrix, with caveat 
      * about missing information on the last dimension.  
@@ -233,14 +244,14 @@ import no.uib.cipr.matrix.NotConvergedException;
      * the size is 4x3
      */
     public static double[][] createCameraInverse(double[][] k, double[][] r, double[] t) {
-<span class="pc bpc" id="L236" title="2 of 4 branches missed.">        if (k.length != 3 || k[0].length != 3) {</span>
-<span class="nc" id="L237">            throw new IllegalArgumentException(&quot;k must be 3 x 3&quot;);</span>
+<span class="pc bpc" id="L247" title="2 of 4 branches missed.">        if (k.length != 3 || k[0].length != 3) {</span>
+<span class="nc" id="L248">            throw new IllegalArgumentException(&quot;k must be 3 x 3&quot;);</span>
         }
-<span class="pc bpc" id="L239" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
-<span class="nc" id="L240">            throw new IllegalArgumentException(&quot;r must be 3 x 3&quot;);</span>
+<span class="pc bpc" id="L250" title="2 of 4 branches missed.">        if (r.length != 3 || r[0].length != 3) {</span>
+<span class="nc" id="L251">            throw new IllegalArgumentException(&quot;r must be 3 x 3&quot;);</span>
         }
-<span class="pc bpc" id="L242" title="1 of 2 branches missed.">        if (t.length != 3) {</span>
-<span class="nc" id="L243">            throw new IllegalArgumentException(&quot;t must be length 3&quot;);</span>
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">        if (t.length != 3) {</span>
+<span class="nc" id="L254">            throw new IllegalArgumentException(&quot;t must be length 3&quot;);</span>
         }
         
         /*
@@ -249,13 +260,13 @@ import no.uib.cipr.matrix.NotConvergedException;
         scaling matrix: inverse is performed on each element, that is, the reciprocal.
         */
                 
-<span class="fc" id="L252">        double[] tInv = Arrays.copyOf(t, t.length);</span>
-<span class="fc" id="L253">        tInv[0] *= -1;</span>
-<span class="fc" id="L254">        tInv[1] *= -1;</span>
+<span class="fc" id="L263">        double[] tInv = Arrays.copyOf(t, t.length);</span>
+<span class="fc" id="L264">        tInv[0] *= -1;</span>
+<span class="fc" id="L265">        tInv[1] *= -1;</span>
                 
-<span class="fc" id="L256">        double[] rTInv = MatrixUtil.multiplyMatrixByColumnVector(r, tInv);</span>
+<span class="fc" id="L267">        double[] rTInv = MatrixUtil.multiplyMatrixByColumnVector(r, tInv);</span>
         
-<span class="fc" id="L258">        double[][] kInv = Camera.createIntrinsicCameraMatrixInverse(k);</span>
+<span class="fc" id="L269">        double[][] kInv = Camera.createIntrinsicCameraMatrixInverse(k);</span>
         
         /*           
         inverse of   K * R * [I | -t]             
@@ -263,17 +274,17 @@ import no.uib.cipr.matrix.NotConvergedException;
         is  | r  | r*tInv ]^T  * kInv
         */
         
-<span class="fc" id="L266">        double[][] cInv = new double[3][4];</span>
-<span class="fc bfc" id="L267" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L268">            cInv[i] = new double[4];</span>
-<span class="fc" id="L269">            System.arraycopy(r[i], 0, cInv[i], 0, 3);</span>
-<span class="fc" id="L270">            cInv[i][3] = rTInv[i];</span>
+<span class="fc" id="L277">        double[][] cInv = new double[3][4];</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L279">            cInv[i] = new double[4];</span>
+<span class="fc" id="L280">            System.arraycopy(r[i], 0, cInv[i], 0, 3);</span>
+<span class="fc" id="L281">            cInv[i][3] = rTInv[i];</span>
         }
-<span class="fc" id="L272">        cInv = MatrixUtil.transpose(cInv);</span>
+<span class="fc" id="L283">        cInv = MatrixUtil.transpose(cInv);</span>
         
-<span class="fc" id="L274">        cInv = MatrixUtil.multiply(cInv, kInv);</span>
+<span class="fc" id="L285">        cInv = MatrixUtil.multiply(cInv, kInv);</span>
         
-<span class="fc" id="L276">        return cInv;</span>
+<span class="fc" id="L287">        return cInv;</span>
     }
     
     /**
@@ -309,26 +320,26 @@ import no.uib.cipr.matrix.NotConvergedException;
         
         // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
         
-<span class="fc" id="L312">        double[][] cc = MatrixUtil.copy(xC);</span>
-<span class="fc bfc" id="L313" title="All 2 branches covered.">        for (int i = 0; i &lt; xC[0].length; ++i) {</span>
+<span class="fc" id="L323">        double[][] cc = MatrixUtil.copy(xC);</span>
+<span class="fc bfc" id="L324" title="All 2 branches covered.">        for (int i = 0; i &lt; xC[0].length; ++i) {</span>
             // normalized pinhole projection X_c/Z_c and 
-<span class="fc" id="L315">            cc[0][i] /= xC[2][i];</span>
-<span class="fc" id="L316">            cc[1][i] /= xC[2][i];</span>
+<span class="fc" id="L326">            cc[0][i] /= xC[2][i];</span>
+<span class="fc" id="L327">            cc[1][i] /= xC[2][i];</span>
         }
         
-<span class="pc bpc" id="L319" title="3 of 4 branches missed.">        if (rCoeffs != null &amp;&amp; rCoeffs.length &gt; 0) {</span>
+<span class="pc bpc" id="L330" title="3 of 4 branches missed.">        if (rCoeffs != null &amp;&amp; rCoeffs.length &gt; 0) {</span>
             // input and output cc are in camera reference frame
-<span class="nc" id="L321">            cc = CameraCalibration.applyRadialDistortion(cc, rCoeffs[0], rCoeffs[1],</span>
+<span class="nc" id="L332">            cc = CameraCalibration.applyRadialDistortion(cc, rCoeffs[0], rCoeffs[1],</span>
                 useR2R4);
         }
          
 //        focalLength = Math.abs(focalLength);
         
-<span class="fc" id="L327">        double[][] cameraIntr = Camera.createIntrinsicCameraMatrix(focalLength, centerX, centerY);</span>
+<span class="fc" id="L338">        double[][] cameraIntr = Camera.createIntrinsicCameraMatrix(focalLength, centerX, centerY);</span>
                        
-<span class="fc" id="L329">        cc = MatrixUtil.multiply(cameraIntr, cc);</span>
+<span class="fc" id="L340">        cc = MatrixUtil.multiply(cameraIntr, cc);</span>
         
-<span class="fc" id="L331">        return cc;</span>
+<span class="fc" id="L342">        return cc;</span>
     }
     
     /**
@@ -342,35 +353,68 @@ import no.uib.cipr.matrix.NotConvergedException;
      * @param xC distortion-free camera centered coordinates. 
      * format is 3XN for N points.  
      * In terms of Table 1 of Ma et al. 2004, this is a double array of (x, y).
-     * @param rCoeffs radial distortion vector of length 2
-     * distortion vector of length 5.  can be null to skip lens distortion correction.
      * @param kIntr
-     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
-        f(r) = 1 +k1*r^2 + k2*r^4 if true,
-        else use model #3 f(r) = 1 +k1*r + k2*r^2.
-        note that if rCoeffs is null or empty, no radial distortion is applied.
+     *
      */
-    public static double[][] cameraToPixelCoordinates(double[][] xC, double[] rCoeffs,
-        CameraIntrinsicParameters kIntr, boolean useR2R4) {
+    public static double[][] cameraToPixelCoordinates(double[][] xC,
+        CameraIntrinsicParameters kIntr) {
         
         // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
         
-<span class="nc" id="L358">        double[][] cc = MatrixUtil.copy(xC);</span>
-<span class="nc bnc" id="L359" title="All 2 branches missed.">        for (int i = 0; i &lt; xC[0].length; ++i) {</span>
+<span class="nc" id="L364">        double[][] cc = MatrixUtil.copy(xC);</span>
+<span class="nc bnc" id="L365" title="All 2 branches missed.">        for (int i = 0; i &lt; xC[0].length; ++i) {</span>
             // normalized pinhole projection X_c/Z_c and 
-<span class="nc" id="L361">            cc[0][i] /= xC[2][i];</span>
-<span class="nc" id="L362">            cc[1][i] /= xC[2][i];</span>
+<span class="nc" id="L367">            cc[0][i] /= xC[2][i];</span>
+<span class="nc" id="L368">            cc[1][i] /= xC[2][i];</span>
         }
-        
-<span class="nc bnc" id="L365" title="All 4 branches missed.">        if (rCoeffs != null &amp;&amp; rCoeffs.length &gt; 0) {</span>
+
+<span class="nc bnc" id="L371" title="All 4 branches missed.">        if (kIntr.getRadialDistortionCoeffs() != null &amp;&amp; kIntr.getRadialDistortionCoeffs().length &gt;= 2) {</span>
             // input and output cc are in camera reference frame
-<span class="nc" id="L367">            cc = CameraCalibration.applyRadialDistortion(cc, rCoeffs[0], rCoeffs[1],</span>
-                useR2R4);
+<span class="nc" id="L373">            cc = CameraCalibration.applyRadialDistortion(cc, kIntr.getRadialDistortionCoeffs()[0],</span>
+<span class="nc" id="L374">                    kIntr.getRadialDistortionCoeffs()[1],</span>
+<span class="nc" id="L375">                kIntr.useR2R4());</span>
         }
                                         
-<span class="nc" id="L371">        cc = MatrixUtil.multiply(kIntr.getIntrinsic(), cc);</span>
+<span class="nc" id="L378">        cc = MatrixUtil.multiply(kIntr.getIntrinsic(), cc);</span>
         
-<span class="nc" id="L373">        return cc;</span>
+<span class="nc" id="L380">        return cc;</span>
+    }
+
+    /**
+     * applies radial distortion to distortion-free camera centered coordinates
+     * then multiplies by the camera intrinsics to result in distorted coordinates
+     * in the image reference frame in units of pixels.
+     * In terms of Table 1 of Ma et al. 2004, the input is a double array of (x, y)
+     * and the output is a double array of (u_d, v_d).
+     * Also useful reading is NVM Tools by Alex Locher
+     https://github.com/alexlocher/nvmtools.git
+     * @param xC distortion-free camera centered coordinates.
+     * format is 3XN for N points.
+     * In terms of Table 1 of Ma et al. 2004, this is a double array of (x, y).
+     * @param kIntr
+     *
+     */
+    public static double[] cameraToPixelCoordinates(double[] xC,
+                                                      CameraIntrinsicParameters kIntr) {
+
+        // http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/parameters.html
+
+<span class="nc" id="L402">        double[] cc = Arrays.copyOf(xC, xC.length);</span>
+<span class="nc bnc" id="L403" title="All 2 branches missed.">        for (int i = 0; i &lt; cc.length; ++i) {</span>
+            // normalized pinhole projection X_c/Z_c and
+<span class="nc" id="L405">            cc[i] /= cc[2];</span>
+        }
+
+<span class="nc bnc" id="L408" title="All 4 branches missed.">        if (kIntr.getRadialDistortionCoeffs() != null &amp;&amp; kIntr.getRadialDistortionCoeffs().length &gt;= 2) {</span>
+            // input and output cc are in camera reference frame
+<span class="nc" id="L410">            cc = CameraCalibration.applyRadialDistortion(cc, kIntr.getRadialDistortionCoeffs()[0],</span>
+<span class="nc" id="L411">                    kIntr.getRadialDistortionCoeffs()[1],</span>
+<span class="nc" id="L412">                    kIntr.useR2R4());</span>
+        }
+
+<span class="nc" id="L415">        cc = MatrixUtil.multiplyMatrixByColumnVector(kIntr.getIntrinsic(), cc);</span>
+
+<span class="nc" id="L417">        return cc;</span>
     }
     
      /** converts pixel coordinates to normalized camera coordinates by transforming them to camera 
@@ -385,21 +429,21 @@ import no.uib.cipr.matrix.NotConvergedException;
     public static double[][] pixelToNormalizedCameraCoordinates(double[][] x,
         CameraIntrinsicParameters intrinsic) throws NotConvergedException {
         
-<span class="nc" id="L388">        double[][] kIntrInv = Camera.createIntrinsicCameraMatrixInverse(intrinsic.getIntrinsic());</span>
+<span class="nc" id="L432">        double[][] kIntrInv = Camera.createIntrinsicCameraMatrixInverse(intrinsic.getIntrinsic());</span>
         
         // the direction of the points is calculated by K^-1 * x
-<span class="nc" id="L391">        double[][] xDirection = MatrixUtil.multiply(kIntrInv, x);</span>
+<span class="nc" id="L435">        double[][] xDirection = MatrixUtil.multiply(kIntrInv, x);</span>
         double sum;
         int i;
-<span class="nc bnc" id="L394" title="All 2 branches missed.">        for (int col = 0; col &lt; x[0].length; ++col) {</span>
-<span class="nc" id="L395">            sum = (x[0][col]*x[0][col]) + (x[1][col]*x[1][col]) + (x[2][col]*x[2][col]);</span>
-<span class="nc" id="L396">            sum = Math.sqrt(sum);</span>
-<span class="nc bnc" id="L397" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L398">                xDirection[i][col] /= sum;</span>
+<span class="nc bnc" id="L438" title="All 2 branches missed.">        for (int col = 0; col &lt; x[0].length; ++col) {</span>
+<span class="nc" id="L439">            sum = (x[0][col]*x[0][col]) + (x[1][col]*x[1][col]) + (x[2][col]*x[2][col]);</span>
+<span class="nc" id="L440">            sum = Math.sqrt(sum);</span>
+<span class="nc bnc" id="L441" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L442">                xDirection[i][col] /= sum;</span>
             }
         }
                 
-<span class="nc" id="L402">        return xDirection;</span>
+<span class="nc" id="L446">        return xDirection;</span>
     }
     
     /**
@@ -415,27 +459,27 @@ import no.uib.cipr.matrix.NotConvergedException;
      */
     public static double[][] worldToCameraCoordinates(double[][] xW, double[][] rot,
         double[] trans) {
-<span class="nc bnc" id="L418" title="All 2 branches missed.">        if (xW.length != 3) {</span>
-<span class="nc" id="L419">            throw new IllegalArgumentException(&quot;xW.length must be 3 (for x, y, z)&quot;);</span>
+<span class="nc bnc" id="L462" title="All 2 branches missed.">        if (xW.length != 3) {</span>
+<span class="nc" id="L463">            throw new IllegalArgumentException(&quot;xW.length must be 3 (for x, y, z)&quot;);</span>
         }
-<span class="nc bnc" id="L421" title="All 2 branches missed.">        if (trans.length != 3) {</span>
-<span class="nc" id="L422">            throw new IllegalArgumentException(&quot;trans.length must be 3 (for x, y, z)&quot;);</span>
+<span class="nc bnc" id="L465" title="All 2 branches missed.">        if (trans.length != 3) {</span>
+<span class="nc" id="L466">            throw new IllegalArgumentException(&quot;trans.length must be 3 (for x, y, z)&quot;);</span>
         }
-<span class="nc bnc" id="L424" title="All 4 branches missed.">        if (rot.length != 3 || rot[0].length != 3) {</span>
-<span class="nc" id="L425">            throw new IllegalArgumentException(&quot;rot must be 3X3&quot;);</span>
+<span class="nc bnc" id="L468" title="All 4 branches missed.">        if (rot.length != 3 || rot[0].length != 3) {</span>
+<span class="nc" id="L469">            throw new IllegalArgumentException(&quot;rot must be 3X3&quot;);</span>
         }
         
-<span class="nc" id="L428">        int n = xW[0].length;</span>
-<span class="nc" id="L429">        double[][] xC = MatrixUtil.copy(xW);</span>
-<span class="nc" id="L430">        xC = MatrixUtil.multiply(rot, xC);</span>
+<span class="nc" id="L472">        int n = xW[0].length;</span>
+<span class="nc" id="L473">        double[][] xC = MatrixUtil.copy(xW);</span>
+<span class="nc" id="L474">        xC = MatrixUtil.multiply(rot, xC);</span>
         int i, j;
-<span class="nc bnc" id="L432" title="All 2 branches missed.">        for (i = 0; i &lt; n; ++i) {</span>
-<span class="nc bnc" id="L433" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
-<span class="nc" id="L434">                xC[j][i] += trans[j];</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">        for (i = 0; i &lt; n; ++i) {</span>
+<span class="nc bnc" id="L477" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L478">                xC[j][i] += trans[j];</span>
             }
         }
         
-<span class="nc" id="L438">        return xC;</span>
+<span class="nc" id="L482">        return xC;</span>
     }
     
     /**
@@ -451,24 +495,24 @@ import no.uib.cipr.matrix.NotConvergedException;
      */
     public static double[] worldToCameraCoordinates(double[] xWPt, double[][] rot,
         double[] trans) {
-<span class="nc bnc" id="L454" title="All 2 branches missed.">        if (xWPt.length != 3) {</span>
-<span class="nc" id="L455">            throw new IllegalArgumentException(&quot;xW.length must be 3 (for x, y, z)&quot;);</span>
+<span class="nc bnc" id="L498" title="All 2 branches missed.">        if (xWPt.length != 3) {</span>
+<span class="nc" id="L499">            throw new IllegalArgumentException(&quot;xW.length must be 3 (for x, y, z)&quot;);</span>
         }
-<span class="nc bnc" id="L457" title="All 2 branches missed.">        if (trans.length != 3) {</span>
-<span class="nc" id="L458">            throw new IllegalArgumentException(&quot;trans.length must be 3 (for x, y, z)&quot;);</span>
+<span class="nc bnc" id="L501" title="All 2 branches missed.">        if (trans.length != 3) {</span>
+<span class="nc" id="L502">            throw new IllegalArgumentException(&quot;trans.length must be 3 (for x, y, z)&quot;);</span>
         }
-<span class="nc bnc" id="L460" title="All 4 branches missed.">        if (rot.length != 3 || rot[0].length != 3) {</span>
-<span class="nc" id="L461">            throw new IllegalArgumentException(&quot;rot must be 3X3&quot;);</span>
+<span class="nc bnc" id="L504" title="All 4 branches missed.">        if (rot.length != 3 || rot[0].length != 3) {</span>
+<span class="nc" id="L505">            throw new IllegalArgumentException(&quot;rot must be 3X3&quot;);</span>
         }
         
-<span class="nc" id="L464">        double[] xC = Arrays.copyOf(xWPt, xWPt.length);</span>
-<span class="nc" id="L465">        xC = MatrixUtil.multiplyMatrixByColumnVector(rot, xC);</span>
+<span class="nc" id="L508">        double[] xC = Arrays.copyOf(xWPt, xWPt.length);</span>
+<span class="nc" id="L509">        xC = MatrixUtil.multiplyMatrixByColumnVector(rot, xC);</span>
         int j;
-<span class="nc bnc" id="L467" title="All 2 branches missed.">        for (j = 0; j &lt; 3; ++j) {</span>
-<span class="nc" id="L468">            xC[j] += trans[j];</span>
+<span class="nc bnc" id="L511" title="All 2 branches missed.">        for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L512">            xC[j] += trans[j];</span>
         }
         
-<span class="nc" id="L471">        return xC;</span>
+<span class="nc" id="L515">        return xC;</span>
     }
     
     /**
@@ -487,30 +531,28 @@ import no.uib.cipr.matrix.NotConvergedException;
      */
     public static void worldToCameraCoordinates(double[] xWPt, double[][] rot,
         double[] trans, double[] aux, double[] out) {
-<span class="nc bnc" id="L490" title="All 2 branches missed.">        if (xWPt.length != 3) {</span>
-<span class="nc" id="L491">            throw new IllegalArgumentException(&quot;xW.length must be 3 (for x, y, z)&quot;);</span>
+<span class="nc bnc" id="L534" title="All 2 branches missed.">        if (xWPt.length != 3) {</span>
+<span class="nc" id="L535">            throw new IllegalArgumentException(&quot;xW.length must be 3 (for x, y, z)&quot;);</span>
         }
-<span class="nc bnc" id="L493" title="All 2 branches missed.">        if (trans.length != 3) {</span>
-<span class="nc" id="L494">            throw new IllegalArgumentException(&quot;trans.length must be 3 (for x, y, z)&quot;);</span>
+<span class="nc bnc" id="L537" title="All 2 branches missed.">        if (trans.length != 3) {</span>
+<span class="nc" id="L538">            throw new IllegalArgumentException(&quot;trans.length must be 3 (for x, y, z)&quot;);</span>
         }
-<span class="nc bnc" id="L496" title="All 4 branches missed.">        if (rot.length != 3 || rot[0].length != 3) {</span>
-<span class="nc" id="L497">            throw new IllegalArgumentException(&quot;rot must be 3X3&quot;);</span>
+<span class="nc bnc" id="L540" title="All 4 branches missed.">        if (rot.length != 3 || rot[0].length != 3) {</span>
+<span class="nc" id="L541">            throw new IllegalArgumentException(&quot;rot must be 3X3&quot;);</span>
         }
-<span class="nc bnc" id="L499" title="All 2 branches missed.">        if (out.length != 3) {</span>
-<span class="nc" id="L500">            throw new IllegalArgumentException(&quot;out.length must be 3 (for x, y, z)&quot;);</span>
+<span class="nc bnc" id="L543" title="All 2 branches missed.">        if (out.length != 3) {</span>
+<span class="nc" id="L544">            throw new IllegalArgumentException(&quot;out.length must be 3 (for x, y, z)&quot;);</span>
         }
                 
         //point_camera = (1/x_z) * (R * point_world + translation) is called the normalized coordinate.
-        
-<span class="nc" id="L505">        double[] xC = Arrays.copyOf(xWPt, xWPt.length);</span>
-      
-<span class="nc" id="L507">        MatrixUtil.multiplyMatrixByColumnVector(rot, xC, aux);</span>
+
+<span class="nc" id="L549">        MatrixUtil.multiplyMatrixByColumnVector(rot, xWPt, aux);</span>
         
         int j;
-<span class="nc bnc" id="L510" title="All 2 branches missed.">        for (j = 0; j &lt; 3; ++j) {</span>
-<span class="nc" id="L511">            out[j] = aux[j] + trans[j];</span>
+<span class="nc bnc" id="L552" title="All 2 branches missed.">        for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L553">            out[j] = aux[j] + trans[j];</span>
         }        
-<span class="nc" id="L513">    }</span>
+<span class="nc" id="L555">    }</span>
     
     /**
      * transform the world coordinate point xWPt to the camera reference frame using
@@ -525,51 +567,50 @@ import no.uib.cipr.matrix.NotConvergedException;
      */
     public static void worldToCameraCoordinates(double[] xWPt, double[][] rot,
         double[] trans, double[] out) {
-<span class="nc bnc" id="L528" title="All 2 branches missed.">        if (xWPt.length != 3) {</span>
-<span class="nc" id="L529">            throw new IllegalArgumentException(&quot;xW.length must be 3 (for x, y, z)&quot;);</span>
+<span class="nc bnc" id="L570" title="All 2 branches missed.">        if (xWPt.length != 3) {</span>
+<span class="nc" id="L571">            throw new IllegalArgumentException(&quot;xW.length must be 3 (for x, y, z)&quot;);</span>
         }
-<span class="nc bnc" id="L531" title="All 2 branches missed.">        if (trans.length != 3) {</span>
-<span class="nc" id="L532">            throw new IllegalArgumentException(&quot;trans.length must be 3 (for x, y, z)&quot;);</span>
+<span class="nc bnc" id="L573" title="All 2 branches missed.">        if (trans.length != 3) {</span>
+<span class="nc" id="L574">            throw new IllegalArgumentException(&quot;trans.length must be 3 (for x, y, z)&quot;);</span>
         }
-<span class="nc bnc" id="L534" title="All 4 branches missed.">        if (rot.length != 3 || rot[0].length != 3) {</span>
-<span class="nc" id="L535">            throw new IllegalArgumentException(&quot;rot must be 3X3&quot;);</span>
+<span class="nc bnc" id="L576" title="All 4 branches missed.">        if (rot.length != 3 || rot[0].length != 3) {</span>
+<span class="nc" id="L577">            throw new IllegalArgumentException(&quot;rot must be 3X3&quot;);</span>
         }
-<span class="nc" id="L537">        double[] x2 = Arrays.copyOf(xWPt, xWPt.length);</span>
-<span class="nc" id="L538">        MatrixUtil.multiplyMatrixByColumnVector(rot, x2, out);</span>
+<span class="nc" id="L579">        double[] x2 = Arrays.copyOf(xWPt, xWPt.length);</span>
+<span class="nc" id="L580">        MatrixUtil.multiplyMatrixByColumnVector(rot, x2, out);</span>
         int j;
-<span class="nc bnc" id="L540" title="All 2 branches missed.">        for (j = 0; j &lt; 3; ++j) {</span>
-<span class="nc" id="L541">            out[j] = x2[j] + trans[j];</span>
+<span class="nc bnc" id="L582" title="All 2 branches missed.">        for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L583">            out[j] = x2[j] + trans[j];</span>
         }
         
-<span class="nc" id="L544">    }</span>
-    
-    /** converts pixel coordinates to camera coordinates by transforming them to camera 
+<span class="nc" id="L586">    }</span>
+
+    /** converts pixel coordinates to camera coordinates by transforming them to camera
     reference frame then removing radial distortion.
     The input in terms of Table 1 of Ma et al. 2004 is a double array of (u_d, v_d)
     and the output is a double array of (x, y).
     Also useful reading is NVM Tools by Alex Locher
     https://github.com/alexlocher/nvmtools.git
-    
-     * @param x points in the camera centered reference frame. 
-     * format is 3XN for N points.  
-     * @param kIntr  
-     * @param rCoeffs radial distortion vector of length 2 or radial and tangential
-     * distortion vector of length 5.  can be null to skip lens distortion correction.
-     * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
-        f(r) = 1 +k1*r^2 + k2*r^4 if true,
-        else use model #3 f(r) = 1 +k1*r + k2*r^2.
-        note that if rCoeffs is null or empty, no radial distortion is removed.
-     * @return pixels in the reference frame of 
-     * @throws no.uib.cipr.matrix.NotConvergedException 
-     * @throws java.io.IOException 
+
+     * @param x points in the camera centered reference frame.
+     * format is 3XN for N points.
+     * @param kIntr
+     * @return pixels in the reference frame of
+     * @throws no.uib.cipr.matrix.NotConvergedException
+     * @throws java.io.IOException
      */
-    public static double[][] pixelToCameraCoordinates(double[][] x, 
-        CameraIntrinsicParameters kIntr, double[] rCoeffs, boolean useR2R4) 
+    public static double[][] pixelToCameraCoordinates(double[][] x, CameraIntrinsicParameters kIntr)
         throws NotConvergedException, IOException {
-                        
-<span class="fc" id="L570">        double[][] intr = MatrixUtil.copy(kIntr.getIntrinsic());</span>
-        
-<span class="fc" id="L572">        return pixelToCameraCoordinates(x, intr, rCoeffs, useR2R4);</span>
+
+<span class="fc" id="L605">        double[][] intr = MatrixUtil.copy(kIntr.getIntrinsic());</span>
+<span class="fc" id="L606">        double[] rCoeffs = null;</span>
+<span class="fc bfc" id="L607" title="All 2 branches covered.">        if (kIntr.getRadialDistortionCoeffs() != null) {</span>
+<span class="fc" id="L608">            rCoeffs = Arrays.copyOf(kIntr.getRadialDistortionCoeffs(),</span>
+<span class="fc" id="L609">                    kIntr.getRadialDistortionCoeffs().length);</span>
+        }
+<span class="fc" id="L611">        boolean useR2R4 = kIntr.useR2R4();</span>
+
+<span class="fc" id="L613">        return pixelToCameraCoordinates(x, intr, rCoeffs, useR2R4);</span>
     }
     
     /** converts pixel coordinates to camera coordinates by transforming them to camera 
@@ -601,19 +642,20 @@ import no.uib.cipr.matrix.NotConvergedException;
         // use absolute value of focal lengths
 //        intr[0][0] = Math.abs(intr[0][0]);
 //        intr[1][1] = Math.abs(intr[1][1]);
-       
-<span class="fc" id="L605">        double[][] cameraIntrInv = Camera.createIntrinsicCameraMatrixInverse(</span>
+
+        //NOTE: this is same result as full column rank pseudoinverse of intr
+<span class="fc" id="L647">        double[][] cameraIntrInv = Camera.createIntrinsicCameraMatrixInverse(</span>
             intr);
 
         // put x into camera coordinates reference frame:
-<span class="fc" id="L609">        double[][] pix = MatrixUtil.multiply(cameraIntrInv, x);</span>
+<span class="fc" id="L651">        double[][] pix = MatrixUtil.multiply(cameraIntrInv, x);</span>
         
-<span class="fc bfc" id="L611" title="All 2 branches covered.">        if (rCoeffs != null) {</span>
-<span class="fc" id="L612">            pix = CameraCalibration.removeRadialDistortion(pix, rCoeffs[0], </span>
+<span class="fc bfc" id="L653" title="All 2 branches covered.">        if (rCoeffs != null) {</span>
+<span class="fc" id="L654">            pix = CameraCalibration.removeRadialDistortion(pix, rCoeffs[0], </span>
                 rCoeffs[1], useR2R4);
         }
                 
-<span class="fc" id="L616">        return pix;</span>
+<span class="fc" id="L658">        return pix;</span>
     }
     
     /**
@@ -629,39 +671,63 @@ import no.uib.cipr.matrix.NotConvergedException;
     public static double[][] transformToUnitNormDirections(double[][] x, 
         CameraIntrinsicParameters k) {
         
-<span class="nc bnc" id="L632" title="All 2 branches missed.">        if (x.length != 3) {</span>
-<span class="nc" id="L633">            throw new IllegalArgumentException(&quot;x length must be 3&quot;);</span>
+<span class="nc bnc" id="L674" title="All 2 branches missed.">        if (x.length != 3) {</span>
+<span class="nc" id="L675">            throw new IllegalArgumentException(&quot;x length must be 3&quot;);</span>
         }
         
-<span class="nc" id="L636">        double[][] kInv = Camera.createIntrinsicCameraMatrixInverse(k.intrinsic);</span>
+<span class="nc" id="L678">        double[][] kInv = Camera.createIntrinsicCameraMatrixInverse(k.intrinsic);</span>
         
         //(K^-1 * x_i)/(||K^-1 * x_i||)
-<span class="nc" id="L639">        double[][] norm = MatrixUtil.multiply(kInv, x);</span>
+<span class="nc" id="L681">        double[][] norm = MatrixUtil.multiply(kInv, x);</span>
                 
         int i, j;
-<span class="nc" id="L642">        double sum = 0;</span>
-<span class="nc bnc" id="L643" title="All 2 branches missed.">        for (j = 0; j &lt; norm.length; ++j) {</span>
-<span class="nc" id="L644">            sum = 0;</span>
-<span class="nc bnc" id="L645" title="All 2 branches missed.">            for (i = 0; i &lt; norm.length; ++i) {</span>
-<span class="nc" id="L646">                sum += (norm[i][j] *norm[i][j]);</span>
+<span class="nc" id="L684">        double sum = 0;</span>
+<span class="nc bnc" id="L685" title="All 2 branches missed.">        for (j = 0; j &lt; norm.length; ++j) {</span>
+<span class="nc" id="L686">            sum = 0;</span>
+<span class="nc bnc" id="L687" title="All 2 branches missed.">            for (i = 0; i &lt; norm.length; ++i) {</span>
+<span class="nc" id="L688">                sum += (norm[i][j] *norm[i][j]);</span>
             }
-<span class="nc" id="L648">            sum = Math.sqrt(sum);</span>
-<span class="nc bnc" id="L649" title="All 2 branches missed.">            for (i = 0; i &lt; norm.length; ++i) {</span>
-<span class="nc" id="L650">                norm[i][j] /= sum;</span>
+<span class="nc" id="L690">            sum = Math.sqrt(sum);</span>
+<span class="nc bnc" id="L691" title="All 2 branches missed.">            for (i = 0; i &lt; norm.length; ++i) {</span>
+<span class="nc" id="L692">                norm[i][j] /= sum;</span>
             }
         }
-<span class="nc" id="L653">        return norm;</span>
+<span class="nc" id="L695">        return norm;</span>
     }
     
     public static class CameraIntrinsicParameters {
         private double[][] intrinsic;
+        private double[] radialDistortionCoeffs;
+        private boolean useR2R4;
         private double lambda;
         
         public CameraIntrinsicParameters(double[][] k) {
             this.intrinsic = k;
         }
+
+        /**
+         *
+         * @param k
+         *
+         *          @param radial the radialDistortion to set
+         *          @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
+         *          f(r) = 1 +k1*r^2 + k2*r^4 if true,
+         *          else use model #3 f(r) = 1 +k1*r + k2*r^2.
+         */
+        public CameraIntrinsicParameters(double[][] k, double[] radial,boolean useR2R4) {
+            this.intrinsic = k;
+            this.radialDistortionCoeffs = radial;
+            this.useR2R4 = useR2R4;
+        }
         
         public CameraIntrinsicParameters() {
+        }
+
+        public void setUseR2R4(boolean useR2R4) {
+            this.useR2R4 = useR2R4;
+        }
+        public boolean useR2R4() {
+            return useR2R4;
         }
         
         /**
@@ -690,7 +756,14 @@ import no.uib.cipr.matrix.NotConvergedException;
         public void setLambda(double lambda) {
             this.lambda = lambda;
         }
-        
+
+        public double[] getRadialDistortionCoeffs() {
+            return radialDistortionCoeffs;
+        }
+
+        public void setRadialDistortionCoeffs(double[] radialDistortionCoeffs) {
+            this.radialDistortionCoeffs = radialDistortionCoeffs;
+        }
     }
     
     public static class CameraProjection {
@@ -717,7 +790,7 @@ import no.uib.cipr.matrix.NotConvergedException;
             this.p = p;
         }
     }
-    
+
     public static class CameraParameters {
         private final CameraIntrinsicParameters intrinsicParameters;
         private final CameraExtrinsicParameters extrinsicParameters;
@@ -727,20 +800,7 @@ import no.uib.cipr.matrix.NotConvergedException;
             this.intrinsicParameters = intrinsics;
             this.extrinsicParameters = extrinsics;
         }
-        
-        public double[][] createProjectionMatrix() {
-            
-            double[][] rt = new double[3][4];
-            int i, j;
-            for (i = 0; i &lt; 3; ++i) {
-                rt[i] = new double[4];
-                System.arraycopy(extrinsicParameters.rotation[i], 0, rt[i], 0, 3);
-                rt[i][3] = extrinsicParameters.translation[i];
-            }
-            
-            double[][] p = MatrixUtil.multiply(intrinsicParameters.getIntrinsic(), rt);
-            return p;
-        }
+
         /**
          * @return the intrinsicParameters
          */
@@ -755,16 +815,78 @@ import no.uib.cipr.matrix.NotConvergedException;
             return extrinsicParameters;
         }
     }
-    
+
+    public static class CameraPoseParameters extends CameraParameters {
+        private final double[] p3;
+        public CameraPoseParameters(CameraIntrinsicParameters intrinsics, CameraExtrinsicParameters extrinsics,
+                                    double[] p3) {
+            super(intrinsics, extrinsics);
+            this.p3 = p3;
+        }
+
+        /**
+         the last column of the projection matrix P which was [3 X 4] in size.
+         &lt;pre&gt;
+         Regarding translation, p3 is included in the results.  p3 is the last column in the projection
+         matrix calculated internally.  (2) and (4) outlined below are what you should consider using
+         to estimate the translation, depending upon your system's use of translate then rotate or vice versa.
+
+         If the user is assuming translate, then rotate: X_c = R * (X_wcs - t).
+             (1) The projection matrix constructed would be [R*XW | -R*t]
+                 where the last column is -R*t, R is rotation, t is translation,
+                 XW is object in real world coordinate frame, X_c is the object location seen in
+                 the camera reference frame.
+                 In this case, one would extract the translation
+                 using t = -1*(R^-1)*p3.  Note that when properly formed, R^-1 = R^T because rotation is orthogonal and unitary.
+             (2) For the context of X_im = K * X_c, we have P = [K*R*XW | -K*R*t]
+                 where K is the intrinsic parameter matrix for the camera.
+                 In this case, one would extract the translation
+                 using t = -1 * R^-1 * K^-1 * p3.
+         If the user is assuming rotate then translate, X_c = R * X_wcs + t.
+             (3) The projection matrix constructed would be [R*XW | t].
+                 In this case, one would extract the translation
+                 using t = p3.
+             (4) For the context of X_im = K * X_c, we have P = [K*R*XW | K*t].
+                 In this case, one would extract the translation
+                 using t = K^-1 * p3.
+         &lt;/pre&gt;
+         * @return
+         */
+        public double[] getP3() {
+            return p3;
+        }
+    }
+
     public static class CameraExtrinsicParameters {
         private double[][] rotation;
         private double[] translation;
+        private double[] rodriguesVector;
+
+        public CameraExtrinsicParameters(double[][] rotation, double[] rodriguesRotationVector, double[] translation) {
+            this.rotation = rotation;
+            this.rodriguesVector = rodriguesRotationVector;
+            this.translation = translation;
+        }
+
+        public CameraExtrinsicParameters() {}
 
         /**
          * @return the rotation
          */
         public double[][] getRotation() {
             return rotation;
+        }
+
+        public static double[][] applyOrthoNormalization(double[][] r) throws NotConvergedException {
+            //return Rotation.orthonormalizeUsingSkewCayley(r);
+            return Rotation.orthonormalizeUsingSVD(r);
+        }
+
+        public void setRodriguesVector(double[] rVector) {
+            this.rodriguesVector = rVector;
+        }
+        public double[] getRodriguesVector() {
+            return this.rodriguesVector;
         }
 
         /**
@@ -806,14 +928,12 @@ import no.uib.cipr.matrix.NotConvergedException;
     public static class CameraMatrices {
         private CameraIntrinsicParameters intrinsics;
         private List&lt;CameraExtrinsicParameters&gt; extrinsics = new ArrayList&lt;CameraExtrinsicParameters&gt;();
-        private double[] radialDistortion;
-        private boolean useR2R4;
-        
+
         /**
          * @return the radialDistortion
          */
         public double[] getRadialDistortCoeff() {
-            return radialDistortion;
+            return intrinsics.getRadialDistortionCoeffs();
         }
         
         /**
@@ -822,18 +942,7 @@ import no.uib.cipr.matrix.NotConvergedException;
          else return false if using model #3 f(r) = 1 +k1*r + k2*r^2.
         */
         public boolean useR2R4() {
-            return useR2R4;
-        }
-
-        /**
-         * @param radialDistortion the radialDistortion to set
-         * @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
-         f(r) = 1 +k1*r^2 + k2*r^4 if true,
-         else use model #3 f(r) = 1 +k1*r + k2*r^2.
-         */
-        public void setRadialDistortion(double[] radialDistortion, boolean useR2R4) {
-            this.radialDistortion = radialDistortion;
-            this.useR2R4 = useR2R4;
+            return intrinsics.useR2R4();
         }
 
         /**
