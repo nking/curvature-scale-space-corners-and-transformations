@@ -198,23 +198,23 @@ public class Reconstruction {
      * the size is 3 x 4.
      * @param camera2 image 2 camera matrices of intrinsic and extrinsic parameters.
      * the size is 3 x 4.
-     * @param x1 the image 1 set of correspondence points in camera coordinates.  format is 3 x N where
+     * @param x1c the image 1 set of correspondence points in camera coordinates.  format is 3 x N where
      * N is the number of points.
-     * @param x2 the image 2 set of correspondence points in camera coordinates.  format is 3 x N where
+     * @param x2c the image 2 set of correspondence points in camera coordinates.  format is 3 x N where
      * N is the number of points.
      * @return the world scene coordinates and the intrinsic and extrinsic
      * camera matrices (the later were given to the code, but are convenient to return in results).
      * @throws no.uib.cipr.matrix.NotConvergedException 
      */
     public static ReconstructionResults calculateReconstruction(
-        CameraParameters camera1, CameraParameters camera2,
-        double[][] x1, double[][] x2) throws NotConvergedException {
+            CameraParameters camera1, CameraParameters camera2,
+            double[][] x1c, double[][] x2c) throws NotConvergedException {
 
-        if (x1.length != 3 || x2.length != 3) {
+        if (x1c.length != 3 || x2c.length != 3) {
             throw new IllegalArgumentException("x1.length must be 3 and so must x2.length");
         }
-        int n = x1[0].length;
-        if (x2[0].length != n) {
+        int n = x1c[0].length;
+        if (x2c[0].length != n) {
             throw new IllegalArgumentException("x1 and x2 must be same dimensions");
         }
         
@@ -240,8 +240,8 @@ public class Reconstruction {
                     
         for (i = 0; i < n; ++i) {
             for (ii = 0; ii < 3; ++ii) {
-                x1Pt[ii][0] = x1[ii][i];
-                x2Pt[ii][0] = x2[ii][i];
+                x1Pt[ii][0] = x1c[ii][i];
+                x2Pt[ii][0] = x2c[ii][i];
             }
             //length is 4
 
