@@ -1,6 +1,6 @@
 package algorithms.imageProcessing.transform;
 
-import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.util.AngleUtil;
 import algorithms.util.PairInt;
 import junit.framework.TestCase;
 

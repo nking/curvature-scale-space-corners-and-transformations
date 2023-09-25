@@ -4,7 +4,7 @@ import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import java.util.Collection;

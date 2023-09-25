@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.misc.Misc;
 import algorithms.misc.MiscDebug;
 import java.util.logging.Logger;
@@ -199,7 +200,8 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
             if (minResolvableAngle < 0) {
                 minResolvableAngle *= -1;
             }
-            MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+            algorithms.imageProcessing.util.MiscellaneousCurveHelper curveHelper =
+                    new algorithms.imageProcessing.util.MiscellaneousCurveHelper();
             curveHelper.additionalThinning45DegreeEdges2(
                 filterProducts.getTheta(), filterProducts.getGradientXY(),
                 minResolvableAngle);

@@ -352,12 +352,12 @@ public class BundleAdjustment {
         and this on 3F points:
         "3D points: Even for calibrated cameras, 
         ** ==> vision geometry and visual reconstructions are intrinsically projective. 
-        If a 3D (X Y Z)⊤ parametrization (or equivalently a homogeneous affine (X Y Z 1)⊤ one) 
+        If a 3D (X Y Z)^⊤ parametrization (or equivalently a homogeneous affine (X Y Z 1)^⊤ one)
         is used for very distant 3D points, large X, Y, Z displacements are 
         needed to change the image significantly. I.e., in (X Y Z) space the 
         cost function becomes very flat and steps needed for cost adjustment 
         become very large for distant points. 
-            In comparison, with a homogeneous projective parametrization (X Y Z W)⊤, 
+            In comparison, with a homogeneous projective parametrization (X Y Z W)^⊤,
         the behaviour near infinity is natural, finite and well-conditioned so 
         long as the normalization keeps the homogeneous 4-vector finite at 
         infinity (by sending W → 0 there). In fact, there is no immediate 
@@ -371,12 +371,12 @@ public class BundleAdjustment {
         consequence of the fact that the natural geometry and error model for 
         visual reconstruction is projective rather than affine. 
         Projectively, infinity is just like any other place. 
-        ** ==> Affine parametrization (X Y Z 1)⊤ is acceptable for points near the 
+        ** ==> Affine parametrization (X Y Z 1)^⊤ is acceptable for points near the
         origin with close-range convergent camera geometries, but it is 
         disastrous for distant ones because it artificially cuts away half of 
         the natural parameter space, and hides the fact by sending the resulting 
         edge to infinite parameter values.
-        **==> Instead, you should use a homogeneous parametrization (X Y Z W )⊤ 
+        **==> Instead, you should use a homogeneous parametrization (X Y Z W )^⊤
         for distant points, e.g. with spherical normalization summation X_i^2 = 1."
         
         on Rotations:

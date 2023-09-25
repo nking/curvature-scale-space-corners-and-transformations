@@ -4,7 +4,7 @@ import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.ColorHistogram;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.segmentation.ColorSpace;
 import algorithms.imageProcessing.segmentation.LabelToColorHelper;
 import algorithms.util.PairInt;

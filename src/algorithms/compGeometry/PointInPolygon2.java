@@ -1,7 +1,5 @@
 package algorithms.compGeometry;
 
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
-
 /**
  *
  * @author nichole

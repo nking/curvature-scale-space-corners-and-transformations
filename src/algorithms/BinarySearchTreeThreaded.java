@@ -26,8 +26,8 @@ import java.util.Map;
  */
 public class BinarySearchTreeThreaded<T extends HeapNode> {
 
-    //TODO: note, have made a snall change which needs
-    // a careful look and possibly changes at compariions.
+    //TODO: note, have made a small change which needs
+    // a careful look and possibly changes at comparisons.
     // the change was to allow nodes with the same key
     // to be inserted (and no new nodes are created internally)
     
@@ -261,7 +261,7 @@ public class BinarySearchTreeThreaded<T extends HeapNode> {
     /**
      * finds node with equal key and its parent if there is one
      * as []{foundNode, parentOfFoundNode}, else null if not found
-     * @param node
+     * @param item
      * @return 
      */
     @SuppressWarnings({"unchecked"})

@@ -1,7 +1,8 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.util.PairInt;
-import java.util.HashSet;
+
 import java.util.Set;
 
 /**
@@ -168,8 +169,9 @@ public class NonMaximumSuppression {
                 output[i][j] *= m;
             }
         }
-        
-        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+
+        algorithms.imageProcessing.util.MiscellaneousCurveHelper curveHelper
+                = new algorithms.imageProcessing.util.MiscellaneousCurveHelper();
         curveHelper.additionalThinning45DegreeEdges2(orientation, output);
      
         return output;

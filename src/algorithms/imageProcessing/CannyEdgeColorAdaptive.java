@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import java.util.Set;
@@ -493,7 +494,8 @@ public class CannyEdgeColorAdaptive {
                     minResolvableAngle *= -1;
                 }
 
-                MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+                algorithms.imageProcessing.util.MiscellaneousCurveHelper curveHelper =
+                        new algorithms.imageProcessing.util.MiscellaneousCurveHelper();
                 curveHelper.additionalThinning45DegreeEdges2(
                     filterProducts.getTheta(), filterProducts.getGradientXY(),
                     minResolvableAngle);

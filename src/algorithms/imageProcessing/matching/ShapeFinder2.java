@@ -1,7 +1,7 @@
 package algorithms.imageProcessing.matching;
 
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.util.PairIntArray;
 import gnu.trove.map.TIntObjectMap;

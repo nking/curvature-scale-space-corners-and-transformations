@@ -26,6 +26,7 @@ import java.util.Arrays;
  
  * TODO: consider solving with M-estimators.
  * see http://research.microsoft.com/en- us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
+   or robust MM-estimator, or Least trimmed squares (LTS)
  * 
  * From Tumurbaatar, and Kim 2019, Sensors (Basel). 2019 Apr; 19(8): 1905.
  * "Comparative Study of Relative-Pose Estimations from a Monocular Image 

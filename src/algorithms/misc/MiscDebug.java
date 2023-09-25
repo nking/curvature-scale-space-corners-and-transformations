@@ -1,7 +1,7 @@
 package algorithms.misc;
 
-import algorithms.sort.CountingSort;
 import algorithms.compGeometry.convexHull.GrahamScan;
+import algorithms.sort.CountingSort;
 import algorithms.imageProcessing.features.CorrespondenceList;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.features.FeatureComparisonStat;
@@ -613,43 +613,6 @@ public class MiscDebug {
         double t0 = System.currentTimeMillis();
         double t = t0 - ((int)(t0/1.E9)) * 1E9;
         return (int)t;
-    }
-
-    public static void writeHullImages(GreyscaleImage imgGrey, 
-        Map<Integer, List<GrahamScan>> hulls, String fileNameSuffix) {
-        
-        Image imgW = ImageIOHelper.convertImage(imgGrey);
-        
-        int c = 0;
-        for (Entry<Integer, List<GrahamScan>> entry : hulls.entrySet()) {
-            List<GrahamScan> hullList = entry.getValue();
-            for (GrahamScan hull : hullList) {
-                int[] x = new int[hull.getXHull().length];
-                int[] y = new int[x.length];
-                for (int i = 0; i < x.length; ++i) {
-                    x[i] = Math.round(hull.getXHull()[i]);
-                    y[i] = Math.round(hull.getYHull()[i]);                   
-                }
-                if (c == 0) {
-                    ImageIOHelper.drawLinesInImage(x, y, imgW, 1, 255, 0, 0);
-                } else if (c == 1) {
-                    ImageIOHelper.drawLinesInImage(x, y, imgW, 1, 0, 255, 0);
-                } else {
-                    ImageIOHelper.drawLinesInImage(x, y, imgW, 1, 0, 0, 255);
-                }
-            }
-            c++;
-        }
-       
-        try {
-            String dirPath = ResourceFinder.findDirectory("bin");
-            ImageIOHelper.writeOutputImage(dirPath + "/img" + fileNameSuffix 
-                + ".png", imgW);
-           
-        } catch (Exception e) {
-             e.printStackTrace();
-            log.severe(e.getMessage());
-        }
     }
 
     public static void writeImage(int[][] img, String fileName) {

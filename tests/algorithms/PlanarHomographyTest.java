@@ -494,6 +494,9 @@ public class PlanarHomographyTest extends TestCase {
         //solnN is the unit normal vector of the plane P with respect to the first camera frame.
 
         // section 2.4.1 is homogeneous coordinate system
+        // homogeneous coordinates append a "1" to (x,y,z) coordinates,
+        // resulting in a 4-dimensional vactor (x,y,z,1).
+        // This embeds Euclidean E^3 into a hyperplane in R^4 instead of R^3 (MASKS, "An Invitation to 3-D Vision")
 
         System.out.printf("XC1=\n%s\n", FormatArray.toString(xc1, "%.3f"));
         System.out.printf("XC2=\n%s\n", FormatArray.toString(xc2, "%.3f"));

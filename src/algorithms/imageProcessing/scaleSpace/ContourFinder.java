@@ -1,21 +1,16 @@
 package algorithms.imageProcessing.scaleSpace;
 
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
-import algorithms.misc.MiscDebug;
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.util.PairIntArray;
 import algorithms.util.PairIntArrayWithColor;
-import gnu.trove.list.TFloatList;
 import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TFloatArrayList;
 import gnu.trove.list.array.TIntArrayList;
-import java.io.IOException;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**

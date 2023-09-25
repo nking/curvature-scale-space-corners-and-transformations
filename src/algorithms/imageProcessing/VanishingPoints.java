@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.compGeometry.LinesAndAngles;
+import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.imageProcessing.matching.LinesFinder;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
@@ -53,7 +54,7 @@ public class VanishingPoints {
     }
 public Image dbgImg = null;    
     public void find(List<Set<PairInt>> listOfContigousLabels,
-        int imageWidth, int imageHeight) {
+        int imageWidth, int imageHeight) throws GrahamScanTooFewPointsException {
         
         LinesFinder finder = new LinesFinder();
         if (debug) {

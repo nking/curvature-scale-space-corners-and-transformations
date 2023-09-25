@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.misc.Misc0;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PolygonAndPointPlotter;
@@ -67,7 +68,9 @@ public class ImageSegmentationTest extends TestCase {
 
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
         plotter.addPlot(xmn, xmx, ymn, ymx,
-            xPoints, yPoints, null, null, xPoints, yPoints,
+                Misc0.convertToNumberArray(xPoints), Misc0.convertToNumberArray(yPoints),
+                null, null,
+                Misc0.convertToNumberArray(xPoints), Misc0.convertToNumberArray(yPoints),
             "X fft_" + fileNameRoot);
 
         xPoints = new float[crImg.getHeight() / bn];
@@ -93,7 +96,9 @@ public class ImageSegmentationTest extends TestCase {
         }
 
         plotter.addPlot(xmn, xmx, ymn, ymx,
-            xPoints, yPoints, null, null, xPoints, yPoints,
+                Misc0.convertToNumberArray(xPoints), Misc0.convertToNumberArray(yPoints),
+                null, null,
+                Misc0.convertToNumberArray(xPoints), Misc0.convertToNumberArray(yPoints),
             "y fft_" + fileNameRoot);
 
         plotter.writeFile(fileNameRoot + "_blob_cr_fft");

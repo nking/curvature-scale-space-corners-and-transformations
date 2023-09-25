@@ -73,6 +73,7 @@ public class SkyTest extends TestCase {
         String fileName1 = "";
 
         for (int i = 0; i < fileNames.length; ++i) {
+        //for (int i = 0; i < 1; ++i) {
 
             fileName1 = fileNames[i];
             

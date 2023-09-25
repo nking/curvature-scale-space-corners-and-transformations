@@ -43,7 +43,7 @@ public class CSSContourInflectionMakerTest extends TestCase {
             CSSContourInflectionMaker(img);
                         
         maker.setToUseLineDrawingLineMode();
-        maker.setToDebug();
+        //maker.setToDebug();
         
         maker.findContours();
         

@@ -1,6 +1,6 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.util.AngleUtil;
 import algorithms.misc.MiscMath;
 import java.util.Arrays;
 

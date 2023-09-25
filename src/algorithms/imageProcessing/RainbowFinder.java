@@ -2,6 +2,7 @@ package algorithms.imageProcessing;
 
 import algorithms.QuickSort;
 import algorithms.SubsetChooser;
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.compGeometry.ParabolaLeastSquares;
 import algorithms.imageProcessing.Sky.SkyObject;
 import algorithms.imageProcessing.features.mser.Canonicalizer;

@@ -4,7 +4,7 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.misc.MiscMath;
 import algorithms.util.CorrespondencePlotter;
@@ -12,7 +12,7 @@ import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 import algorithms.util.ResourceFinder;
-import java.util.Arrays;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -143,9 +143,9 @@ public class PartialShapeMatcher2Test extends TestCase {
     }
     
     public void testScissorsMatch16_scaled() throws Exception {
-        
-        MiscellaneousCurveHelper curveHelper = 
-            new MiscellaneousCurveHelper();
+
+        algorithms.imageProcessing.util.MiscellaneousCurveHelper curveHelper =
+            new algorithms.imageProcessing.util.MiscellaneousCurveHelper();
         
         // rotate points p so that start points are
         // different and assert that wrap around is

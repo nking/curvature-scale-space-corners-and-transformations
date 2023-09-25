@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.QuickSort;
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.Sky.SkyObject;
 import algorithms.imageProcessing.features.mser.EllipseHelper;
 import algorithms.imageProcessing.features.mser.MSEREdges;

@@ -1,12 +1,13 @@
 package algorithms.misc;
 
+import algorithms.compGeometry.LargestDistancePair;
+import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.sort.CountingSort;
 import algorithms.sort.MultiArrayMergeSort;
-import algorithms.compGeometry.FurthestPair;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.matching.ORBMatcher;
-import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.util.AngleUtil;
 import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -712,7 +713,7 @@ public class MiscMath {
      * not check that the same 7 were not drawn before, but the invoker 
      * should for small nMax.
      * 
-     * @param sr class to generate semi random numbers
+     * @param rand class to generate semi random numbers
      * @param selected the output array to populate with unique random numbers 
      * valued 0 to nMax, exclusive.
      * @param nMax the upper limit from which to choose numbers from for 
@@ -843,7 +844,7 @@ public class MiscMath {
     /**
      * find the minima and maxima of x and y and return them as
      * int[]{xMin, xMax, yMin, yMax}
-     * @param points
+     * @param pixelIdxs
      * @return minMaxXY int[]{xMin, xMax, yMin, yMax}
      */
     public static int[] findMinMaxXY(TIntSet pixelIdxs, int imgWidth) {
@@ -2095,10 +2096,15 @@ public class MiscMath {
      * @param points
      * @return 
      */
-    public static int calculateObjectSize(Set<PairInt> points) {
+    public static int calculateObjectSize(Set<PairInt> points) throws GrahamScanTooFewPointsException {
         // O(N*lg_2(N))
-        FurthestPair furthestPair = new FurthestPair();
-        PairInt[] fp = furthestPair.find(points);
+        PairInt[] points2 = new PairInt[points.size()];
+        int i = 0;
+        for (PairInt p : points) {
+            points2[i] = p;
+            ++i;
+        }
+        PairInt[] fp = LargestDistancePair.find(points2);
         if (fp == null || fp.length < 2) {            
             throw new IllegalArgumentException("did not find a furthest pair" + " in points");
         }
@@ -2112,7 +2118,7 @@ public class MiscMath {
      * @param points
      * @return 
      */
-    public static int calculateObjectSize(PairIntArray points) {
+    public static int calculateObjectSize(PairIntArray points) throws GrahamScanTooFewPointsException {
         return calculateObjectSize(Misc.convert(points));
     }
    

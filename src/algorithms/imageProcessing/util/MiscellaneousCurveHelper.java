@@ -1,15 +1,12 @@
-package algorithms.imageProcessing;
+package algorithms.imageProcessing.util;
 
 import algorithms.compGeometry.convexHull.GrahamScanPairInt;
 import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
+import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
-import algorithms.imageProcessing.util.AngleUtil;
-import algorithms.imageProcessing.util.PairIntWithIndex0;
-import algorithms.util.PairIntArray;
-import algorithms.util.PairFloatArray;
-import algorithms.util.PairInt;
+import algorithms.util.*;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
 import java.util.Collection;
@@ -126,12 +123,12 @@ public class MiscellaneousCurveHelper {
         
         int n = closedCurve.getN();
         
-        PairIntWithIndex0[] p = new PairIntWithIndex0[n];
+        PairIntWithIndex[] p = new PairIntWithIndex[n];
         for (int i = 0; i < n; ++i) {
-            p[i] = new PairIntWithIndex0(closedCurve.getX(i), closedCurve.getY(i),  i);
+            p[i] = new PairIntWithIndex(closedCurve.getX(i), closedCurve.getY(i),  i);
         }
         
-        GrahamScanPairInt<PairIntWithIndex0> scan = new GrahamScanPairInt<PairIntWithIndex0>();
+        GrahamScanPairInt<PairIntWithIndex> scan = new GrahamScanPairInt<PairIntWithIndex>();
         try {
             scan.computeHull(p);
             
@@ -147,7 +144,7 @@ public class MiscellaneousCurveHelper {
             int nPos = 0;
             for (int i = 0; i < n; ++i) {
                 
-                PairIntWithIndex0 p0 = scan.getHull().get(i);
+                PairIntWithIndex p0 = scan.getHull().get(i);
                 
                 //hull.add(Math.round(p0.getX()), Math.round(p0.getY()));
                 //hullCurveIndexes.add(Integer.valueOf(p0.getPixIndex()));
@@ -176,7 +173,7 @@ public class MiscellaneousCurveHelper {
     }
 
     public void additionalThinning45DegreeEdges(
-        GreyscaleImage theta, GreyscaleImage input) {
+            GreyscaleImage theta, GreyscaleImage input) {
 
         // thin the edges for angles 45 and -45 as suggested by
         // 1998 Mokhtarian and Suomela

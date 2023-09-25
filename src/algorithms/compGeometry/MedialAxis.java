@@ -2,7 +2,6 @@ package algorithms.compGeometry;
 
 import thirdparty.voronoi.VoronoiFortunesSweep;
 import thirdparty.voronoi.VoronoiFortunesSweep.*;
-import algorithms.imageProcessing.BresenhamsLine;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.misc.MiscMath;
@@ -11,7 +10,6 @@ import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PolygonAndPointPlotter;
 import gnu.trove.iterator.TIntIterator;
-import gnu.trove.list.TIntList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;

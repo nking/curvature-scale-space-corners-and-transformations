@@ -1933,6 +1933,8 @@ public class ORB {
      * @return keypoints in format [3 X nKeypoints] where
      * row 0 are the column (== x-axis) indexes, row 1 are the row (== y-axis)
      * indexes, and row 2 are all 1's for the homogeneous coordinate z-axis.
+     * Note that homogeneous coordinates append a "1" to (x,y,z) coordinates,
+     * resulting in a 4-dimensional vactor (x,y,z,1).
      */
     public double[][] getKeyPointsHomogenous(int octave) {
         if (octave < 0 || octave >= scales.length) {

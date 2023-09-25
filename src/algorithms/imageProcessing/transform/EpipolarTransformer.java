@@ -399,6 +399,8 @@ public class EpipolarTransformer {
             return null;
         }
         // keep the largest 2 values in sDiag to make the diagonal rank 2
+        //TODO: follow up on Torry and Murray 1997 use of sqrt(lambda1), sqrt(lambda2).
+        //      it's probably because they are using the square of the measurement matrix.
         double[][] d = MatrixUtil.zeros(3,3);
         if (calibrated) {
             //from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD

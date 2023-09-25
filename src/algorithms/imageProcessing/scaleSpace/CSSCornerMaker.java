@@ -2,7 +2,7 @@ package algorithms.imageProcessing.scaleSpace;
 
 import algorithms.QuickSort;
 import algorithms.imageProcessing.ImageStatisticsHelper;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.features.CornerRegion;
 import algorithms.misc.Histogram;

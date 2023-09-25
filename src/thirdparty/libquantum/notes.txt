@@ -10,8 +10,6 @@ their license is
 Note that currently missing are the 
   objcode and density classes.
 
-the subject is a little like fpga programming with a quark soup theme.
-   
 from the libquantum documentation:
      Density operator formalism
 When dealing with systems with many qubits, it is often inconvenient 

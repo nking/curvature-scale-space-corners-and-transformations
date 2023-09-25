@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.util.OneDIntArray;
@@ -14,8 +15,7 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
-import java.util.ArrayDeque;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;

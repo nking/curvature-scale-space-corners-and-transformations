@@ -1,6 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.QuickSort;
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.heapsAndPQs.Heap;
 import algorithms.heapsAndPQs.HeapNode;
 import algorithms.imageProcessing.features.PhaseCongruencyDetector;

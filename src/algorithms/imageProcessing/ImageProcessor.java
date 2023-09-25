@@ -4,7 +4,7 @@ import algorithms.FixedSizeSortedVector;
 import algorithms.bipartite.MinHeapForRT2012;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.features.orb.ORB;
-import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.util.AngleUtil;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.*;
 import algorithms.util.*;

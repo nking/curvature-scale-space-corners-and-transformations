@@ -3,10 +3,11 @@ package algorithms.imageProcessing.matching;
 import algorithms.QuickSort;
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.compGeometry.PerimeterFinder2;
+import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.misc.MiscDebug;
 import algorithms.util.LinearRegression;
 import algorithms.util.PairInt;
@@ -121,7 +122,7 @@ public class LinesFinder {
         debug = true;
     }
     
-    public void find(List<Set<PairInt>> listOfContigousLabels) {
+    public void find(List<Set<PairInt>> listOfContigousLabels) throws GrahamScanTooFewPointsException {
                 
         // -- extract the boundaries of the sets
         // -- find the lines around each boundary using shape fitting
@@ -159,7 +160,7 @@ MiscDebug.writeImage(dbg, "_boundaries_" +MiscDebug.getCurrentTimeFormatted());
         find1(listOfBounds);
     }
     
-    public void find1(List<PairIntArray> listOfOrderedBounds) {
+    public void find1(List<PairIntArray> listOfOrderedBounds) throws GrahamScanTooFewPointsException {
         
         // -- find the lines around each boundary using shape fitting
         // -- store results as lists of x, y 

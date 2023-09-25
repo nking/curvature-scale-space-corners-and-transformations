@@ -2,8 +2,7 @@ package algorithms.compGeometry;
 
 import algorithms.sort.MultiArrayMergeSort;
 import algorithms.imageProcessing.GreyscaleImage;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
-import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.util.AngleUtil;
 import algorithms.misc.Misc;
 import algorithms.util.LinearRegression;
 import algorithms.util.PairFloatArray;

@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.matching;
 
 import algorithms.compGeometry.LinesAndAngles;
+import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.imageProcessing.SummedColumnTable;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
@@ -191,7 +192,7 @@ public class LineFinder {
       </pre>
      @param p
     */
-    public LineResult match(PairIntArray p) {
+    public LineResult match(PairIntArray p) throws GrahamScanTooFewPointsException {
 
         log.fine("p.n=" + p.getN());
 
@@ -236,7 +237,7 @@ public class LineFinder {
         return r;
     }
 
-    private LineResult match0(PairIntArray p) {
+    private LineResult match0(PairIntArray p) throws GrahamScanTooFewPointsException {
 
         if (p == null || p.getN() < 2) {
             throw new IllegalArgumentException("p must have at "

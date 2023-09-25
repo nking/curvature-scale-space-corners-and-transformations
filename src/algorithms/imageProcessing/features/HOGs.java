@@ -2,8 +2,8 @@ package algorithms.imageProcessing.features;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
-import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.compGeometry.MiscellaneousCurveHelper;
+import algorithms.util.AngleUtil;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;

@@ -1,9 +1,10 @@
 package algorithms.imageProcessing.matching;
 
+import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.matching.LineFinder.LineResult;
 import algorithms.misc.MiscMath;
@@ -30,7 +31,7 @@ public class LineFinderTest extends TestCase {
     public LineFinderTest() {
     }
 
-    public void testMatchLines2() {
+    public void testMatchLines2() throws GrahamScanTooFewPointsException {
         
         PairIntArray triangle = getTriangle();
              
@@ -127,7 +128,7 @@ public class LineFinderTest extends TestCase {
         
     }
     
-    public void testMatchLines3() {
+    public void testMatchLines3() throws GrahamScanTooFewPointsException {
         
         // this one shows that in order to keep the threshold
         //   low, need to add patterns for lines that are
@@ -203,7 +204,7 @@ public class LineFinderTest extends TestCase {
         assertTrue(a.getN() >= nMatched);        
     }
     
-    public void testMatchLines4() {
+    public void testMatchLines4() throws GrahamScanTooFewPointsException {
         
         // looking at roof lines in house test image
         
@@ -281,7 +282,7 @@ public class LineFinderTest extends TestCase {
     }
     
     
-    public void testCircle() {
+    public void testCircle() throws GrahamScanTooFewPointsException {
         
         // shows that implementing the high resolution options
         // in LineFinder are needed

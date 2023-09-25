@@ -318,8 +318,8 @@ public class Gaussian1DTest extends TestCase {
                 eps = 1;
             }
             
-            plotter.addPlot(xMin, xMax, yMin, yMax, null, null, xb, gb,
-                "gauss(sigma=" + sigma.toString() + " area=" + area +")");
+            plotter.addPlot(xMin, xMax, yMin, yMax, xb, gb,null, null,
+                    "gauss(sigma=" + sigma.toString() + " area=" + area +")");
             plotter.writeFile();
             
             assertTrue(Math.abs(area - 1) < 0.1);
@@ -360,7 +360,7 @@ public class Gaussian1DTest extends TestCase {
             
             double area = GaussianHelperForTests.areaUnderTheCurve(xb, gb);
             
-            plotter.addPlot(xMin, xMax, yMin, yMax, null, null, xb, gb,
+            plotter.addPlot(xMin, xMax, yMin, yMax,  xb, gb,null, null,
                 "gaussFirstDeriv(sigma=" + sigma.toString() + " area=" + area 
                 + ")");
             plotter.writeFile();
@@ -409,8 +409,8 @@ if (sigma.ordinal() == SIGMA.TWO.ordinal()) {
     }
     System.out.println("");
 }          
-            plotter.addPlot(xMin, xMax, yMin, yMax, null, null, xb, gb,
-                "gaussSecondDeriv(sigma=" + sigma.toString() + " area=" 
+            plotter.addPlot(xMin, xMax, yMin, yMax, xb, gb, null, null,
+                    "gaussSecondDeriv(sigma=" + sigma.toString() + " area="
                     + area +")");
             plotter.writeFile();
             

@@ -305,7 +305,7 @@ public class MSER {
                     
                     if (neighborLevel >= curLevel) {
              
-                        // implicitly '|' with curEdge=-1, then implicity read
+                        // implicitly '|' with curEdge=-1, then implicitly read
                         //   as next being 0
                         boundaryPixels[neighborLevel].add(neighborPixel << 4);
                         boundaryPixelsIdx.setBit(neighborLevel);
@@ -398,8 +398,16 @@ public class MSER {
             curEdge = highestPriorityBP & 15; // <--- NOTE: +1 remains here as incrementation for next loop value
            
             if (priority < 256 && boundaryPixels[priority].isEmpty()) {
+
                 int prev = priority;
-                priority = boundaryPixelsIdx.nextHighestBitSet(priority - 1);
+                //fix for case priority <= 0
+                if (priority > 0) {
+                    priority = boundaryPixelsIdx.nextHighestBitSet(priority - 1);
+                } else {
+                    priority = boundaryPixelsIdx.nextHighestBitSet(0);
+                    //System.out.printf("*DEBUG: boundaryPixelsIdx(0)=%d\n", priority);
+                    //System.out.flush();
+                }
 
                 if (priority == -1) {
                     if (prev == 255 || accessible.getNSetBits() == bits.length) {

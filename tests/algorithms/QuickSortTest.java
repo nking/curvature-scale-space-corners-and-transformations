@@ -1,6 +1,6 @@
 package algorithms;
 
-import algorithms.imageProcessing.util.PairIntWithIndex0;
+import algorithms.util.PairIntWithIndex;
 import algorithms.util.PairInt;
 import algorithms.util.IntIntDouble;
 import gnu.trove.list.TDoubleList;
@@ -268,11 +268,11 @@ public class QuickSortTest extends TestCase {
     
     public void testSortByYThenX() throws Exception {
         
-        PairIntWithIndex0[] points = new PairIntWithIndex0[4];
-        points[0] = new PairIntWithIndex0(10, 5, 2);
-        points[1] = new PairIntWithIndex0(10, 6, 3);
-        points[2] = new PairIntWithIndex0(1, 1, 1);
-        points[3] = new PairIntWithIndex0(1, 0, 0);
+        PairIntWithIndex[] points = new PairIntWithIndex[4];
+        points[0] = new PairIntWithIndex(10, 5, 2);
+        points[1] = new PairIntWithIndex(10, 6, 3);
+        points[2] = new PairIntWithIndex(1, 1, 1);
+        points[3] = new PairIntWithIndex(1, 0, 0);
         
         QuickSort.sortByYThenX(points);
         

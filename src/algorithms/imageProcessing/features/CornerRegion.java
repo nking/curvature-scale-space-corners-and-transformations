@@ -1,6 +1,6 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import java.util.Arrays;
 
 /**

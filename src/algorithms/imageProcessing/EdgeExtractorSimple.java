@@ -1,5 +1,6 @@
 package algorithms.imageProcessing;
 
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.misc.Misc;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;

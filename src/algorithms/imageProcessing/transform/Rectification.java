@@ -50,9 +50,9 @@ public class Rectification {
     //
     // homogeneous repr of a point is x_vec = (x, y, 1)^T
     // equation f a line is ell = a*x + b*y + c = 0;
-    // line rewritten in homogeneous coordinatrs is x_vec^T * ell.
+    // line rewritten in homogeneous coordinates is x_vec^T * ell.
     // general conic in 3 dimensions is a*x^2 + b*x*y + c*y^2 + d*x*z + e*y*z + f*z^2 = 0.
-    //     rewritten using 2D homogenouse coords, quadratice form: x_vec^T * C * x_vec = 0
+    //     rewritten using 2D homogenouse coords, quadratic form: x_vec^T * C * x_vec = 0
     //                  [a   b/2   d/2 ]
     //        where C = [b/2   c   c/2 ]
     //                  [d/2 c/2     f ]

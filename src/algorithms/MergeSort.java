@@ -1,6 +1,6 @@
 package algorithms;
 
-import algorithms.imageProcessing.util.PairIntWithIndex;
+import algorithms.util.PairIntWithIndex;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

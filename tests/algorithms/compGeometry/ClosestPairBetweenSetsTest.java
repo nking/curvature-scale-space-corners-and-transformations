@@ -1,6 +1,6 @@
 package algorithms.compGeometry;
 
-import algorithms.imageProcessing.util.PairIntWithIndex;
+import algorithms.util.PairIntWithIndex;
 import algorithms.util.PairInt;
 import java.util.ArrayList;
 import java.util.HashSet;

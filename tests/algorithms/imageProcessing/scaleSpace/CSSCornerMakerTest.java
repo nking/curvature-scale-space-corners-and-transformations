@@ -97,8 +97,8 @@ public class CSSCornerMakerTest extends TestCase {
             yMax = 1.1f * algorithms.misc.MiscMath.findMax(yPoints);
 
             plotterX.addPlot(
-                0, xMax, yMin, yMax,
-                null, null, xPoints, yPoints, 
+                0, xMax, yMin, yMax, xPoints, yPoints,
+                null, null,
                 "t vs. X(t, sigma)");
             String filePathX = plotterX.writeFile2();
 
@@ -115,8 +115,8 @@ public class CSSCornerMakerTest extends TestCase {
             yMax = algorithms.misc.MiscMath.findMax(yPoints);
             // ==== k vs t
             plotterC.addPlot(
-                xMin, xMax, yMin, yMax,
-                null, null, xPoints, yPoints,
+                xMin, xMax, yMin, yMax, xPoints, yPoints,
+                null, null,
                 "t vs. curvature");
 
             String filePathC = plotterC.writeFile();

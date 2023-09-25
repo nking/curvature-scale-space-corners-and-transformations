@@ -4,7 +4,7 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.misc.MiscMath;
 import algorithms.util.CorrespondencePlotter;
@@ -158,9 +158,9 @@ public class PartialShapeMatcherTest extends TestCase {
     }
     
     public void testScissorsMatch16_scaled() throws Exception {
-        
-        MiscellaneousCurveHelper curveHelper = 
-            new MiscellaneousCurveHelper();
+
+        algorithms.imageProcessing.util.MiscellaneousCurveHelper curveHelper =
+            new algorithms.imageProcessing.util.MiscellaneousCurveHelper();
         
         // rotate points p so that start points are
         // different and assert that wrap around is

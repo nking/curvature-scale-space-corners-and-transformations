@@ -90,23 +90,25 @@ public class RANSACAlgorithmIterations {
     for the probablity gamma to be in excess of 95%, that is,
     the probability that all the data points selected in one subsample are non-outliers.
     
-    let p = sub-sample size (e.g. 7 for Fundamental Matrix correspondence)
-    let eps = fraction of contaminated data
-    let m = number of subsamples to achieve gamma probability
+    let m = sub-sample size (e.g. 7 for Fundamental Matrix correspondence)
+    let w = percent outliers
+    let N = number of subsamples to achieve gamma probability
     
-    gamma = 1 - ( (1 - (1 - eps)^p)^m)
+    gamma = 1 - ( (1 - w^m)^N)
+
+    z = 1. - math.pow(1. - w, m)
     
-    m = Math.log(1. - 0.95)/Math.log(1. - Math.pow(1. - (outlierPercent/100.), p))
+    N = Math.log(1. - 0.95)/Math.log(z)
     
-    table of m's for p=7 and eps from 5%to 50%:
+    table of N's for m=7 and eps from 5%to 50%:
     
-    p |  5%  10%  20%  25%  30%  40%  50%
+    m |  5%  10%  20%  25%  30%  40%  50%
     --------------------------------------
     7 |  3   5    13   21   35   106  382
     </pre>
     */
     public static int numberOfSubsamplesOfSize7For95PercentInliers(int outlierPercent) {
-        return numberOfSubsamplesFor95PercentInliers(outlierPercent, 7);
+        return numberOfSubsamples(95., outlierPercent, 7);
     }
     
     /*
@@ -123,24 +125,53 @@ public class RANSACAlgorithmIterations {
        https://www.robots.ox.ac.uk/ActiveVision/Publications/torr_murray_ijcv1997/torr_murray_ijcv1997.pdf
     
     <pre>
-    for probablity gamma in excess of 95%:
-    let p = sub-sample size
-    let m = number of subsamples to achieve gamma probability
-    let eps = percentage of bad data
+    for probability gamma in excess of 95%:
+
+    let m = sub-sample size (e.g. 7 for Fundamental Matrix correspondence)
+    let w = percent outliers
+    let N = number of subsamples to achieve gamma probability
+
+    gamma = 1 - ( (1 - w^m)^N)
+
+    z = 1. - math.pow(1. - w, m)
+
+    N = Math.log(1. - 0.95)/Math.log(z)
     
-    gamma = 1 - ( (1 - (1 - eps)^p)^m)
+    table of N's for m=7, 8 and eps from 5%to 50%:
     
-    table of m's for p=7 and eps from 5%to 50%:
-    
-    p |  5%  10%  20%  25%  30%  40%  50%
+    m |  5%  10%  20%  25%  30%  40%  50%
     --------------------------------------
     7 |  3   5    13   21   35   106  382
     8 |  3   6    17   29   51   177  766
     </pre>
+    Note that the number of iterations scales roughly with the subSampleSize as
+    2 ^ (subSampleSize) for larger subSampleSize, 
+    so this method should only be used for small sample sizes (i.e. < 100, preferably << 100).
     */
     public static int numberOfSubsamplesFor95PercentInliers(int outlierPercent,
         int subSampleSize) {
-    
+
+        return numberOfSubsamples(95., outlierPercent, subSampleSize);
+    }
+
+    /**
+     * calculate the number of iterations needed to ensure with percentCertainty that all members of
+     * subSampleSize drawn are "inliers".
+       Note that the number of iterations scales roughly with the subSampleSize as
+       2 ^ (subSampleSize), 
+       so this method should only be used for small sample sizes (i.e. < 100, preferably << 100).
+     * @param percentCertainty the percent certainty that all members in sample of size subSampleSize
+     *                          are "inliers".
+     * @param outlierPercent the percent outliers in the entire dataset.
+     * @param subSampleSize the sample size drawn from the entire dataset in iterations.
+     * @return the number of iteration needed to ensure w/ %certainty that all
+     * members of subSample are inliers.
+     */
+    public static int numberOfSubsamples(double percentCertainty, int outlierPercent,
+                                                            int subSampleSize) {
+        if (percentCertainty <= 0 || percentCertainty >= 100.) {
+            throw new IllegalArgumentException("percentCertainty must be > 0 and < 100");
+        }
         if (outlierPercent < 0) {
             throw new IllegalArgumentException("outlierPercent must be non-negative");
         }
@@ -150,22 +181,22 @@ public class RANSACAlgorithmIterations {
         if (subSampleSize < 0) {
             throw new IllegalArgumentException("outlierPercent must be non-negative");
         }
-        
+
         /*
         1 - gamma = (1 - (1 - eps)^p)^m
            let Z = (1 - (1 - eps)^p)
            let g = 1 - gamma
         g = Z^m
-        log(g) = m*log(Z);       
+        log(g) = m*log(Z);
         m = log(g) / log(Z)
         */
-        int p = subSampleSize;
-        double z = 1. - Math.pow(1. - ((double)outlierPercent/100.), p);
-        double g = 1. - 0.95;
-        
-        double m = Math.log(g) / Math.log(z);
-                        
-        return (int)Math.ceil(m);
+        int m = subSampleSize;
+        double w = (double)outlierPercent/100.;
+        double z = 1. - Math.pow(1. - w, m);
+        double g = 1. - percentCertainty/100.;
+
+        double n = Math.log(g) / Math.log(z);
+
+        return (int)Math.ceil(n);
     }
-    
 }

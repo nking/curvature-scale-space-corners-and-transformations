@@ -719,9 +719,7 @@ public class Reconstruction {
      * This is also called Projective Structure From Motion for the
      * Two-camera case.   it's a distorted version of euclidean 3d.
      *
-     * NOTE that because the camera calibration, that is, intrinsic parameters,
-     * are not known, only the projective reconstruction is possible,
-     * but this can be upgraded to
+     * The projective reconstruction can be upgraded to
      affine (parallelism preserved) and Euclidean (parallelism and orthogonality preserved)
      reconstructions.
      To upgrade to an affine projection, need 3 vanishing points
@@ -737,13 +735,13 @@ public class Reconstruction {
      * https://cs.gmu.edu/~kosecka/bookcode.html
      * which is free for non-commercial use.
      * </pre>
-     * @param x1 the image 1 set of correspondence points.  format is 3 x N where
+     * @param x1c the image 1 set of correspondence points in camera coordinates.  format is 3 x N where
      * N is the number of points.
      * NOTE: since intrinsic parameters are not known, users of this method should
      * presumably center the coordinates in some manner
      * (e.g. unit standard normalization) since internally
      * an identity matrix is used for K.
-     * @param x2 the image 1 set of correspondence points.  format is 3 x N where
+     * @param x2c the image 1 set of correspondence points in camera coordinates.  format is 3 x N where
      *      * N is the number of points.
      *      * NOTE: since intrinsic parameters are not known, users of this method should
      *      * presumably center the coordinates in some manner
@@ -755,34 +753,34 @@ public class Reconstruction {
      */
     public static ProjectionResults[] calculateProjectiveReconstruction(
             double[][] intr1, double[][] intr2,
-            double[][] x1, double[][] x2) throws NotConvergedException {
+            double[][] x1c, double[][] x2c) throws NotConvergedException {
 
-        if (x1.length != 3 || x2.length != 3) {
+        if (x1c.length != 3 || x2c.length != 3) {
             throw new IllegalArgumentException("x1.length must be 3 and so must x2.length");
         }
-        int n0 = x1[0].length;
-        if (x2[0].length != n0) {
+        int n0 = x1c[0].length;
+        if (x2c[0].length != n0) {
             throw new IllegalArgumentException("x1 and x2 must be same dimensions");
         }
         if (n0 < 4) {
             throw new IllegalArgumentException("need at least 4 points to solve for the homography");
         }
 
-        int n = x1[0].length;
+        int n = x1c[0].length;
         int i, j;
 
         // just in case, normalize so that z=1
-        x1 = MatrixUtil.copy(x1);
-        x2 = MatrixUtil.copy(x2);
+        x1c = MatrixUtil.copy(x1c);
+        x2c = MatrixUtil.copy(x2c);
         for (i = 0; i < n; ++i) {
             for (j = 0; j < 3; ++j) {
-                x1[j][i] /= x1[2][i];
-                x2[j][i] /= x2[2][i];
+                x1c[j][i] /= x1c[2][i];
+                x2c[j][i] /= x2c[2][i];
             }
         }
 
         double[] v3 = new double[3];
-        MotionAndStructure[] ms = solveFor4Projective(x1, x2, v3);
+        MotionAndStructure[] ms = solveFor4Projective(x1c, x2c, v3);
 
         // camera matrix P for left image = [I | 0 ]
         double[][] camera1 = MatrixUtil.zeros(3, 4);
@@ -834,8 +832,8 @@ public class Reconstruction {
             //triangulation to look at depth
             for (int ii = 0; ii < n; ++ii) {
                 for (j = 0; j < 3; ++j) {
-                    x1Pt[j][0] = x1[j][ii];
-                    x2Pt[j][0] = x2[j][ii];
+                    x1Pt[j][0] = x1c[j][ii];
+                    x2Pt[j][0] = x2c[j][ii];
                 }
                 Triangulation.WCSPt wcsPt = Triangulation.calculateWCSPoint(camera1, camera2, x1Pt, x2Pt);
                 if (wcsPt == null) {
@@ -905,13 +903,13 @@ public class Reconstruction {
      * https://cs.gmu.edu/~kosecka/bookcode.html
      * which is free for non-commercial use.
      * </pre>
-     * @param x1 the image 1 set of correspondence points.  format is 3 x N where
+     * @param x1c the image 1 set of correspondence points in camera coordinates.  format is 3 x N where
      * N is the number of points.
      * NOTE: since intrinsic parameters are not known, users of this method should
      * presumably center the coordinates in some manner
      * (e.g. unit standard normalization) since internally
      * an identity matrix is used for K.
-     * @param x2 the image 1 set of correspondence points.  format is 3 x N where
+     * @param x2c the image 1 set of correspondence points in camera coordinates.  format is 3 x N where
      *      * N is the number of points.
      *      * NOTE: since intrinsic parameters are not known, users of this method should
      *      * presumably center the coordinates in some manner
@@ -922,13 +920,13 @@ public class Reconstruction {
      * Note that if normalization was performed on x1, and x2, you may want to
      * denormalize the results such as the translation column of P2 which is the last column of P2.
      */
-    public static MotionAndStructure[] solveFor4Projective(double[][] x1, double[][] x2, double[] outV3) throws NotConvergedException {
+    public static MotionAndStructure[] solveFor4Projective(double[][] x1c, double[][] x2c, double[] outV3) throws NotConvergedException {
 
-        if (x1.length != 3 || x2.length != 3) {
+        if (x1c.length != 3 || x2c.length != 3) {
             throw new IllegalArgumentException("x1.length must be 3 and so must x2.length");
         }
-        int n0 = x1[0].length;
-        if (x2[0].length != n0) {
+        int n0 = x1c[0].length;
+        if (x2c[0].length != n0) {
             throw new IllegalArgumentException("x1 and x2 must be same dimensions");
         }
         if (n0 < 4) {
@@ -938,16 +936,16 @@ public class Reconstruction {
             throw new IllegalArgumentException("outV3 length should be 3");
         }
 
-        int n = x1[0].length;
+        int n = x1c[0].length;
         int i, j;
 
         // just in case, normalize so that z=1
-        x1 = MatrixUtil.copy(x1);
-        x2 = MatrixUtil.copy(x2);
+        x1c = MatrixUtil.copy(x1c);
+        x2c = MatrixUtil.copy(x2c);
         for (i = 0; i < n; ++i) {
             for (j = 0; j < 3; ++j) {
-                x1[j][i] /= x1[2][i];
-                x2[j][i] /= x2[2][i];
+                x1c[j][i] /= x1c[2][i];
+                x2c[j][i] /= x2c[2][i];
             }
         }
 
@@ -975,8 +973,8 @@ public class Reconstruction {
          */
         double[][] ell = new double[2*n][12];
         for (i = 0; i < n; ++i) {
-            ell[2*i] = new double[]{0, 0, 0, -x1[0][i], -x1[1][i], -x1[2][i],   x2[1][i]*x1[0][i],  x2[1][i]*x1[1][i],  x2[1][i]};
-            ell[2*i + 1] = new double[]{x1[0][i], x1[1][i], x1[2][i], 0, 0, 0, -x2[0][i]*x1[0][i], -x2[0][i]*x1[1][i], -x2[0][i]};
+            ell[2*i] = new double[]{0, 0, 0, -x1c[0][i], -x1c[1][i], -x1c[2][i],   x2c[1][i]* x1c[0][i],  x2c[1][i]* x1c[1][i],  x2c[1][i]};
+            ell[2*i + 1] = new double[]{x1c[0][i], x1c[1][i], x1c[2][i], 0, 0, 0, -x2c[0][i]* x1c[0][i], -x2c[0][i]* x1c[1][i], -x2c[0][i]};
         }
 
         SVD svd = SVD.factorize(new DenseMatrix(ell));
