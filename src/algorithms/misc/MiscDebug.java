@@ -1407,8 +1407,8 @@ public class MiscDebug {
             yMax = 1.1f * algorithms.misc.MiscMath.findMax(yPoints);
 
             plotterX.addPlot(
-                0, xMax, yMin, yMax,
-                null, null, xPoints, yPoints,
+                0, xMax, yMin, yMax, xPoints, yPoints,
+                null, null,
                 "t vs. X(t, sigma) " + sLabel);
             
             for (int ii = 0; ii < xPoints.length; ii++) {
@@ -1423,8 +1423,8 @@ public class MiscDebug {
             yMax = algorithms.misc.MiscMath.findMax(yPoints);
             // ==== k vs t
             plotterC.addPlot(
-                xMin, xMax, yMin, yMax,
-                null, null, xPoints, yPoints,
+                xMin, xMax, yMin, yMax, xPoints, yPoints,
+                null, null,
                 "t vs. curvature " + sLabel);
 
             // ============ draw Y(t,sigma) =============
