@@ -71,7 +71,7 @@ public class InflectionMapperTwoObjectTest extends TestCase {
 
                 mapper.useLineDrawingLineMode();
 
-                mapper.useDebugMode();
+                //mapper.useDebugMode();
 
                 //TODO: this needs revision:
                 //mapper.setToRefineTransformations();

@@ -87,7 +87,7 @@ public class InflectionMapperOneObjectTest extends TestCase {
 
                 mapper.useLineDrawingLineMode();
 
-                mapper.useDebugMode();
+                //mapper.useDebugMode();
 
   //              mapper.setToRefineTransformations();
 

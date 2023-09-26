@@ -44,7 +44,7 @@ public class CurvatureScaleSpaceInflectionMapperTest extends TestCase {
 
         mapper.useLineDrawingLineMode();
         
-        mapper.useDebugMode();
+        //mapper.useDebugMode();
 
         TransformationParameters transformationParams = 
             mapper.createEuclideanTransformation();

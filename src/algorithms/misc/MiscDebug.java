@@ -820,6 +820,11 @@ public class MiscDebug {
 
     public static void printScaleSpaceCurve(ScaleSpaceCurveImage scaleSpaceImage,
         String fileSuffix) throws IOException {
+
+        if (isEmpty(scaleSpaceImage.getScaleSpaceImage())) {
+            // silently return.  TODO: change to throw IOException
+            return;
+        }
                
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
         
@@ -828,7 +833,17 @@ public class MiscDebug {
         
         plotter.writeFile(fileSuffix);
     }
-    
+
+    private static boolean isEmpty(float[][] scaleSpaceImage) {
+        int c = 0;
+        for (int i = 0; i < scaleSpaceImage.length; ++i) {
+            if (scaleSpaceImage[i].length == 0) {
+                ++c;
+            }
+        }
+        return (c == scaleSpaceImage.length);
+    }
+
     public static void plotScaleSpaceCurve(PolygonAndPointPlotter plotter, 
         ScaleSpaceCurveImage scaleSpaceImage, String label) throws IOException {
         
