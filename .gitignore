@@ -1,7 +1,14 @@
 .DS_Store
 *~
 *.swp
+*.swo
+*.swp
 *.class
+bin2
+miscKeyNotes
+miscPDFs*
+tmpdata
+.idea
 build.log
 miscPDFs
 log
