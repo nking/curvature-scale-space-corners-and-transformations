@@ -1,0 +1,3 @@
+the places.txt file is a test dataset from
+https://online.stat.psu.edu/stat505/book/export/html/670
+
