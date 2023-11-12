@@ -1,7 +1,6 @@
 algorithms
 algorithms.clustering
 algorithms.compGeometry
-algorithms.compGeometry.convexHull
 algorithms.connected
 algorithms.disjointSets
 algorithms.graphs
