@@ -9,9 +9,8 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.PeriodicFFT;
-import algorithms.imageProcessing.util.PairIntWithIndex;
 import algorithms.misc.Complex;
 import algorithms.misc.Histogram;
 import algorithms.misc.HistogramHolder;
@@ -21,7 +20,6 @@ import algorithms.util.Errors;
 import algorithms.util.PairInt;
 import algorithms.util.PixelHelper;
 import com.climbwithyourfeet.clustering.ClusterFinder;
-import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.TIntList;
@@ -43,84 +41,84 @@ import java.util.Set;
  * 
  * @author nichole
  */
-<span class="fc" id="L46">public class UnsupervisedTextureFinder {</span>
+<span class="fc" id="L44">public class UnsupervisedTextureFinder {</span>
    
     public TexturePatchesAndResponse[] createTextureImages(ImageExt img,
         PhaseCongruencyDetector.PhaseCongruencyProducts products,
         String debugTag) {
         
-<span class="fc" id="L52">        List&lt;TexturePatchesAndResponse&gt; output = new</span>
+<span class="fc" id="L50">        List&lt;TexturePatchesAndResponse&gt; output = new</span>
             ArrayList&lt;TexturePatchesAndResponse&gt;();
         
-<span class="fc" id="L55">        GreyscaleImage img2 = img.copyToGreyscale2();</span>
+<span class="fc" id="L53">        GreyscaleImage img2 = img.copyToGreyscale2();</span>
         
-<span class="fc" id="L57">        List&lt;Set&lt;PairInt&gt;&gt; subsetNoise = products.getSubsetNoise();</span>
-<span class="fc" id="L58">        ColorHistogram chhist = new ColorHistogram();</span>
-<span class="fc" id="L59">        int[][][] chs = new int[subsetNoise.size()][][];</span>
-<span class="fc" id="L60">        int[][] sum = chhist.createWithDefaultSize();</span>
-<span class="fc" id="L61">        int count = 0;</span>
-<span class="pc bpc" id="L62" title="1 of 2 branches missed.">        for (int i = 0; i &lt; subsetNoise.size(); ++i) {</span>
-<span class="nc" id="L63">            Set&lt;PairInt&gt; set = subsetNoise.get(i);</span>
-<span class="nc" id="L64">            chs[i] = chhist.histogramHSV(img, set);</span>
-<span class="nc" id="L65">            chhist.add2To1(sum, chs[i]);</span>
-<span class="nc" id="L66">            count += set.size();</span>
+<span class="fc" id="L55">        List&lt;Set&lt;PairInt&gt;&gt; subsetNoise = products.getSubsetNoise();</span>
+<span class="fc" id="L56">        ColorHistogram chhist = new ColorHistogram();</span>
+<span class="fc" id="L57">        int[][][] chs = new int[subsetNoise.size()][][];</span>
+<span class="fc" id="L58">        int[][] sum = chhist.createWithDefaultSize();</span>
+<span class="fc" id="L59">        int count = 0;</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">        for (int i = 0; i &lt; subsetNoise.size(); ++i) {</span>
+<span class="nc" id="L61">            Set&lt;PairInt&gt; set = subsetNoise.get(i);</span>
+<span class="nc" id="L62">            chs[i] = chhist.histogramHSV(img, set);</span>
+<span class="nc" id="L63">            chhist.add2To1(sum, chs[i]);</span>
+<span class="nc" id="L64">            count += set.size();</span>
         }
-<span class="fc" id="L68">        final int nPoints = count;</span>
+<span class="fc" id="L66">        final int nPoints = count;</span>
 
         // multiply each histogram by count/set.size to normalize all to
         // same number of counts
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        for (int i = 0; i &lt; subsetNoise.size(); ++i) {</span>
-<span class="nc" id="L73">            int factor = Math.round((float) count</span>
-<span class="nc" id="L74">                / (float) subsetNoise.get(i).size());</span>
-<span class="nc" id="L75">            int[][] ch = chs[i];</span>
-<span class="nc bnc" id="L76" title="All 2 branches missed.">            for (int ii = 0; ii &lt; sum.length; ++ii) {</span>
-<span class="nc bnc" id="L77" title="All 2 branches missed.">                for (int jj = 0; jj &lt; sum[ii].length; ++jj) {</span>
-<span class="nc" id="L78">                    ch[ii][jj] *= factor;</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        for (int i = 0; i &lt; subsetNoise.size(); ++i) {</span>
+<span class="nc" id="L71">            int factor = Math.round((float) count</span>
+<span class="nc" id="L72">                / (float) subsetNoise.get(i).size());</span>
+<span class="nc" id="L73">            int[][] ch = chs[i];</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">            for (int ii = 0; ii &lt; sum.length; ++ii) {</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">                for (int jj = 0; jj &lt; sum[ii].length; ++jj) {</span>
+<span class="nc" id="L76">                    ch[ii][jj] *= factor;</span>
                 }
             }
         }
 
-<span class="fc" id="L83">        float[] valuesH = new float[subsetNoise.size()];</span>
-<span class="fc" id="L84">        float[] valuesS = new float[subsetNoise.size()];</span>
-<span class="fc" id="L85">        float[] valuesV = new float[subsetNoise.size()];</span>
-<span class="fc" id="L86">        float[] values = new float[subsetNoise.size()];</span>
-<span class="fc" id="L87">        float[][] x2 = new float[subsetNoise.size()][];</span>
+<span class="fc" id="L81">        float[] valuesH = new float[subsetNoise.size()];</span>
+<span class="fc" id="L82">        float[] valuesS = new float[subsetNoise.size()];</span>
+<span class="fc" id="L83">        float[] valuesV = new float[subsetNoise.size()];</span>
+<span class="fc" id="L84">        float[] values = new float[subsetNoise.size()];</span>
+<span class="fc" id="L85">        float[][] x2 = new float[subsetNoise.size()][];</span>
         // looking at the H, S, and V separately
-<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        for (int i = 0; i &lt; subsetNoise.size(); ++i) {</span>
-<span class="nc" id="L90">            x2[i] = new float[3];</span>
-<span class="nc" id="L91">            int[][] ch = chs[i];</span>
-<span class="nc bnc" id="L92" title="All 2 branches missed.">            assert (ch.length == sum.length);</span>
-<span class="nc" id="L93">            chhist.chiSquaredSum(ch, sum, x2[i]);</span>
-<span class="nc" id="L94">            valuesH[i] = x2[i][0];</span>
-<span class="nc" id="L95">            valuesS[i] = x2[i][1];</span>
-<span class="nc" id="L96">            valuesV[i] = x2[i][2];</span>
-<span class="nc" id="L97">            values[i] = chhist.intersection(ch, sum);</span>
-<span class="nc" id="L98">            count++;</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        for (int i = 0; i &lt; subsetNoise.size(); ++i) {</span>
+<span class="nc" id="L88">            x2[i] = new float[3];</span>
+<span class="nc" id="L89">            int[][] ch = chs[i];</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">            assert (ch.length == sum.length);</span>
+<span class="nc" id="L91">            chhist.chiSquaredSum(ch, sum, x2[i]);</span>
+<span class="nc" id="L92">            valuesH[i] = x2[i][0];</span>
+<span class="nc" id="L93">            valuesS[i] = x2[i][1];</span>
+<span class="nc" id="L94">            valuesV[i] = x2[i][2];</span>
+<span class="nc" id="L95">            values[i] = chhist.intersection(ch, sum);</span>
+<span class="nc" id="L96">            count++;</span>
         }
-<span class="fc" id="L100">        int nBins = 32;</span>
-<span class="fc" id="L101">        HistogramHolder histH = Histogram.createSimpleHistogram(</span>
-<span class="fc" id="L102">            nBins, valuesH, Errors.populateYErrorsBySqrt(valuesH));</span>
+<span class="fc" id="L98">        int nBins = 32;</span>
+<span class="fc" id="L99">        HistogramHolder histH = Histogram.createSimpleHistogram(</span>
+<span class="fc" id="L100">            nBins, valuesH, Errors.populateYErrorsBySqrt(valuesH));</span>
         /*try {
             histH.plotHistogram(&quot;cch x2 H&quot;, &quot;_color_hist_H&quot;);
         } catch (IOException ex) {
             Logger.getLogger(UnsupervisedTextureFinder.class.getName()).log(Level.SEVERE, null, ex);
         }*/
-<span class="fc" id="L108">        HistogramHolder histS = Histogram.createSimpleHistogram(</span>
-<span class="fc" id="L109">            nBins, valuesS, Errors.populateYErrorsBySqrt(valuesS));</span>
+<span class="fc" id="L106">        HistogramHolder histS = Histogram.createSimpleHistogram(</span>
+<span class="fc" id="L107">            nBins, valuesS, Errors.populateYErrorsBySqrt(valuesS));</span>
         /*try {
             histS.plotHistogram(&quot;cch x2 S&quot;, &quot;_color_hist_S&quot;);
         } catch (IOException ex) {
             Logger.getLogger(UnsupervisedTextureFinder.class.getName()).log(Level.SEVERE, null, ex);
         }*/
-<span class="fc" id="L115">        HistogramHolder histV = Histogram.createSimpleHistogram(</span>
-<span class="fc" id="L116">            nBins, valuesV, Errors.populateYErrorsBySqrt(valuesV));</span>
+<span class="fc" id="L113">        HistogramHolder histV = Histogram.createSimpleHistogram(</span>
+<span class="fc" id="L114">            nBins, valuesV, Errors.populateYErrorsBySqrt(valuesV));</span>
         /*try {
             histV.plotHistogram(&quot;cch x2 V&quot;, &quot;_color_hist_V&quot;);
         } catch (IOException ex) {
             Logger.getLogger(UnsupervisedTextureFinder.class.getName()).log(Level.SEVERE, null, ex);
         }*/
-<span class="fc" id="L122">        HistogramHolder hist = Histogram.createSimpleHistogram(</span>
-<span class="fc" id="L123">            nBins, values, Errors.populateYErrorsBySqrt(values));</span>
+<span class="fc" id="L120">        HistogramHolder hist = Histogram.createSimpleHistogram(</span>
+<span class="fc" id="L121">            nBins, values, Errors.populateYErrorsBySqrt(values));</span>
         /*try {
             hist.plotHistogram(&quot;cch intersections&quot;, &quot;_color_hist_&quot;);
         } catch (IOException ex) {
@@ -134,176 +132,176 @@ import java.util.Set;
         //      so make s and v histograms within that h range
         //      and hsv combined histograms
         //      -- look at whether
-<span class="fc" id="L137">        List&lt;Integer&gt; indexes = MiscMath.findStrongPeakIndexes(histH,</span>
+<span class="fc" id="L135">        List&lt;Integer&gt; indexes = MiscMath.findStrongPeakIndexes(histH,</span>
             0.02f);
-<span class="fc" id="L139">        int nGroups = indexes.size();</span>
-<span class="fc" id="L140">        TIntList[] groupIndexes = new TIntList[nGroups];</span>
-<span class="fc bfc" id="L141" title="All 2 branches covered.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
-<span class="fc" id="L142">            groupIndexes[i] = new TIntArrayList();</span>
+<span class="fc" id="L137">        int nGroups = indexes.size();</span>
+<span class="fc" id="L138">        TIntList[] groupIndexes = new TIntList[nGroups];</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
+<span class="fc" id="L140">            groupIndexes[i] = new TIntArrayList();</span>
         }
-<span class="fc" id="L144">        Image dbg = img.createWithDimensions();</span>
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        for (int i = 0; i &lt; subsetNoise.size(); ++i) {</span>
-<span class="nc" id="L146">            float x2H = x2[i][0];</span>
-<span class="nc" id="L147">            float minDiff = Float.MAX_VALUE;</span>
-<span class="nc" id="L148">            int minDiffIdx = -1;</span>
-<span class="nc bnc" id="L149" title="All 2 branches missed.">            for (int j = 0; j &lt; nGroups; ++j) {</span>
-<span class="nc" id="L150">                float diff = Math.abs(histV.getXHist()[indexes.get(j).intValue()]</span>
+<span class="fc" id="L142">        Image dbg = img.createWithDimensions();</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        for (int i = 0; i &lt; subsetNoise.size(); ++i) {</span>
+<span class="nc" id="L144">            float x2H = x2[i][0];</span>
+<span class="nc" id="L145">            float minDiff = Float.MAX_VALUE;</span>
+<span class="nc" id="L146">            int minDiffIdx = -1;</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">            for (int j = 0; j &lt; nGroups; ++j) {</span>
+<span class="nc" id="L148">                float diff = Math.abs(histV.getXHist()[indexes.get(j).intValue()]</span>
                     - x2H);
-<span class="nc bnc" id="L152" title="All 2 branches missed.">                if (diff &lt; minDiff) {</span>
-<span class="nc" id="L153">                    minDiff = diff;</span>
-<span class="nc" id="L154">                    minDiffIdx = j;</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">                if (diff &lt; minDiff) {</span>
+<span class="nc" id="L151">                    minDiff = diff;</span>
+<span class="nc" id="L152">                    minDiffIdx = j;</span>
                 }
             }
-<span class="nc" id="L157">            groupIndexes[minDiffIdx].add(i);</span>
-<span class="nc" id="L158">            int[] clr = ImageIOHelper.getNextRGB(minDiffIdx);</span>
-<span class="nc" id="L159">            ImageIOHelper.addCurveToImage(subsetNoise.get(i), dbg,</span>
+<span class="nc" id="L155">            groupIndexes[minDiffIdx].add(i);</span>
+<span class="nc" id="L156">            int[] clr = ImageIOHelper.getNextRGB(minDiffIdx);</span>
+<span class="nc" id="L157">            ImageIOHelper.addCurveToImage(subsetNoise.get(i), dbg,</span>
                 2, clr[0], clr[1], clr[2]);
-<span class="nc" id="L161">            System.out.println(&quot;groupId=&quot; + minDiffIdx + &quot; &quot;</span>
+<span class="nc" id="L159">            System.out.println(&quot;groupId=&quot; + minDiffIdx + &quot; &quot;</span>
                 + &quot; r=&quot; + clr[0] + &quot; g=&quot; + clr[1] + &quot; b=&quot; + clr[2]);
         }
-<span class="fc" id="L164">        MiscDebug.writeImage(dbg, &quot;_texture_clusters_2_&quot; + debugTag);</span>
+<span class="fc" id="L162">        MiscDebug.writeImage(dbg, &quot;_texture_clusters_2_&quot; + debugTag);</span>
 
-<span class="fc" id="L166">        List&lt;GreyscaleImage&gt; patterns = new ArrayList&lt;GreyscaleImage&gt;();</span>
-<span class="fc" id="L167">        List&lt;GroupPixelHSV&gt; patternColors = new ArrayList&lt;GroupPixelHSV&gt;();</span>
+<span class="fc" id="L164">        List&lt;GreyscaleImage&gt; patterns = new ArrayList&lt;GreyscaleImage&gt;();</span>
+<span class="fc" id="L165">        List&lt;GroupPixelHSV&gt; patternColors = new ArrayList&lt;GroupPixelHSV&gt;();</span>
 
-<span class="fc" id="L169">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L167">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
-<span class="fc" id="L171">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L169">        MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();</span>
 
         // ---- a kmeans style iteration to re-org membership
         //      until no change
-<span class="fc" id="L175">        int[][][] sumCHs = new int[nGroups][][];</span>
-<span class="fc" id="L176">        int nIter = 0;</span>
-<span class="fc" id="L177">        final int nIterMax = 10;</span>
-<span class="fc" id="L178">        double prevTotSim = Double.MAX_VALUE;</span>
-<span class="fc bfc" id="L179" title="All 2 branches covered.">        while (nIter &lt; nIterMax) {</span>
-<span class="fc bfc" id="L180" title="All 2 branches covered.">            for (int i = 0; i &lt; nGroups; ++i) {</span>
-<span class="fc" id="L181">                sumCHs[i] = chhist.createWithDefaultSize();</span>
-<span class="fc" id="L182">                TIntList snIndexes = groupIndexes[i];</span>
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">                for (int j = 0; j &lt; snIndexes.size(); ++j) {</span>
-<span class="nc" id="L184">                    int idx = snIndexes.get(j);</span>
-<span class="nc" id="L185">                    chhist.add2To1(sumCHs[i], chs[idx]);</span>
+<span class="fc" id="L173">        int[][][] sumCHs = new int[nGroups][][];</span>
+<span class="fc" id="L174">        int nIter = 0;</span>
+<span class="fc" id="L175">        final int nIterMax = 10;</span>
+<span class="fc" id="L176">        double prevTotSim = Double.MAX_VALUE;</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">        while (nIter &lt; nIterMax) {</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">            for (int i = 0; i &lt; nGroups; ++i) {</span>
+<span class="fc" id="L179">                sumCHs[i] = chhist.createWithDefaultSize();</span>
+<span class="fc" id="L180">                TIntList snIndexes = groupIndexes[i];</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">                for (int j = 0; j &lt; snIndexes.size(); ++j) {</span>
+<span class="nc" id="L182">                    int idx = snIndexes.get(j);</span>
+<span class="nc" id="L183">                    chhist.add2To1(sumCHs[i], chs[idx]);</span>
                 }
-<span class="fc" id="L187">                groupIndexes[i].clear();</span>
+<span class="fc" id="L185">                groupIndexes[i].clear();</span>
             }
-<span class="fc" id="L189">            double totSim = 0;</span>
-<span class="pc bpc" id="L190" title="1 of 2 branches missed.">            for (int i = 0; i &lt; subsetNoise.size(); ++i) {</span>
-<span class="nc" id="L191">                int[][] ch = chs[i];</span>
-<span class="nc" id="L192">                float maxSim = Float.NEGATIVE_INFINITY;</span>
-<span class="nc" id="L193">                int maxSimIdx = -1;</span>
-<span class="nc bnc" id="L194" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nGroups; ++ii) {</span>
-<span class="nc" id="L195">                    float intersection = chhist.intersection(</span>
+<span class="fc" id="L187">            double totSim = 0;</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">            for (int i = 0; i &lt; subsetNoise.size(); ++i) {</span>
+<span class="nc" id="L189">                int[][] ch = chs[i];</span>
+<span class="nc" id="L190">                float maxSim = Float.NEGATIVE_INFINITY;</span>
+<span class="nc" id="L191">                int maxSimIdx = -1;</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nGroups; ++ii) {</span>
+<span class="nc" id="L193">                    float intersection = chhist.intersection(</span>
                         sumCHs[ii], ch);
-<span class="nc bnc" id="L197" title="All 2 branches missed.">                    if (intersection &gt; maxSim) {</span>
-<span class="nc" id="L198">                        maxSim = intersection;</span>
-<span class="nc" id="L199">                        maxSimIdx = ii;</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">                    if (intersection &gt; maxSim) {</span>
+<span class="nc" id="L196">                        maxSim = intersection;</span>
+<span class="nc" id="L197">                        maxSimIdx = ii;</span>
                     }
                 }
-<span class="nc" id="L202">                groupIndexes[maxSimIdx].add(i);</span>
-<span class="nc" id="L203">                totSim += maxSim;</span>
+<span class="nc" id="L200">                groupIndexes[maxSimIdx].add(i);</span>
+<span class="nc" id="L201">                totSim += maxSim;</span>
             }
-<span class="fc" id="L205">            System.out.println(&quot;nIter=&quot; + nIter + &quot; totSim=&quot; + totSim);</span>
+<span class="fc" id="L203">            System.out.println(&quot;nIter=&quot; + nIter + &quot; totSim=&quot; + totSim);</span>
             // sim is 1.0 for perfect match
-<span class="fc bfc" id="L207" title="All 2 branches covered.">            if (nIter &gt; 0</span>
-<span class="pc bpc" id="L208" title="2 of 4 branches missed.">                &amp;&amp; (Math.abs(totSim - prevTotSim) &lt; (0.01 * nPoints))</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">            if (nIter &gt; 0</span>
+<span class="pc bpc" id="L206" title="2 of 4 branches missed.">                &amp;&amp; (Math.abs(totSim - prevTotSim) &lt; (0.01 * nPoints))</span>
                 || (totSim &gt; (0.7 * nPoints))) {
-<span class="nc" id="L210">                break;</span>
+<span class="nc" id="L208">                break;</span>
             }
-<span class="fc" id="L212">            prevTotSim = totSim;</span>
-<span class="fc" id="L213">            nIter++;</span>
-<span class="fc" id="L214">        }</span>
+<span class="fc" id="L210">            prevTotSim = totSim;</span>
+<span class="fc" id="L211">            nIter++;</span>
+<span class="fc" id="L212">        }</span>
 
-<span class="fc" id="L216">        dbg = img.createWithDimensions();</span>
-<span class="fc bfc" id="L217" title="All 2 branches covered.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
-<span class="fc" id="L218">            int[] clr = ImageIOHelper.getNextRGB(i);</span>
-<span class="fc" id="L219">            TIntList snIndexes = groupIndexes[i];</span>
-<span class="pc bpc" id="L220" title="1 of 2 branches missed.">            for (int j = 0; j &lt; snIndexes.size(); ++j) {</span>
-<span class="nc" id="L221">                int idx = snIndexes.get(j);</span>
-<span class="nc" id="L222">                ImageIOHelper.addCurveToImage(</span>
-<span class="nc" id="L223">                    subsetNoise.get(idx), dbg, 2,</span>
+<span class="fc" id="L214">        dbg = img.createWithDimensions();</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
+<span class="fc" id="L216">            int[] clr = ImageIOHelper.getNextRGB(i);</span>
+<span class="fc" id="L217">            TIntList snIndexes = groupIndexes[i];</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">            for (int j = 0; j &lt; snIndexes.size(); ++j) {</span>
+<span class="nc" id="L219">                int idx = snIndexes.get(j);</span>
+<span class="nc" id="L220">                ImageIOHelper.addCurveToImage(</span>
+<span class="nc" id="L221">                    subsetNoise.get(idx), dbg, 2,</span>
                     clr[0], clr[1], clr[2]);
             }
-<span class="fc" id="L226">            System.out.println(&quot;groupId=&quot; + i + &quot; &quot;</span>
+<span class="fc" id="L224">            System.out.println(&quot;groupId=&quot; + i + &quot; &quot;</span>
                 + &quot; r=&quot; + clr[0] + &quot; g=&quot; + clr[1] + &quot; b=&quot; + clr[2]);
         }
-<span class="fc" id="L229">        MiscDebug.writeImage(dbg, &quot;_texture_clusters_3_&quot; + debugTag);</span>
+<span class="fc" id="L227">        MiscDebug.writeImage(dbg, &quot;_texture_clusters_3_&quot; + debugTag);</span>
 
-<span class="fc" id="L231">        List&lt;Set&lt;PairInt&gt;&gt; rList = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L229">        List&lt;Set&lt;PairInt&gt;&gt; rList = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
         //TFloatList critDists = new TFloatArrayList();
-<span class="fc" id="L233">        TIntList groupIndexList = new TIntArrayList();</span>
-<span class="fc" id="L234">        List&lt;GroupPixelHSV&gt; colors = new ArrayList&lt;GroupPixelHSV&gt;();</span>
+<span class="fc" id="L231">        TIntList groupIndexList = new TIntArrayList();</span>
+<span class="fc" id="L232">        List&lt;GroupPixelHSV&gt; colors = new ArrayList&lt;GroupPixelHSV&gt;();</span>
 
         
-<span class="fc" id="L237">        int w = img.getWidth();</span>
-<span class="fc" id="L238">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L235">        int w = img.getWidth();</span>
+<span class="fc" id="L236">        PixelHelper ph = new PixelHelper();</span>
             
-<span class="fc bfc" id="L240" title="All 2 branches covered.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
-<span class="fc" id="L241">            TIntList snIndexes = groupIndexes[i];</span>
-<span class="pc bpc" id="L242" title="1 of 2 branches missed.">            if (snIndexes.size() == 0) {</span>
-<span class="fc" id="L243">                continue;</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
+<span class="fc" id="L239">            TIntList snIndexes = groupIndexes[i];</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">            if (snIndexes.size() == 0) {</span>
+<span class="fc" id="L241">                continue;</span>
             }
-<span class="nc" id="L245">            TLongSet pixIdxs2 = new TLongHashSet();</span>
-<span class="nc" id="L246">            int maxX = Integer.MIN_VALUE;</span>
-<span class="nc" id="L247">            int maxY = Integer.MIN_VALUE;</span>
-<span class="nc bnc" id="L248" title="All 2 branches missed.">            for (int j = 0; j &lt; snIndexes.size(); ++j) {</span>
-<span class="nc" id="L249">                Set&lt;PairInt&gt; set = subsetNoise.get(snIndexes.get(j));</span>
-<span class="nc bnc" id="L250" title="All 2 branches missed.">                for (PairInt p : set) {</span>
-<span class="nc" id="L251">                    int x = p.getX();</span>
-<span class="nc" id="L252">                    int y = p.getY();</span>
-<span class="nc" id="L253">                    long pixIdx = ph.toPixelIndex(p, w);</span>
-<span class="nc" id="L254">                    pixIdxs2.add(pixIdx);</span>
-<span class="nc bnc" id="L255" title="All 2 branches missed.">                    if (x &gt; maxX) {</span>
-<span class="nc" id="L256">                        maxX = x;</span>
+<span class="nc" id="L243">            TLongSet pixIdxs2 = new TLongHashSet();</span>
+<span class="nc" id="L244">            int maxX = Integer.MIN_VALUE;</span>
+<span class="nc" id="L245">            int maxY = Integer.MIN_VALUE;</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">            for (int j = 0; j &lt; snIndexes.size(); ++j) {</span>
+<span class="nc" id="L247">                Set&lt;PairInt&gt; set = subsetNoise.get(snIndexes.get(j));</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">                for (PairInt p : set) {</span>
+<span class="nc" id="L249">                    int x = p.getX();</span>
+<span class="nc" id="L250">                    int y = p.getY();</span>
+<span class="nc" id="L251">                    long pixIdx = ph.toPixelIndex(p, w);</span>
+<span class="nc" id="L252">                    pixIdxs2.add(pixIdx);</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">                    if (x &gt; maxX) {</span>
+<span class="nc" id="L254">                        maxX = x;</span>
                     }
-<span class="nc bnc" id="L258" title="All 2 branches missed.">                    if (y &gt; maxY) {</span>
-<span class="nc" id="L259">                        maxY = y;</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">                    if (y &gt; maxY) {</span>
+<span class="nc" id="L257">                        maxY = y;</span>
                     }
-<span class="nc" id="L261">                }</span>
+<span class="nc" id="L259">                }</span>
             }
 
-<span class="nc" id="L264">            ClusterFinder cFinder = new ClusterFinder(pixIdxs2,</span>
-<span class="nc" id="L265">                img.getHeight(), w);</span>
-<span class="nc" id="L266">            cFinder.setThreshholdFactor(1.f);</span>
-<span class="nc" id="L267">            cFinder.setMinimumNumberInCluster(1);</span>
-<span class="nc" id="L268">            cFinder.calculateBackgroundSeparation();</span>
-<span class="nc" id="L269">            cFinder.findClusters();</span>
-<span class="nc" id="L270">            List&lt;TLongSet&gt; groupList = cFinder.getGroups();</span>
-<span class="nc" id="L271">            final int n = groupList.size();</span>
+<span class="nc" id="L262">            ClusterFinder cFinder = new ClusterFinder(pixIdxs2,</span>
+<span class="nc" id="L263">                img.getHeight(), w);</span>
+<span class="nc" id="L264">            cFinder.setThreshholdFactor(1.f);</span>
+<span class="nc" id="L265">            cFinder.setMinimumNumberInCluster(1);</span>
+<span class="nc" id="L266">            cFinder.calculateBackgroundSeparation();</span>
+<span class="nc" id="L267">            cFinder.findClusters();</span>
+<span class="nc" id="L268">            List&lt;TLongSet&gt; groupList = cFinder.getGroups();</span>
+<span class="nc" id="L269">            final int n = groupList.size();</span>
 
-<span class="nc" id="L273">            int maxN = Integer.MIN_VALUE;</span>
-<span class="nc" id="L274">            int maxNIdx = -1;</span>
-<span class="nc bnc" id="L275" title="All 2 branches missed.">            for (int ii = 0; ii &lt; n; ++ii) {</span>
-<span class="nc" id="L276">                int sz = groupList.get(ii).size();</span>
-<span class="nc bnc" id="L277" title="All 2 branches missed.">                if (sz &gt; maxN) {</span>
-<span class="nc" id="L278">                    maxN = sz;</span>
-<span class="nc" id="L279">                    maxNIdx = ii;</span>
+<span class="nc" id="L271">            int maxN = Integer.MIN_VALUE;</span>
+<span class="nc" id="L272">            int maxNIdx = -1;</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">            for (int ii = 0; ii &lt; n; ++ii) {</span>
+<span class="nc" id="L274">                int sz = groupList.get(ii).size();</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">                if (sz &gt; maxN) {</span>
+<span class="nc" id="L276">                    maxN = sz;</span>
+<span class="nc" id="L277">                    maxNIdx = ii;</span>
                 }
             }
-<span class="nc bnc" id="L282" title="All 2 branches missed.">            if (maxNIdx != -1) {</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">            if (maxNIdx != -1) {</span>
                 
-<span class="nc" id="L284">                int[] xy = new int[2];</span>
+<span class="nc" id="L282">                int[] xy = new int[2];</span>
 
-<span class="nc" id="L286">                Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L287">                TLongIterator iter3 = groupList.get(maxNIdx).iterator();</span>
-<span class="nc bnc" id="L288" title="All 2 branches missed.">                while (iter3.hasNext()) {</span>
-<span class="nc" id="L289">                    long pixIdx = iter3.next();</span>
-<span class="nc" id="L290">                    ph.toPixelCoords(pixIdx, w, xy);</span>
-<span class="nc" id="L291">                    set.add(new PairInt(xy[0], xy[1]));</span>
-<span class="nc" id="L292">                }</span>
+<span class="nc" id="L284">                Set&lt;PairInt&gt; set = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L285">                TLongIterator iter3 = groupList.get(maxNIdx).iterator();</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">                while (iter3.hasNext()) {</span>
+<span class="nc" id="L287">                    long pixIdx = iter3.next();</span>
+<span class="nc" id="L288">                    ph.toPixelCoords(pixIdx, w, xy);</span>
+<span class="nc" id="L289">                    set.add(new PairInt(xy[0], xy[1]));</span>
+<span class="nc" id="L290">                }</span>
 
-<span class="nc bnc" id="L294" title="All 2 branches missed.">                if (set.isEmpty()) {</span>
-<span class="nc" id="L295">                    continue;</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">                if (set.isEmpty()) {</span>
+<span class="nc" id="L293">                    continue;</span>
                 }
 
-<span class="nc" id="L298">                int critSep = Math.round(cFinder.getBackgroundSeparationHolder()</span>
-<span class="nc" id="L299">                    .getXBackgroundSeparation());</span>
+<span class="nc" id="L296">                int critSep = Math.round(cFinder.getBackgroundSeparationHolder()</span>
+<span class="nc" id="L297">                    .getXBackgroundSeparation());</span>
 
                 //critDists.add(critDist);
-<span class="nc" id="L302">                int patchWidth = critSep;</span>
-<span class="nc bnc" id="L303" title="All 2 branches missed.">                if ((patchWidth &amp; 1) == 0) {</span>
-<span class="nc" id="L304">                    patchWidth++;</span>
+<span class="nc" id="L300">                int patchWidth = critSep;</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">                if ((patchWidth &amp; 1) == 0) {</span>
+<span class="nc" id="L302">                    patchWidth++;</span>
                 }
-<span class="nc" id="L306">                int patchHalf = patchWidth &gt;&gt; 1;</span>
+<span class="nc" id="L304">                int patchHalf = patchWidth &gt;&gt; 1;</span>
 
                 // --- make representative patches for this set, where
                 //     patch is the color image histograms centered at
@@ -315,314 +313,314 @@ import java.util.Set;
                 //        -- then the patches are the window of all pixels
                 //           around the centroid of pick
                 PairInt[] rPoints;
-<span class="nc bnc" id="L318" title="All 2 branches missed.">                if (set.size() &lt; 4) {</span>
-<span class="nc" id="L319">                    rPoints = new PairInt[set.size()];</span>
-<span class="nc" id="L320">                    int count2 = 0;</span>
-<span class="nc bnc" id="L321" title="All 2 branches missed.">                    for (PairInt p : set) {</span>
-<span class="nc" id="L322">                        rPoints[count2] = p;</span>
-<span class="nc" id="L323">                        count2++;</span>
-<span class="nc" id="L324">                    }</span>
-<span class="nc" id="L325">                } else {</span>
-<span class="nc" id="L326">                    int[][][] chs2 = new int[set.size()][][];</span>
-<span class="nc" id="L327">                    int[][] sum2 = chhist.createWithDefaultSize();</span>
-<span class="nc" id="L328">                    int count2 = 0;</span>
-<span class="nc bnc" id="L329" title="All 2 branches missed.">                    for (PairInt p : set) {</span>
-<span class="nc" id="L330">                        int x = p.getX();</span>
-<span class="nc" id="L331">                        int y = p.getY();</span>
-<span class="nc" id="L332">                        Set&lt;PairInt&gt; rect = imageProcessor</span>
-<span class="nc" id="L333">                            .createWindowOfPoints(x, y, patchHalf,</span>
-<span class="nc" id="L334">                                img.getWidth(), img.getHeight());</span>
-<span class="nc" id="L335">                        chs2[count2] = chhist.histogramHSV(img, rect);</span>
-<span class="nc" id="L336">                        chhist.add2To1(sum2, chs2[count2]);</span>
-<span class="nc" id="L337">                        count2++;</span>
-<span class="nc" id="L338">                    }</span>
-<span class="nc" id="L339">                    FixedSizeSortedVector&lt;IntegerPI&gt; sortedInter = new FixedSizeSortedVector&lt;IntegerPI&gt;(set.size(),</span>
+<span class="nc bnc" id="L316" title="All 2 branches missed.">                if (set.size() &lt; 4) {</span>
+<span class="nc" id="L317">                    rPoints = new PairInt[set.size()];</span>
+<span class="nc" id="L318">                    int count2 = 0;</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">                    for (PairInt p : set) {</span>
+<span class="nc" id="L320">                        rPoints[count2] = p;</span>
+<span class="nc" id="L321">                        count2++;</span>
+<span class="nc" id="L322">                    }</span>
+<span class="nc" id="L323">                } else {</span>
+<span class="nc" id="L324">                    int[][][] chs2 = new int[set.size()][][];</span>
+<span class="nc" id="L325">                    int[][] sum2 = chhist.createWithDefaultSize();</span>
+<span class="nc" id="L326">                    int count2 = 0;</span>
+<span class="nc bnc" id="L327" title="All 2 branches missed.">                    for (PairInt p : set) {</span>
+<span class="nc" id="L328">                        int x = p.getX();</span>
+<span class="nc" id="L329">                        int y = p.getY();</span>
+<span class="nc" id="L330">                        Set&lt;PairInt&gt; rect = imageProcessor</span>
+<span class="nc" id="L331">                            .createWindowOfPoints(x, y, patchHalf,</span>
+<span class="nc" id="L332">                                img.getWidth(), img.getHeight());</span>
+<span class="nc" id="L333">                        chs2[count2] = chhist.histogramHSV(img, rect);</span>
+<span class="nc" id="L334">                        chhist.add2To1(sum2, chs2[count2]);</span>
+<span class="nc" id="L335">                        count2++;</span>
+<span class="nc" id="L336">                    }</span>
+<span class="nc" id="L337">                    FixedSizeSortedVector&lt;IntegerPI&gt; sortedInter = new FixedSizeSortedVector&lt;IntegerPI&gt;(set.size(),</span>
                         IntegerPI.class);
-<span class="nc" id="L341">                    count2 = 0;</span>
-<span class="nc bnc" id="L342" title="All 2 branches missed.">                    for (PairInt p : set) {</span>
-<span class="nc" id="L343">                        float intersection = chhist.intersection(</span>
+<span class="nc" id="L339">                    count2 = 0;</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">                    for (PairInt p : set) {</span>
+<span class="nc" id="L341">                        float intersection = chhist.intersection(</span>
                             sum2, chs2[count2]);
-<span class="nc" id="L345">                        IntegerPI ip = new IntegerPI(</span>
-<span class="nc" id="L346">                            Math.round(100 * intersection), p);</span>
-<span class="nc" id="L347">                        sortedInter.add(ip);</span>
-<span class="nc" id="L348">                        count2++;</span>
-<span class="nc" id="L349">                    }</span>
-<span class="nc" id="L350">                    rPoints = new PairInt[3];</span>
-<span class="nc" id="L351">                    rPoints[0] = sortedInter.getArray()[0].p;</span>
-<span class="nc" id="L352">                    rPoints[1] = sortedInter.getArray()[set.size() / 2].p;</span>
-<span class="nc" id="L353">                    rPoints[2] = sortedInter.getArray()[set.size() - 1].p;</span>
+<span class="nc" id="L343">                        IntegerPI ip = new IntegerPI(</span>
+<span class="nc" id="L344">                            Math.round(100 * intersection), p);</span>
+<span class="nc" id="L345">                        sortedInter.add(ip);</span>
+<span class="nc" id="L346">                        count2++;</span>
+<span class="nc" id="L347">                    }</span>
+<span class="nc" id="L348">                    rPoints = new PairInt[3];</span>
+<span class="nc" id="L349">                    rPoints[0] = sortedInter.getArray()[0].p;</span>
+<span class="nc" id="L350">                    rPoints[1] = sortedInter.getArray()[set.size() / 2].p;</span>
+<span class="nc" id="L351">                    rPoints[2] = sortedInter.getArray()[set.size() - 1].p;</span>
                 }
 
-<span class="nc bnc" id="L356" title="All 2 branches missed.">                for (PairInt r : rPoints) {</span>
+<span class="nc bnc" id="L354" title="All 2 branches missed.">                for (PairInt r : rPoints) {</span>
 
-<span class="nc" id="L358">                    int x = r.getX();</span>
-<span class="nc" id="L359">                    int y = r.getY();</span>
+<span class="nc" id="L356">                    int x = r.getX();</span>
+<span class="nc" id="L357">                    int y = r.getY();</span>
 
-<span class="nc" id="L361">                    Set&lt;PairInt&gt; rect = imageProcessor.createWindowOfPoints(</span>
-<span class="nc" id="L362">                        x, y, patchHalf, img.getWidth(), img.getHeight());</span>
+<span class="nc" id="L359">                    Set&lt;PairInt&gt; rect = imageProcessor.createWindowOfPoints(</span>
+<span class="nc" id="L360">                        x, y, patchHalf, img.getWidth(), img.getHeight());</span>
 
                     // determine avg and std of color to use as a filter for
                     // image. using HSV
-<span class="nc" id="L366">                    GroupPixelHSV hsv = new GroupPixelHSV();</span>
-<span class="nc" id="L367">                    hsv.calculateColors(rect, img);</span>
+<span class="nc" id="L364">                    GroupPixelHSV hsv = new GroupPixelHSV();</span>
+<span class="nc" id="L365">                    hsv.calculateColors(rect, img);</span>
 
-<span class="nc" id="L369">                    int[] minMaxXY = MiscMath.findMinMaxXY(rect);</span>
-<span class="nc" id="L370">                    int n0 = (minMaxXY[1] - minMaxXY[0]) + 1;</span>
-<span class="nc" id="L371">                    int n1 = (minMaxXY[3] - minMaxXY[2]) + 1;</span>
+<span class="nc" id="L367">                    int[] minMaxXY = MiscMath.findMinMaxXY(rect);</span>
+<span class="nc" id="L368">                    int n0 = (minMaxXY[1] - minMaxXY[0]) + 1;</span>
+<span class="nc" id="L369">                    int n1 = (minMaxXY[3] - minMaxXY[2]) + 1;</span>
 
-<span class="nc" id="L373">                    GreyscaleImage imagePattern = new GreyscaleImage(</span>
+<span class="nc" id="L371">                    GreyscaleImage imagePattern = new GreyscaleImage(</span>
                         patchWidth, patchWidth);
 
-<span class="nc bnc" id="L376" title="All 2 branches missed.">                    for (PairInt p2 : rect) {</span>
-<span class="nc" id="L377">                        int x3 = p2.getX();</span>
-<span class="nc" id="L378">                        int y3 = p2.getY();</span>
-<span class="nc" id="L379">                        int v = img2.getValue(x3, y3);</span>
-<span class="nc" id="L380">                        x3 -= minMaxXY[0];</span>
-<span class="nc" id="L381">                        y3 -= minMaxXY[2];</span>
-<span class="nc" id="L382">                        imagePattern.setValue(x3, y3, v);</span>
-<span class="nc" id="L383">                    }</span>
+<span class="nc bnc" id="L374" title="All 2 branches missed.">                    for (PairInt p2 : rect) {</span>
+<span class="nc" id="L375">                        int x3 = p2.getX();</span>
+<span class="nc" id="L376">                        int y3 = p2.getY();</span>
+<span class="nc" id="L377">                        int v = img2.getValue(x3, y3);</span>
+<span class="nc" id="L378">                        x3 -= minMaxXY[0];</span>
+<span class="nc" id="L379">                        y3 -= minMaxXY[2];</span>
+<span class="nc" id="L380">                        imagePattern.setValue(x3, y3, v);</span>
+<span class="nc" id="L381">                    }</span>
 
-<span class="nc" id="L385">                    patterns.add(imagePattern);</span>
-<span class="nc" id="L386">                    rList.add(rect);</span>
-<span class="nc" id="L387">                    colors.add(hsv);</span>
-<span class="nc" id="L388">                    groupIndexList.add(i);</span>
+<span class="nc" id="L383">                    patterns.add(imagePattern);</span>
+<span class="nc" id="L384">                    rList.add(rect);</span>
+<span class="nc" id="L385">                    colors.add(hsv);</span>
+<span class="nc" id="L386">                    groupIndexList.add(i);</span>
                 }
             }
         }
 
         // plot rList
-<span class="pc bpc" id="L394" title="1 of 2 branches missed.">        for (int i = 0; i &lt; rList.size(); ++i) {</span>
-<span class="nc" id="L395">            dbg = img.createWithDimensions();</span>
-<span class="nc" id="L396">            int[] clr = ImageIOHelper.getNextRGB(i);</span>
-<span class="nc" id="L397">            ImageIOHelper.addCurveToImage(rList.get(i), dbg, 2,</span>
+<span class="pc bpc" id="L392" title="1 of 2 branches missed.">        for (int i = 0; i &lt; rList.size(); ++i) {</span>
+<span class="nc" id="L393">            dbg = img.createWithDimensions();</span>
+<span class="nc" id="L394">            int[] clr = ImageIOHelper.getNextRGB(i);</span>
+<span class="nc" id="L395">            ImageIOHelper.addCurveToImage(rList.get(i), dbg, 2,</span>
                 clr[0], clr[1], clr[2]);
             //System.out.println(&quot;**groupId=&quot; + i + &quot; &quot;
             //    + &quot; r=&quot; + clr[0] + &quot; g=&quot; + clr[1] + &quot; b=&quot; + clr[2]);
-<span class="nc" id="L401">            MiscDebug.writeImage(dbg, &quot;_texture_clusters_4_&quot; + i + &quot;_&quot;</span>
+<span class="nc" id="L399">            MiscDebug.writeImage(dbg, &quot;_texture_clusters_4_&quot; + i + &quot;_&quot;</span>
                 + debugTag);
         }
 
         // make hsv filtered copies of image, then extracy greuscale
-<span class="fc" id="L406">        List&lt;GreyscaleImage&gt; filteredHSVImgs = new ArrayList&lt;GreyscaleImage&gt;();</span>
-<span class="fc" id="L407">        float eFactor = 1.f;//2.f;</span>
-<span class="pc bpc" id="L408" title="1 of 2 branches missed.">        for (int i = 0; i &lt; colors.size(); ++i) {</span>
-<span class="nc" id="L409">            GroupPixelHSV hsv = colors.get(i);</span>
-<span class="nc" id="L410">            float h0 = hsv.getAvgH() - eFactor * hsv.getStdDevH();</span>
-<span class="nc" id="L411">            float h1 = hsv.getAvgH() + eFactor * hsv.getStdDevH();</span>
-<span class="nc" id="L412">            float s0 = hsv.getAvgS() - eFactor * hsv.getStdDevS();</span>
-<span class="nc" id="L413">            float s1 = hsv.getAvgS() + eFactor * hsv.getStdDevS();</span>
-<span class="nc" id="L414">            float v0 = hsv.getAvgV() - eFactor * hsv.getStdDevV();</span>
-<span class="nc" id="L415">            float v1 = hsv.getAvgV() + eFactor * hsv.getStdDevV();</span>
+<span class="fc" id="L404">        List&lt;GreyscaleImage&gt; filteredHSVImgs = new ArrayList&lt;GreyscaleImage&gt;();</span>
+<span class="fc" id="L405">        float eFactor = 1.f;//2.f;</span>
+<span class="pc bpc" id="L406" title="1 of 2 branches missed.">        for (int i = 0; i &lt; colors.size(); ++i) {</span>
+<span class="nc" id="L407">            GroupPixelHSV hsv = colors.get(i);</span>
+<span class="nc" id="L408">            float h0 = hsv.getAvgH() - eFactor * hsv.getStdDevH();</span>
+<span class="nc" id="L409">            float h1 = hsv.getAvgH() + eFactor * hsv.getStdDevH();</span>
+<span class="nc" id="L410">            float s0 = hsv.getAvgS() - eFactor * hsv.getStdDevS();</span>
+<span class="nc" id="L411">            float s1 = hsv.getAvgS() + eFactor * hsv.getStdDevS();</span>
+<span class="nc" id="L412">            float v0 = hsv.getAvgV() - eFactor * hsv.getStdDevV();</span>
+<span class="nc" id="L413">            float v1 = hsv.getAvgV() + eFactor * hsv.getStdDevV();</span>
 
-<span class="nc" id="L417">            float l0 = hsv.getAvgL() - eFactor * hsv.getStdDevL();</span>
-<span class="nc" id="L418">            float l1 = hsv.getAvgL() + eFactor * hsv.getStdDevL();</span>
-<span class="nc" id="L419">            float a0 = hsv.getAvgA() - eFactor * hsv.getStdDevA();</span>
-<span class="nc" id="L420">            float a1 = hsv.getAvgA() + eFactor * hsv.getStdDevA();</span>
-<span class="nc" id="L421">            float b0 = hsv.getAvgB() - eFactor * hsv.getStdDevB();</span>
-<span class="nc" id="L422">            float b1 = hsv.getAvgB() + eFactor * hsv.getStdDevB();</span>
+<span class="nc" id="L415">            float l0 = hsv.getAvgL() - eFactor * hsv.getStdDevL();</span>
+<span class="nc" id="L416">            float l1 = hsv.getAvgL() + eFactor * hsv.getStdDevL();</span>
+<span class="nc" id="L417">            float a0 = hsv.getAvgA() - eFactor * hsv.getStdDevA();</span>
+<span class="nc" id="L418">            float a1 = hsv.getAvgA() + eFactor * hsv.getStdDevA();</span>
+<span class="nc" id="L419">            float b0 = hsv.getAvgB() - eFactor * hsv.getStdDevB();</span>
+<span class="nc" id="L420">            float b1 = hsv.getAvgB() + eFactor * hsv.getStdDevB();</span>
 
-<span class="nc" id="L424">            Image imgCp = img.copyImage();</span>
-<span class="nc bnc" id="L425" title="All 2 branches missed.">            for (int j = 0; j &lt; img.getNPixels(); ++j) {</span>
-<span class="nc" id="L426">                float h = img.getHue(j);</span>
-<span class="nc" id="L427">                float s = img.getSaturation(j);</span>
-<span class="nc" id="L428">                float v = img.getBrightness(j);</span>
-<span class="nc bnc" id="L429" title="All 12 branches missed.">                if (h &lt; h0 || h &gt; h1 || s &lt; s0 || s &gt; s1 || v &lt; v0 || v &gt; v1) {</span>
-<span class="nc" id="L430">                    imgCp.setRGB(j, 0, 0, 0);</span>
-<span class="nc" id="L431">                    continue;</span>
+<span class="nc" id="L422">            Image imgCp = img.copyImage();</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">            for (int j = 0; j &lt; img.getNPixels(); ++j) {</span>
+<span class="nc" id="L424">                float h = img.getHue(j);</span>
+<span class="nc" id="L425">                float s = img.getSaturation(j);</span>
+<span class="nc" id="L426">                float v = img.getBrightness(j);</span>
+<span class="nc bnc" id="L427" title="All 12 branches missed.">                if (h &lt; h0 || h &gt; h1 || s &lt; s0 || s &gt; s1 || v &lt; v0 || v &gt; v1) {</span>
+<span class="nc" id="L428">                    imgCp.setRGB(j, 0, 0, 0);</span>
+<span class="nc" id="L429">                    continue;</span>
                 }
-<span class="nc" id="L433">                float[] lab = img.getCIELAB(j);</span>
-<span class="nc bnc" id="L434" title="All 12 branches missed.">                if (lab[0] &lt; l0 || lab[0] &gt; l1</span>
+<span class="nc" id="L431">                float[] lab = img.getCIELAB(j);</span>
+<span class="nc bnc" id="L432" title="All 12 branches missed.">                if (lab[0] &lt; l0 || lab[0] &gt; l1</span>
                     || lab[1] &lt; a0 || lab[1] &gt; a1
                     || lab[2] &lt; b0 || lab[2] &gt; b1) {
-<span class="nc" id="L437">                    imgCp.setRGB(j, 0, 0, 0);</span>
+<span class="nc" id="L435">                    imgCp.setRGB(j, 0, 0, 0);</span>
                 }
             }
 
-<span class="nc" id="L441">            filteredHSVImgs.add(imgCp.copyToGreyscale2());</span>
-<span class="nc" id="L442">            MiscDebug.writeImage(imgCp, &quot;_hsv_filtered_&quot; + i);</span>
+<span class="nc" id="L439">            filteredHSVImgs.add(imgCp.copyToGreyscale2());</span>
+<span class="nc" id="L440">            MiscDebug.writeImage(imgCp, &quot;_hsv_filtered_&quot; + i);</span>
         }
 
-<span class="fc" id="L445">        GreyscaleImage gsImg = img2;</span>
+<span class="fc" id="L443">        GreyscaleImage gsImg = img2;</span>
 
         // use row major for FFTs
-<span class="fc" id="L448">        int nCols = gsImg.getWidth();</span>
-<span class="fc" id="L449">        int nRows = gsImg.getHeight();</span>
-<span class="fc" id="L450">        PeriodicFFT perfft2 = new PeriodicFFT();</span>
-<span class="fc" id="L451">        Complex[][][] perfResults = perfft2.perfft2(gsImg, false);</span>
-<span class="fc" id="L452">        Complex[][] fftImage = perfResults[1];</span>
+<span class="fc" id="L446">        int nCols = gsImg.getWidth();</span>
+<span class="fc" id="L447">        int nRows = gsImg.getHeight();</span>
+<span class="fc" id="L448">        PeriodicFFT perfft2 = new PeriodicFFT();</span>
+<span class="fc" id="L449">        Complex[][][] perfResults = perfft2.perfft2(gsImg, false);</span>
+<span class="fc" id="L450">        Complex[][] fftImage = perfResults[1];</span>
 
-<span class="fc" id="L454">        TIntObjectMap&lt;Set&lt;GreyscaleImage&gt;&gt; groupResponseImages = new TIntObjectHashMap&lt;Set&lt;GreyscaleImage&gt;&gt;();</span>
-<span class="fc" id="L455">        TIntObjectMap&lt;TexturePatchesAndResponse&gt; groupPatches = </span>
+<span class="fc" id="L452">        TIntObjectMap&lt;Set&lt;GreyscaleImage&gt;&gt; groupResponseImages = new TIntObjectHashMap&lt;Set&lt;GreyscaleImage&gt;&gt;();</span>
+<span class="fc" id="L453">        TIntObjectMap&lt;TexturePatchesAndResponse&gt; groupPatches = </span>
             new TIntObjectHashMap&lt;TexturePatchesAndResponse&gt;();
         
-<span class="fc" id="L458">        FFTUtil fftUtil = new FFTUtil();</span>
+<span class="fc" id="L456">        FFTUtil fftUtil = new FFTUtil();</span>
         
-<span class="pc bpc" id="L460" title="1 of 2 branches missed.">        for (int i = 0; i &lt; rList.size(); ++i) {</span>
+<span class="pc bpc" id="L458" title="1 of 2 branches missed.">        for (int i = 0; i &lt; rList.size(); ++i) {</span>
 
-<span class="nc" id="L462">            Set&lt;PairInt&gt; set = rList.get(i);</span>
+<span class="nc" id="L460">            Set&lt;PairInt&gt; set = rList.get(i);</span>
 
-<span class="nc" id="L464">            int[] minMaxXY = MiscMath.findMinMaxXY(set);</span>
+<span class="nc" id="L462">            int[] minMaxXY = MiscMath.findMinMaxXY(set);</span>
 
-<span class="nc" id="L466">            GreyscaleImage imgPattern = patterns.get(i);</span>
+<span class="nc" id="L464">            GreyscaleImage imgPattern = patterns.get(i);</span>
 
-<span class="nc" id="L468">            Complex[][] fftPattern = PhaseCongruencyDetector</span>
-<span class="nc" id="L469">                .createLowPassFreqDomainFilter(imgPattern);</span>
+<span class="nc" id="L466">            Complex[][] fftPattern = PhaseCongruencyDetector</span>
+<span class="nc" id="L467">                .createLowPassFreqDomainFilter(imgPattern);</span>
 
             // --- image in the frequency domain convolved with texture patch ----
-<span class="nc" id="L472">            Complex[][] freqDomainImageTimesPattern</span>
-<span class="nc" id="L473">                = imageProcessor.convolveWithKernel(fftImage, fftPattern);</span>
+<span class="nc" id="L470">            Complex[][] freqDomainImageTimesPattern</span>
+<span class="nc" id="L471">                = imageProcessor.convolveWithKernel(fftImage, fftPattern);</span>
 
             // ----- transform that to spatial domain ----
-<span class="nc" id="L476">            Complex[][] fComplex =  fftUtil.create2DFFT(</span>
+<span class="nc" id="L474">            Complex[][] fComplex =  fftUtil.create2DFFT(</span>
                 freqDomainImageTimesPattern, false, false);
 
-<span class="nc" id="L479">            double[][] transformedReal = new double[nCols][];</span>
-<span class="nc bnc" id="L480" title="All 2 branches missed.">            for (int i0 = 0; i0 &lt; nCols; ++i0) {</span>
-<span class="nc" id="L481">                transformedReal[i0] = new double[nRows];</span>
-<span class="nc bnc" id="L482" title="All 2 branches missed.">                for (int i1 = 0; i1 &lt; nRows; ++i1) {</span>
-<span class="nc" id="L483">                    transformedReal[i0][i1] = fComplex[i1][i0].abs();</span>
+<span class="nc" id="L477">            double[][] transformedReal = new double[nCols][];</span>
+<span class="nc bnc" id="L478" title="All 2 branches missed.">            for (int i0 = 0; i0 &lt; nCols; ++i0) {</span>
+<span class="nc" id="L479">                transformedReal[i0] = new double[nRows];</span>
+<span class="nc bnc" id="L480" title="All 2 branches missed.">                for (int i1 = 0; i1 &lt; nRows; ++i1) {</span>
+<span class="nc" id="L481">                    transformedReal[i0][i1] = fComplex[i1][i0].abs();</span>
                 }
             }
 
-<span class="nc" id="L487">            MiscMath.applyRescale(transformedReal, 0, 255);</span>
-<span class="nc" id="L488">            GreyscaleImage kpFreqR2Img = new GreyscaleImage(nCols, nRows);</span>
-<span class="nc bnc" id="L489" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nCols; ++ii) {</span>
-<span class="nc bnc" id="L490" title="All 2 branches missed.">                for (int j = 0; j &lt; nRows; ++j) {</span>
-<span class="nc" id="L491">                    kpFreqR2Img.setValue(ii, j,</span>
-<span class="nc" id="L492">                        (int) Math.round(transformedReal[ii][j]));</span>
+<span class="nc" id="L485">            MiscMath.applyRescale(transformedReal, 0, 255);</span>
+<span class="nc" id="L486">            GreyscaleImage kpFreqR2Img = new GreyscaleImage(nCols, nRows);</span>
+<span class="nc bnc" id="L487" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nCols; ++ii) {</span>
+<span class="nc bnc" id="L488" title="All 2 branches missed.">                for (int j = 0; j &lt; nRows; ++j) {</span>
+<span class="nc" id="L489">                    kpFreqR2Img.setValue(ii, j,</span>
+<span class="nc" id="L490">                        (int) Math.round(transformedReal[ii][j]));</span>
                 }
             }
-<span class="nc" id="L495">            MiscDebug.writeImage(kpFreqR2Img, &quot;_freq_spatial_&quot;</span>
+<span class="nc" id="L493">            MiscDebug.writeImage(kpFreqR2Img, &quot;_freq_spatial_&quot;</span>
                 + i + &quot;_&quot; + debugTag);
 
-<span class="nc" id="L498">            GreyscaleImage img3 = filteredHSVImgs.get(i);</span>
-<span class="nc bnc" id="L499" title="All 2 branches missed.">            for (int j = 0; j &lt; kpFreqR2Img.getNPixels(); ++j) {</span>
-<span class="nc bnc" id="L500" title="All 2 branches missed.">                if (img3.getValue(j) == 0) {</span>
-<span class="nc" id="L501">                    kpFreqR2Img.setValue(j, 0);</span>
+<span class="nc" id="L496">            GreyscaleImage img3 = filteredHSVImgs.get(i);</span>
+<span class="nc bnc" id="L497" title="All 2 branches missed.">            for (int j = 0; j &lt; kpFreqR2Img.getNPixels(); ++j) {</span>
+<span class="nc bnc" id="L498" title="All 2 branches missed.">                if (img3.getValue(j) == 0) {</span>
+<span class="nc" id="L499">                    kpFreqR2Img.setValue(j, 0);</span>
                 }
             }
 
-<span class="nc" id="L505">            MiscDebug.writeImage(kpFreqR2Img, &quot;_freq_spatial_filtered_&quot;</span>
+<span class="nc" id="L503">            MiscDebug.writeImage(kpFreqR2Img, &quot;_freq_spatial_filtered_&quot;</span>
                 + i + &quot;_&quot; + debugTag);
 
-<span class="nc" id="L508">            int groupIdx = groupIndexList.get(i);</span>
-<span class="nc" id="L509">            Set&lt;GreyscaleImage&gt; rImages = groupResponseImages.get(groupIdx);</span>
-<span class="nc" id="L510">            TexturePatchesAndResponse tpar = groupPatches.get(groupIdx);</span>
-<span class="nc bnc" id="L511" title="All 2 branches missed.">            if (rImages == null) {</span>
-<span class="nc" id="L512">                rImages = new HashSet&lt;GreyscaleImage&gt;();</span>
-<span class="nc" id="L513">                groupResponseImages.put(groupIdx, rImages);</span>
+<span class="nc" id="L506">            int groupIdx = groupIndexList.get(i);</span>
+<span class="nc" id="L507">            Set&lt;GreyscaleImage&gt; rImages = groupResponseImages.get(groupIdx);</span>
+<span class="nc" id="L508">            TexturePatchesAndResponse tpar = groupPatches.get(groupIdx);</span>
+<span class="nc bnc" id="L509" title="All 2 branches missed.">            if (rImages == null) {</span>
+<span class="nc" id="L510">                rImages = new HashSet&lt;GreyscaleImage&gt;();</span>
+<span class="nc" id="L511">                groupResponseImages.put(groupIdx, rImages);</span>
                 
-<span class="nc" id="L515">                tpar = new TexturePatchesAndResponse();</span>
-<span class="nc" id="L516">                groupPatches.put(groupIdx, tpar);</span>
-<span class="nc" id="L517">                tpar.patches = new ArrayList&lt;GreyscaleImage&gt;();</span>
+<span class="nc" id="L513">                tpar = new TexturePatchesAndResponse();</span>
+<span class="nc" id="L514">                groupPatches.put(groupIdx, tpar);</span>
+<span class="nc" id="L515">                tpar.patches = new ArrayList&lt;GreyscaleImage&gt;();</span>
             }
-<span class="nc" id="L519">            rImages.add(kpFreqR2Img);</span>
-<span class="nc" id="L520">            tpar.patches.add(imgPattern);</span>
+<span class="nc" id="L517">            rImages.add(kpFreqR2Img);</span>
+<span class="nc" id="L518">            tpar.patches.add(imgPattern);</span>
         }
      
-<span class="fc bfc" id="L523" title="All 2 branches covered.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
-<span class="fc" id="L524">            Set&lt;GreyscaleImage&gt; images = groupResponseImages.get(i);</span>
-<span class="pc bpc" id="L525" title="1 of 2 branches missed.">            if (images == null) {</span>
-<span class="fc" id="L526">                continue;</span>
+<span class="fc bfc" id="L521" title="All 2 branches covered.">        for (int i = 0; i &lt; nGroups; ++i) {</span>
+<span class="fc" id="L522">            Set&lt;GreyscaleImage&gt; images = groupResponseImages.get(i);</span>
+<span class="pc bpc" id="L523" title="1 of 2 branches missed.">            if (images == null) {</span>
+<span class="fc" id="L524">                continue;</span>
             }
-<span class="nc" id="L528">            GreyscaleImage gImage = new GreyscaleImage(img.getWidth(),</span>
-<span class="nc" id="L529">                img.getHeight());</span>
-<span class="nc" id="L530">            int thresh = 94;</span>
-<span class="nc bnc" id="L531" title="All 2 branches missed.">            for (GreyscaleImage g : images) {</span>
-<span class="nc bnc" id="L532" title="All 2 branches missed.">                for (int j = 0; j &lt; g.getNPixels(); ++j) {</span>
-<span class="nc" id="L533">                    int v = g.getValue(j);</span>
+<span class="nc" id="L526">            GreyscaleImage gImage = new GreyscaleImage(img.getWidth(),</span>
+<span class="nc" id="L527">                img.getHeight());</span>
+<span class="nc" id="L528">            int thresh = 94;</span>
+<span class="nc bnc" id="L529" title="All 2 branches missed.">            for (GreyscaleImage g : images) {</span>
+<span class="nc bnc" id="L530" title="All 2 branches missed.">                for (int j = 0; j &lt; g.getNPixels(); ++j) {</span>
+<span class="nc" id="L531">                    int v = g.getValue(j);</span>
                     //choosing to keep strongest response if more than one
-<span class="nc bnc" id="L535" title="All 4 branches missed.">                    if ((v &gt; gImage.getValue(j)) &amp;&amp; v &gt;= thresh) {</span>
-<span class="nc" id="L536">                        gImage.setValue(j, v);</span>
+<span class="nc bnc" id="L533" title="All 4 branches missed.">                    if ((v &gt; gImage.getValue(j)) &amp;&amp; v &gt;= thresh) {</span>
+<span class="nc" id="L534">                        gImage.setValue(j, v);</span>
                     }
                 }
-<span class="nc" id="L539">            }</span>
-<span class="nc" id="L540">            MiscDebug.writeImage(gImage, &quot;_final_textures_&quot; + i</span>
+<span class="nc" id="L537">            }</span>
+<span class="nc" id="L538">            MiscDebug.writeImage(gImage, &quot;_final_textures_&quot; + i</span>
                 + &quot;_&quot; + debugTag);
             
-<span class="nc" id="L543">            groupPatches.get(i).responseImage = gImage;</span>
+<span class="nc" id="L541">            groupPatches.get(i).responseImage = gImage;</span>
         }
 
         // --- merge any texture images/ with significnt overlap in set picels,
         //     and with similar colors.
-<span class="fc" id="L548">        TIntObjectMap&lt;TIntSet&gt; pointsInImageMap = new</span>
-<span class="fc" id="L549">            TIntObjectHashMap&lt;TIntSet&gt;(groupPatches.size());</span>
+<span class="fc" id="L546">        TIntObjectMap&lt;TIntSet&gt; pointsInImageMap = new</span>
+<span class="fc" id="L547">            TIntObjectHashMap&lt;TIntSet&gt;(groupPatches.size());</span>
         
-<span class="fc" id="L551">        TIntObjectIterator&lt;TexturePatchesAndResponse&gt; iter =</span>
-<span class="fc" id="L552">            groupPatches.iterator();</span>
+<span class="fc" id="L549">        TIntObjectIterator&lt;TexturePatchesAndResponse&gt; iter =</span>
+<span class="fc" id="L550">            groupPatches.iterator();</span>
         
-<span class="pc bpc" id="L554" title="1 of 2 branches missed.">        for (int i = 0; i &lt; groupPatches.size(); ++i) {</span>
+<span class="pc bpc" id="L552" title="1 of 2 branches missed.">        for (int i = 0; i &lt; groupPatches.size(); ++i) {</span>
             
-<span class="nc" id="L556">            iter.advance();</span>
+<span class="nc" id="L554">            iter.advance();</span>
             
-<span class="nc" id="L558">            int idx = iter.key();</span>
-<span class="nc" id="L559">            TexturePatchesAndResponse tPar = iter.value();</span>
+<span class="nc" id="L556">            int idx = iter.key();</span>
+<span class="nc" id="L557">            TexturePatchesAndResponse tPar = iter.value();</span>
             
-<span class="nc" id="L561">            GreyscaleImage gImage = tPar.responseImage;</span>
-<span class="nc" id="L562">            TIntSet ptSet = new TIntHashSet();</span>
-<span class="nc bnc" id="L563" title="All 2 branches missed.">            for (int j = 0; j &lt; gImage.getNPixels(); ++j) {</span>
-<span class="nc bnc" id="L564" title="All 2 branches missed.">                if (gImage.getValue(j) &gt; 0) {</span>
-<span class="nc" id="L565">                    ptSet.add(j);</span>
+<span class="nc" id="L559">            GreyscaleImage gImage = tPar.responseImage;</span>
+<span class="nc" id="L560">            TIntSet ptSet = new TIntHashSet();</span>
+<span class="nc bnc" id="L561" title="All 2 branches missed.">            for (int j = 0; j &lt; gImage.getNPixels(); ++j) {</span>
+<span class="nc bnc" id="L562" title="All 2 branches missed.">                if (gImage.getValue(j) &gt; 0) {</span>
+<span class="nc" id="L563">                    ptSet.add(j);</span>
                 }
             }
-<span class="nc" id="L568">            pointsInImageMap.put(idx, ptSet);</span>
+<span class="nc" id="L566">            pointsInImageMap.put(idx, ptSet);</span>
         }
         
-<span class="fc" id="L571">        TIntSet merged = new TIntHashSet();</span>
+<span class="fc" id="L569">        TIntSet merged = new TIntHashSet();</span>
         
-<span class="fc" id="L573">        int[] groupKeys = pointsInImageMap.keys();</span>
-<span class="pc bpc" id="L574" title="1 of 2 branches missed.">        for (int j = 0; j &lt; groupKeys.length; ++j) {</span>
-<span class="nc" id="L575">            int idx0 = groupKeys[j];</span>
-<span class="nc bnc" id="L576" title="All 2 branches missed.">            if (merged.contains(idx0)) {</span>
-<span class="nc" id="L577">                continue;</span>
+<span class="fc" id="L571">        int[] groupKeys = pointsInImageMap.keys();</span>
+<span class="pc bpc" id="L572" title="1 of 2 branches missed.">        for (int j = 0; j &lt; groupKeys.length; ++j) {</span>
+<span class="nc" id="L573">            int idx0 = groupKeys[j];</span>
+<span class="nc bnc" id="L574" title="All 2 branches missed.">            if (merged.contains(idx0)) {</span>
+<span class="nc" id="L575">                continue;</span>
             }
-<span class="nc bnc" id="L579" title="All 2 branches missed.">            for (int k = (j + 1); k &lt; groupKeys.length; ++k) {</span>
-<span class="nc" id="L580">                int idx1 = groupKeys[k];</span>
-<span class="nc" id="L581">                TIntSet jIntersectionK = new TIntHashSet(pointsInImageMap.get(idx0));</span>
-<span class="nc" id="L582">                TIntSet setJ = new TIntHashSet(pointsInImageMap.get(idx0));</span>
+<span class="nc bnc" id="L577" title="All 2 branches missed.">            for (int k = (j + 1); k &lt; groupKeys.length; ++k) {</span>
+<span class="nc" id="L578">                int idx1 = groupKeys[k];</span>
+<span class="nc" id="L579">                TIntSet jIntersectionK = new TIntHashSet(pointsInImageMap.get(idx0));</span>
+<span class="nc" id="L580">                TIntSet setJ = new TIntHashSet(pointsInImageMap.get(idx0));</span>
                 // j - k subtracts the intersection, then J minu that leaves intersetion
-<span class="nc" id="L584">                setJ.removeAll(pointsInImageMap.get(idx1));</span>
-<span class="nc" id="L585">                jIntersectionK.removeAll(setJ);</span>
-<span class="nc" id="L586">                int nI = jIntersectionK.size();</span>
-<span class="nc" id="L587">                float f0 = (float)nI/(float)pointsInImageMap.get(idx0).size();</span>
-<span class="nc" id="L588">                float f1 = (float)nI/(float)pointsInImageMap.get(idx1).size();</span>
-<span class="nc" id="L589">                System.out.println(&quot;j intersection=&quot; + nI + </span>
+<span class="nc" id="L582">                setJ.removeAll(pointsInImageMap.get(idx1));</span>
+<span class="nc" id="L583">                jIntersectionK.removeAll(setJ);</span>
+<span class="nc" id="L584">                int nI = jIntersectionK.size();</span>
+<span class="nc" id="L585">                float f0 = (float)nI/(float)pointsInImageMap.get(idx0).size();</span>
+<span class="nc" id="L586">                float f1 = (float)nI/(float)pointsInImageMap.get(idx1).size();</span>
+<span class="nc" id="L587">                System.out.println(&quot;j intersection=&quot; + nI + </span>
                     &quot; frac of J = &quot; + f0 + &quot; frac of k = &quot; + f1);
-<span class="nc bnc" id="L591" title="All 4 branches missed.">                if (f0 &gt; 0.05 || f1 &gt; 0.05) {</span>
-<span class="nc" id="L592">                    int[][] ch0 = chhist.histogramCIELAB(img,</span>
-<span class="nc" id="L593">                        pointsInImageMap.get(idx0));</span>
-<span class="nc" id="L594">                    int[][] ch1 = chhist.histogramCIELAB(img,</span>
-<span class="nc" id="L595">                        pointsInImageMap.get(idx1));</span>
-<span class="nc" id="L596">                    float intersection = chhist.intersection(ch0, ch1);</span>
+<span class="nc bnc" id="L589" title="All 4 branches missed.">                if (f0 &gt; 0.05 || f1 &gt; 0.05) {</span>
+<span class="nc" id="L590">                    int[][] ch0 = chhist.histogramCIELAB(img,</span>
+<span class="nc" id="L591">                        pointsInImageMap.get(idx0));</span>
+<span class="nc" id="L592">                    int[][] ch1 = chhist.histogramCIELAB(img,</span>
+<span class="nc" id="L593">                        pointsInImageMap.get(idx1));</span>
+<span class="nc" id="L594">                    float intersection = chhist.intersection(ch0, ch1);</span>
                     
-<span class="nc" id="L598">                    System.out.println(&quot;   CIELAB intersection=&quot; + intersection);</span>
+<span class="nc" id="L596">                    System.out.println(&quot;   CIELAB intersection=&quot; + intersection);</span>
                     
                     //TODO: revisit this
-<span class="nc bnc" id="L601" title="All 2 branches missed.">                    if (intersection &lt; 0.45) {</span>
-<span class="nc" id="L602">                        continue;</span>
+<span class="nc bnc" id="L599" title="All 2 branches missed.">                    if (intersection &lt; 0.45) {</span>
+<span class="nc" id="L600">                        continue;</span>
                     }
                     
-<span class="nc" id="L605">                    TexturePatchesAndResponse tPar0 = groupPatches.get(idx0);</span>
-<span class="nc" id="L606">                    TexturePatchesAndResponse tPar1 = groupPatches.remove(idx1);</span>
+<span class="nc" id="L603">                    TexturePatchesAndResponse tPar0 = groupPatches.get(idx0);</span>
+<span class="nc" id="L604">                    TexturePatchesAndResponse tPar1 = groupPatches.remove(idx1);</span>
                     
-<span class="nc" id="L608">                    tPar0.patches.addAll(tPar1.patches);</span>
-<span class="nc bnc" id="L609" title="All 2 branches missed.">                    for (int pixIdx = 0; pixIdx &lt; tPar0.responseImage.getNPixels();</span>
-<span class="nc" id="L610">                        ++pixIdx) {</span>
-<span class="nc" id="L611">                        int v1 = tPar1.responseImage.getValue(pixIdx);</span>
-<span class="nc bnc" id="L612" title="All 2 branches missed.">                        if (v1 &gt; 0) {</span>
-<span class="nc" id="L613">                            int v0 = tPar0.responseImage.getValue(pixIdx);</span>
-<span class="nc bnc" id="L614" title="All 2 branches missed.">                            if (v1 &gt; v0) {</span>
-<span class="nc" id="L615">                                tPar0.responseImage.setValue(pixIdx, v1);</span>
+<span class="nc" id="L606">                    tPar0.patches.addAll(tPar1.patches);</span>
+<span class="nc bnc" id="L607" title="All 2 branches missed.">                    for (int pixIdx = 0; pixIdx &lt; tPar0.responseImage.getNPixels();</span>
+<span class="nc" id="L608">                        ++pixIdx) {</span>
+<span class="nc" id="L609">                        int v1 = tPar1.responseImage.getValue(pixIdx);</span>
+<span class="nc bnc" id="L610" title="All 2 branches missed.">                        if (v1 &gt; 0) {</span>
+<span class="nc" id="L611">                            int v0 = tPar0.responseImage.getValue(pixIdx);</span>
+<span class="nc bnc" id="L612" title="All 2 branches missed.">                            if (v1 &gt; v0) {</span>
+<span class="nc" id="L613">                                tPar0.responseImage.setValue(pixIdx, v1);</span>
                             }
                         }
                     }
                     
-<span class="nc" id="L620">                    merged.add(idx1);</span>
+<span class="nc" id="L618">                    merged.add(idx1);</span>
                 }
             }
         }
         
-<span class="fc" id="L625">        return groupPatches.values(new TexturePatchesAndResponse[groupPatches.size()]);</span>
+<span class="fc" id="L623">        return groupPatches.values(new TexturePatchesAndResponse[groupPatches.size()]);</span>
     }
   
     public class TexturePatchesAndResponse {

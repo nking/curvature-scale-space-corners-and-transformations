@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Sky.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">Sky.java</span></div><h1>Sky.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.compGeometry.PerimeterFinder2;
 import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.util.OneDIntArray;
@@ -14,8 +15,7 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
-import java.util.ArrayDeque;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -675,9 +675,9 @@ public class Sky {
                         }
                         
 <span class="pc bpc" id="L677" title="1 of 4 branches missed.">                    } else if (norm[5] == 0.0 &amp;&amp; maxAvgIdx &gt; -1 &amp;&amp; </span>
-<span class="fc bfc" id="L678" title="All 2 branches covered.">                        normPTCHs.get(maxAvgIdx).a[5] &gt; 0.0) {</span>
-<span class="fc" id="L679">                        maxAvgIfBlue = avg;</span>
-<span class="fc" id="L680">                        maxAvgIdx = idx;</span>
+<span class="pc bpc" id="L678" title="1 of 2 branches missed.">                        normPTCHs.get(maxAvgIdx).a[5] &gt; 0.0) {</span>
+<span class="nc" id="L679">                        maxAvgIfBlue = avg;</span>
+<span class="nc" id="L680">                        maxAvgIdx = idx;</span>
                     }
                 }
 <span class="fc" id="L683">            }</span>
@@ -722,7 +722,7 @@ public class Sky {
 <span class="fc" id="L722">                        int idx = iter.next();</span>
 <span class="fc" id="L723">                        float[] norm = normPTCHs.get(idx).a;</span>
                         // collect the sky w/o green that has similar intensity
-<span class="fc bfc" id="L725" title="All 4 branches covered.">                        if (norm[3] &lt; 0.03 &amp;&amp; norm[0] &lt; 0.1) {</span>
+<span class="pc bpc" id="L725" title="1 of 4 branches missed.">                        if (norm[3] &lt; 0.03 &amp;&amp; norm[0] &lt; 0.1) {</span>
 <span class="fc" id="L726">                            int avg = topAvgGrey.get(idx);</span>
 <span class="fc" id="L727">                            filtered.add(idx);</span>
                         }

@@ -2,7 +2,6 @@
 
 import thirdparty.voronoi.VoronoiFortunesSweep;
 import thirdparty.voronoi.VoronoiFortunesSweep.*;
-import algorithms.imageProcessing.BresenhamsLine;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.PostLineThinnerCorrections;
 import algorithms.misc.MiscMath;
@@ -11,7 +10,6 @@ import algorithms.search.NearestNeighbor2D;
 import algorithms.util.PairInt;
 import algorithms.util.PolygonAndPointPlotter;
 import gnu.trove.iterator.TIntIterator;
-import gnu.trove.list.TIntList;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.TObjectIntMap;
@@ -55,10 +53,10 @@ import java.util.logging.Logger;
  */
 public class MedialAxis {
     
-<span class="nc" id="L58">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="nc" id="L56">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
     
     private final Set&lt;PairInt&gt; points;
-<span class="nc" id="L61">    private Set&lt;PairInt&gt; boundary = null;</span>
+<span class="nc" id="L59">    private Set&lt;PairInt&gt; boundary = null;</span>
     
     /**
      * if a line thinner was applied, the points
@@ -66,17 +64,17 @@ public class MedialAxis {
      * they are needed when excluding &quot;exterior&quot;
      * points from the medial axis edges.
      */
-<span class="nc" id="L69">    private final Set&lt;PairInt&gt; removedPoints = </span>
+<span class="nc" id="L67">    private final Set&lt;PairInt&gt; removedPoints = </span>
         new HashSet&lt;PairInt&gt;();
     
     //xMin, xMax, yMin, yMax
     private final int[] minMaxXY;
     
-<span class="nc" id="L75">    private List&lt;GraphEdge&gt; edges = null;</span>
+<span class="nc" id="L73">    private List&lt;GraphEdge&gt; edges = null;</span>
     
-<span class="nc" id="L77">    private Set&lt;PairInt&gt; edgePoints = null;</span>
+<span class="nc" id="L75">    private Set&lt;PairInt&gt; edgePoints = null;</span>
     
-<span class="nc" id="L79">    private boolean applyLT = false;</span>
+<span class="nc" id="L77">    private boolean applyLT = false;</span>
     
     /**
      * constructor containing all points in the area
@@ -86,20 +84,20 @@ public class MedialAxis {
      * @param boundaryPoints 
      */
     public MedialAxis(final Set&lt;PairInt&gt; shapePoints,
-<span class="nc" id="L89">        final Set&lt;PairInt&gt; boundaryPoints) {</span>
+<span class="nc" id="L87">        final Set&lt;PairInt&gt; boundaryPoints) {</span>
 
-<span class="nc" id="L91">        this.points = new HashSet&lt;PairInt&gt;(shapePoints);</span>
+<span class="nc" id="L89">        this.points = new HashSet&lt;PairInt&gt;(shapePoints);</span>
         
-<span class="nc" id="L93">        this.boundary = new HashSet&lt;PairInt&gt;(boundaryPoints);</span>
+<span class="nc" id="L91">        this.boundary = new HashSet&lt;PairInt&gt;(boundaryPoints);</span>
             
-<span class="nc" id="L95">        points.removeAll(boundary);</span>
+<span class="nc" id="L93">        points.removeAll(boundary);</span>
         
-<span class="nc" id="L97">        minMaxXY = MiscMath.findMinMaxXY(boundary);         </span>
-<span class="nc" id="L98">    }</span>
+<span class="nc" id="L95">        minMaxXY = MiscMath.findMinMaxXY(boundary);         </span>
+<span class="nc" id="L96">    }</span>
     
     public void setToApplyLineThinner() {
-<span class="nc" id="L101">        applyLT = true;</span>
-<span class="nc" id="L102">    }</span>
+<span class="nc" id="L99">        applyLT = true;</span>
+<span class="nc" id="L100">    }</span>
     
     /**
      * find the medial axis, but with the warning that 
@@ -116,98 +114,98 @@ public class MedialAxis {
      */
     public void fastFindMedialAxis() {
     
-<span class="nc bnc" id="L119" title="All 2 branches missed.">        if (edges != null) {</span>
-<span class="nc" id="L120">            throw new IllegalStateException(</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (edges != null) {</span>
+<span class="nc" id="L118">            throw new IllegalStateException(</span>
                 &quot;find... has already been inboked&quot;);
         }
         
-<span class="nc bnc" id="L124" title="All 2 branches missed.">        if (applyLT) {</span>
-<span class="nc" id="L125">            applyLineThinner();</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (applyLT) {</span>
+<span class="nc" id="L123">            applyLineThinner();</span>
         }
         
-<span class="nc" id="L128">        edges = findVoronoiInteriorEdges();</span>
+<span class="nc" id="L126">        edges = findVoronoiInteriorEdges();</span>
         
         //plotVoronoi();        
-<span class="nc" id="L131">    }</span>
+<span class="nc" id="L129">    }</span>
     
     public void findMedialAxis() {
         
-<span class="nc bnc" id="L135" title="All 2 branches missed.">        if (edges != null) {</span>
-<span class="nc" id="L136">            throw new IllegalStateException(</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (edges != null) {</span>
+<span class="nc" id="L134">            throw new IllegalStateException(</span>
                 &quot;find... has already been inboked&quot;);
         }
         
-<span class="nc" id="L140">        applyLineThinner();</span>
+<span class="nc" id="L138">        applyLineThinner();</span>
         
-<span class="nc" id="L142">        edges = findVoronoiInteriorEdges2();</span>
+<span class="nc" id="L140">        edges = findVoronoiInteriorEdges2();</span>
                 
         //plotVoronoi();
 
-<span class="nc" id="L146">    }</span>
+<span class="nc" id="L144">    }</span>
     
     private List&lt;GraphEdge&gt; findVoronoiInteriorEdges() {
         
-<span class="nc" id="L150">        float xmin = minMaxXY[0];</span>
-<span class="nc" id="L151">        float xmax = minMaxXY[1];</span>
-<span class="nc" id="L152">        float ymin = minMaxXY[2];</span>
-<span class="nc" id="L153">        float ymax = minMaxXY[3];</span>
+<span class="nc" id="L148">        float xmin = minMaxXY[0];</span>
+<span class="nc" id="L149">        float xmax = minMaxXY[1];</span>
+<span class="nc" id="L150">        float ymin = minMaxXY[2];</span>
+<span class="nc" id="L151">        float ymax = minMaxXY[3];</span>
         
-<span class="nc" id="L155">        int n = boundary.size();</span>
-<span class="nc" id="L156">        float[] x = new float[n];</span>
-<span class="nc" id="L157">        float[] y = new float[n];</span>
+<span class="nc" id="L153">        int n = boundary.size();</span>
+<span class="nc" id="L154">        float[] x = new float[n];</span>
+<span class="nc" id="L155">        float[] y = new float[n];</span>
         
-<span class="nc" id="L159">        int count = 0;</span>
-<span class="nc bnc" id="L160" title="All 2 branches missed.">        for (PairInt p : boundary) {</span>
-<span class="nc" id="L161">            float xp = p.getX();</span>
-<span class="nc" id="L162">            float yp = p.getY();</span>
-<span class="nc" id="L163">            x[count] = xp;</span>
-<span class="nc" id="L164">            y[count] = yp;</span>
-<span class="nc" id="L165">            count++;</span>
-<span class="nc" id="L166">        }</span>
+<span class="nc" id="L157">        int count = 0;</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">        for (PairInt p : boundary) {</span>
+<span class="nc" id="L159">            float xp = p.getX();</span>
+<span class="nc" id="L160">            float yp = p.getY();</span>
+<span class="nc" id="L161">            x[count] = xp;</span>
+<span class="nc" id="L162">            y[count] = yp;</span>
+<span class="nc" id="L163">            count++;</span>
+<span class="nc" id="L164">        }</span>
                 
-<span class="nc" id="L168">        int minDist = 0;</span>
-<span class="nc" id="L169">        int offset = 2;</span>
+<span class="nc" id="L166">        int minDist = 0;</span>
+<span class="nc" id="L167">        int offset = 2;</span>
         
-<span class="nc" id="L171">        VoronoiFortunesSweep voronoi = new VoronoiFortunesSweep();</span>
+<span class="nc" id="L169">        VoronoiFortunesSweep voronoi = new VoronoiFortunesSweep();</span>
         
-<span class="nc" id="L173">        voronoi.generateVoronoi(x, y, </span>
+<span class="nc" id="L171">        voronoi.generateVoronoi(x, y, </span>
             xmin - offset, xmax + offset, 
             ymin - offset, ymax + offset, 
             minDist);
         
         //voronoi.plot(1234);
                 
-<span class="nc" id="L180">        LinkedList&lt;GraphEdge&gt; edges = voronoi.getAllEdges();</span>
+<span class="nc" id="L178">        LinkedList&lt;GraphEdge&gt; edges = voronoi.getAllEdges();</span>
         
-<span class="nc" id="L182">        List&lt;GraphEdge&gt; output = new ArrayList&lt;GraphEdge&gt;();</span>
+<span class="nc" id="L180">        List&lt;GraphEdge&gt; output = new ArrayList&lt;GraphEdge&gt;();</span>
        
-<span class="nc" id="L184">        count = 0;</span>
-<span class="nc bnc" id="L185" title="All 2 branches missed.">        for (GraphEdge edge : edges) {</span>
-<span class="nc" id="L186">            int x1 = Math.round(edge.x1);</span>
-<span class="nc" id="L187">            int y1 = Math.round(edge.y1);</span>
-<span class="nc" id="L188">            int x2 = Math.round(edge.x2);</span>
-<span class="nc" id="L189">            int y2 = Math.round(edge.y2);</span>
+<span class="nc" id="L182">        count = 0;</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">        for (GraphEdge edge : edges) {</span>
+<span class="nc" id="L184">            int x1 = Math.round(edge.x1);</span>
+<span class="nc" id="L185">            int y1 = Math.round(edge.y1);</span>
+<span class="nc" id="L186">            int x2 = Math.round(edge.x2);</span>
+<span class="nc" id="L187">            int y2 = Math.round(edge.y2);</span>
 
-<span class="nc" id="L191">            PairInt p1 = new PairInt(x1, y1);</span>
-<span class="nc" id="L192">            PairInt p2 = new PairInt(x2, y2);</span>
-<span class="nc bnc" id="L193" title="All 2 branches missed.">            if (p1.equals(p2)) {</span>
-<span class="nc" id="L194">                continue;</span>
+<span class="nc" id="L189">            PairInt p1 = new PairInt(x1, y1);</span>
+<span class="nc" id="L190">            PairInt p2 = new PairInt(x2, y2);</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">            if (p1.equals(p2)) {</span>
+<span class="nc" id="L192">                continue;</span>
             }
         
-<span class="nc bnc" id="L197" title="All 2 branches missed.">            if (removedPoints.contains(p1) ||</span>
-<span class="nc bnc" id="L198" title="All 2 branches missed.">                removedPoints.contains(p2) ||</span>
-<span class="nc bnc" id="L199" title="All 2 branches missed.">                boundary.contains(p1) ||</span>
-<span class="nc bnc" id="L200" title="All 2 branches missed.">                boundary.contains(p2)) {</span>
-<span class="nc" id="L201">                continue;</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">            if (removedPoints.contains(p1) ||</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">                removedPoints.contains(p2) ||</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">                boundary.contains(p1) ||</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">                boundary.contains(p2)) {</span>
+<span class="nc" id="L199">                continue;</span>
             }
             
-<span class="nc bnc" id="L204" title="All 4 branches missed.">            if (points.contains(p1) &amp;&amp; points.contains(p2)) {</span>
-<span class="nc" id="L205">                output.add(edge);</span>
+<span class="nc bnc" id="L202" title="All 4 branches missed.">            if (points.contains(p1) &amp;&amp; points.contains(p2)) {</span>
+<span class="nc" id="L203">                output.add(edge);</span>
             }
-<span class="nc" id="L207">        }</span>
+<span class="nc" id="L205">        }</span>
         
-<span class="nc bnc" id="L209" title="All 4 branches missed.">        if (output.isEmpty() &amp;&amp; boundary.size() &gt; 3 &amp;&amp;</span>
-<span class="nc bnc" id="L210" title="All 2 branches missed.">            boundary.size() &lt; 12) {</span>
+<span class="nc bnc" id="L207" title="All 4 branches missed.">        if (output.isEmpty() &amp;&amp; boundary.size() &gt; 3 &amp;&amp;</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">            boundary.size() &lt; 12) {</span>
             
             // small space, and the thinning stage before
             // using this class may have removed interior
@@ -217,79 +215,79 @@ public class MedialAxis {
             // TODO: find a fast correction for the line thinning
             // subsequent removal of points from shape points.
             
-<span class="nc" id="L220">            x = Arrays.copyOf(x, x.length + 1);</span>
-<span class="nc" id="L221">            y = Arrays.copyOf(y, y.length + 1);</span>
-<span class="nc" id="L222">            x[x.length - 1] = x[0];</span>
-<span class="nc" id="L223">            y[y.length - 1] = y[0];</span>
+<span class="nc" id="L218">            x = Arrays.copyOf(x, x.length + 1);</span>
+<span class="nc" id="L219">            y = Arrays.copyOf(y, y.length + 1);</span>
+<span class="nc" id="L220">            x[x.length - 1] = x[0];</span>
+<span class="nc" id="L221">            y[y.length - 1] = y[0];</span>
             
-<span class="nc" id="L225">            PointInPolygon pip = new PointInPolygon();</span>
-<span class="nc bnc" id="L226" title="All 2 branches missed.">            for (GraphEdge edge : edges) {</span>
-<span class="nc" id="L227">                int x1 = Math.round(edge.x1);</span>
-<span class="nc" id="L228">                int y1 = Math.round(edge.y1);</span>
-<span class="nc" id="L229">                int x2 = Math.round(edge.x2);</span>
-<span class="nc" id="L230">                int y2 = Math.round(edge.y2);</span>
+<span class="nc" id="L223">            PointInPolygon pip = new PointInPolygon();</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">            for (GraphEdge edge : edges) {</span>
+<span class="nc" id="L225">                int x1 = Math.round(edge.x1);</span>
+<span class="nc" id="L226">                int y1 = Math.round(edge.y1);</span>
+<span class="nc" id="L227">                int x2 = Math.round(edge.x2);</span>
+<span class="nc" id="L228">                int y2 = Math.round(edge.y2);</span>
 
-<span class="nc" id="L232">                PairInt p1 = new PairInt(x1, y1);</span>
-<span class="nc" id="L233">                PairInt p2 = new PairInt(x2, y2);</span>
-<span class="nc bnc" id="L234" title="All 2 branches missed.">                if (p1.equals(p2)) {</span>
-<span class="nc" id="L235">                    continue;</span>
+<span class="nc" id="L230">                PairInt p1 = new PairInt(x1, y1);</span>
+<span class="nc" id="L231">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">                if (p1.equals(p2)) {</span>
+<span class="nc" id="L233">                    continue;</span>
                 }
                 
                 // if p1 is in points or is interior to boundary
                 // and same for p2, can keep it
-<span class="nc bnc" id="L240" title="All 2 branches missed.">                if ((points.contains(p1) ||</span>
-<span class="nc bnc" id="L241" title="All 2 branches missed.">                    pip.isInSimpleCurve(x1, y1, x, y, x.length)) &amp;&amp; </span>
-<span class="nc bnc" id="L242" title="All 2 branches missed.">                    (points.contains(p2) ||</span>
-<span class="nc bnc" id="L243" title="All 2 branches missed.">                    pip.isInSimpleCurve(x2, y2, x, y, x.length))) {</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">                if ((points.contains(p1) ||</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">                    pip.isInSimpleCurve(x1, y1, x, y, x.length)) &amp;&amp; </span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">                    (points.contains(p2) ||</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">                    pip.isInSimpleCurve(x2, y2, x, y, x.length))) {</span>
                     
-<span class="nc" id="L245">                    output.add(edge);</span>
+<span class="nc" id="L243">                    output.add(edge);</span>
                 }
-<span class="nc" id="L247">            }</span>
+<span class="nc" id="L245">            }</span>
         }
         
-<span class="nc" id="L250">        return output;</span>
+<span class="nc" id="L248">        return output;</span>
     }
     
     private List&lt;GraphEdge&gt; findVoronoiInteriorEdges2() {
                
         //TODO: improve this:
-<span class="nc" id="L256">        Set&lt;PairInt&gt; c = findBoundaryProblems();</span>
+<span class="nc" id="L254">        Set&lt;PairInt&gt; c = findBoundaryProblems();</span>
         
-<span class="nc" id="L258">        NearestNeighbor2D nn = new NearestNeighbor2D(</span>
+<span class="nc" id="L256">        NearestNeighbor2D nn = new NearestNeighbor2D(</span>
             c, minMaxXY[1], minMaxXY[3]);
         
-<span class="nc" id="L261">        float xmin = minMaxXY[0];</span>
-<span class="nc" id="L262">        float xmax = minMaxXY[1];</span>
-<span class="nc" id="L263">        float ymin = minMaxXY[2];</span>
-<span class="nc" id="L264">        float ymax = minMaxXY[3];</span>
+<span class="nc" id="L259">        float xmin = minMaxXY[0];</span>
+<span class="nc" id="L260">        float xmax = minMaxXY[1];</span>
+<span class="nc" id="L261">        float ymin = minMaxXY[2];</span>
+<span class="nc" id="L262">        float ymax = minMaxXY[3];</span>
         
-<span class="nc" id="L266">        int n = boundary.size();</span>
-<span class="nc" id="L267">        float[] x = new float[n];</span>
-<span class="nc" id="L268">        float[] y = new float[n];</span>
+<span class="nc" id="L264">        int n = boundary.size();</span>
+<span class="nc" id="L265">        float[] x = new float[n];</span>
+<span class="nc" id="L266">        float[] y = new float[n];</span>
         
-<span class="nc" id="L270">        int count = 0;</span>
-<span class="nc bnc" id="L271" title="All 2 branches missed.">        for (PairInt p : boundary) {</span>
-<span class="nc" id="L272">            float xp = p.getX();</span>
-<span class="nc" id="L273">            float yp = p.getY();</span>
-<span class="nc" id="L274">            x[count] = xp;</span>
-<span class="nc" id="L275">            y[count] = yp;</span>
-<span class="nc" id="L276">            count++;</span>
-<span class="nc" id="L277">        }</span>
+<span class="nc" id="L268">        int count = 0;</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">        for (PairInt p : boundary) {</span>
+<span class="nc" id="L270">            float xp = p.getX();</span>
+<span class="nc" id="L271">            float yp = p.getY();</span>
+<span class="nc" id="L272">            x[count] = xp;</span>
+<span class="nc" id="L273">            y[count] = yp;</span>
+<span class="nc" id="L274">            count++;</span>
+<span class="nc" id="L275">        }</span>
                 
-<span class="nc" id="L279">        int minDist = 0;</span>
+<span class="nc" id="L277">        int minDist = 0;</span>
         
-<span class="nc" id="L281">        VoronoiFortunesSweep voronoi = </span>
+<span class="nc" id="L279">        VoronoiFortunesSweep voronoi = </span>
             new VoronoiFortunesSweep();
         
-<span class="nc" id="L284">        voronoi.generateVoronoi(x, y, </span>
+<span class="nc" id="L282">        voronoi.generateVoronoi(x, y, </span>
             xmin - 1, xmax + 1, ymin - 1, ymax + 1, 
             minDist);
         
-<span class="nc" id="L288">        LinkedList&lt;GraphEdge&gt; edges = voronoi.getAllEdges();</span>
+<span class="nc" id="L286">        LinkedList&lt;GraphEdge&gt; edges = voronoi.getAllEdges();</span>
         
-<span class="nc" id="L290">        List&lt;GraphEdge&gt; output = new ArrayList&lt;GraphEdge&gt;();</span>
+<span class="nc" id="L288">        List&lt;GraphEdge&gt; output = new ArrayList&lt;GraphEdge&gt;();</span>
        
-<span class="nc" id="L292">        Site[] sites = voronoi.getSites();</span>
+<span class="nc" id="L290">        Site[] sites = voronoi.getSites();</span>
         
         /*
         need to store edge points and make an adjacency
@@ -305,7 +303,7 @@ public class MedialAxis {
         */
         
         TIntObjectMap&lt;TIntIntMap&gt;
-<span class="nc" id="L308">            adjCostMap = new TIntObjectHashMap&lt;TIntIntMap&gt;();</span>
+<span class="nc" id="L306">            adjCostMap = new TIntObjectHashMap&lt;TIntIntMap&gt;();</span>
        
         /*
         edge: v1, v2
@@ -316,254 +314,254 @@ public class MedialAxis {
         
         rm are the verex indexes to remove
         */
-<span class="nc" id="L319">        TIntSet rm = new TIntHashSet();</span>
-<span class="nc" id="L320">        TObjectIntMap&lt;PairInt&gt; vertexIndexes </span>
+<span class="nc" id="L317">        TIntSet rm = new TIntHashSet();</span>
+<span class="nc" id="L318">        TObjectIntMap&lt;PairInt&gt; vertexIndexes </span>
             = new TObjectIntHashMap&lt;PairInt&gt;();
-<span class="nc" id="L322">        Map&lt;PairInt, GraphEdge&gt; vertexEdgeMap = </span>
+<span class="nc" id="L320">        Map&lt;PairInt, GraphEdge&gt; vertexEdgeMap = </span>
             new HashMap&lt;PairInt, GraphEdge&gt;();
         
-<span class="nc" id="L325">        count = 0;</span>
-<span class="nc bnc" id="L326" title="All 2 branches missed.">        for (GraphEdge edge : edges) {</span>
-<span class="nc" id="L327">            int x1 = Math.round(edge.x1);</span>
-<span class="nc" id="L328">            int y1 = Math.round(edge.y1);</span>
-<span class="nc" id="L329">            int x2 = Math.round(edge.x2);</span>
-<span class="nc" id="L330">            int y2 = Math.round(edge.y2);</span>
+<span class="nc" id="L323">        count = 0;</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">        for (GraphEdge edge : edges) {</span>
+<span class="nc" id="L325">            int x1 = Math.round(edge.x1);</span>
+<span class="nc" id="L326">            int y1 = Math.round(edge.y1);</span>
+<span class="nc" id="L327">            int x2 = Math.round(edge.x2);</span>
+<span class="nc" id="L328">            int y2 = Math.round(edge.y2);</span>
 
-<span class="nc" id="L332">            PairInt p1 = new PairInt(x1, y1);</span>
-<span class="nc" id="L333">            PairInt p2 = new PairInt(x2, y2);</span>
+<span class="nc" id="L330">            PairInt p1 = new PairInt(x1, y1);</span>
+<span class="nc" id="L331">            PairInt p2 = new PairInt(x2, y2);</span>
            
-<span class="nc bnc" id="L335" title="All 2 branches missed.">            if (p1.equals(p2)) {</span>
-<span class="nc" id="L336">                continue;</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">            if (p1.equals(p2)) {</span>
+<span class="nc" id="L334">                continue;</span>
             }
-<span class="nc bnc" id="L338" title="All 2 branches missed.">            if (removedPoints.contains(p1) ||</span>
-<span class="nc bnc" id="L339" title="All 2 branches missed.">                removedPoints.contains(p1) ||</span>
-<span class="nc bnc" id="L340" title="All 2 branches missed.">                boundary.contains(p1) ||</span>
-<span class="nc bnc" id="L341" title="All 2 branches missed.">                boundary.contains(p2)) {</span>
-<span class="nc" id="L342">                continue;</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">            if (removedPoints.contains(p1) ||</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">                removedPoints.contains(p1) ||</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">                boundary.contains(p1) ||</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">                boundary.contains(p2)) {</span>
+<span class="nc" id="L340">                continue;</span>
             }
             
-<span class="nc bnc" id="L345" title="All 4 branches missed.">            if (points.contains(p1) &amp;&amp; points.contains(p2)) {</span>
+<span class="nc bnc" id="L343" title="All 4 branches missed.">            if (points.contains(p1) &amp;&amp; points.contains(p2)) {</span>
 
                 int idx1;
-<span class="nc bnc" id="L348" title="All 2 branches missed.">                if (vertexIndexes.containsKey(p1)) {</span>
-<span class="nc" id="L349">                    idx1 = vertexIndexes.get(p1);</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">                if (vertexIndexes.containsKey(p1)) {</span>
+<span class="nc" id="L347">                    idx1 = vertexIndexes.get(p1);</span>
                 } else {
-<span class="nc" id="L351">                    idx1 = vertexIndexes.size();</span>
-<span class="nc" id="L352">                    vertexIndexes.put(p1, idx1);</span>
+<span class="nc" id="L349">                    idx1 = vertexIndexes.size();</span>
+<span class="nc" id="L350">                    vertexIndexes.put(p1, idx1);</span>
                 }
                         
-<span class="nc" id="L355">                Set&lt;PairInt&gt; nearest1 = </span>
-<span class="nc" id="L356">                    nn.findClosest(x1, y1, 3);</span>
-<span class="nc bnc" id="L357" title="All 2 branches missed.">                if (!nearest1.isEmpty()) {</span>
-<span class="nc" id="L358">                    rm.add(idx1);</span>
+<span class="nc" id="L353">                Set&lt;PairInt&gt; nearest1 = </span>
+<span class="nc" id="L354">                    nn.findClosest(x1, y1, 3);</span>
+<span class="nc bnc" id="L355" title="All 2 branches missed.">                if (!nearest1.isEmpty()) {</span>
+<span class="nc" id="L356">                    rm.add(idx1);</span>
                     //System.out.println(&quot;rm: &quot; + p1);
                 }
                 
                 int idx2;
-<span class="nc bnc" id="L363" title="All 2 branches missed.">                if (vertexIndexes.containsKey(p2)) {</span>
-<span class="nc" id="L364">                    idx2 = vertexIndexes.get(p2);</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">                if (vertexIndexes.containsKey(p2)) {</span>
+<span class="nc" id="L362">                    idx2 = vertexIndexes.get(p2);</span>
                 } else {
-<span class="nc" id="L366">                    idx2 = vertexIndexes.size();</span>
-<span class="nc" id="L367">                    vertexIndexes.put(p2, idx2);</span>
+<span class="nc" id="L364">                    idx2 = vertexIndexes.size();</span>
+<span class="nc" id="L365">                    vertexIndexes.put(p2, idx2);</span>
                 }
-<span class="nc" id="L369">                Set&lt;PairInt&gt; nearest2 = </span>
-<span class="nc" id="L370">                    nn.findClosest(x2, y2, 3);</span>
-<span class="nc bnc" id="L371" title="All 2 branches missed.">                if (!nearest2.isEmpty()) {</span>
-<span class="nc" id="L372">                    rm.add(idx2);</span>
+<span class="nc" id="L367">                Set&lt;PairInt&gt; nearest2 = </span>
+<span class="nc" id="L368">                    nn.findClosest(x2, y2, 3);</span>
+<span class="nc bnc" id="L369" title="All 2 branches missed.">                if (!nearest2.isEmpty()) {</span>
+<span class="nc" id="L370">                    rm.add(idx2);</span>
                     //System.out.println(&quot;rm: &quot; + p2);
                 }
                 
                 PairInt eKey;
-<span class="nc bnc" id="L377" title="All 2 branches missed.">                if (idx1 &lt; idx2) {</span>
-<span class="nc" id="L378">                    eKey = new PairInt(idx1, idx2);</span>
+<span class="nc bnc" id="L375" title="All 2 branches missed.">                if (idx1 &lt; idx2) {</span>
+<span class="nc" id="L376">                    eKey = new PairInt(idx1, idx2);</span>
                 } else {
-<span class="nc" id="L380">                    eKey = new PairInt(idx2, idx1);</span>
+<span class="nc" id="L378">                    eKey = new PairInt(idx2, idx1);</span>
                 }
                 
-<span class="nc bnc" id="L383" title="All 2 branches missed.">                if (vertexEdgeMap.containsKey(eKey)) {</span>
-<span class="nc" id="L384">                    continue;</span>
+<span class="nc bnc" id="L381" title="All 2 branches missed.">                if (vertexEdgeMap.containsKey(eKey)) {</span>
+<span class="nc" id="L382">                    continue;</span>
                 }
-<span class="nc" id="L386">                vertexEdgeMap.put(eKey, edge);</span>
+<span class="nc" id="L384">                vertexEdgeMap.put(eKey, edge);</span>
                 
-<span class="nc" id="L388">                TIntIntMap map = adjCostMap.get(idx1);</span>
-<span class="nc bnc" id="L389" title="All 2 branches missed.">                if (map == null) {</span>
-<span class="nc" id="L390">                    map = new TIntIntHashMap();</span>
-<span class="nc" id="L391">                    adjCostMap.put(idx1, map);</span>
+<span class="nc" id="L386">                TIntIntMap map = adjCostMap.get(idx1);</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">                if (map == null) {</span>
+<span class="nc" id="L388">                    map = new TIntIntHashMap();</span>
+<span class="nc" id="L389">                    adjCostMap.put(idx1, map);</span>
                 }
-<span class="nc" id="L393">                map.put(idx2, 1);</span>
+<span class="nc" id="L391">                map.put(idx2, 1);</span>
                 
-<span class="nc" id="L395">                map = adjCostMap.get(idx2);</span>
-<span class="nc bnc" id="L396" title="All 2 branches missed.">                if (map == null) {</span>
-<span class="nc" id="L397">                    map = new TIntIntHashMap();</span>
-<span class="nc" id="L398">                    adjCostMap.put(idx2, map);</span>
+<span class="nc" id="L393">                map = adjCostMap.get(idx2);</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">                if (map == null) {</span>
+<span class="nc" id="L395">                    map = new TIntIntHashMap();</span>
+<span class="nc" id="L396">                    adjCostMap.put(idx2, map);</span>
                 }
-<span class="nc" id="L400">                map.put(idx1, 1);</span>
+<span class="nc" id="L398">                map.put(idx1, 1);</span>
             }
-<span class="nc" id="L402">        }</span>
+<span class="nc" id="L400">        }</span>
         
        // System.out.println(&quot;nVertexes=&quot; + vertexIndexes.size());
        // System.out.println(&quot;nEdges=&quot; + vertexEdgeMap.size());
-<span class="nc" id="L406">        int maxCost = PrimsMST.maxEdgeCost(adjCostMap);</span>
-<span class="nc" id="L407">        PrimsMST mst = new PrimsMST();</span>
-<span class="nc" id="L408">        mst.calculateMinimumSpanningTree(adjCostMap, maxCost);</span>
+<span class="nc" id="L404">        int maxCost = PrimsMST.maxEdgeCost(adjCostMap);</span>
+<span class="nc" id="L405">        PrimsMST mst = new PrimsMST();</span>
+<span class="nc" id="L406">        mst.calculateMinimumSpanningTree(adjCostMap, maxCost);</span>
         
-<span class="nc" id="L410">        int[] prev = mst.getPredeccessorArray();</span>
-<span class="nc" id="L411">        Map&lt;Integer, LinkedList&lt;Integer&gt;&gt; treeMap = mst.makeTreeFromPrev();</span>
+<span class="nc" id="L408">        int[] prev = mst.getPredeccessorArray();</span>
+<span class="nc" id="L409">        Map&lt;Integer, LinkedList&lt;Integer&gt;&gt; treeMap = mst.makeTreeFromPrev();</span>
                 
-<span class="nc" id="L413">        TIntSet rm2 = new TIntHashSet();</span>
+<span class="nc" id="L411">        TIntSet rm2 = new TIntHashSet();</span>
         
-<span class="nc" id="L415">        Set&lt;GraphEdge&gt; rmEdges = new HashSet&lt;GraphEdge&gt;();</span>
-<span class="nc" id="L416">        TIntIterator iter = rm.iterator();</span>
-<span class="nc bnc" id="L417" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+<span class="nc" id="L413">        Set&lt;GraphEdge&gt; rmEdges = new HashSet&lt;GraphEdge&gt;();</span>
+<span class="nc" id="L414">        TIntIterator iter = rm.iterator();</span>
+<span class="nc bnc" id="L415" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
             
-<span class="nc" id="L419">            int idx = iter.next();</span>
+<span class="nc" id="L417">            int idx = iter.next();</span>
                                     
             // keep walking up tree until a parent has children.n&gt;2
             while (true) {
                 
-<span class="nc bnc" id="L424" title="All 2 branches missed.">                if (rm2.contains(idx)) {</span>
-<span class="nc" id="L425">                    break;</span>
+<span class="nc bnc" id="L422" title="All 2 branches missed.">                if (rm2.contains(idx)) {</span>
+<span class="nc" id="L423">                    break;</span>
                 }
                 
-<span class="nc" id="L428">                int prevIdx = prev[idx];</span>
+<span class="nc" id="L426">                int prevIdx = prev[idx];</span>
                 
                 PairInt rmKey;
-<span class="nc bnc" id="L431" title="All 2 branches missed.">                if (idx &lt; prevIdx) {</span>
-<span class="nc" id="L432">                    rmKey = new PairInt(idx, prevIdx);</span>
+<span class="nc bnc" id="L429" title="All 2 branches missed.">                if (idx &lt; prevIdx) {</span>
+<span class="nc" id="L430">                    rmKey = new PairInt(idx, prevIdx);</span>
                 } else {
-<span class="nc" id="L434">                    rmKey = new PairInt(prevIdx, idx);</span>
+<span class="nc" id="L432">                    rmKey = new PairInt(prevIdx, idx);</span>
                 }
 
-<span class="nc" id="L437">                rmEdges.add(vertexEdgeMap.get(rmKey));</span>
+<span class="nc" id="L435">                rmEdges.add(vertexEdgeMap.get(rmKey));</span>
                 
-<span class="nc" id="L439">                LinkedList&lt;Integer&gt; pC = treeMap.get(prevIdx);</span>
-<span class="nc bnc" id="L440" title="All 2 branches missed.">                if (pC == null) {</span>
-<span class="nc" id="L441">                    break;</span>
+<span class="nc" id="L437">                LinkedList&lt;Integer&gt; pC = treeMap.get(prevIdx);</span>
+<span class="nc bnc" id="L438" title="All 2 branches missed.">                if (pC == null) {</span>
+<span class="nc" id="L439">                    break;</span>
                 }
                 //boolean removed = pC.remove(idx);
                 //rm2.add(idx);
                 //assert(removed);
-<span class="nc bnc" id="L446" title="All 2 branches missed.">                if (pC.size() &gt; 1) {</span>
-<span class="nc" id="L447">                    break;</span>
+<span class="nc bnc" id="L444" title="All 2 branches missed.">                if (pC.size() &gt; 1) {</span>
+<span class="nc" id="L445">                    break;</span>
                 }
-<span class="nc" id="L449">                idx = prevIdx;</span>
-<span class="nc" id="L450">            }</span>
-<span class="nc" id="L451">        }</span>
+<span class="nc" id="L447">                idx = prevIdx;</span>
+<span class="nc" id="L448">            }</span>
+<span class="nc" id="L449">        }</span>
         
         //System.out.println(&quot;nEdges to remove=&quot; + rmEdges.size());
         
-<span class="nc" id="L455">        Iterator&lt;Entry&lt;PairInt, GraphEdge&gt;&gt; iter2 = </span>
-<span class="nc" id="L456">            vertexEdgeMap.entrySet().iterator();</span>
-<span class="nc bnc" id="L457" title="All 2 branches missed.">        while (iter2.hasNext()) {</span>
-<span class="nc" id="L458">            Entry&lt;PairInt, GraphEdge&gt; entry = iter2.next();</span>
-<span class="nc" id="L459">            GraphEdge edge = entry.getValue();</span>
-<span class="nc bnc" id="L460" title="All 2 branches missed.">            if (!rmEdges.contains(edge)) {</span>
-<span class="nc" id="L461">                output.add(edge);</span>
+<span class="nc" id="L453">        Iterator&lt;Entry&lt;PairInt, GraphEdge&gt;&gt; iter2 = </span>
+<span class="nc" id="L454">            vertexEdgeMap.entrySet().iterator();</span>
+<span class="nc bnc" id="L455" title="All 2 branches missed.">        while (iter2.hasNext()) {</span>
+<span class="nc" id="L456">            Entry&lt;PairInt, GraphEdge&gt; entry = iter2.next();</span>
+<span class="nc" id="L457">            GraphEdge edge = entry.getValue();</span>
+<span class="nc bnc" id="L458" title="All 2 branches missed.">            if (!rmEdges.contains(edge)) {</span>
+<span class="nc" id="L459">                output.add(edge);</span>
             }
-<span class="nc" id="L463">        }</span>
+<span class="nc" id="L461">        }</span>
         
-<span class="nc" id="L465">        System.out.println(&quot;nEdges=&quot; + output.size());</span>
+<span class="nc" id="L463">        System.out.println(&quot;nEdges=&quot; + output.size());</span>
         
-<span class="nc" id="L467">        return output;</span>
+<span class="nc" id="L465">        return output;</span>
     }
     
     private void plotVoronoi() {
         
-<span class="nc" id="L472">        float xmin = minMaxXY[0];</span>
-<span class="nc" id="L473">        float xmax = minMaxXY[1];</span>
-<span class="nc" id="L474">        float ymin = minMaxXY[2];</span>
-<span class="nc" id="L475">        float ymax = minMaxXY[3];</span>
+<span class="nc" id="L470">        float xmin = minMaxXY[0];</span>
+<span class="nc" id="L471">        float xmax = minMaxXY[1];</span>
+<span class="nc" id="L472">        float ymin = minMaxXY[2];</span>
+<span class="nc" id="L473">        float ymax = minMaxXY[3];</span>
         
-<span class="nc" id="L477">        int n = boundary.size();</span>
-<span class="nc" id="L478">        float[] x = new float[n];</span>
-<span class="nc" id="L479">        float[] y = new float[n];</span>
+<span class="nc" id="L475">        int n = boundary.size();</span>
+<span class="nc" id="L476">        float[] x = new float[n];</span>
+<span class="nc" id="L477">        float[] y = new float[n];</span>
         
-<span class="nc" id="L481">        int count = 0;</span>
-<span class="nc bnc" id="L482" title="All 2 branches missed.">        for (PairInt p : boundary) {</span>
-<span class="nc" id="L483">            float xp = p.getX();</span>
-<span class="nc" id="L484">            float yp = p.getY();</span>
-<span class="nc" id="L485">            x[count] = xp;</span>
-<span class="nc" id="L486">            y[count] = yp;</span>
-<span class="nc" id="L487">            count++;</span>
-<span class="nc" id="L488">        }</span>
+<span class="nc" id="L479">        int count = 0;</span>
+<span class="nc bnc" id="L480" title="All 2 branches missed.">        for (PairInt p : boundary) {</span>
+<span class="nc" id="L481">            float xp = p.getX();</span>
+<span class="nc" id="L482">            float yp = p.getY();</span>
+<span class="nc" id="L483">            x[count] = xp;</span>
+<span class="nc" id="L484">            y[count] = yp;</span>
+<span class="nc" id="L485">            count++;</span>
+<span class="nc" id="L486">        }</span>
                
-<span class="nc bnc" id="L490" title="All 2 branches missed.">        if (edges == null) {</span>
-<span class="nc" id="L491">            fastFindMedialAxis();</span>
+<span class="nc bnc" id="L488" title="All 2 branches missed.">        if (edges == null) {</span>
+<span class="nc" id="L489">            fastFindMedialAxis();</span>
         }
                 
         try {
-<span class="nc" id="L495">        PolygonAndPointPlotter plotter = </span>
+<span class="nc" id="L493">        PolygonAndPointPlotter plotter = </span>
             new PolygonAndPointPlotter(xmin - 1, xmax + 1, 
                 ymin - 1, ymax + 1);
         
-<span class="nc" id="L499">        float[] xPolygon = null;</span>
-<span class="nc" id="L500">        float[] yPolygon = null;</span>
+<span class="nc" id="L497">        float[] xPolygon = null;</span>
+<span class="nc" id="L498">        float[] yPolygon = null;</span>
                 
-<span class="nc" id="L502">        n = edges.size();</span>
-<span class="nc" id="L503">        xPolygon = new float[2*n];</span>
-<span class="nc" id="L504">        yPolygon = new float[2*n];</span>
-<span class="nc" id="L505">        count = 0;</span>
-<span class="nc bnc" id="L506" title="All 2 branches missed.">        for (GraphEdge edge : edges) {</span>
-<span class="nc" id="L507">            float x1 = edge.x1;</span>
-<span class="nc" id="L508">            float y1 = edge.y1;</span>
-<span class="nc" id="L509">            float x2 = edge.x2;</span>
-<span class="nc" id="L510">            float y2 = edge.y2;</span>
+<span class="nc" id="L500">        n = edges.size();</span>
+<span class="nc" id="L501">        xPolygon = new float[2*n];</span>
+<span class="nc" id="L502">        yPolygon = new float[2*n];</span>
+<span class="nc" id="L503">        count = 0;</span>
+<span class="nc bnc" id="L504" title="All 2 branches missed.">        for (GraphEdge edge : edges) {</span>
+<span class="nc" id="L505">            float x1 = edge.x1;</span>
+<span class="nc" id="L506">            float y1 = edge.y1;</span>
+<span class="nc" id="L507">            float x2 = edge.x2;</span>
+<span class="nc" id="L508">            float y2 = edge.y2;</span>
             
-<span class="nc" id="L512">            xPolygon[count] = x1;</span>
-<span class="nc" id="L513">            yPolygon[count] = y1;</span>
-<span class="nc" id="L514">            xPolygon[count + 1] = x2;</span>
-<span class="nc" id="L515">            yPolygon[count + 1] = y2;</span>
-<span class="nc" id="L516">            count += 2;</span>
-<span class="nc" id="L517">        }</span>
-<span class="nc" id="L518">        plotter.addPlotWithLines(x, y, xPolygon, yPolygon, </span>
+<span class="nc" id="L510">            xPolygon[count] = x1;</span>
+<span class="nc" id="L511">            yPolygon[count] = y1;</span>
+<span class="nc" id="L512">            xPolygon[count + 1] = x2;</span>
+<span class="nc" id="L513">            yPolygon[count + 1] = y2;</span>
+<span class="nc" id="L514">            count += 2;</span>
+<span class="nc" id="L515">        }</span>
+<span class="nc" id="L516">        plotter.addPlotWithLines(x, y, xPolygon, yPolygon, </span>
             &quot;edges&quot;);
         
-<span class="nc" id="L521">        count = 0;</span>
-<span class="nc bnc" id="L522" title="All 2 branches missed.">        for (GraphEdge edge : edges) {</span>
-<span class="nc" id="L523">            int x1 = Math.round(edge.x1);</span>
-<span class="nc" id="L524">            int y1 = Math.round(edge.y1);</span>
-<span class="nc" id="L525">            int x2 = Math.round(edge.x2);</span>
-<span class="nc" id="L526">            int y2 = Math.round(edge.y2);</span>
+<span class="nc" id="L519">        count = 0;</span>
+<span class="nc bnc" id="L520" title="All 2 branches missed.">        for (GraphEdge edge : edges) {</span>
+<span class="nc" id="L521">            int x1 = Math.round(edge.x1);</span>
+<span class="nc" id="L522">            int y1 = Math.round(edge.y1);</span>
+<span class="nc" id="L523">            int x2 = Math.round(edge.x2);</span>
+<span class="nc" id="L524">            int y2 = Math.round(edge.y2);</span>
 
-<span class="nc" id="L528">            PairInt p1 = new PairInt(x1, y1);</span>
-<span class="nc" id="L529">            PairInt p2 = new PairInt(x2, y2);</span>
+<span class="nc" id="L526">            PairInt p1 = new PairInt(x1, y1);</span>
+<span class="nc" id="L527">            PairInt p2 = new PairInt(x2, y2);</span>
 
-<span class="nc bnc" id="L531" title="All 4 branches missed.">            if (points.contains(p1) &amp;&amp; points.contains(p2)) {</span>
-<span class="nc" id="L532">                xPolygon[count] = x1;</span>
-<span class="nc" id="L533">                yPolygon[count] = y1;</span>
-<span class="nc" id="L534">                xPolygon[count + 1] = x2;</span>
-<span class="nc" id="L535">                yPolygon[count + 1] = y2;</span>
-<span class="nc" id="L536">                count += 2;</span>
+<span class="nc bnc" id="L529" title="All 4 branches missed.">            if (points.contains(p1) &amp;&amp; points.contains(p2)) {</span>
+<span class="nc" id="L530">                xPolygon[count] = x1;</span>
+<span class="nc" id="L531">                yPolygon[count] = y1;</span>
+<span class="nc" id="L532">                xPolygon[count + 1] = x2;</span>
+<span class="nc" id="L533">                yPolygon[count + 1] = y2;</span>
+<span class="nc" id="L534">                count += 2;</span>
             }
-<span class="nc" id="L538">        }</span>
-<span class="nc" id="L539">        xPolygon = Arrays.copyOf(xPolygon, count);</span>
-<span class="nc" id="L540">        yPolygon = Arrays.copyOf(yPolygon, count);</span>
+<span class="nc" id="L536">        }</span>
+<span class="nc" id="L537">        xPolygon = Arrays.copyOf(xPolygon, count);</span>
+<span class="nc" id="L538">        yPolygon = Arrays.copyOf(yPolygon, count);</span>
         
-<span class="nc" id="L542">        plotter.addPlotWithLines(x, y, xPolygon, yPolygon, </span>
+<span class="nc" id="L540">        plotter.addPlotWithLines(x, y, xPolygon, yPolygon, </span>
             &quot;edited for medial axes&quot;);
         
         //-----
-<span class="nc" id="L546">        Set&lt;PairInt&gt; pts = getMedialAxisPoints();</span>
-<span class="nc" id="L547">        n = pts.size();</span>
-<span class="nc" id="L548">        x = new float[n];</span>
-<span class="nc" id="L549">        y = new float[n];</span>
-<span class="nc" id="L550">        count = 0;</span>
-<span class="nc bnc" id="L551" title="All 2 branches missed.">        for (PairInt p : pts) {</span>
-<span class="nc" id="L552">            float xp = p.getX();</span>
-<span class="nc" id="L553">            float yp = p.getY();</span>
-<span class="nc" id="L554">            x[count] = xp;</span>
-<span class="nc" id="L555">            y[count] = yp;</span>
-<span class="nc" id="L556">            count++;</span>
-<span class="nc" id="L557">        }</span>
-<span class="nc" id="L558">        plotter.addPlotWithLines(x, y, xPolygon, yPolygon, </span>
+<span class="nc" id="L544">        Set&lt;PairInt&gt; pts = getMedialAxisPoints();</span>
+<span class="nc" id="L545">        n = pts.size();</span>
+<span class="nc" id="L546">        x = new float[n];</span>
+<span class="nc" id="L547">        y = new float[n];</span>
+<span class="nc" id="L548">        count = 0;</span>
+<span class="nc bnc" id="L549" title="All 2 branches missed.">        for (PairInt p : pts) {</span>
+<span class="nc" id="L550">            float xp = p.getX();</span>
+<span class="nc" id="L551">            float yp = p.getY();</span>
+<span class="nc" id="L552">            x[count] = xp;</span>
+<span class="nc" id="L553">            y[count] = yp;</span>
+<span class="nc" id="L554">            count++;</span>
+<span class="nc" id="L555">        }</span>
+<span class="nc" id="L556">        plotter.addPlotWithLines(x, y, xPolygon, yPolygon, </span>
             &quot;med axis pts&quot;);
         
-<span class="nc" id="L561">        String filePath = plotter.writeFile(1000);</span>
-<span class="nc" id="L562">        System.out.println(&quot;wrote file=&quot; + filePath);</span>
-<span class="nc" id="L563">        } catch (Throwable t) {</span>
+<span class="nc" id="L559">        String filePath = plotter.writeFile(1000);</span>
+<span class="nc" id="L560">        System.out.println(&quot;wrote file=&quot; + filePath);</span>
+<span class="nc" id="L561">        } catch (Throwable t) {</span>
             
-<span class="nc" id="L565">        }</span>
-<span class="nc" id="L566">    }</span>
+<span class="nc" id="L563">        }</span>
+<span class="nc" id="L564">    }</span>
 
     /**
      * return the results as the graph edges.
@@ -572,7 +570,7 @@ public class MedialAxis {
      * @return 
      */
     protected List&lt;GraphEdge&gt; getMedAxisAsEdges() {
-<span class="nc" id="L575">        return new ArrayList&lt;GraphEdge&gt;(edges);</span>
+<span class="nc" id="L573">        return new ArrayList&lt;GraphEdge&gt;(edges);</span>
     }
     
     /**
@@ -584,43 +582,43 @@ public class MedialAxis {
      */
     public Set&lt;PairInt&gt; getMedialAxisPoints() {
         
-<span class="nc bnc" id="L587" title="All 2 branches missed.">        if (edgePoints != null) {</span>
-<span class="nc" id="L588">            return edgePoints;</span>
+<span class="nc bnc" id="L585" title="All 2 branches missed.">        if (edgePoints != null) {</span>
+<span class="nc" id="L586">            return edgePoints;</span>
         }
        
-<span class="nc" id="L591">        Set&lt;PairInt&gt; output = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L589">        Set&lt;PairInt&gt; output = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="nc bnc" id="L593" title="All 2 branches missed.">        for (GraphEdge edge : edges) {</span>
+<span class="nc bnc" id="L591" title="All 2 branches missed.">        for (GraphEdge edge : edges) {</span>
         
-<span class="nc" id="L595">            int x1 = Math.round(edge.x1);</span>
-<span class="nc" id="L596">            int y1 = Math.round(edge.y1);</span>
-<span class="nc" id="L597">            int x2 = Math.round(edge.x2);</span>
-<span class="nc" id="L598">            int y2 = Math.round(edge.y2);</span>
+<span class="nc" id="L593">            int x1 = Math.round(edge.x1);</span>
+<span class="nc" id="L594">            int y1 = Math.round(edge.y1);</span>
+<span class="nc" id="L595">            int x2 = Math.round(edge.x2);</span>
+<span class="nc" id="L596">            int y2 = Math.round(edge.y2);</span>
 
-<span class="nc" id="L600">            BresenhamsLine.createLinePoints(x1, y1, x2, y2,</span>
+<span class="nc" id="L598">            BresenhamsLine.createLinePoints(x1, y1, x2, y2,</span>
                 output);
-<span class="nc" id="L602">        }</span>
+<span class="nc" id="L600">        }</span>
         
-<span class="nc" id="L604">        this.edgePoints = output;</span>
+<span class="nc" id="L602">        this.edgePoints = output;</span>
         
-<span class="nc" id="L606">        return output;</span>
+<span class="nc" id="L604">        return output;</span>
     }
     
     private Set&lt;PairInt&gt; findBoundaryProblems() {
                 
-<span class="nc" id="L611">        PostLineThinnerCorrections pltc = new </span>
+<span class="nc" id="L609">        PostLineThinnerCorrections pltc = new </span>
             PostLineThinnerCorrections();
         
-<span class="nc" id="L614">        return pltc.findBoundaryPattern(boundary, minMaxXY[1], minMaxXY[3]);</span>
+<span class="nc" id="L612">        return pltc.findBoundaryPattern(boundary, minMaxXY[1], minMaxXY[3]);</span>
         
     }
 
     private void applyLineThinner() {
         
-<span class="nc" id="L620">        Set&lt;PairInt&gt; b = new HashSet&lt;PairInt&gt;(boundary);</span>
+<span class="nc" id="L618">        Set&lt;PairInt&gt; b = new HashSet&lt;PairInt&gt;(boundary);</span>
         
-<span class="nc" id="L622">        ImageProcessor imp = new ImageProcessor();</span>
-<span class="nc" id="L623">        imp.applyThinning(b, minMaxXY[1] + 1, </span>
+<span class="nc" id="L620">        ImageProcessor imp = new ImageProcessor();</span>
+<span class="nc" id="L621">        imp.applyThinning(b, minMaxXY[1] + 1, </span>
             minMaxXY[3] + 1);
         
         //SpurRemover spurRm = new SpurRemover();
@@ -635,17 +633,17 @@ public class MedialAxis {
         */
             
         // store the removed points
-<span class="nc" id="L638">        removedPoints.addAll(boundary);</span>
-<span class="nc" id="L639">        removedPoints.removeAll(b);</span>
+<span class="nc" id="L636">        removedPoints.addAll(boundary);</span>
+<span class="nc" id="L637">        removedPoints.removeAll(b);</span>
         
-<span class="nc" id="L641">        System.out.println(&quot;line thinning removed &quot; +</span>
-<span class="nc" id="L642">            removedPoints.size() + &quot; from the boundary&quot;);</span>
+<span class="nc" id="L639">        System.out.println(&quot;line thinning removed &quot; +</span>
+<span class="nc" id="L640">            removedPoints.size() + &quot; from the boundary&quot;);</span>
         
-<span class="nc" id="L644">        boundary = b;</span>
-<span class="nc" id="L645">    }</span>
+<span class="nc" id="L642">        boundary = b;</span>
+<span class="nc" id="L643">    }</span>
 
     public Set&lt;PairInt&gt; getBoundary() {
-<span class="nc" id="L648">        return boundary;</span>
+<span class="nc" id="L646">        return boundary;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

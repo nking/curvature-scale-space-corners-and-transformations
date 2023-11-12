@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SunFinder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">SunFinder.java</span></div><h1>SunFinder.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
 import algorithms.QuickSort;
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.Sky.SkyObject;
 import algorithms.imageProcessing.features.mser.EllipseHelper;
 import algorithms.imageProcessing.features.mser.MSEREdges;
@@ -23,126 +24,126 @@ public class SunFinder {
     
     //private Logger log = Logger.getLogger(this.getClass().getName());
 
-<span class="fc" id="L26">    public SunFinder() {</span>
-<span class="fc" id="L27">    }</span>
+<span class="fc" id="L27">    public SunFinder() {</span>
+<span class="fc" id="L28">    }</span>
     
     public SkyObject findSun(MSEREdges mserEdges) {
         
-<span class="fc" id="L31">        ImageExt img = mserEdges.getClrImg();</span>
+<span class="fc" id="L32">        ImageExt img = mserEdges.getClrImg();</span>
         
-<span class="fc" id="L33">        List&lt;Region&gt; greyscaleNegative = mserEdges.getOrigGsPtRegions().get(1);</span>
+<span class="fc" id="L34">        List&lt;Region&gt; greyscaleNegative = mserEdges.getOrigGsPtRegions().get(1);</span>
         
-<span class="fc" id="L35">        SunColors sunColors = new SunColors();</span>
+<span class="fc" id="L36">        SunColors sunColors = new SunColors();</span>
         
-<span class="fc" id="L37">        List&lt;Set&lt;PairInt&gt;&gt; listOfSets = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L38">        List&lt;Set&lt;PairInt&gt;&gt; listOfSets = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
         
-<span class="fc bfc" id="L39" title="All 2 branches covered.">        for (int rIdx = 0; rIdx &lt; greyscaleNegative.size(); ++rIdx) {</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (int rIdx = 0; rIdx &lt; greyscaleNegative.size(); ++rIdx) {</span>
             
-<span class="fc" id="L41">            Region r = greyscaleNegative.get(rIdx);</span>
+<span class="fc" id="L42">            Region r = greyscaleNegative.get(rIdx);</span>
            
-<span class="fc" id="L43">            Set&lt;PairInt&gt; set1 = null;</span>
+<span class="fc" id="L44">            Set&lt;PairInt&gt; set1 = null;</span>
                 
-<span class="fc bfc" id="L45" title="All 2 branches covered.">            for (int i = 0; i &lt; r.accX.size(); ++i) {</span>
-<span class="fc" id="L46">                int x = r.accX.get(i);</span>
-<span class="fc" id="L47">                int y = r.accY.get(i);</span>
-<span class="fc" id="L48">                PairInt p = new PairInt(x, y);</span>
-<span class="fc" id="L49">                int pixIdx = img.getInternalIndex(p);</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">            for (int i = 0; i &lt; r.accX.size(); ++i) {</span>
+<span class="fc" id="L47">                int x = r.accX.get(i);</span>
+<span class="fc" id="L48">                int y = r.accY.get(i);</span>
+<span class="fc" id="L49">                PairInt p = new PairInt(x, y);</span>
+<span class="fc" id="L50">                int pixIdx = img.getInternalIndex(p);</span>
                
-<span class="fc bfc" id="L51" title="All 2 branches covered.">                if (sunColors.isSunCenterColor(img, pixIdx)) {</span>
-<span class="fc bfc" id="L52" title="All 2 branches covered.">                    if (set1 == null) {</span>
-<span class="fc" id="L53">                        set1 = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">                if (sunColors.isSunCenterColor(img, pixIdx)) {</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">                    if (set1 == null) {</span>
+<span class="fc" id="L54">                        set1 = new HashSet&lt;PairInt&gt;();</span>
                     }
-<span class="fc" id="L55">                    set1.add(p);</span>
+<span class="fc" id="L56">                    set1.add(p);</span>
                 }
             }
-<span class="fc bfc" id="L58" title="All 2 branches covered.">            if (set1 != null) {</span>
-<span class="fc" id="L59">                listOfSets.add(set1);</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">            if (set1 != null) {</span>
+<span class="fc" id="L60">                listOfSets.add(set1);</span>
             }
         }
         
-<span class="fc" id="L63">        int nList = listOfSets.size();</span>
-<span class="fc" id="L64">        List&lt;EllipseHelper&gt; ehs = new ArrayList&lt;EllipseHelper&gt;(nList);</span>
-<span class="fc" id="L65">        List&lt;Set&lt;PairInt&gt;&gt; listOfSets2 = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
-<span class="fc bfc" id="L66" title="All 2 branches covered.">        for (int i = 0; i &lt; listOfSets.size(); ++i) {</span>
-<span class="fc" id="L67">            Set&lt;PairInt&gt; points = listOfSets.get(i);</span>
-<span class="fc" id="L68">            EllipseHelper eh = createRegion(points);</span>
-<span class="fc" id="L69">            int n = points.size();</span>
+<span class="fc" id="L64">        int nList = listOfSets.size();</span>
+<span class="fc" id="L65">        List&lt;EllipseHelper&gt; ehs = new ArrayList&lt;EllipseHelper&gt;(nList);</span>
+<span class="fc" id="L66">        List&lt;Set&lt;PairInt&gt;&gt; listOfSets2 = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        for (int i = 0; i &lt; listOfSets.size(); ++i) {</span>
+<span class="fc" id="L68">            Set&lt;PairInt&gt; points = listOfSets.get(i);</span>
+<span class="fc" id="L69">            EllipseHelper eh = createRegion(points);</span>
+<span class="fc" id="L70">            int n = points.size();</span>
             
-<span class="fc bfc" id="L71" title="All 2 branches covered.">            if (n &lt; 9) {</span>
-<span class="fc" id="L72">                continue;</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            if (n &lt; 9) {</span>
+<span class="fc" id="L73">                continue;</span>
             }
         
-<span class="fc" id="L75">            double area = 2. * Math.PI * eh.getMajorTimesMinor();</span>
-<span class="fc" id="L76">            double dens = (double)n/area;</span>
-<span class="pc bpc" id="L77" title="1 of 2 branches missed.">            if (Double.isInfinite(dens)) {</span>
-<span class="nc" id="L78">                continue;</span>
+<span class="fc" id="L76">            double area = 2. * Math.PI * eh.getMajorTimesMinor();</span>
+<span class="fc" id="L77">            double dens = (double)n/area;</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">            if (Double.isInfinite(dens)) {</span>
+<span class="nc" id="L79">                continue;</span>
             }
             //System.out.println(&quot;sunfinder: &quot; + Arrays.toString(eh.getXYCenter())
             //    + &quot; dens=&quot; + dens + &quot; n=&quot; + n 
             //    + &quot; ecc=&quot; + eh.getEccentricity() + &quot; minor=&quot; + 
             //    eh.getSemiMinor() + &quot; major=&quot; + eh.getSemiMajor()
             //);
-<span class="fc bfc" id="L85" title="All 6 branches covered.">            if (dens &gt; 0.1 &amp;&amp; eh.getEccentricity() &lt; 0.9 &amp;&amp; dens &gt; 0.375) {</span>
-<span class="fc" id="L86">                ehs.add(eh);</span>
-<span class="fc" id="L87">                listOfSets2.add(points);</span>
+<span class="fc bfc" id="L86" title="All 6 branches covered.">            if (dens &gt; 0.1 &amp;&amp; eh.getEccentricity() &lt; 0.9 &amp;&amp; dens &gt; 0.375) {</span>
+<span class="fc" id="L87">                ehs.add(eh);</span>
+<span class="fc" id="L88">                listOfSets2.add(points);</span>
             }
         }
         
-<span class="fc" id="L91">        nList = listOfSets2.size();</span>
-<span class="fc" id="L92">        float[] densities = new float[nList];</span>
-<span class="fc" id="L93">        float[] ellipticities = new float[nList];</span>
-<span class="fc" id="L94">        int[] ns = new int[nList];</span>
-<span class="fc" id="L95">        int[] indexes = new int[nList];</span>
-<span class="fc bfc" id="L96" title="All 2 branches covered.">        for (int i = 0; i &lt; nList; ++i) {</span>
-<span class="fc" id="L97">            Set&lt;PairInt&gt; points = listOfSets.get(i);</span>
-<span class="fc" id="L98">            EllipseHelper eh = createRegion(points);</span>
-<span class="fc" id="L99">            int n = points.size();</span>
+<span class="fc" id="L92">        nList = listOfSets2.size();</span>
+<span class="fc" id="L93">        float[] densities = new float[nList];</span>
+<span class="fc" id="L94">        float[] ellipticities = new float[nList];</span>
+<span class="fc" id="L95">        int[] ns = new int[nList];</span>
+<span class="fc" id="L96">        int[] indexes = new int[nList];</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        for (int i = 0; i &lt; nList; ++i) {</span>
+<span class="fc" id="L98">            Set&lt;PairInt&gt; points = listOfSets.get(i);</span>
+<span class="fc" id="L99">            EllipseHelper eh = createRegion(points);</span>
+<span class="fc" id="L100">            int n = points.size();</span>
         
-<span class="fc" id="L101">            double area = 2. * Math.PI * eh.getMajorTimesMinor();</span>
-<span class="fc" id="L102">            double dens = (double)n/area;</span>
-<span class="fc" id="L103">            densities[i] = (float)dens;</span>
-<span class="fc" id="L104">            ellipticities[i] = (float)eh.getEccentricity();</span>
-<span class="fc" id="L105">            ns[i] = n;</span>
-<span class="fc" id="L106">            indexes[i] = i;</span>
+<span class="fc" id="L102">            double area = 2. * Math.PI * eh.getMajorTimesMinor();</span>
+<span class="fc" id="L103">            double dens = (double)n/area;</span>
+<span class="fc" id="L104">            densities[i] = (float)dens;</span>
+<span class="fc" id="L105">            ellipticities[i] = (float)eh.getEccentricity();</span>
+<span class="fc" id="L106">            ns[i] = n;</span>
+<span class="fc" id="L107">            indexes[i] = i;</span>
         }
         
-<span class="fc" id="L109">        QuickSort.sortBy1stArg(densities, indexes);</span>
+<span class="fc" id="L110">        QuickSort.sortBy1stArg(densities, indexes);</span>
         
-<span class="fc bfc" id="L111" title="All 2 branches covered.">        for (int i = (ns.length - 1); i &gt; -1; --i) {</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (int i = (ns.length - 1); i &gt; -1; --i) {</span>
             
-<span class="fc" id="L113">            Set&lt;PairInt&gt; points = listOfSets2.get(i);</span>
-<span class="fc" id="L114">            EllipseHelper eh = ehs.get(i);</span>
-<span class="fc" id="L115">            double area = 2. * Math.PI * eh.getMajorTimesMinor();</span>
-<span class="fc" id="L116">            double dens = (double)points.size()/area;</span>
+<span class="fc" id="L114">            Set&lt;PairInt&gt; points = listOfSets2.get(i);</span>
+<span class="fc" id="L115">            EllipseHelper eh = ehs.get(i);</span>
+<span class="fc" id="L116">            double area = 2. * Math.PI * eh.getMajorTimesMinor();</span>
+<span class="fc" id="L117">            double dens = (double)points.size()/area;</span>
         
-<span class="fc" id="L118">            System.out.println(Arrays.toString(eh.getXYCenter()) </span>
-<span class="fc" id="L119">                + &quot; n=&quot; + points.size()</span>
+<span class="fc" id="L119">            System.out.println(Arrays.toString(eh.getXYCenter()) </span>
+<span class="fc" id="L120">                + &quot; n=&quot; + points.size()</span>
                 + &quot; area=&quot; + area + &quot; dens=&quot; + dens
-<span class="fc" id="L121">                + &quot; ecc=&quot; + eh.getEccentricity() + &quot; minor=&quot; + </span>
-<span class="fc" id="L122">                eh.getSemiMinor() + &quot; major=&quot; + eh.getSemiMajor()</span>
+<span class="fc" id="L122">                + &quot; ecc=&quot; + eh.getEccentricity() + &quot; minor=&quot; + </span>
+<span class="fc" id="L123">                eh.getSemiMinor() + &quot; major=&quot; + eh.getSemiMajor()</span>
             );
         
-<span class="fc" id="L125">            SkyObject obj = new SkyObject();</span>
-<span class="fc" id="L126">            obj.points = points;</span>
-<span class="fc" id="L127">            obj.xyCenter = eh.getXYCenter();</span>
-<span class="fc" id="L128">            return obj;</span>
+<span class="fc" id="L126">            SkyObject obj = new SkyObject();</span>
+<span class="fc" id="L127">            obj.points = points;</span>
+<span class="fc" id="L128">            obj.xyCenter = eh.getXYCenter();</span>
+<span class="fc" id="L129">            return obj;</span>
         }
         
-<span class="fc" id="L131">        System.out.println(&quot;did not find sun in image&quot;);</span>
+<span class="fc" id="L132">        System.out.println(&quot;did not find sun in image&quot;);</span>
         
-<span class="fc" id="L133">        return null;        </span>
+<span class="fc" id="L134">        return null;        </span>
     }
 
     private EllipseHelper createRegion(Set&lt;PairInt&gt; points) {
 
-<span class="fc" id="L138">        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();</span>
-<span class="fc" id="L139">        int[] xyCen = ch.calculateRoundedXYCentroids(points);</span>
+<span class="fc" id="L139">        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L140">        int[] xyCen = ch.calculateRoundedXYCentroids(points);</span>
     
-<span class="fc" id="L141">        PairIntArray xy = Misc.convertWithoutOrder(points);</span>
+<span class="fc" id="L142">        PairIntArray xy = Misc.convertWithoutOrder(points);</span>
         
-<span class="fc" id="L143">        EllipseHelper eh = new EllipseHelper(xyCen[0], xyCen[1], xy);</span>
+<span class="fc" id="L144">        EllipseHelper eh = new EllipseHelper(xyCen[0], xyCen[1], xy);</span>
         
-<span class="fc" id="L145">        return eh;</span>
+<span class="fc" id="L146">        return eh;</span>
     }
   
 }

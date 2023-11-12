@@ -90,23 +90,25 @@ simplified below.
     for the probablity gamma to be in excess of 95%, that is,
     the probability that all the data points selected in one subsample are non-outliers.
     
-    let p = sub-sample size (e.g. 7 for Fundamental Matrix correspondence)
-    let eps = fraction of contaminated data
-    let m = number of subsamples to achieve gamma probability
+    let m = sub-sample size (e.g. 7 for Fundamental Matrix correspondence)
+    let w = percent outliers
+    let N = number of subsamples to achieve gamma probability
     
-    gamma = 1 - ( (1 - (1 - eps)^p)^m)
+    gamma = 1 - ( (1 - w^m)^N)
+
+    z = 1. - math.pow(1. - w, m)
     
-    m = Math.log(1. - 0.95)/Math.log(1. - Math.pow(1. - (outlierPercent/100.), p))
+    N = Math.log(1. - 0.95)/Math.log(z)
     
-    table of m's for p=7 and eps from 5%to 50%:
+    table of N's for m=7 and eps from 5%to 50%:
     
-    p |  5%  10%  20%  25%  30%  40%  50%
+    m |  5%  10%  20%  25%  30%  40%  50%
     --------------------------------------
     7 |  3   5    13   21   35   106  382
     &lt;/pre&gt;
     */
     public static int numberOfSubsamplesOfSize7For95PercentInliers(int outlierPercent) {
-<span class="fc" id="L109">        return numberOfSubsamplesFor95PercentInliers(outlierPercent, 7);</span>
+<span class="fc" id="L111">        return numberOfSubsamples(95., outlierPercent, 7);</span>
     }
     
     /*
@@ -123,50 +125,79 @@ simplified below.
        https://www.robots.ox.ac.uk/ActiveVision/Publications/torr_murray_ijcv1997/torr_murray_ijcv1997.pdf
     
     &lt;pre&gt;
-    for probablity gamma in excess of 95%:
-    let p = sub-sample size
-    let m = number of subsamples to achieve gamma probability
-    let eps = percentage of bad data
+    for probability gamma in excess of 95%:
+
+    let m = sub-sample size (e.g. 7 for Fundamental Matrix correspondence)
+    let w = percent outliers
+    let N = number of subsamples to achieve gamma probability
+
+    gamma = 1 - ( (1 - w^m)^N)
+
+    z = 1. - math.pow(1. - w, m)
+
+    N = Math.log(1. - 0.95)/Math.log(z)
     
-    gamma = 1 - ( (1 - (1 - eps)^p)^m)
+    table of N's for m=7, 8 and eps from 5%to 50%:
     
-    table of m's for p=7 and eps from 5%to 50%:
-    
-    p |  5%  10%  20%  25%  30%  40%  50%
+    m |  5%  10%  20%  25%  30%  40%  50%
     --------------------------------------
     7 |  3   5    13   21   35   106  382
     8 |  3   6    17   29   51   177  766
     &lt;/pre&gt;
+    Note that the number of iterations scales roughly with the subSampleSize as
+    2 ^ (subSampleSize) for larger subSampleSize, 
+    so this method should only be used for small sample sizes (i.e. &lt; 100, preferably &lt;&lt; 100).
     */
     public static int numberOfSubsamplesFor95PercentInliers(int outlierPercent,
         int subSampleSize) {
-    
-<span class="pc bpc" id="L144" title="1 of 2 branches missed.">        if (outlierPercent &lt; 0) {</span>
-<span class="nc" id="L145">            throw new IllegalArgumentException(&quot;outlierPercent must be non-negative&quot;);</span>
+
+<span class="fc" id="L154">        return numberOfSubsamples(95., outlierPercent, subSampleSize);</span>
+    }
+
+    /**
+     * calculate the number of iterations needed to ensure with percentCertainty that all members of
+     * subSampleSize drawn are &quot;inliers&quot;.
+       Note that the number of iterations scales roughly with the subSampleSize as
+       2 ^ (subSampleSize), 
+       so this method should only be used for small sample sizes (i.e. &lt; 100, preferably &lt;&lt; 100).
+     * @param percentCertainty the percent certainty that all members in sample of size subSampleSize
+     *                          are &quot;inliers&quot;.
+     * @param outlierPercent the percent outliers in the entire dataset.
+     * @param subSampleSize the sample size drawn from the entire dataset in iterations.
+     * @return the number of iteration needed to ensure w/ %certainty that all
+     * members of subSample are inliers.
+     */
+    public static int numberOfSubsamples(double percentCertainty, int outlierPercent,
+                                                            int subSampleSize) {
+<span class="pc bpc" id="L172" title="2 of 4 branches missed.">        if (percentCertainty &lt;= 0 || percentCertainty &gt;= 100.) {</span>
+<span class="nc" id="L173">            throw new IllegalArgumentException(&quot;percentCertainty must be &gt; 0 and &lt; 100&quot;);</span>
         }
-<span class="pc bpc" id="L147" title="1 of 2 branches missed.">        if (outlierPercent &gt; 50) {</span>
-<span class="nc" id="L148">            throw new IllegalArgumentException(&quot;outlierPercent must be 50 percent or less&quot;);</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">        if (outlierPercent &lt; 0) {</span>
+<span class="nc" id="L176">            throw new IllegalArgumentException(&quot;outlierPercent must be non-negative&quot;);</span>
         }
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        if (subSampleSize &lt; 0) {</span>
-<span class="nc" id="L151">            throw new IllegalArgumentException(&quot;outlierPercent must be non-negative&quot;);</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">        if (outlierPercent &gt; 50) {</span>
+<span class="nc" id="L179">            throw new IllegalArgumentException(&quot;outlierPercent must be 50 percent or less&quot;);</span>
         }
-        
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        if (subSampleSize &lt; 0) {</span>
+<span class="nc" id="L182">            throw new IllegalArgumentException(&quot;outlierPercent must be non-negative&quot;);</span>
+        }
+
         /*
         1 - gamma = (1 - (1 - eps)^p)^m
            let Z = (1 - (1 - eps)^p)
            let g = 1 - gamma
         g = Z^m
-        log(g) = m*log(Z);       
+        log(g) = m*log(Z);
         m = log(g) / log(Z)
         */
-<span class="fc" id="L162">        int p = subSampleSize;</span>
-<span class="fc" id="L163">        double z = 1. - Math.pow(1. - ((double)outlierPercent/100.), p);</span>
-<span class="fc" id="L164">        double g = 1. - 0.95;</span>
-        
-<span class="fc" id="L166">        double m = Math.log(g) / Math.log(z);</span>
-                        
-<span class="fc" id="L168">        return (int)Math.ceil(m);</span>
+<span class="fc" id="L193">        int m = subSampleSize;</span>
+<span class="fc" id="L194">        double w = (double)outlierPercent/100.;</span>
+<span class="fc" id="L195">        double z = 1. - Math.pow(1. - w, m);</span>
+<span class="fc" id="L196">        double g = 1. - percentCertainty/100.;</span>
+
+<span class="fc" id="L198">        double n = Math.log(g) / Math.log(z);</span>
+
+<span class="fc" id="L200">        return (int)Math.ceil(n);</span>
     }
-    
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

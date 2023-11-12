@@ -6,7 +6,7 @@ import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.transform.MatchedPointsTransformationCalculator;
 import algorithms.imageProcessing.transform.TransformationParameters;
-import algorithms.imageProcessing.util.AngleUtil;
+import algorithms.util.AngleUtil;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -133,8 +133,8 @@ import java.util.logging.Logger;
 <span class="nc" id="L133">    }</span>
 
     public void useDebugMode() {
-<span class="fc" id="L136">        debug = true;</span>
-<span class="fc" id="L137">    }</span>
+<span class="nc" id="L136">        debug = true;</span>
+<span class="nc" id="L137">    }</span>
 
     protected void initialize() {
 
@@ -149,8 +149,8 @@ import java.util.logging.Logger;
 <span class="fc" id="L149">        this.cssIM2 = new CSSContourInflectionMaker(image2);</span>
         
 <span class="pc bpc" id="L151" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="fc" id="L152">            cssIM1.setToDebug();</span>
-<span class="fc" id="L153">            cssIM2.setToDebug();</span>
+<span class="nc" id="L152">            cssIM1.setToDebug();</span>
+<span class="nc" id="L153">            cssIM2.setToDebug();</span>
         }
         
 <span class="pc bpc" id="L156" title="1 of 2 branches missed.">        if (useLineDrawingMode) {</span>
@@ -251,17 +251,17 @@ import java.util.logging.Logger;
 <span class="fc" id="L251">            double bestCost = Double.MAX_VALUE;</span>
 
 <span class="pc bpc" id="L253" title="1 of 2 branches missed.">if (debug){</span>
-<span class="fc" id="L254">Image img3 = cssIM1.getImage().createWithDimensions();</span>
-<span class="fc bfc" id="L255" title="All 2 branches covered.">for (int j = 0; j &lt; edges1.get(i1).getN(); ++j) {</span>
-<span class="fc" id="L256">    int x = edges1.get(i1).getX(j);</span>
-<span class="fc" id="L257">    int y = edges1.get(i1).getY(j);</span>
-<span class="fc bfc" id="L258" title="All 4 branches covered.">    if (j == 0 || (j == (edges1.get(i1).getN() - 1))) {</span>
-<span class="fc" id="L259">        ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);</span>
+<span class="nc" id="L254">Image img3 = cssIM1.getImage().createWithDimensions();</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">for (int j = 0; j &lt; edges1.get(i1).getN(); ++j) {</span>
+<span class="nc" id="L256">    int x = edges1.get(i1).getX(j);</span>
+<span class="nc" id="L257">    int y = edges1.get(i1).getY(j);</span>
+<span class="nc bnc" id="L258" title="All 4 branches missed.">    if (j == 0 || (j == (edges1.get(i1).getN() - 1))) {</span>
+<span class="nc" id="L259">        ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);</span>
     } else {
-<span class="fc" id="L261">        ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);</span>
+<span class="nc" id="L261">        ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);</span>
     }
 }
-<span class="fc" id="L264">MiscDebug.writeImage(img3, &quot;edge1_&quot; + i1);</span>
+<span class="nc" id="L264">MiscDebug.writeImage(img3, &quot;edge1_&quot; + i1);</span>
         }
 <span class="fc bfc" id="L266" title="All 2 branches covered.">            for (int i2 = 0; i2 &lt; contourLists2.size(); ++i2) {</span>
 
@@ -271,18 +271,18 @@ import java.util.logging.Logger;
                     new CSSContourMatcherWrapper(contours1, contours2,
                     alreadySorted);
 <span class="pc bpc" id="L273" title="1 of 2 branches missed.">if (debug){</span>
-<span class="fc" id="L274">Image img3 = cssIM2.getImage().createWithDimensions();</span>
-<span class="fc bfc" id="L275" title="All 2 branches covered.">for (int j = 0; j &lt; edges2.get(i2).getN(); ++j) {</span>
-<span class="fc" id="L276">    int x = edges2.get(i2).getX(j);</span>
-<span class="fc" id="L277">    int y = edges2.get(i2).getY(j);</span>
+<span class="nc" id="L274">Image img3 = cssIM2.getImage().createWithDimensions();</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">for (int j = 0; j &lt; edges2.get(i2).getN(); ++j) {</span>
+<span class="nc" id="L276">    int x = edges2.get(i2).getX(j);</span>
+<span class="nc" id="L277">    int y = edges2.get(i2).getY(j);</span>
     
-<span class="fc bfc" id="L279" title="All 4 branches covered.">    if (j == 0 || (j == (edges2.get(i2).getN() - 1))) {</span>
-<span class="fc" id="L280">        ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);</span>
+<span class="nc bnc" id="L279" title="All 4 branches missed.">    if (j == 0 || (j == (edges2.get(i2).getN() - 1))) {</span>
+<span class="nc" id="L280">        ImageIOHelper.addPointToImage(x, y, img3, 0, 200, 150, 0);</span>
     } else {
-<span class="fc" id="L282">        ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);</span>
+<span class="nc" id="L282">        ImageIOHelper.addPointToImage(x, y, img3, 0, 255, 0, 0);</span>
     }
 }
-<span class="fc" id="L285">MiscDebug.writeImage(img3, &quot;edge2_&quot; + i2);</span>
+<span class="nc" id="L285">MiscDebug.writeImage(img3, &quot;edge2_&quot; + i2);</span>
 }
 
 <span class="fc" id="L288">                boolean didMatch = matcher.matchContours();</span>

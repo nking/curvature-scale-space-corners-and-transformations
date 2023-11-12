@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PointInPolygon2.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry</a> &gt; <span class="el_source">PointInPolygon2.java</span></div><h1>PointInPolygon2.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry;
 
-import algorithms.imageProcessing.MiscellaneousCurveHelper;
-
 /**
  *
  * @author nichole
@@ -26,52 +24,52 @@ public class PointInPolygon2 {
      * @param yPoly y coordinates of a polygon where first and last point are
      * the same
      */
-<span class="nc" id="L29">    public PointInPolygon2(int[] xPoly, int[] yPoly) {</span>
+<span class="nc" id="L27">    public PointInPolygon2(int[] xPoly, int[] yPoly) {</span>
         
-<span class="nc" id="L31">        this.xPolygon = xPoly;</span>
-<span class="nc" id="L32">        this.yPolygon = yPoly;</span>
+<span class="nc" id="L29">        this.xPolygon = xPoly;</span>
+<span class="nc" id="L30">        this.yPolygon = yPoly;</span>
         
-<span class="nc" id="L34">        this.xPolygonF = null;</span>
-<span class="nc" id="L35">        this.yPolygonF = null;</span>
+<span class="nc" id="L32">        this.xPolygonF = null;</span>
+<span class="nc" id="L33">        this.yPolygonF = null;</span>
         
-<span class="nc" id="L37">        MiscellaneousCurveHelper mch = new MiscellaneousCurveHelper();</span>
-<span class="nc" id="L38">        xyCentroid = mch.calculateXYCentroids(xPolygon, yPolygon);</span>
+<span class="nc" id="L35">        MiscellaneousCurveHelper mch = new MiscellaneousCurveHelper();</span>
+<span class="nc" id="L36">        xyCentroid = mch.calculateXYCentroids(xPolygon, yPolygon);</span>
         
-<span class="nc" id="L40">        xyMinMax = new double[]{</span>
+<span class="nc" id="L38">        xyMinMax = new double[]{</span>
             Double.MAX_VALUE, Double.MIN_VALUE, Double.MAX_VALUE, Double.MIN_VALUE
         };
         
         double diffX, diffY, diff;
-<span class="nc" id="L45">        double min = Double.MAX_VALUE;</span>
-<span class="nc" id="L46">        double max = Double.MIN_VALUE;</span>
-<span class="nc bnc" id="L47" title="All 2 branches missed.">        for (int i = 0; i &lt; xPoly.length; ++i) {</span>
-<span class="nc" id="L48">            int xp = xPoly[i];</span>
-<span class="nc" id="L49">            int yp = yPoly[i];</span>
-<span class="nc" id="L50">            diffX = xp - xyCentroid[0];</span>
-<span class="nc" id="L51">            diffY = yp - xyCentroid[1];</span>
-<span class="nc" id="L52">            diff = Math.sqrt(diffX*diffX + diffY*diffY);</span>
-<span class="nc bnc" id="L53" title="All 2 branches missed.">            if (diff &lt; min) {</span>
-<span class="nc" id="L54">                min = diff;</span>
+<span class="nc" id="L43">        double min = Double.MAX_VALUE;</span>
+<span class="nc" id="L44">        double max = Double.MIN_VALUE;</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        for (int i = 0; i &lt; xPoly.length; ++i) {</span>
+<span class="nc" id="L46">            int xp = xPoly[i];</span>
+<span class="nc" id="L47">            int yp = yPoly[i];</span>
+<span class="nc" id="L48">            diffX = xp - xyCentroid[0];</span>
+<span class="nc" id="L49">            diffY = yp - xyCentroid[1];</span>
+<span class="nc" id="L50">            diff = Math.sqrt(diffX*diffX + diffY*diffY);</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">            if (diff &lt; min) {</span>
+<span class="nc" id="L52">                min = diff;</span>
             }
-<span class="nc bnc" id="L56" title="All 2 branches missed.">            if (diff &gt; max) {</span>
-<span class="nc" id="L57">                max = diff;</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">            if (diff &gt; max) {</span>
+<span class="nc" id="L55">                max = diff;</span>
             }
-<span class="nc bnc" id="L59" title="All 2 branches missed.">            if (xp &lt; xyMinMax[0]) {</span>
-<span class="nc" id="L60">                xyMinMax[0] = xp;</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">            if (xp &lt; xyMinMax[0]) {</span>
+<span class="nc" id="L58">                xyMinMax[0] = xp;</span>
             }
-<span class="nc bnc" id="L62" title="All 2 branches missed.">            if (yp &lt; xyMinMax[2]) {</span>
-<span class="nc" id="L63">                xyMinMax[2] = yp;</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">            if (yp &lt; xyMinMax[2]) {</span>
+<span class="nc" id="L61">                xyMinMax[2] = yp;</span>
             }
-<span class="nc bnc" id="L65" title="All 2 branches missed.">            if (xp &gt; xyMinMax[1]) {</span>
-<span class="nc" id="L66">                xyMinMax[1] = xp;</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">            if (xp &gt; xyMinMax[1]) {</span>
+<span class="nc" id="L64">                xyMinMax[1] = xp;</span>
             }
-<span class="nc bnc" id="L68" title="All 2 branches missed.">            if (yp &gt; xyMinMax[3]) {</span>
-<span class="nc" id="L69">                xyMinMax[3] = yp;</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">            if (yp &gt; xyMinMax[3]) {</span>
+<span class="nc" id="L67">                xyMinMax[3] = yp;</span>
             }
         }
-<span class="nc" id="L72">        this.maxDistFromCenter = max;</span>
-<span class="nc" id="L73">        this.minDistFromCenter = min;</span>
-<span class="nc" id="L74">    }</span>
+<span class="nc" id="L70">        this.maxDistFromCenter = max;</span>
+<span class="nc" id="L71">        this.minDistFromCenter = min;</span>
+<span class="nc" id="L72">    }</span>
     
     /**
      * 
@@ -80,75 +78,75 @@ public class PointInPolygon2 {
      * @param yPoly y coordinates of a polygon where first and last point are
      * the same
      */
-<span class="fc" id="L83">    public PointInPolygon2(float[] xPoly, float[] yPoly) {</span>
+<span class="fc" id="L81">    public PointInPolygon2(float[] xPoly, float[] yPoly) {</span>
         
-<span class="fc" id="L85">        this.xPolygonF = xPoly;</span>
-<span class="fc" id="L86">        this.yPolygonF = yPoly;</span>
+<span class="fc" id="L83">        this.xPolygonF = xPoly;</span>
+<span class="fc" id="L84">        this.yPolygonF = yPoly;</span>
         
-<span class="fc" id="L88">        this.xPolygon = null;</span>
-<span class="fc" id="L89">        this.yPolygon = null;</span>
+<span class="fc" id="L86">        this.xPolygon = null;</span>
+<span class="fc" id="L87">        this.yPolygon = null;</span>
         
-<span class="fc" id="L91">        MiscellaneousCurveHelper mch = new MiscellaneousCurveHelper();</span>
-<span class="fc" id="L92">        xyCentroid = mch.calculateXYCentroids(xPolygonF, yPolygonF);</span>
+<span class="fc" id="L89">        MiscellaneousCurveHelper mch = new MiscellaneousCurveHelper();</span>
+<span class="fc" id="L90">        xyCentroid = mch.calculateXYCentroids(xPolygonF, yPolygonF);</span>
         
-<span class="fc" id="L94">        xyMinMax = new double[]{</span>
+<span class="fc" id="L92">        xyMinMax = new double[]{</span>
             Double.MAX_VALUE, Double.MIN_VALUE, Double.MAX_VALUE, Double.MIN_VALUE
         };
         
         double diffX, diffY, diff;
-<span class="fc" id="L99">        double min = Double.MAX_VALUE;</span>
-<span class="fc" id="L100">        double max = Double.MIN_VALUE;</span>
-<span class="fc bfc" id="L101" title="All 2 branches covered.">        for (int i = 0; i &lt; xPoly.length; ++i) {</span>
-<span class="fc" id="L102">            float xp = xPoly[i];</span>
-<span class="fc" id="L103">            float yp = yPoly[i];</span>
-<span class="fc" id="L104">            diffX = xp - xyCentroid[0];</span>
-<span class="fc" id="L105">            diffY = yp - xyCentroid[1];</span>
-<span class="fc" id="L106">            diff = Math.sqrt(diffX*diffX + diffY*diffY);</span>
-<span class="fc bfc" id="L107" title="All 2 branches covered.">            if (diff &lt; min) {</span>
-<span class="fc" id="L108">                min = diff;</span>
+<span class="fc" id="L97">        double min = Double.MAX_VALUE;</span>
+<span class="fc" id="L98">        double max = Double.MIN_VALUE;</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        for (int i = 0; i &lt; xPoly.length; ++i) {</span>
+<span class="fc" id="L100">            float xp = xPoly[i];</span>
+<span class="fc" id="L101">            float yp = yPoly[i];</span>
+<span class="fc" id="L102">            diffX = xp - xyCentroid[0];</span>
+<span class="fc" id="L103">            diffY = yp - xyCentroid[1];</span>
+<span class="fc" id="L104">            diff = Math.sqrt(diffX*diffX + diffY*diffY);</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">            if (diff &lt; min) {</span>
+<span class="fc" id="L106">                min = diff;</span>
             }
-<span class="fc bfc" id="L110" title="All 2 branches covered.">            if (diff &gt; max) {</span>
-<span class="fc" id="L111">                max = diff;</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            if (diff &gt; max) {</span>
+<span class="fc" id="L109">                max = diff;</span>
             }
-<span class="fc bfc" id="L113" title="All 2 branches covered.">            if (xp &lt; xyMinMax[0]) {</span>
-<span class="fc" id="L114">                xyMinMax[0] = xp;</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            if (xp &lt; xyMinMax[0]) {</span>
+<span class="fc" id="L112">                xyMinMax[0] = xp;</span>
             }
-<span class="fc bfc" id="L116" title="All 2 branches covered.">            if (yp &lt; xyMinMax[2]) {</span>
-<span class="fc" id="L117">                xyMinMax[2] = yp;</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">            if (yp &lt; xyMinMax[2]) {</span>
+<span class="fc" id="L115">                xyMinMax[2] = yp;</span>
             }
-<span class="fc bfc" id="L119" title="All 2 branches covered.">            if (xp &gt; xyMinMax[1]) {</span>
-<span class="fc" id="L120">                xyMinMax[1] = xp;</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">            if (xp &gt; xyMinMax[1]) {</span>
+<span class="fc" id="L118">                xyMinMax[1] = xp;</span>
             }
-<span class="fc bfc" id="L122" title="All 2 branches covered.">            if (yp &gt; xyMinMax[3]) {</span>
-<span class="fc" id="L123">                xyMinMax[3] = yp;</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">            if (yp &gt; xyMinMax[3]) {</span>
+<span class="fc" id="L121">                xyMinMax[3] = yp;</span>
             }
         }
-<span class="fc" id="L126">        this.maxDistFromCenter = max;</span>
-<span class="fc" id="L127">        this.minDistFromCenter = min;</span>
-<span class="fc" id="L128">    }</span>
+<span class="fc" id="L124">        this.maxDistFromCenter = max;</span>
+<span class="fc" id="L125">        this.minDistFromCenter = min;</span>
+<span class="fc" id="L126">    }</span>
     
     public boolean isOutsideMaxRadius(float xp, float yp) {
-<span class="fc" id="L131">        double diffX = xp - xyCentroid[0];</span>
-<span class="fc" id="L132">        double diffY = yp - xyCentroid[1];</span>
-<span class="fc" id="L133">        double diff = Math.sqrt(diffX*diffX + diffY*diffY);</span>
+<span class="fc" id="L129">        double diffX = xp - xyCentroid[0];</span>
+<span class="fc" id="L130">        double diffY = yp - xyCentroid[1];</span>
+<span class="fc" id="L131">        double diff = Math.sqrt(diffX*diffX + diffY*diffY);</span>
     
-<span class="fc bfc" id="L135" title="All 2 branches covered.">        return (diff &gt; this.maxDistFromCenter);</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        return (diff &gt; this.maxDistFromCenter);</span>
     }
     
     public boolean isOutsideBoundingBox(float xp, float yp) {
-<span class="pc bpc" id="L139" title="1 of 2 branches missed.">        if (xp &lt; xyMinMax[0]) {</span>
-<span class="nc" id="L140">            return true;</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        if (xp &lt; xyMinMax[0]) {</span>
+<span class="nc" id="L138">            return true;</span>
         }
-<span class="fc bfc" id="L142" title="All 2 branches covered.">        if (xp &gt; xyMinMax[1]) {</span>
-<span class="fc" id="L143">            return true;</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        if (xp &gt; xyMinMax[1]) {</span>
+<span class="fc" id="L141">            return true;</span>
         }
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        if (yp &lt; xyMinMax[2]) {</span>
-<span class="nc" id="L146">            return true;</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        if (yp &lt; xyMinMax[2]) {</span>
+<span class="nc" id="L144">            return true;</span>
         }
-<span class="pc bpc" id="L148" title="1 of 2 branches missed.">        if (yp &gt; xyMinMax[3]) {</span>
-<span class="nc" id="L149">            return true;</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">        if (yp &gt; xyMinMax[3]) {</span>
+<span class="nc" id="L147">            return true;</span>
         }
-<span class="fc" id="L151">        return false;</span>
+<span class="fc" id="L149">        return false;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -1933,21 +1933,23 @@ Still testing the class, there may be bugs present.
      * @return keypoints in format [3 X nKeypoints] where
      * row 0 are the column (== x-axis) indexes, row 1 are the row (== y-axis)
      * indexes, and row 2 are all 1's for the homogeneous coordinate z-axis.
+     * Note that homogeneous coordinates append a &quot;1&quot; to (x,y,z) coordinates,
+     * resulting in a 4-dimensional vactor (x,y,z,1).
      */
     public double[][] getKeyPointsHomogenous(int octave) {
-<span class="pc bpc" id="L1938" title="2 of 4 branches missed.">        if (octave &lt; 0 || octave &gt;= scales.length) {</span>
-<span class="nc" id="L1939">            throw new IllegalArgumentException(&quot;octave can be 0 to &quot; + (scales.length - 1) + &quot;, inclusive&quot;);</span>
+<span class="pc bpc" id="L1940" title="2 of 4 branches missed.">        if (octave &lt; 0 || octave &gt;= scales.length) {</span>
+<span class="nc" id="L1941">            throw new IllegalArgumentException(&quot;octave can be 0 to &quot; + (scales.length - 1) + &quot;, inclusive&quot;);</span>
         }
-<span class="fc" id="L1941">        TIntList rows = this.keypoints0List.get(octave);</span>
-<span class="fc" id="L1942">        TIntList cols = this.keypoints1List.get(octave);</span>
-<span class="fc" id="L1943">        int n = rows.size();</span>
-<span class="fc" id="L1944">        double[][] x = MatrixUtil.zeros(3, n);</span>
-<span class="fc bfc" id="L1945" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L1946">            x[0][i] = cols.get(i);</span>
-<span class="fc" id="L1947">            x[1][i] = rows.get(i);</span>
+<span class="fc" id="L1943">        TIntList rows = this.keypoints0List.get(octave);</span>
+<span class="fc" id="L1944">        TIntList cols = this.keypoints1List.get(octave);</span>
+<span class="fc" id="L1945">        int n = rows.size();</span>
+<span class="fc" id="L1946">        double[][] x = MatrixUtil.zeros(3, n);</span>
+<span class="fc bfc" id="L1947" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L1948">            x[0][i] = cols.get(i);</span>
+<span class="fc" id="L1949">            x[1][i] = rows.get(i);</span>
         }
-<span class="fc" id="L1949">        Arrays.fill(x[2], 1);</span>
-<span class="fc" id="L1950">        return x;</span>
+<span class="fc" id="L1951">        Arrays.fill(x[2], 1);</span>
+<span class="fc" id="L1952">        return x;</span>
     }
 
     /**
@@ -1962,14 +1964,14 @@ Still testing the class, there may be bugs present.
      */
     public double[][] getAllKeyPointsHomogenous() {
         // combined are x,y
-<span class="fc" id="L1965">        int n = combinedKeypointList.size();</span>
-<span class="fc" id="L1966">        double[][] x = MatrixUtil.zeros(3, n);</span>
-<span class="fc bfc" id="L1967" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L1968">            x[0][i] = combinedKeypointList.get(i).getX();</span>
-<span class="fc" id="L1969">            x[1][i] = combinedKeypointList.get(i).getY();</span>
+<span class="fc" id="L1967">        int n = combinedKeypointList.size();</span>
+<span class="fc" id="L1968">        double[][] x = MatrixUtil.zeros(3, n);</span>
+<span class="fc bfc" id="L1969" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L1970">            x[0][i] = combinedKeypointList.get(i).getX();</span>
+<span class="fc" id="L1971">            x[1][i] = combinedKeypointList.get(i).getY();</span>
         }
-<span class="fc" id="L1971">        Arrays.fill(x[2], 1);</span>
-<span class="fc" id="L1972">        return x;</span>
+<span class="fc" id="L1973">        Arrays.fill(x[2], 1);</span>
+<span class="fc" id="L1974">        return x;</span>
     }
     
     /**
@@ -1982,14 +1984,14 @@ Still testing the class, there may be bugs present.
      */
     public TIntList getAllKeyPoints1() {
 
-<span class="fc" id="L1985">        TIntList combined = new TIntArrayList(combinedKeypointList.size());</span>
+<span class="fc" id="L1987">        TIntList combined = new TIntArrayList(combinedKeypointList.size());</span>
         PairInt p;
-<span class="fc bfc" id="L1987" title="All 2 branches covered.">        for (int i = 0; i &lt; combinedKeypointList.size(); ++i) {</span>
-<span class="fc" id="L1988">            p = combinedKeypointList.get(i);</span>
-<span class="fc" id="L1989">            combined.add(p.getX());</span>
+<span class="fc bfc" id="L1989" title="All 2 branches covered.">        for (int i = 0; i &lt; combinedKeypointList.size(); ++i) {</span>
+<span class="fc" id="L1990">            p = combinedKeypointList.get(i);</span>
+<span class="fc" id="L1991">            combined.add(p.getX());</span>
         }
 
-<span class="fc" id="L1992">        return combined;</span>
+<span class="fc" id="L1994">        return combined;</span>
     }
 
 
@@ -2000,7 +2002,7 @@ Still testing the class, there may be bugs present.
      * @return
      */
     public List&lt;PairInt&gt; getAllKeyPoints() {
-<span class="fc" id="L2003">        return combinedKeypointList;</span>
+<span class="fc" id="L2005">        return combinedKeypointList;</span>
     }
 
 
@@ -2010,7 +2012,7 @@ Still testing the class, there may be bugs present.
      * @return
      */
     public TDoubleList getAllOrientations() {
-<span class="fc" id="L2013">        return combinedOrientationList;</span>
+<span class="fc" id="L2015">        return combinedOrientationList;</span>
     }
 
     /**
@@ -2019,7 +2021,7 @@ Still testing the class, there may be bugs present.
      * @return
      */
     public TFloatList getAllHarrisResponses() {
-<span class="fc" id="L2022">        return combinedHarrisResponseList;</span>
+<span class="fc" id="L2024">        return combinedHarrisResponseList;</span>
     }
 
     /**
@@ -2028,13 +2030,13 @@ Still testing the class, there may be bugs present.
      * @return
      */
     public List&lt;PairInt&gt; getKeyPointListColMaj(int octave) {
-<span class="nc" id="L2031">        List&lt;PairInt&gt; out = new ArrayList&lt;PairInt&gt;();</span>
-<span class="nc bnc" id="L2032" title="All 2 branches missed.">        for (int i = 0; i &lt; keypoints0List.get(octave).size(); ++i) {</span>
-<span class="nc" id="L2033">            int x = keypoints1List.get(octave).get(i);</span>
-<span class="nc" id="L2034">            int y = keypoints0List.get(octave).get(i);</span>
-<span class="nc" id="L2035">            out.add(new PairInt(x, y));</span>
+<span class="nc" id="L2033">        List&lt;PairInt&gt; out = new ArrayList&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L2034" title="All 2 branches missed.">        for (int i = 0; i &lt; keypoints0List.get(octave).size(); ++i) {</span>
+<span class="nc" id="L2035">            int x = keypoints1List.get(octave).get(i);</span>
+<span class="nc" id="L2036">            int y = keypoints0List.get(octave).get(i);</span>
+<span class="nc" id="L2037">            out.add(new PairInt(x, y));</span>
         }
-<span class="nc" id="L2037">        return out;</span>
+<span class="nc" id="L2039">        return out;</span>
     }
     
     /**
@@ -2043,16 +2045,16 @@ Still testing the class, there may be bugs present.
      * @return
      */
     public TIntList getKeyPointListPix(int octave) {
-<span class="nc" id="L2046">        int w = this.pyramidImages[octave].a[0].length;</span>
+<span class="nc" id="L2048">        int w = this.pyramidImages[octave].a[0].length;</span>
         //(row * width) + col
-<span class="nc" id="L2048">        TIntList out = new TIntArrayList();</span>
-<span class="nc bnc" id="L2049" title="All 2 branches missed.">        for (int i = 0; i &lt; keypoints0List.get(octave).size(); ++i) {</span>
-<span class="nc" id="L2050">            int x = keypoints1List.get(octave).get(i);</span>
-<span class="nc" id="L2051">            int y = keypoints0List.get(octave).get(i);</span>
-<span class="nc" id="L2052">            int pixIdx = (y * w) + x;</span>
-<span class="nc" id="L2053">            out.add(pixIdx);</span>
+<span class="nc" id="L2050">        TIntList out = new TIntArrayList();</span>
+<span class="nc bnc" id="L2051" title="All 2 branches missed.">        for (int i = 0; i &lt; keypoints0List.get(octave).size(); ++i) {</span>
+<span class="nc" id="L2052">            int x = keypoints1List.get(octave).get(i);</span>
+<span class="nc" id="L2053">            int y = keypoints0List.get(octave).get(i);</span>
+<span class="nc" id="L2054">            int pixIdx = (y * w) + x;</span>
+<span class="nc" id="L2055">            out.add(pixIdx);</span>
         }
-<span class="nc" id="L2055">        return out;</span>
+<span class="nc" id="L2057">        return out;</span>
     }
     
     /**
@@ -2062,11 +2064,11 @@ Still testing the class, there may be bugs present.
      * @return
      */
     public List&lt;TIntList&gt; getKeyPoint0List() {
-<span class="pc bpc" id="L2065" title="1 of 2 branches missed.">        if (keypoints0List == null) {</span>
+<span class="pc bpc" id="L2067" title="1 of 2 branches missed.">        if (keypoints0List == null) {</span>
             //TODO: consider whether this should be an IllegalStateException
-<span class="nc" id="L2067">            System.err.println(&quot;keypoint0List is null.  detectAndExtract() must be run first&quot;);</span>
+<span class="nc" id="L2069">            System.err.println(&quot;keypoint0List is null.  detectAndExtract() must be run first&quot;);</span>
         }
-<span class="fc" id="L2069">        return keypoints0List;</span>
+<span class="fc" id="L2071">        return keypoints0List;</span>
     }
 
     /**
@@ -2076,11 +2078,11 @@ Still testing the class, there may be bugs present.
      * @return
      */
     public List&lt;TIntList&gt; getKeyPoint1List() {
-<span class="pc bpc" id="L2079" title="1 of 2 branches missed.">        if (keypoints1List == null) {</span>
+<span class="pc bpc" id="L2081" title="1 of 2 branches missed.">        if (keypoints1List == null) {</span>
             //TODO: consider whether this should be an IllegalStateException
-<span class="nc" id="L2081">            System.err.println(&quot;keypoints1List is null.  detectAndExtract() must be run first&quot;);</span>
+<span class="nc" id="L2083">            System.err.println(&quot;keypoints1List is null.  detectAndExtract() must be run first&quot;);</span>
         }
-<span class="fc" id="L2083">        return keypoints1List;</span>
+<span class="fc" id="L2085">        return keypoints1List;</span>
     }
 
     /**
@@ -2091,7 +2093,7 @@ Still testing the class, there may be bugs present.
      * @return
      */
     public List&lt;TDoubleList&gt; getOrientationsList() {
-<span class="nc" id="L2094">        return orientationsList;</span>
+<span class="nc" id="L2096">        return orientationsList;</span>
     }
 
     /**
@@ -2100,7 +2102,7 @@ Still testing the class, there may be bugs present.
      * @return
      */
     public float[] getScales() {
-<span class="fc" id="L2103">        return scales;</span>
+<span class="fc" id="L2105">        return scales;</span>
     }
 
     /**
@@ -2111,7 +2113,7 @@ Still testing the class, there may be bugs present.
      * @return
      */
     public List&lt;TFloatList&gt; getHarrisResponseList() {
-<span class="nc" id="L2114">        return harrisResponses;</span>
+<span class="nc" id="L2116">        return harrisResponses;</span>
     }
 
     /**
@@ -2125,18 +2127,18 @@ Still testing the class, there may be bugs present.
     public static int[][] calcDescriptorCostMatrix(
         VeryLongBitString[] d1, VeryLongBitString[] d2) {
 
-<span class="fc" id="L2128">        int n1 = d1.length;</span>
-<span class="fc" id="L2129">        int n2 = d2.length;</span>
+<span class="fc" id="L2130">        int n1 = d1.length;</span>
+<span class="fc" id="L2131">        int n2 = d2.length;</span>
 
-<span class="fc" id="L2131">        int[][] cost = new int[n1][n2];</span>
-<span class="fc bfc" id="L2132" title="All 2 branches covered.">        for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="fc" id="L2133">            cost[i] = new int[n2];</span>
-<span class="fc bfc" id="L2134" title="All 2 branches covered.">            for (int j = 0; j &lt; n2; ++j) {</span>
-<span class="fc" id="L2135">                cost[i][j] = (int)d1[i].nBitsDifferent(d2[j]);</span>
+<span class="fc" id="L2133">        int[][] cost = new int[n1][n2];</span>
+<span class="fc bfc" id="L2134" title="All 2 branches covered.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="fc" id="L2135">            cost[i] = new int[n2];</span>
+<span class="fc bfc" id="L2136" title="All 2 branches covered.">            for (int j = 0; j &lt; n2; ++j) {</span>
+<span class="fc" id="L2137">                cost[i][j] = (int)d1[i].nBitsDifferent(d2[j]);</span>
             }
         }
 
-<span class="fc" id="L2139">        return cost;</span>
+<span class="fc" id="L2141">        return cost;</span>
     }
 
     /**
@@ -2152,35 +2154,35 @@ Still testing the class, there may be bugs present.
     public static int[][] calcDescriptorCostMatrix(
         Descriptors[] desc1, Descriptors[] desc2) {
 
-<span class="nc bnc" id="L2155" title="All 2 branches missed.">        assert(desc1.length == desc2.length);</span>
+<span class="nc bnc" id="L2157" title="All 2 branches missed.">        assert(desc1.length == desc2.length);</span>
 
-<span class="nc" id="L2157">        int nd = desc1.length;</span>
+<span class="nc" id="L2159">        int nd = desc1.length;</span>
 
-<span class="nc" id="L2159">        int n1 = desc1[0].descriptors.length;</span>
-<span class="nc" id="L2160">        int n2 = desc2[0].descriptors.length;</span>
+<span class="nc" id="L2161">        int n1 = desc1[0].descriptors.length;</span>
+<span class="nc" id="L2162">        int n2 = desc2[0].descriptors.length;</span>
 
         // d1 contains multiple descriptors for same points, such as
         // descriptors for H, S, and V
 
-<span class="nc" id="L2165">        int[][] cost = new int[n1][n2];</span>
-<span class="nc bnc" id="L2166" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="nc" id="L2167">            cost[i] = new int[n2];</span>
+<span class="nc" id="L2167">        int[][] cost = new int[n1][n2];</span>
+<span class="nc bnc" id="L2168" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="nc" id="L2169">            cost[i] = new int[n2];</span>
         }
 
-<span class="nc bnc" id="L2170" title="All 2 branches missed.">        for (int k = 0; k &lt; nd; ++k) {</span>
-<span class="nc" id="L2171">            VeryLongBitString[] d1 = desc1[k].descriptors;</span>
-<span class="nc" id="L2172">            VeryLongBitString[] d2 = desc2[k].descriptors;</span>
-<span class="nc bnc" id="L2173" title="All 2 branches missed.">            assert(d1.length == n1);</span>
-<span class="nc bnc" id="L2174" title="All 2 branches missed.">            assert(d2.length == n2);</span>
-<span class="nc bnc" id="L2175" title="All 2 branches missed.">            for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="nc bnc" id="L2176" title="All 2 branches missed.">                for (int j = 0; j &lt; n2; ++j) {</span>
+<span class="nc bnc" id="L2172" title="All 2 branches missed.">        for (int k = 0; k &lt; nd; ++k) {</span>
+<span class="nc" id="L2173">            VeryLongBitString[] d1 = desc1[k].descriptors;</span>
+<span class="nc" id="L2174">            VeryLongBitString[] d2 = desc2[k].descriptors;</span>
+<span class="nc bnc" id="L2175" title="All 2 branches missed.">            assert(d1.length == n1);</span>
+<span class="nc bnc" id="L2176" title="All 2 branches missed.">            assert(d2.length == n2);</span>
+<span class="nc bnc" id="L2177" title="All 2 branches missed.">            for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="nc bnc" id="L2178" title="All 2 branches missed.">                for (int j = 0; j &lt; n2; ++j) {</span>
                     //cost[i][j] += (nbits * nbits); could use sq diff...
-<span class="nc" id="L2178">                    cost[i][j] += (int)d1[i].nBitsDifferent(d2[j]);</span>
+<span class="nc" id="L2180">                    cost[i][j] += (int)d1[i].nBitsDifferent(d2[j]);</span>
                 }
             }
         }
 
-<span class="nc" id="L2183">        return cost;</span>
+<span class="nc" id="L2185">        return cost;</span>
     }
 
     /**
@@ -2189,44 +2191,44 @@ Still testing the class, there may be bugs present.
      * @return
      */
     public static Image convertToImage(TwoDFloatArray a) {
-<span class="nc" id="L2192">        int n1 = a.a.length;</span>
-<span class="nc" id="L2193">        int n2 = a.a[0].length;</span>
-<span class="nc" id="L2194">        Image img = new Image(n2, n1);</span>
-<span class="nc bnc" id="L2195" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="nc bnc" id="L2196" title="All 2 branches missed.">            for (int j = 0; j &lt; n2; ++j) {</span>
-<span class="nc" id="L2197">                float v = 255.f * a.a[i][j];</span>
-<span class="nc" id="L2198">                int vInt = Math.round(v);</span>
-<span class="nc bnc" id="L2199" title="All 2 branches missed.">                if (vInt &gt; 255) {</span>
-<span class="nc" id="L2200">                    vInt = 255;</span>
+<span class="nc" id="L2194">        int n1 = a.a.length;</span>
+<span class="nc" id="L2195">        int n2 = a.a[0].length;</span>
+<span class="nc" id="L2196">        Image img = new Image(n2, n1);</span>
+<span class="nc bnc" id="L2197" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="nc bnc" id="L2198" title="All 2 branches missed.">            for (int j = 0; j &lt; n2; ++j) {</span>
+<span class="nc" id="L2199">                float v = 255.f * a.a[i][j];</span>
+<span class="nc" id="L2200">                int vInt = Math.round(v);</span>
+<span class="nc bnc" id="L2201" title="All 2 branches missed.">                if (vInt &gt; 255) {</span>
+<span class="nc" id="L2202">                    vInt = 255;</span>
                 }
-<span class="nc" id="L2202">                img.setRGB(j, i, vInt, vInt, vInt);</span>
+<span class="nc" id="L2204">                img.setRGB(j, i, vInt, vInt, vInt);</span>
             }
         }
-<span class="nc" id="L2205">        return img;</span>
+<span class="nc" id="L2207">        return img;</span>
     }
     
     private void extractATrousKeypoints(TIntList outputKP0, TIntList outputKP1) {
         
-<span class="fc" id="L2210">        List&lt;GreyscaleImage&gt; transformed = new ArrayList&lt;GreyscaleImage&gt;();</span>
-<span class="fc" id="L2211">        List&lt;GreyscaleImage&gt; coeffs = new ArrayList&lt;GreyscaleImage&gt;();</span>
+<span class="fc" id="L2212">        List&lt;GreyscaleImage&gt; transformed = new ArrayList&lt;GreyscaleImage&gt;();</span>
+<span class="fc" id="L2213">        List&lt;GreyscaleImage&gt; coeffs = new ArrayList&lt;GreyscaleImage&gt;();</span>
 
-<span class="fc" id="L2213">        ATrousWaveletTransform at = new ATrousWaveletTransform();</span>
-<span class="fc" id="L2214">        at.calculateWithB3SplineScalingFunction(img, transformed, coeffs, 2);</span>
+<span class="fc" id="L2215">        ATrousWaveletTransform at = new ATrousWaveletTransform();</span>
+<span class="fc" id="L2216">        at.calculateWithB3SplineScalingFunction(img, transformed, coeffs, 2);</span>
 
-<span class="pc bpc" id="L2216" title="1 of 2 branches missed.">        if (coeffs.size() &gt;= 2) {</span>
+<span class="pc bpc" id="L2218" title="1 of 2 branches missed.">        if (coeffs.size() &gt;= 2) {</span>
 
-<span class="fc" id="L2218">            ImageProcessor imageProcessor = new ImageProcessor();</span>
-<span class="fc" id="L2219">            float[][] rowMajorImg = imageProcessor.copyToRowMajor(</span>
-<span class="fc" id="L2220">                coeffs.get(1));</span>
-<span class="fc" id="L2221">            MatrixUtil.multiply(rowMajorImg, 1.f / 255.f);</span>
+<span class="fc" id="L2220">            ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L2221">            float[][] rowMajorImg = imageProcessor.copyToRowMajor(</span>
+<span class="fc" id="L2222">                coeffs.get(1));</span>
+<span class="fc" id="L2223">            MatrixUtil.multiply(rowMajorImg, 1.f / 255.f);</span>
 
             // lowering this results in more keypoints
-<span class="fc" id="L2224">            float ff = 0.08f;</span>
+<span class="fc" id="L2226">            float ff = 0.08f;</span>
 
-<span class="fc" id="L2226">            float[][] fastResponse = cornerFast(rowMajorImg, fastN, ff);</span>
+<span class="fc" id="L2228">            float[][] fastResponse = cornerFast(rowMajorImg, fastN, ff);</span>
 
-<span class="fc" id="L2228">            float f = 0.1f;</span>
-<span class="fc" id="L2229">            imageProcessor.peakLocalMax(fastResponse, 1, f, </span>
+<span class="fc" id="L2230">            float f = 0.1f;</span>
+<span class="fc" id="L2231">            imageProcessor.peakLocalMax(fastResponse, 1, f, </span>
                 true, outputKP0, outputKP1);
             /*
             float factor = 255.f;
@@ -2239,9 +2241,9 @@ Still testing the class, there may be bugs present.
             algorithms.misc.MiscDebug.writeImage(img2, &quot;_atrous_&quot; 
                 + algorithms.misc.MiscDebug.getCurrentTimeFormatted());
             */
-<span class="fc" id="L2242">            log.fine(&quot;  atrous nKeypoints= &quot; + outputKP0.size());</span>
+<span class="fc" id="L2244">            log.fine(&quot;  atrous nKeypoints= &quot; + outputKP0.size());</span>
         }
-<span class="fc" id="L2244">    }</span>
+<span class="fc" id="L2246">    }</span>
     
     /**
      * create col major image from row major input
@@ -2249,34 +2251,34 @@ Still testing the class, there may be bugs present.
      * @return
      */
     public static GreyscaleImage convertToImageGS(TwoDFloatArray a) {
-<span class="nc" id="L2252">        int n1 = a.a.length;</span>
-<span class="nc" id="L2253">        int n2 = a.a[0].length;</span>
-<span class="nc" id="L2254">        GreyscaleImage img = new GreyscaleImage(n2, n1);</span>
-<span class="nc bnc" id="L2255" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
-<span class="nc bnc" id="L2256" title="All 2 branches missed.">            for (int j = 0; j &lt; n2; ++j) {</span>
-<span class="nc" id="L2257">                float v = 255.f * a.a[i][j];</span>
-<span class="nc" id="L2258">                int vInt = Math.round(v);</span>
-<span class="nc bnc" id="L2259" title="All 2 branches missed.">                if (vInt &gt; 255) {</span>
-<span class="nc" id="L2260">                    vInt = 255;</span>
+<span class="nc" id="L2254">        int n1 = a.a.length;</span>
+<span class="nc" id="L2255">        int n2 = a.a[0].length;</span>
+<span class="nc" id="L2256">        GreyscaleImage img = new GreyscaleImage(n2, n1);</span>
+<span class="nc bnc" id="L2257" title="All 2 branches missed.">        for (int i = 0; i &lt; n1; ++i) {</span>
+<span class="nc bnc" id="L2258" title="All 2 branches missed.">            for (int j = 0; j &lt; n2; ++j) {</span>
+<span class="nc" id="L2259">                float v = 255.f * a.a[i][j];</span>
+<span class="nc" id="L2260">                int vInt = Math.round(v);</span>
+<span class="nc bnc" id="L2261" title="All 2 branches missed.">                if (vInt &gt; 255) {</span>
+<span class="nc" id="L2262">                    vInt = 255;</span>
                 }
-<span class="nc" id="L2262">                img.setValue(j, i, vInt);</span>
+<span class="nc" id="L2264">                img.setValue(j, i, vInt);</span>
             }
         }
-<span class="nc" id="L2265">        return img;</span>
+<span class="nc" id="L2267">        return img;</span>
     }
 
      /**
      * @return the pyramidImages
      */
     public TwoDFloatArray[] getPyramidImages() {
-<span class="nc" id="L2272">        return pyramidImages;</span>
+<span class="nc" id="L2274">        return pyramidImages;</span>
     }
 
     /**
      * @return the descrChoice
      */
     public DescriptorChoice getDescrChoice() {
-<span class="nc" id="L2279">        return descrChoice;</span>
+<span class="nc" id="L2281">        return descrChoice;</span>
     }
 
 }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CannyEdgeColorAdaptive.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing</a> &gt; <span class="el_source">CannyEdgeColorAdaptive.java</span></div><h1>CannyEdgeColorAdaptive.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing;
 
+import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairInt;
 import java.util.Set;
@@ -57,15 +58,15 @@ public class CannyEdgeColorAdaptive {
     /** the factor that the low threshold is below the high threshold in the 
     2 layer filter.
     */
-<span class="fc" id="L60">    protected float factorBelowHighThreshold = 2.f;</span>
+<span class="fc" id="L61">    protected float factorBelowHighThreshold = 2.f;</span>
            
-<span class="fc" id="L62">    private EdgeFilterProducts filterProducts = null;</span>
+<span class="fc" id="L63">    private EdgeFilterProducts filterProducts = null;</span>
               
-<span class="fc" id="L64">    private boolean performNonMaxSuppr = true;</span>
+<span class="fc" id="L65">    private boolean performNonMaxSuppr = true;</span>
     
-<span class="fc" id="L66">    private boolean debug = false;</span>
+<span class="fc" id="L67">    private boolean debug = false;</span>
     
-<span class="fc" id="L68">    private boolean restoreJunctions = true;</span>
+<span class="fc" id="L69">    private boolean restoreJunctions = true;</span>
             
     /**
      * the sigma from the blur combined with the sigma present in the gradient
@@ -77,28 +78,28 @@ public class CannyEdgeColorAdaptive {
      * So, for the default use of the filter, a sigma of 1 combined with sqrt(1)/2
      * results in a minimum resolution of 3 pixels, hence about 19 degrees.
      */
-<span class="fc" id="L80">    private double approxProcessedSigma = 0;</span>
+<span class="fc" id="L81">    private double approxProcessedSigma = 0;</span>
     
-<span class="fc" id="L82">    private boolean useAdaptiveThreshold = false;</span>
+<span class="fc" id="L83">    private boolean useAdaptiveThreshold = false;</span>
     
-<span class="fc" id="L84">    private boolean useAdaptive2Layer = true;</span>
+<span class="fc" id="L85">    private boolean useAdaptive2Layer = true;</span>
         
-<span class="fc" id="L86">    private float otsuScaleFactor = 0.75f;//0.65f;</span>
+<span class="fc" id="L87">    private float otsuScaleFactor = 0.75f;//0.65f;</span>
     
-<span class="fc" id="L88">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
+<span class="fc" id="L89">    protected Logger log = Logger.getLogger(this.getClass().getName());</span>
     
-<span class="fc" id="L90">    protected boolean useLineThinner = true;</span>
+<span class="fc" id="L91">    protected boolean useLineThinner = true;</span>
     
-<span class="fc" id="L92">    public CannyEdgeColorAdaptive() {        </span>
-<span class="fc" id="L93">    }</span>
+<span class="fc" id="L93">    public CannyEdgeColorAdaptive() {        </span>
+<span class="fc" id="L94">    }</span>
     
     public void setToDebug() {
-<span class="nc" id="L96">        debug = true;</span>
-<span class="nc" id="L97">    }</span>
+<span class="nc" id="L97">        debug = true;</span>
+<span class="nc" id="L98">    }</span>
     
     public void overrideToNotUseLineThinner() {
-<span class="fc" id="L100">        useLineThinner = false;</span>
-<span class="fc" id="L101">    }</span>
+<span class="fc" id="L101">        useLineThinner = false;</span>
+<span class="fc" id="L102">    }</span>
     
     /**
      * to enable more complete contours, use this to restore pixels that were
@@ -106,20 +107,20 @@ public class CannyEdgeColorAdaptive {
      * have values above the low threshold of the 2 layer adaptive filter.
      */
     public void setToNotRestoreJunctions() {
-<span class="nc" id="L109">        restoreJunctions = false;</span>
-<span class="nc" id="L110">    }</span>
+<span class="nc" id="L110">        restoreJunctions = false;</span>
+<span class="nc" id="L111">    }</span>
     
     /**
      * by default this is 0.45.
      * @param factor
      */
     public void setOtsuScaleFactor(float factor) {
-<span class="nc" id="L117">        otsuScaleFactor = factor;</span>
-<span class="nc" id="L118">    }</span>
+<span class="nc" id="L118">        otsuScaleFactor = factor;</span>
+<span class="nc" id="L119">    }</span>
     
     public void setToNotUseNonMaximumSuppression() {
-<span class="nc" id="L121">        performNonMaxSuppr = false;</span>
-<span class="nc" id="L122">    }</span>
+<span class="nc" id="L122">        performNonMaxSuppr = false;</span>
+<span class="nc" id="L123">    }</span>
     
     /**
      * set this to use the adaptive threshold in the 2 layer
@@ -128,12 +129,12 @@ public class CannyEdgeColorAdaptive {
      * will include alot of noise in the result.
      */
     public void overrideToUseAdaptiveThreshold() {
-<span class="nc" id="L131">        useAdaptiveThreshold = true;</span>
-<span class="nc" id="L132">    }</span>
+<span class="nc" id="L132">        useAdaptiveThreshold = true;</span>
+<span class="nc" id="L133">    }</span>
     
     public void setToUseSingleThresholdIn2LayerFilter() {
-<span class="nc" id="L135">        useAdaptive2Layer = false;</span>
-<span class="nc" id="L136">    }</span>
+<span class="nc" id="L136">        useAdaptive2Layer = false;</span>
+<span class="nc" id="L137">    }</span>
     
     /**
      * override the default factor of low threshold below high threshold, which
@@ -141,8 +142,8 @@ public class CannyEdgeColorAdaptive {
      * @param factor 
      */
     public void override2LayerFactorBelowHighThreshold(float factor) {
-<span class="nc" id="L144">        factorBelowHighThreshold = factor;</span>
-<span class="nc" id="L145">    }</span>
+<span class="nc" id="L145">        factorBelowHighThreshold = factor;</span>
+<span class="nc" id="L146">    }</span>
     
     /**
      * apply the filter.  note that unlike the other canny filters in this
@@ -151,129 +152,129 @@ public class CannyEdgeColorAdaptive {
      */
     public void applyFilter(Image input) {
         
-<span class="pc bpc" id="L154" title="2 of 4 branches missed.">        if (input.getWidth() &lt; 3 || input.getHeight() &lt; 3) {</span>
-<span class="nc" id="L155">            throw new IllegalArgumentException(&quot;images should be &gt;= 3x3 in size&quot;);</span>
+<span class="pc bpc" id="L155" title="2 of 4 branches missed.">        if (input.getWidth() &lt; 3 || input.getHeight() &lt; 3) {</span>
+<span class="nc" id="L156">            throw new IllegalArgumentException(&quot;images should be &gt;= 3x3 in size&quot;);</span>
         }
             
-<span class="fc" id="L158">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L159">        ImageProcessor imageProcessor = new ImageProcessor();</span>
         
-<span class="fc" id="L160">        GreyscaleImage[] lch = imageProcessor.createLCHForLUV(input);</span>
+<span class="fc" id="L161">        GreyscaleImage[] lch = imageProcessor.createLCHForLUV(input);</span>
         
-<span class="fc" id="L162">        CannyEdgeFilterAdaptive2 cannyL = new CannyEdgeFilterAdaptive2();</span>
-<span class="fc" id="L163">        CannyEdgeFilterAdaptive2 cannyC = new CannyEdgeFilterAdaptive2();</span>
-<span class="pc bpc" id="L164" title="1 of 2 branches missed.">        if (!useLineThinner) {</span>
-<span class="fc" id="L165">            cannyL.overrideToNotUseLineThinner();</span>
-<span class="fc" id="L166">            cannyC.overrideToNotUseLineThinner();</span>
+<span class="fc" id="L163">        CannyEdgeFilterAdaptive2 cannyL = new CannyEdgeFilterAdaptive2();</span>
+<span class="fc" id="L164">        CannyEdgeFilterAdaptive2 cannyC = new CannyEdgeFilterAdaptive2();</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">        if (!useLineThinner) {</span>
+<span class="fc" id="L166">            cannyL.overrideToNotUseLineThinner();</span>
+<span class="fc" id="L167">            cannyC.overrideToNotUseLineThinner();</span>
         }
-<span class="pc bpc" id="L168" title="1 of 2 branches missed.">        if (useAdaptiveThreshold) {</span>
-<span class="nc" id="L169">            cannyL.overrideToUseAdaptiveThreshold();</span>
-<span class="nc" id="L170">            cannyC.overrideToUseAdaptiveThreshold();</span>
-        }
-        
-<span class="fc" id="L173">        cannyL.override2LayerFactorBelowHighThreshold(factorBelowHighThreshold);</span>
-<span class="fc" id="L174">        cannyC.override2LayerFactorBelowHighThreshold(factorBelowHighThreshold);</span>
-        
-<span class="pc bpc" id="L176" title="1 of 2 branches missed.">        if (!performNonMaxSuppr) {</span>
-<span class="nc" id="L177">            cannyL.setToNotUseNonMaximumSuppression();</span>
-<span class="nc" id="L178">            cannyC.setToNotUseNonMaximumSuppression();</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        if (useAdaptiveThreshold) {</span>
+<span class="nc" id="L170">            cannyL.overrideToUseAdaptiveThreshold();</span>
+<span class="nc" id="L171">            cannyC.overrideToUseAdaptiveThreshold();</span>
         }
         
-<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        if (!restoreJunctions) {</span>
-<span class="nc" id="L182">            cannyL.setToNotRestoreJunctions();</span>
-<span class="nc" id="L183">            cannyC.setToNotRestoreJunctions();</span>
+<span class="fc" id="L174">        cannyL.override2LayerFactorBelowHighThreshold(factorBelowHighThreshold);</span>
+<span class="fc" id="L175">        cannyC.override2LayerFactorBelowHighThreshold(factorBelowHighThreshold);</span>
+        
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">        if (!performNonMaxSuppr) {</span>
+<span class="nc" id="L178">            cannyL.setToNotUseNonMaximumSuppression();</span>
+<span class="nc" id="L179">            cannyC.setToNotUseNonMaximumSuppression();</span>
         }
         
-<span class="pc bpc" id="L186" title="1 of 2 branches missed.">        if (!useAdaptive2Layer) {</span>
-<span class="nc" id="L187">            cannyL.setToUseSingleThresholdIn2LayerFilter();</span>
-<span class="nc" id="L188">            cannyC.setToUseSingleThresholdIn2LayerFilter();</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">        if (!restoreJunctions) {</span>
+<span class="nc" id="L183">            cannyL.setToNotRestoreJunctions();</span>
+<span class="nc" id="L184">            cannyC.setToNotRestoreJunctions();</span>
         }
         
-<span class="pc bpc" id="L191" title="1 of 2 branches missed.">        if (!useLineThinner) {</span>
-<span class="fc" id="L192">            cannyL.overrideToNotUseLineThinner();</span>
-<span class="fc" id="L193">            cannyC.overrideToNotUseLineThinner();</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        if (!useAdaptive2Layer) {</span>
+<span class="nc" id="L188">            cannyL.setToUseSingleThresholdIn2LayerFilter();</span>
+<span class="nc" id="L189">            cannyC.setToUseSingleThresholdIn2LayerFilter();</span>
         }
         
-<span class="pc bpc" id="L196" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L197">            cannyL.setToDebug();</span>
-<span class="nc" id="L198">            cannyC.setToDebug();</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">        if (!useLineThinner) {</span>
+<span class="fc" id="L193">            cannyL.overrideToNotUseLineThinner();</span>
+<span class="fc" id="L194">            cannyC.overrideToNotUseLineThinner();</span>
         }
         
-<span class="fc" id="L201">        cannyL.setOtsuScaleFactor(otsuScaleFactor);</span>
-<span class="fc" id="L202">        cannyC.setOtsuScaleFactor(otsuScaleFactor);</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L198">            cannyL.setToDebug();</span>
+<span class="nc" id="L199">            cannyC.setToDebug();</span>
+        }
+        
+<span class="fc" id="L202">        cannyL.setOtsuScaleFactor(otsuScaleFactor);</span>
+<span class="fc" id="L203">        cannyC.setOtsuScaleFactor(otsuScaleFactor);</span>
         //cannyC.setOtsuScaleFactor(1.0f);  // less sensitive and less noisey
         
-<span class="fc" id="L205">        cannyL.applyFilter(lch[0]);</span>
-<span class="fc" id="L206">        cannyC.applyFilter(lch[1]);</span>
+<span class="fc" id="L206">        cannyL.applyFilter(lch[0]);</span>
+<span class="fc" id="L207">        cannyC.applyFilter(lch[1]);</span>
         
-<span class="fc" id="L208">        EdgeFilterProducts edgeProductsL = cannyL.getFilterProducts();</span>
-<span class="fc" id="L209">        EdgeFilterProducts edgeProductsC = cannyC.getFilterProducts();</span>
+<span class="fc" id="L209">        EdgeFilterProducts edgeProductsL = cannyL.getFilterProducts();</span>
+<span class="fc" id="L210">        EdgeFilterProducts edgeProductsC = cannyC.getFilterProducts();</span>
         
         // DEBUG: temporary look at recalculating the L thresholds
         //        to filter out scaled C values to reduce noise.
         //        assuming not adaptive for now.
-<span class="fc" id="L214">        int tLowL = edgeProductsL.getGradientXY().min();</span>
+<span class="fc" id="L215">        int tLowL = edgeProductsL.getGradientXY().min();</span>
         
-<span class="fc" id="L216">        float lFactor = 255.f/(float)edgeProductsL.getGradientXY().max();</span>
-<span class="fc" id="L217">        float cFactor = 255.f/(float)edgeProductsC.getGradientXY().max();</span>
+<span class="fc" id="L217">        float lFactor = 255.f/(float)edgeProductsL.getGradientXY().max();</span>
+<span class="fc" id="L218">        float cFactor = 255.f/(float)edgeProductsC.getGradientXY().max();</span>
         
-<span class="fc" id="L219">        GreyscaleImage combXY = edgeProductsL.getGradientXY()</span>
-<span class="fc" id="L220">            .createWithDimensions();</span>
+<span class="fc" id="L220">        GreyscaleImage combXY = edgeProductsL.getGradientXY()</span>
+<span class="fc" id="L221">            .createWithDimensions();</span>
         
-<span class="fc" id="L222">        GreyscaleImage combX = edgeProductsL.getGradientX()</span>
-<span class="fc" id="L223">            .createWithDimensions();</span>
+<span class="fc" id="L223">        GreyscaleImage combX = edgeProductsL.getGradientX()</span>
+<span class="fc" id="L224">            .createWithDimensions();</span>
         
-<span class="fc" id="L225">        GreyscaleImage combY = edgeProductsL.getGradientY()</span>
-<span class="fc" id="L226">            .createWithDimensions();</span>
+<span class="fc" id="L226">        GreyscaleImage combY = edgeProductsL.getGradientY()</span>
+<span class="fc" id="L227">            .createWithDimensions();</span>
         
-<span class="fc" id="L228">        int n = combXY.getNPixels();</span>
+<span class="fc" id="L229">        int n = combXY.getNPixels();</span>
         
         int v0, v1, v, vx, vy;
-<span class="fc bfc" id="L231" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L232">            v0 = edgeProductsL.getGradientXY().getValue(i);</span>
-<span class="fc" id="L233">            v1 = edgeProductsC.getGradientXY().getValue(i);</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L233">            v0 = edgeProductsL.getGradientXY().getValue(i);</span>
+<span class="fc" id="L234">            v1 = edgeProductsC.getGradientXY().getValue(i);</span>
             
-<span class="fc" id="L235">            v0 = Math.round(v0 * lFactor);</span>
-<span class="pc bpc" id="L236" title="1 of 2 branches missed.">            if (v0 &gt; 255) {</span>
-<span class="nc" id="L237">                v0 = 255;</span>
+<span class="fc" id="L236">            v0 = Math.round(v0 * lFactor);</span>
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">            if (v0 &gt; 255) {</span>
+<span class="nc" id="L238">                v0 = 255;</span>
             }
-<span class="fc" id="L239">            v1 = Math.round(v1 * cFactor);</span>
-<span class="pc bpc" id="L240" title="1 of 2 branches missed.">            if (v1 &gt; 255) {</span>
-<span class="nc" id="L241">                v1 = 255;</span>
+<span class="fc" id="L240">            v1 = Math.round(v1 * cFactor);</span>
+<span class="pc bpc" id="L241" title="1 of 2 branches missed.">            if (v1 &gt; 255) {</span>
+<span class="nc" id="L242">                v1 = 255;</span>
             }
             
-<span class="fc bfc" id="L244" title="All 2 branches covered.">            if (cFactor &gt; 1) {</span>
-<span class="pc bpc" id="L245" title="1 of 2 branches missed.">                if (v1 &lt; tLowL) {</span>
-<span class="nc" id="L246">                    v1 = 0;</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">            if (cFactor &gt; 1) {</span>
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">                if (v1 &lt; tLowL) {</span>
+<span class="nc" id="L247">                    v1 = 0;</span>
                 }
             }
                         
             // choosing the largest of both instead of avg
-<span class="fc bfc" id="L251" title="All 2 branches covered.">            if (v0 &gt; v1) {</span>
-<span class="fc" id="L252">                v = v0;</span>
-<span class="fc" id="L253">                vx = edgeProductsL.getGradientX().getValue(i);</span>
-<span class="fc" id="L254">                vy = edgeProductsL.getGradientY().getValue(i);</span>
+<span class="fc bfc" id="L252" title="All 2 branches covered.">            if (v0 &gt; v1) {</span>
+<span class="fc" id="L253">                v = v0;</span>
+<span class="fc" id="L254">                vx = edgeProductsL.getGradientX().getValue(i);</span>
+<span class="fc" id="L255">                vy = edgeProductsL.getGradientY().getValue(i);</span>
             } else {
-<span class="fc" id="L256">                v = v1;</span>
-<span class="fc" id="L257">                vx = edgeProductsC.getGradientX().getValue(i);</span>
-<span class="fc" id="L258">                vy = edgeProductsC.getGradientY().getValue(i);</span>
+<span class="fc" id="L257">                v = v1;</span>
+<span class="fc" id="L258">                vx = edgeProductsC.getGradientX().getValue(i);</span>
+<span class="fc" id="L259">                vy = edgeProductsC.getGradientY().getValue(i);</span>
             }
-<span class="fc" id="L260">            combXY.setValue(i, v);</span>
+<span class="fc" id="L261">            combXY.setValue(i, v);</span>
             
-<span class="fc" id="L262">            combX.setValue(i, vx);</span>
-<span class="fc" id="L263">            combY.setValue(i, vy);</span>
+<span class="fc" id="L263">            combX.setValue(i, vx);</span>
+<span class="fc" id="L264">            combY.setValue(i, vy);</span>
         }
         
-<span class="fc" id="L266">        GreyscaleImage combTheta = </span>
-<span class="fc" id="L267">            imageProcessor.computeTheta180(combX, combY);</span>
+<span class="fc" id="L267">        GreyscaleImage combTheta = </span>
+<span class="fc" id="L268">            imageProcessor.computeTheta180(combX, combY);</span>
         
-<span class="fc" id="L269">        EdgeFilterProducts efp = new EdgeFilterProducts();</span>
-<span class="fc" id="L270">        efp.setGradientX(combX);</span>
-<span class="fc" id="L271">        efp.setGradientY(combY);</span>
-<span class="fc" id="L272">        efp.setGradientXY(combXY);</span>
-<span class="fc" id="L273">        efp.setTheta(combTheta);</span>
+<span class="fc" id="L270">        EdgeFilterProducts efp = new EdgeFilterProducts();</span>
+<span class="fc" id="L271">        efp.setGradientX(combX);</span>
+<span class="fc" id="L272">        efp.setGradientY(combY);</span>
+<span class="fc" id="L273">        efp.setGradientXY(combXY);</span>
+<span class="fc" id="L274">        efp.setTheta(combTheta);</span>
          
-<span class="fc" id="L275">        this.filterProducts = efp;</span>
-<span class="fc" id="L276">    }</span>
+<span class="fc" id="L276">        this.filterProducts = efp;</span>
+<span class="fc" id="L277">    }</span>
    
     /**
      * get the filter products for gradient and orientation.
@@ -281,7 +282,7 @@ public class CannyEdgeColorAdaptive {
      * @return the filterProducts
      */
     public EdgeFilterProducts getFilterProducts() {
-<span class="fc" id="L284">        return filterProducts;</span>
+<span class="fc" id="L285">        return filterProducts;</span>
     }
 
     private class CannyEdgeFilterAdaptive2 {
@@ -493,7 +494,8 @@ public class CannyEdgeColorAdaptive {
                     minResolvableAngle *= -1;
                 }
 
-                MiscellaneousCurveHelper curveHelper = new MiscellaneousCurveHelper();
+                algorithms.imageProcessing.util.MiscellaneousCurveHelper curveHelper =
+                        new algorithms.imageProcessing.util.MiscellaneousCurveHelper();
                 curveHelper.additionalThinning45DegreeEdges2(
                     filterProducts.getTheta(), filterProducts.getGradientXY(),
                     minResolvableAngle);

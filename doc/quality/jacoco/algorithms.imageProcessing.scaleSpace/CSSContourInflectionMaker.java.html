@@ -51,9 +51,9 @@ public final class CSSContourInflectionMaker {
 <span class="fc" id="L51">    }</span>
 
     public void setToDebug() {
-<span class="fc" id="L54">        debug = true;</span>
-<span class="fc" id="L55">        debugTS = System.currentTimeMillis();</span>
-<span class="fc" id="L56">    }</span>
+<span class="nc" id="L54">        debug = true;</span>
+<span class="nc" id="L55">        debugTS = System.currentTimeMillis();</span>
+<span class="nc" id="L56">    }</span>
 
     public void findContours() {
 
@@ -78,7 +78,7 @@ public final class CSSContourInflectionMaker {
 <span class="fc" id="L78">    }</span>
 
     protected Image getImage() {
-<span class="fc" id="L81">        return image;</span>
+<span class="nc" id="L81">        return image;</span>
     }
 
     Image getOriginalImage() {
@@ -211,17 +211,17 @@ public final class CSSContourInflectionMaker {
             
 <span class="pc bpc" id="L212" title="1 of 2 branches missed.">            if (debug) {</span>
                 try {
-<span class="fc" id="L214">                    String fileSuffix = &quot;edge_&quot; + i + &quot;_&quot; + debugTS;</span>
-<span class="fc" id="L215">                    MiscDebug.printScaleSpaceCurve(scaleSpaceImage, fileSuffix);</span>
+<span class="nc" id="L214">                    String fileSuffix = &quot;edge_&quot; + i + &quot;_&quot; + debugTS;</span>
+<span class="nc" id="L215">                    MiscDebug.printScaleSpaceCurve(scaleSpaceImage, fileSuffix);</span>
                     
-<span class="fc" id="L217">                    System.out.println(&quot;printing &quot; + scaleSpaceMap.size() + </span>
+<span class="nc" id="L217">                    System.out.println(&quot;printing &quot; + scaleSpaceMap.size() + </span>
                         &quot; scale space contours&quot;);
-<span class="fc" id="L219">                    fileSuffix = &quot;_scalespace_&quot; + i + &quot;_&quot; + debugTS;</span>
-<span class="fc" id="L220">                    MiscDebug.printScaleSpaceMap(scaleSpaceMap, fileSuffix, </span>
+<span class="nc" id="L219">                    fileSuffix = &quot;_scalespace_&quot; + i + &quot;_&quot; + debugTS;</span>
+<span class="nc" id="L220">                    MiscDebug.printScaleSpaceMap(scaleSpaceMap, fileSuffix, </span>
                         10);
 <span class="nc" id="L222">                } catch (IOException ex) {</span>
-<span class="fc" id="L223">                }</span>
-<span class="fc" id="L224">                MiscDebug.debugPlot(result, (ImageExt) image.copyImage(), 0, 0,</span>
+<span class="nc" id="L223">                }</span>
+<span class="nc" id="L224">                MiscDebug.debugPlot(result, (ImageExt) image.copyImage(), 0, 0,</span>
                     &quot;_&quot; + i + &quot;_&quot; + debugTS);
             }
 

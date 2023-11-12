@@ -1,0 +1,1588 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MiscellaneousCurveHelper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.util</a> &gt; <span class="el_source">MiscellaneousCurveHelper.java</span></div><h1>MiscellaneousCurveHelper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.util;
+
+import algorithms.compGeometry.convexHull.GrahamScanPairInt;
+import algorithms.compGeometry.convexHull.GrahamScanTooFewPointsException;
+import algorithms.imageProcessing.GreyscaleImage;
+import algorithms.imageProcessing.scaleSpace.CurvatureScaleSpaceContour;
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.Transformer;
+import algorithms.util.*;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.TIntSet;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author nichole
+ */
+<span class="fc" id="L22">public class MiscellaneousCurveHelper {</span>
+
+<span class="fc" id="L24">    private Logger log = Logger.getLogger(this.getClass().getName());</span>
+
+    // choosing a minimum size empirically from looking at edges in tests
+<span class="fc" id="L27">    private static int minLedgeWidth = 4;</span>
+
+<span class="fc" id="L29">    protected static final int[] eightNeighborsX =</span>
+        new int[]{-1, -1,  0,  1, 1, 1, 0, -1};
+<span class="fc" id="L31">    protected static final int[] eightNeighborsY =</span>
+        new int[]{ 0, -1, -1, -1, 0, 1, 1,  1};
+
+    /**
+     * determine whether the closed curve points are ordered in a counter clockwise
+     * manner 
+     * calculating the cross product between adjacent edges in sequence around
+     * the polygon to determine if there are fewer that are positive (CCW)
+     * than negative (CW).
+     * The given closedCurve cannot intersect itself or have holes in it.
+     * NOTE: the answer returns true if the points are ordered in CW manner, but
+     * if one needs the answer w.r.t. viewing an image which has y increasing
+     * downward, need the opposite of the return here.
+     *
+     * @param closedCurve
+     * @return
+     */
+    public boolean curveIsOrderedClockwise(PairIntArray closedCurve) {
+
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        if (closedCurve.getN() &lt; 2) {</span>
+<span class="nc" id="L51">            return false;</span>
+        }
+
+<span class="nc" id="L54">        int nNeg = 0;</span>
+<span class="nc" id="L55">        int n = closedCurve.getN();</span>
+
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+
+            long xm1, ym1, x, y, xp1, yp1;
+
+<span class="nc bnc" id="L61" title="All 2 branches missed.">            if (i == 0) {</span>
+<span class="nc" id="L62">                xm1 = closedCurve.getX(closedCurve.getN() - 1);</span>
+<span class="nc" id="L63">                ym1 = closedCurve.getY(closedCurve.getN() - 1);</span>
+<span class="nc" id="L64">                xp1 = closedCurve.getX(i + 1);</span>
+<span class="nc" id="L65">                yp1 = closedCurve.getY(i + 1);</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">            } else if (i == (closedCurve.getN() - 1)) {</span>
+<span class="nc" id="L67">                xm1 = closedCurve.getX(i - 1);</span>
+<span class="nc" id="L68">                ym1 = closedCurve.getY(i - 1);</span>
+<span class="nc" id="L69">                xp1 = closedCurve.getX(0);</span>
+<span class="nc" id="L70">                yp1 = closedCurve.getY(0);</span>
+            } else {
+<span class="nc" id="L72">                xm1 = closedCurve.getX(i - 1);</span>
+<span class="nc" id="L73">                ym1 = closedCurve.getY(i - 1);</span>
+<span class="nc" id="L74">                xp1 = closedCurve.getX(i + 1);</span>
+<span class="nc" id="L75">                yp1 = closedCurve.getY(i + 1);</span>
+            }
+<span class="nc" id="L77">            x = closedCurve.getX(i);</span>
+<span class="nc" id="L78">            y = closedCurve.getY(i);</span>
+
+<span class="nc" id="L80">            long dxmxm1 = (x - xm1);</span>
+<span class="nc" id="L81">            long dymym1 = (y - ym1);</span>
+<span class="nc" id="L82">            long dxp1mx = (xp1 - x);</span>
+<span class="nc" id="L83">            long dyp1my = (yp1 - y);</span>
+
+            //(xi - xi-1) * (yi+1 - yi) - (yi - yi-1) * (xi+1 - xi)
+<span class="nc" id="L86">            long crossProduct = (dxmxm1 * dyp1my) - (dymym1 * dxp1mx);</span>
+
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            if (crossProduct &lt; 0) {</span>
+                // clockwise when crossProduct is negative
+<span class="nc" id="L90">                nNeg++;</span>
+            }
+        }
+
+<span class="nc" id="L94">        int nPos = n - nNeg;//n - 2 - nNeg;</span>
+
+        //log.info(closedCurve.toString());
+        //log.info(&quot;n=&quot; + n + &quot; nNegative=&quot; + nNeg + &quot; nPositive=&quot; + nPos);
+
+<span class="nc bnc" id="L99" title="All 6 branches missed.">        return ((n &gt; 2) &amp;&amp; (nNeg &gt;= nPos)) || (nNeg &gt; nPos);</span>
+     }
+
+    /**
+     * determine whether the closed curve points are ordered in a counter clockwise
+     * manner by first computing the convex hull then
+     * calculating the cross product between adjacent edges in sequence around
+     * the polygon to determine if there are fewer that are positive (CCW)
+     * than negative (CW).
+     * The given closedCurve cannot intersect itself or have holes in it.
+     * NOTE: the answer returns true if the points are ordered in CW manner, but
+     * if one needs the answer w.r.t. viewing an image which has y increasing
+     * downward, need the opposite of the return here.
+     *
+     * @param closedCurve
+     * @return
+     */
+    public boolean curveIsOrderedClockwise2(PairIntArray closedCurve) {
+
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        if (closedCurve.getN() &lt; 2) {</span>
+<span class="nc" id="L119">            return false;</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">        } else if (closedCurve.getN() &lt; 4) {</span>
+<span class="nc" id="L121">            return curveIsOrderedClockwise(closedCurve);</span>
+        }
+        
+<span class="nc" id="L124">        int n = closedCurve.getN();</span>
+        
+<span class="nc" id="L126">        PairIntWithIndex[] p = new PairIntWithIndex[n];</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc" id="L128">            p[i] = new PairIntWithIndex(closedCurve.getX(i), closedCurve.getY(i),  i);</span>
+        }
+        
+<span class="nc" id="L131">        GrahamScanPairInt&lt;PairIntWithIndex&gt; scan = new GrahamScanPairInt&lt;PairIntWithIndex&gt;();</span>
+        try {
+<span class="nc" id="L133">            scan.computeHull(p);</span>
+            
+            // hull returns points in clockwise order
+            
+<span class="nc" id="L137">            n = scan.getHull().size() - 1;</span>
+            //PairIntArray hull = new PairIntArray(n);
+            //List&lt;Integer&gt; hullCurveIndexes = new ArrayList&lt;Integer&gt;();
+            //int[] deltaIndexes = new int[n];
+            
+            // nPos or nNeg might be 1 and then other n-2 if there is wrap-around
+<span class="nc" id="L143">            int nNeg = 0;</span>
+<span class="nc" id="L144">            int nPos = 0;</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">            for (int i = 0; i &lt; n; ++i) {</span>
+                
+<span class="nc" id="L147">                PairIntWithIndex p0 = scan.getHull().get(i);</span>
+                
+                //hull.add(Math.round(p0.getX()), Math.round(p0.getY()));
+                //hullCurveIndexes.add(Integer.valueOf(p0.getPixIndex()));
+                
+                // for CW input, expect these to be + numbers
+<span class="nc" id="L153">                int deltaIndex = scan.getHull().get(i + 1).getPixIndex() - p0.getPixIndex();</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">                if (deltaIndex &gt; 0) {</span>
+<span class="nc" id="L155">                    nPos++;</span>
+                } else {
+<span class="nc" id="L157">                    nNeg++;</span>
+                }
+            }
+            
+            //boolean isCW = curveIsOrderedClockwise(hull);
+            //assert(isCW);
+            
+<span class="nc bnc" id="L164" title="All 2 branches missed.">            if (nPos &gt; nNeg) {</span>
+<span class="nc" id="L165">                return true;</span>
+            }
+            
+<span class="nc" id="L168">            return false;</span>
+            
+<span class="nc" id="L170">        } catch (GrahamScanTooFewPointsException ex) {</span>
+<span class="nc" id="L171">            return curveIsOrderedClockwise(closedCurve);</span>
+        }
+    }
+
+    public void additionalThinning45DegreeEdges(
+            GreyscaleImage theta, GreyscaleImage input) {
+
+        // thin the edges for angles 45 and -45 as suggested by
+        // 1998 Mokhtarian and Suomela
+        // IEEE TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE,
+        //     VOL. 20, NO. 12
+        //
+        //compare each edge pixel which has an edge orientation of
+        // 45o or -45o to one of its horizontal or vertical neighbors.
+        // If the neighbor has the same orientation, the other point can be
+        // removed.
+<span class="nc bnc" id="L187" title="All 2 branches missed.">        for (int i = 1; i &lt; (input.getWidth() - 1); i++) {</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">            for (int j = 1; j &lt; (input.getHeight() - 1); j++) {</span>
+
+<span class="nc" id="L190">                int tG = theta.getValue(i, j);</span>
+
+<span class="nc bnc" id="L192" title="All 6 branches missed.">                if (((tG == 45) || (tG == -45)) &amp;&amp; (input.getValue(i, j) &gt; 0)) {</span>
+
+<span class="nc" id="L194">                    int tH0 = theta.getValue(i - 1, j);</span>
+<span class="nc" id="L195">                    int tH1 = theta.getValue(i + 1, j);</span>
+<span class="nc" id="L196">                    int tV0 = theta.getValue(i, j - 1);</span>
+<span class="nc" id="L197">                    int tV1 = theta.getValue(i, j + 1);</span>
+
+<span class="nc" id="L199">                    int gH0 = input.getValue(i - 1, j);</span>
+<span class="nc" id="L200">                    int gH1 = input.getValue(i + 1, j);</span>
+<span class="nc" id="L201">                    int gV0 = input.getValue(i, j - 1);</span>
+<span class="nc" id="L202">                    int gV1 = input.getValue(i, j + 1);</span>
+
+<span class="nc bnc" id="L204" title="All 4 branches missed.">                    if ((tH0 == tG) &amp;&amp; (gH0 &gt; 0)) {</span>
+<span class="nc bnc" id="L205" title="All 4 branches missed.">                        if ((tV0 == tG) &amp;&amp; (gV0 &gt; 0)) {</span>
+<span class="nc" id="L206">                            input.setValue(i, j, 0);</span>
+<span class="nc bnc" id="L207" title="All 4 branches missed.">                        } else if ((tV1 == tG) &amp;&amp; (gV1 &gt; 0)) {</span>
+<span class="nc" id="L208">                            input.setValue(i, j, 0);</span>
+                        }
+<span class="nc bnc" id="L210" title="All 4 branches missed.">                    } else if ((tH1 == tG) &amp;&amp; (gH1 &gt; 0)) {</span>
+<span class="nc bnc" id="L211" title="All 4 branches missed.">                        if ((tV0 == tG) &amp;&amp; (gV0 &gt; 0)) {</span>
+<span class="nc" id="L212">                            input.setValue(i, j, 0);</span>
+<span class="nc bnc" id="L213" title="All 4 branches missed.">                        } else if ((tV1 == tG) &amp;&amp; (gV1 &gt; 0)) {</span>
+<span class="nc" id="L214">                            input.setValue(i, j, 0);</span>
+                        }
+                    }
+                }
+            }
+        }
+<span class="nc" id="L220">    }</span>
+    
+    /**
+     * 
+     * @param theta image with values in range 0 to 180.
+     * @param input 
+     */
+    public void additionalThinning45DegreeEdges2(
+        double[][] theta, double[][] input) {
+
+        // thin the edges for angles 45 and -45 as suggested by
+        // 1998 Mokhtarian and Suomela
+        // IEEE TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE,
+        //     VOL. 20, NO. 12
+        //
+        //compare each edge pixel which has an edge orientation of
+        // 45o or -45o to one of its horizontal or vertical neighbors.
+        // If the neighbor has the same orientation, the other point can be
+        // removed.
+<span class="fc bfc" id="L239" title="All 2 branches covered.">        for (int i = 1; i &lt; (input.length - 1); i++) {</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">            for (int j = 1; j &lt; (input[i].length - 1); j++) {</span>
+
+<span class="fc" id="L242">                double vG = input[i][j];</span>
+                              
+<span class="fc bfc" id="L244" title="All 2 branches covered.">                if (vG &lt;= 0) {</span>
+<span class="fc" id="L245">                    continue;</span>
+                }
+                
+<span class="fc" id="L248">                int tG = convert360To45RefFrame((int)Math.round(theta[i][j]));</span>
+
+<span class="fc bfc" id="L250" title="All 4 branches covered.">                if ((Math.abs(tG - 45) &lt; 5) || (Math.abs(tG - -45) &lt; 5)) {</span>
+
+<span class="fc" id="L252">                    int tH0 = convert360To45RefFrame((int)Math.round(theta[i - 1][j]));</span>
+<span class="fc" id="L253">                    int tH1 = convert360To45RefFrame((int)Math.round(theta[i + 1][j]));</span>
+<span class="fc" id="L254">                    int tV0 = convert360To45RefFrame((int)Math.round(theta[i][j - 1]));</span>
+<span class="fc" id="L255">                    int tV1 = convert360To45RefFrame((int)Math.round(theta[i][j + 1]));</span>
+
+<span class="fc" id="L257">                    double gH0 = input[i - 1][j];</span>
+<span class="fc" id="L258">                    double gH1 = input[i + 1][j];</span>
+<span class="fc" id="L259">                    double gV0 = input[i][j - 1];</span>
+<span class="fc" id="L260">                    double gV1 = input[i][j + 1];</span>
+
+<span class="fc bfc" id="L262" title="All 4 branches covered.">                    if ((gH0 &gt; 0) &amp;&amp; (Math.abs(tH0 - tG) &lt; 5)) {</span>
+<span class="fc bfc" id="L263" title="All 4 branches covered.">                        if ((gV0 &gt; 0) &amp;&amp; (Math.abs(tV0 - tG) &lt; 5)) {</span>
+<span class="fc" id="L264">                            input[i][j] = 0;</span>
+<span class="fc bfc" id="L265" title="All 4 branches covered.">                        } else if ((gV1 &gt; 0) &amp;&amp; (Math.abs(tV1 - tG) &lt; 5)) {</span>
+<span class="fc" id="L266">                            input[i][j] = 0;</span>
+                        }
+<span class="fc bfc" id="L268" title="All 4 branches covered.">                    } else if ((gH1 &gt; 0) &amp;&amp; (Math.abs(tH1 - tG) &lt; 5)) {</span>
+<span class="fc bfc" id="L269" title="All 4 branches covered.">                        if ((gV0 &gt; 0) &amp;&amp; (Math.abs(tV0 - tG) &lt; 5)) {</span>
+<span class="fc" id="L270">                            input[i][j] = 0;</span>
+<span class="fc bfc" id="L271" title="All 4 branches covered.">                        } else if ((gV1 &gt; 0) &amp;&amp; (Math.abs(tV1 - tG) &lt; 5)) {</span>
+<span class="fc" id="L272">                            input[i][j] = 0;</span>
+                        }
+                    }
+                }
+            }
+        }
+<span class="fc" id="L278">    }</span>
+    
+    /**
+         *           Y
+         *          90
+         *     135   |    +45
+         *           |
+         *   180------------ 0   X
+         *           |
+         *    225    |   315
+         *          270
+         * 
+         *  -45    90    45          y/x
+                -  |  +
+            0 -----|----- 0
+                +  |  -
+            45    90    -45
+        
+     * @param angle360
+     * @return 
+     */
+    private int convert360To45RefFrame(int angle360) {
+        
+<span class="fc bfc" id="L301" title="All 4 branches covered.">        if ((angle360 &lt; 23) || (angle360 &gt; 337)) {</span>
+<span class="fc" id="L302">            return 0;</span>
+<span class="fc bfc" id="L303" title="All 4 branches covered.">        } else if ((angle360 &gt; 157) &amp;&amp; (angle360 &lt; 203)) {</span>
+<span class="fc" id="L304">            return 0;</span>
+<span class="pc bpc" id="L305" title="1 of 8 branches missed.">        } else  if (((angle360 &gt; 22) &amp;&amp; (angle360 &lt; 68)) || </span>
+            ((angle360 &gt; 202) &amp;&amp; (angle360 &lt; 248))) {
+            // in range of +45 or +225
+<span class="fc" id="L308">            return 45;</span>
+<span class="pc bpc" id="L309" title="1 of 8 branches missed.">        } else if (((angle360 &gt; 67) &amp;&amp; (angle360 &lt; 113)) || </span>
+            ((angle360 &gt; 247) &amp;&amp; (angle360 &lt; 293))) {
+            // in range of +90 or +270
+<span class="fc" id="L312">            return 90;</span>
+        } else { //if (((t &gt; 112) &amp;&amp; (t &lt; 158)) || ((t &gt; 292) &amp;&amp; (t &lt; 338))) {
+            // in range of +135 or +315
+<span class="fc" id="L315">            return -45;</span>
+        }
+    }
+    
+    /**
+     * thin a line that is the product in a canny edge detector, given
+     * a theta image which has values between 0 and 360.
+     * @param theta3602
+     * @param input 
+     */
+    public void additionalThinning45DegreeEdges2(
+        GreyscaleImage theta3602, GreyscaleImage input) {
+
+        // thin the edges for angles 45 and -45 as suggested by
+        // 1998 Mokhtarian and Suomela
+        // IEEE TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE,
+        //     VOL. 20, NO. 12
+        //
+        //compare each edge pixel which has an edge orientation of
+        // 45o or -45o to one of its horizontal or vertical neighbors.
+        // If the neighbor has the same orientation, the other point can be
+        // removed.
+<span class="nc bnc" id="L337" title="All 2 branches missed.">        for (int i = 1; i &lt; (input.getWidth() - 1); i++) {</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">            for (int j = 1; j &lt; (input.getHeight() - 1); j++) {</span>
+                
+<span class="nc bnc" id="L340" title="All 2 branches missed.">                if (input.getValue(i, j) == 0) {</span>
+<span class="nc" id="L341">                    continue;</span>
+                }
+
+<span class="nc" id="L344">                int tG = convert360To45RefFrame(theta3602.getValue(i, j));</span>
+
+<span class="nc bnc" id="L346" title="All 4 branches missed.">                if ((tG == 45) || (tG == -45)) {</span>
+
+<span class="nc" id="L348">                    int tH0 = convert360To45RefFrame(theta3602.getValue(i - 1, j));</span>
+<span class="nc" id="L349">                    int tH1 = convert360To45RefFrame(theta3602.getValue(i + 1, j));</span>
+<span class="nc" id="L350">                    int tV0 = convert360To45RefFrame(theta3602.getValue(i, j - 1));</span>
+<span class="nc" id="L351">                    int tV1 = convert360To45RefFrame(theta3602.getValue(i, j + 1));</span>
+
+<span class="nc" id="L353">                    int gH0 = input.getValue(i - 1, j);</span>
+<span class="nc" id="L354">                    int gH1 = input.getValue(i + 1, j);</span>
+<span class="nc" id="L355">                    int gV0 = input.getValue(i, j - 1);</span>
+<span class="nc" id="L356">                    int gV1 = input.getValue(i, j + 1);</span>
+
+<span class="nc bnc" id="L358" title="All 4 branches missed.">                    if ((tH0 == tG) &amp;&amp; (gH0 &gt; 0)) {</span>
+<span class="nc bnc" id="L359" title="All 4 branches missed.">                        if ((tV0 == tG) &amp;&amp; (gV0 &gt; 0)) {</span>
+<span class="nc" id="L360">                            input.setValue(i, j, 0);</span>
+<span class="nc bnc" id="L361" title="All 4 branches missed.">                        } else if ((tV1 == tG) &amp;&amp; (gV1 &gt; 0)) {</span>
+<span class="nc" id="L362">                            input.setValue(i, j, 0);</span>
+                        }
+<span class="nc bnc" id="L364" title="All 4 branches missed.">                    } else if ((tH1 == tG) &amp;&amp; (gH1 &gt; 0)) {</span>
+<span class="nc bnc" id="L365" title="All 4 branches missed.">                        if ((tV0 == tG) &amp;&amp; (gV0 &gt; 0)) {</span>
+<span class="nc" id="L366">                            input.setValue(i, j, 0);</span>
+<span class="nc bnc" id="L367" title="All 4 branches missed.">                        } else if ((tV1 == tG) &amp;&amp; (gV1 &gt; 0)) {</span>
+<span class="nc" id="L368">                            input.setValue(i, j, 0);</span>
+                        }
+                    }
+                }
+            }
+        }
+<span class="nc" id="L374">    }</span>
+    
+    /**
+     * thin a line that is the product in a canny edge detector, given
+     * a theta image which has values between 0 and 360.
+     * @param theta3602
+     * @param input 
+     */
+    public void additionalThinning45DegreeEdges2(
+        GreyscaleImage theta3602, GreyscaleImage input, double minResolvableAngle) {
+
+        // thin the edges for angles 45 and -45 as suggested by
+        // 1998 Mokhtarian and Suomela
+        // IEEE TRANSACTIONS ON PATTERN ANALYSIS AND MACHINE INTELLIGENCE,
+        //     VOL. 20, NO. 12
+        //
+        //compare each edge pixel which has an edge orientation of
+        // 45o or -45o to one of its horizontal or vertical neighbors.
+        // If the neighbor has the same orientation, the other point can be
+        // removed.
+<span class="fc bfc" id="L394" title="All 2 branches covered.">        for (int i = 1; i &lt; (input.getWidth() - 1); i++) {</span>
+<span class="fc bfc" id="L395" title="All 2 branches covered.">            for (int j = 1; j &lt; (input.getHeight() - 1); j++) {</span>
+                
+<span class="fc bfc" id="L397" title="All 2 branches covered.">                if (input.getValue(i, j) == 0) {</span>
+<span class="fc" id="L398">                    continue;</span>
+                }
+                
+<span class="fc" id="L401">                int t = theta3602.getValue(i, j);</span>
+                
+<span class="fc bfc" id="L403" title="All 2 branches covered.">                if ((Math.abs(t - 0) &lt; minResolvableAngle) || </span>
+<span class="fc bfc" id="L404" title="All 2 branches covered.">                    (Math.abs(180 - t) &lt; minResolvableAngle) || </span>
+<span class="pc bpc" id="L405" title="1 of 2 branches missed.">                    (Math.abs(360 - t) &lt; minResolvableAngle)) {</span>
+                    // measured 0 or 180, but should be 90 or 270
+<span class="fc" id="L407">                    t = 90;</span>
+<span class="fc bfc" id="L408" title="All 2 branches covered.">                } else if ((Math.abs(90 - t) &lt; minResolvableAngle) ||</span>
+<span class="pc bpc" id="L409" title="1 of 2 branches missed.">                    (Math.abs(270 - t) &lt; minResolvableAngle) ) {</span>
+                    // measured 90 or 270, but should be 0 or 180
+<span class="fc" id="L411">                    t = 180;</span>
+                }
+
+<span class="fc" id="L414">                int tG = convert360To45RefFrame(t);</span>
+
+<span class="fc bfc" id="L416" title="All 4 branches covered.">                if ((tG == 45) || (tG == -45)) {</span>
+
+<span class="fc" id="L418">                    int tH0 = theta3602.getValue(i - 1, j);</span>
+<span class="fc" id="L419">                    int tH1 = theta3602.getValue(i + 1, j);</span>
+<span class="fc" id="L420">                    int tV0 = theta3602.getValue(i, j - 1);</span>
+<span class="fc" id="L421">                    int tV1 = theta3602.getValue(i, j + 1);</span>
+                    
+<span class="fc bfc" id="L423" title="All 2 branches covered.">                    if ((Math.abs(tH0 - 0) &lt; minResolvableAngle)</span>
+<span class="fc bfc" id="L424" title="All 2 branches covered.">                        || (Math.abs(180 - tH0) &lt; minResolvableAngle)</span>
+<span class="pc bpc" id="L425" title="1 of 2 branches missed.">                        || (Math.abs(360 - tH0) &lt; minResolvableAngle)) {</span>
+                        // measured 0 or 180, but should be 90 or 270
+<span class="fc" id="L427">                        tH0 = 90;</span>
+<span class="fc bfc" id="L428" title="All 2 branches covered.">                    } else if ((Math.abs(90 - tH0) &lt; minResolvableAngle)</span>
+<span class="pc bpc" id="L429" title="1 of 2 branches missed.">                        || (Math.abs(270 - tH0) &lt; minResolvableAngle)) {</span>
+                        // measured 90 or 270, but should be 0 or 180
+<span class="fc" id="L431">                        tH0 = 180;</span>
+                    }
+<span class="fc bfc" id="L433" title="All 2 branches covered.">                    if ((Math.abs(tH1 - 0) &lt; minResolvableAngle)</span>
+<span class="fc bfc" id="L434" title="All 2 branches covered.">                        || (Math.abs(180 - tH1) &lt; minResolvableAngle)</span>
+<span class="pc bpc" id="L435" title="1 of 2 branches missed.">                        || (Math.abs(360 - tH1) &lt; minResolvableAngle)) {</span>
+                        // measured 0 or 180, but should be 90 or 270
+<span class="fc" id="L437">                        tH1 = 90;</span>
+<span class="fc bfc" id="L438" title="All 2 branches covered.">                    } else if ((Math.abs(90 - tH1) &lt; minResolvableAngle)</span>
+<span class="pc bpc" id="L439" title="1 of 2 branches missed.">                        || (Math.abs(270 - tH1) &lt; minResolvableAngle)) {</span>
+                        // measured 90 or 270, but should be 0 or 180
+<span class="fc" id="L441">                        tH1 = 180;</span>
+                    }
+<span class="fc bfc" id="L443" title="All 2 branches covered.">                    if ((Math.abs(tV0 - 0) &lt; minResolvableAngle)</span>
+<span class="fc bfc" id="L444" title="All 2 branches covered.">                        || (Math.abs(180 - tV0) &lt; minResolvableAngle)</span>
+<span class="pc bpc" id="L445" title="1 of 2 branches missed.">                        || (Math.abs(360 - tV0) &lt; minResolvableAngle)) {</span>
+                        // measured 0 or 180, but should be 90 or 270
+<span class="fc" id="L447">                        tV0 = 90;</span>
+<span class="fc bfc" id="L448" title="All 2 branches covered.">                    } else if ((Math.abs(90 - tV0) &lt; minResolvableAngle)</span>
+<span class="pc bpc" id="L449" title="1 of 2 branches missed.">                        || (Math.abs(270 - tV0) &lt; minResolvableAngle)) {</span>
+                        // measured 90 or 270, but should be 0 or 180
+<span class="fc" id="L451">                        tV0 = 180;</span>
+                    }
+<span class="fc bfc" id="L453" title="All 2 branches covered.">                    if ((Math.abs(tV1 - 0) &lt; minResolvableAngle)</span>
+<span class="fc bfc" id="L454" title="All 2 branches covered.">                        || (Math.abs(180 - tV1) &lt; minResolvableAngle)</span>
+<span class="pc bpc" id="L455" title="1 of 2 branches missed.">                        || (Math.abs(360 - tV1) &lt; minResolvableAngle)) {</span>
+                        // measured 0 or 180, but should be 90 or 270
+<span class="fc" id="L457">                        tV1 = 90;</span>
+<span class="fc bfc" id="L458" title="All 2 branches covered.">                    } else if ((Math.abs(90 - tV1) &lt; minResolvableAngle)</span>
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">                        || (Math.abs(270 - tV1) &lt; minResolvableAngle)) {</span>
+                        // measured 90 or 270, but should be 0 or 180
+<span class="fc" id="L461">                        tV1 = 180;</span>
+                    }
+                    
+<span class="fc" id="L464">                    tH0 = convert360To45RefFrame(tH0);</span>
+<span class="fc" id="L465">                    tH1 = convert360To45RefFrame(tH1);</span>
+<span class="fc" id="L466">                    tV0 = convert360To45RefFrame(tV0);</span>
+<span class="fc" id="L467">                    tV1 = convert360To45RefFrame(tV1);</span>
+                    
+<span class="fc" id="L469">                    int gH0 = input.getValue(i - 1, j);</span>
+<span class="fc" id="L470">                    int gH1 = input.getValue(i + 1, j);</span>
+<span class="fc" id="L471">                    int gV0 = input.getValue(i, j - 1);</span>
+<span class="fc" id="L472">                    int gV1 = input.getValue(i, j + 1);</span>
+
+<span class="fc bfc" id="L474" title="All 4 branches covered.">                    if ((tH0 == tG) &amp;&amp; (gH0 &gt; 0)) {</span>
+<span class="fc bfc" id="L475" title="All 4 branches covered.">                        if ((tV0 == tG) &amp;&amp; (gV0 &gt; 0)) {</span>
+<span class="fc" id="L476">                            input.setValue(i, j, 0);</span>
+<span class="fc bfc" id="L477" title="All 4 branches covered.">                        } else if ((tV1 == tG) &amp;&amp; (gV1 &gt; 0)) {</span>
+<span class="fc" id="L478">                            input.setValue(i, j, 0);</span>
+                        }
+<span class="fc bfc" id="L480" title="All 4 branches covered.">                    } else if ((tH1 == tG) &amp;&amp; (gH1 &gt; 0)) {</span>
+<span class="fc bfc" id="L481" title="All 4 branches covered.">                        if ((tV0 == tG) &amp;&amp; (gV0 &gt; 0)) {</span>
+<span class="fc" id="L482">                            input.setValue(i, j, 0);</span>
+<span class="fc bfc" id="L483" title="All 4 branches covered.">                        } else if ((tV1 == tG) &amp;&amp; (gV1 &gt; 0)) {</span>
+<span class="fc" id="L484">                            input.setValue(i, j, 0);</span>
+                        }
+                    }
+                }
+            }
+        }
+<span class="fc" id="L490">    }</span>
+    
+    /**
+     * return true if correlation shows that the 2 curves are adjacent
+     * to one another.  Note that the method needs the points within the
+     * curves to be ordered in a similar manner and for the endpoints of the
+     * curves to be accurate.  If a point in the middle of the curve is
+     * the first or last point, it may prevent comparison of it with another
+     * edge's endpoints.
+     *
+     * @param curve0
+     * @param curve1
+     * @param correlationOffset offset of where the shorter curve starts
+     *  with respect to the longer.  For example, an offset of -2 means that
+     * the first 2 points in the shorter curve are outside of the longer curve,
+     * but the next point in the longer curve is adjacent to the shorter.
+     * Another example: if offset is +2, the first pixel in the shorter curve
+     * is adjacent to the third pixel in the longer curve.  NOTE: the offset
+     * is only useful if this method returns true;
+     * @return
+     */
+    protected boolean correlation(PairIntArray curve0, PairIntArray curve1,
+        int[] correlationOffset) {
+
+<span class="nc" id="L514">        correlationOffset[0] = Integer.MAX_VALUE;</span>
+
+        //TODO: look at string matching algorithms to explore improvements here
+
+        PairIntArray shorter, longer;
+<span class="nc bnc" id="L519" title="All 2 branches missed.">        if (curve0.getN() &lt;= curve1.getN()) {</span>
+<span class="nc" id="L520">            shorter = curve0;</span>
+<span class="nc" id="L521">            longer = curve1;</span>
+        } else {
+<span class="nc" id="L523">            shorter = curve1;</span>
+<span class="nc" id="L524">            longer = curve0;</span>
+        }
+
+        /*
+        len0 = 5; len1 = 11;
+         #####
+             +++++++++++
+          #####
+             +++++++++++
+           #####
+             +++++++++++
+            #####
+             +++++++++++
+             #####
+             +++++++++++
+
+             #####
+             +++++++++++
+
+                       #####
+             +++++++++++
+
+        ccs = sqrt(sumsqdiff)/nOverlapping if nOverlapping &gt; 0.
+
+        if (css &lt;= 1 pix * nOverlapping) {
+            store as a possible adjacent curve
+        }
+        compare possible adjacent curves for the smallest css, and store that
+        offset in correlationOffset and return true, else false
+        */
+
+<span class="nc" id="L555">        double cSSMin = Double.MAX_VALUE;</span>
+<span class="nc" id="L556">        int cSSMinOffset = Integer.MAX_VALUE;</span>
+<span class="nc" id="L557">        int cSSMinNOverlapping = 0;</span>
+
+<span class="nc" id="L559">        double sqrtTwo = Math.sqrt(2);</span>
+
+<span class="nc bnc" id="L561" title="All 2 branches missed.">        for (int i = 0; i &lt; (longer.getN() + shorter.getN() - 1); i++) {</span>
+            //siIdx is first index in shorter for comparison
+            //sfIdx is last index in shorter for comparison
+            //liIdx is first index of longer for comparison
+            //lfIdx is last index of longer for comparison
+            int siIdx, sfIdx, liIdx, lfIdx, offset;
+<span class="nc bnc" id="L567" title="All 2 branches missed.">            if (i &lt; shorter.getN()) {</span>
+                /*
+                 #####
+                     +++++++++++ i=0
+                  #####
+                     +++++++++++
+                   #####
+                     +++++++++++
+                    #####
+                     +++++++++++
+                     #####
+                     +++++++++++ i=4
+                */
+                //sfIdx is inclusive endpoint
+<span class="nc" id="L581">                sfIdx = shorter.getN() - 1;</span>
+<span class="nc" id="L582">                siIdx = sfIdx - i;</span>
+<span class="nc" id="L583">                liIdx = 0;</span>
+                //lfIdx is inclusive endpoint
+<span class="nc" id="L585">                lfIdx = sfIdx - siIdx;</span>
+<span class="nc" id="L586">                offset = i - sfIdx;</span>
+
+<span class="nc bnc" id="L588" title="All 2 branches missed.">            } else if (i &lt; longer.getN() ) {</span>
+
+                /*
+                      #####
+                     +++++++++++  i=5
+
+                       #####
+                     +++++++++++
+
+                        #####
+                     +++++++++++
+
+                         #####
+                     +++++++++++
+
+                          #####
+                     +++++++++++
+
+                           #####
+                     +++++++++++ i = 10
+                */
+                //sfIdx is inclusive endpoint
+<span class="nc" id="L610">                sfIdx = shorter.getN() - 1;</span>
+<span class="nc" id="L611">                siIdx = 0;</span>
+<span class="nc" id="L612">                liIdx = i - shorter.getN() + 1;</span>
+                //lfIdx is inclusive endpoint
+<span class="nc" id="L614">                lfIdx = liIdx + shorter.getN() - 1;</span>
+<span class="nc" id="L615">                offset = i - sfIdx;</span>
+
+            } else {
+                /*
+                            #####
+                     +++++++++++ i = 12
+                     01234567890
+                             #####
+                     +++++++++++
+
+                              #####
+                     +++++++++++
+
+                               #####
+                     +++++++++++ i=15
+                     01234567890
+                */
+<span class="nc" id="L632">                liIdx = i - shorter.getN() + 1;</span>
+                //sfIdx is inclusive endpoint
+<span class="nc" id="L634">                sfIdx = longer.getN() - liIdx - 1;</span>
+<span class="nc" id="L635">                siIdx = 0;</span>
+                //lfIdx is inclusive endpoint
+<span class="nc" id="L637">                lfIdx = liIdx + (sfIdx - siIdx);</span>
+<span class="nc" id="L638">                offset = liIdx;</span>
+
+            }
+
+<span class="nc" id="L642">            int nOverLapping = (sfIdx - siIdx) + 1;</span>
+
+<span class="nc bnc" id="L644" title="All 2 branches missed.">            if ((sfIdx - siIdx) != (lfIdx - liIdx)) {</span>
+<span class="nc" id="L645">                throw new IllegalStateException(</span>
+                    &quot;sample ranges are not correct&quot;);
+            }
+
+<span class="nc" id="L649">            double sumSq = 0;</span>
+
+<span class="nc" id="L651">            int s = siIdx;</span>
+<span class="nc" id="L652">            int l = liIdx;</span>
+<span class="nc bnc" id="L653" title="All 2 branches missed.">            while (s &lt;= sfIdx) {</span>
+<span class="nc" id="L654">                int xs = shorter.getX(s);</span>
+<span class="nc" id="L655">                int xl = longer.getX(l);</span>
+<span class="nc" id="L656">                int dx = xs - xl;</span>
+<span class="nc" id="L657">                int ys = shorter.getY(s);</span>
+<span class="nc" id="L658">                int yl = longer.getY(l);</span>
+<span class="nc" id="L659">                int dy = ys - yl;</span>
+<span class="nc" id="L660">                sumSq += ((dx*dx) + (dy*dy));</span>
+<span class="nc" id="L661">                s++;</span>
+<span class="nc" id="L662">                l++;</span>
+<span class="nc" id="L663">            }</span>
+
+<span class="nc" id="L665">            double tmp = Math.sqrt(sumSq/nOverLapping);</span>
+
+            // assuming adjacent pixel has distance of sqrt(2) at the most
+<span class="nc bnc" id="L668" title="All 2 branches missed.">            if (tmp &lt;= sqrtTwo) {</span>
+
+<span class="nc bnc" id="L670" title="All 6 branches missed.">                if ((tmp &lt; cSSMin) ||</span>
+                (tmp == cSSMin &amp;&amp; (nOverLapping &gt; cSSMinNOverlapping))
+                ) {
+
+<span class="nc" id="L674">                    cSSMin = tmp;</span>
+
+<span class="nc" id="L676">                    cSSMinOffset = offset;</span>
+
+<span class="nc" id="L678">                    cSSMinNOverlapping = nOverLapping;</span>
+                }
+            }
+        }
+
+<span class="nc bnc" id="L683" title="All 2 branches missed.">        if (cSSMin &lt; Double.MAX_VALUE) {</span>
+
+<span class="nc" id="L685">            correlationOffset[0] = cSSMinOffset;</span>
+
+<span class="nc" id="L687">            return true;</span>
+        }
+
+<span class="nc" id="L690">        return false;</span>
+    }
+
+    public double[] calculateXYCentroids1(List&lt;CurvatureScaleSpaceContour&gt; list) {
+        
+<span class="nc" id="L695">        double xc = 0;</span>
+<span class="nc" id="L696">        double yc = 0;</span>
+
+<span class="nc bnc" id="L698" title="All 2 branches missed.">        for (CurvatureScaleSpaceContour cr : list) {</span>
+<span class="nc" id="L699">            double x = cr.getPeakDetails()[0].getXCoord();</span>
+<span class="nc" id="L700">            double y = cr.getPeakDetails()[0].getYCoord();</span>
+<span class="nc" id="L701">            xc += x;</span>
+<span class="nc" id="L702">            yc += y;</span>
+<span class="nc" id="L703">        }</span>
+<span class="nc" id="L704">        xc /= (double)list.size();</span>
+<span class="nc" id="L705">        yc /= (double)list.size();</span>
+
+<span class="nc" id="L707">        return new double[]{xc, yc};</span>
+    }
+
+    public double[] calculateXYCentroids(PairIntArray xy, float[] weights) {
+
+<span class="nc" id="L712">        double xc = 0;</span>
+<span class="nc" id="L713">        double yc = 0;</span>
+
+<span class="nc bnc" id="L715" title="All 2 branches missed.">        for (int i = 0; i &lt; xy.getN(); i++) {</span>
+<span class="nc" id="L716">            double x1 = xy.getX(i);</span>
+<span class="nc" id="L717">            xc += (weights[i] * x1);</span>
+
+<span class="nc" id="L719">            double y1 = xy.getY(i);</span>
+<span class="nc" id="L720">            yc += (weights[i] * y1);</span>
+        }
+
+<span class="nc" id="L723">        return new double[]{xc, yc};</span>
+    }
+
+    public double[] calculateXYCentroids(PairIntArray xy) {
+
+<span class="fc" id="L728">        double xc = 0;</span>
+<span class="fc" id="L729">        double yc = 0;</span>
+
+<span class="fc bfc" id="L731" title="All 2 branches covered.">        for (int i = 0; i &lt; xy.getN(); i++) {</span>
+
+<span class="fc" id="L733">            xc += xy.getX(i);</span>
+
+<span class="fc" id="L735">            yc += xy.getY(i);</span>
+        }
+
+<span class="fc" id="L738">        xc /= (double)xy.getN();</span>
+
+<span class="fc" id="L740">        yc /= (double)xy.getN();</span>
+
+<span class="fc" id="L742">        return new double[]{xc, yc};</span>
+    }
+
+    public double[] calculateXYCentroids(PairFloatArray xy) {
+
+<span class="nc" id="L747">        double xc = 0;</span>
+<span class="nc" id="L748">        double yc = 0;</span>
+
+<span class="nc bnc" id="L750" title="All 2 branches missed.">        for (int i = 0; i &lt; xy.getN(); i++) {</span>
+
+<span class="nc" id="L752">            xc += xy.getX(i);</span>
+
+<span class="nc" id="L754">            yc += xy.getY(i);</span>
+        }
+
+<span class="nc" id="L757">        xc /= (double)xy.getN();</span>
+
+<span class="nc" id="L759">        yc /= (double)xy.getN();</span>
+
+<span class="nc" id="L761">        return new double[]{xc, yc};</span>
+    }
+
+    public double[] calculateXYCentroids(List&lt;PairIntArray&gt; xyList) {
+
+<span class="nc" id="L766">        double xc = 0;</span>
+<span class="nc" id="L767">        double yc = 0;</span>
+
+<span class="nc bnc" id="L769" title="All 2 branches missed.">        for (PairIntArray points : xyList) {</span>
+
+<span class="nc" id="L771">            double[] xycen = calculateXYCentroids(points);</span>
+
+<span class="nc" id="L773">            xc += xycen[0];</span>
+<span class="nc" id="L774">            yc += xycen[1];</span>
+<span class="nc" id="L775">        }</span>
+
+<span class="nc" id="L777">        xc /= (double)xyList.size();</span>
+<span class="nc" id="L778">        yc /= (double)xyList.size();</span>
+
+<span class="nc" id="L780">        return new double[]{xc, yc};</span>
+    }
+
+    public PairInt calculateXYCentroids2(Collection&lt;PairInt&gt; points) {
+        
+<span class="nc" id="L785">        double[] xyCen = calculateXYCentroids(points);</span>
+        
+<span class="nc" id="L787">        PairInt p = new PairInt((int)Math.round(xyCen[0]), (int)Math.round(xyCen[1]));</span>
+        
+<span class="nc" id="L789">        return p;</span>
+    }
+    
+    public double[] calculateXYCentroids(Collection&lt;PairInt&gt; points) {
+
+<span class="nc" id="L794">        double xc = 0;</span>
+<span class="nc" id="L795">        double yc = 0;</span>
+
+<span class="nc bnc" id="L797" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+
+<span class="nc" id="L799">           int x = p.getX();</span>
+<span class="nc" id="L800">           int y = p.getY();</span>
+
+<span class="nc" id="L802">            xc += x;</span>
+<span class="nc" id="L803">            yc += y;</span>
+<span class="nc" id="L804">        }</span>
+
+<span class="nc" id="L806">        xc /= (double)(points.size());</span>
+
+<span class="nc" id="L808">        yc /= (double)(points.size());</span>
+
+<span class="nc" id="L810">        return new double[]{xc, yc};</span>
+    }
+
+    public int[] calculateRoundedXYCentroids(Set&lt;PairInt&gt; points) {
+
+<span class="nc" id="L815">        double[] xyCen = calculateXYCentroids(points);</span>
+
+<span class="nc" id="L817">        int[] out = new int[2];</span>
+<span class="nc" id="L818">        out[0] = (int)Math.round(xyCen[0]);</span>
+<span class="nc" id="L819">        out[1] = (int)Math.round(xyCen[1]);</span>
+
+<span class="nc" id="L821">        return out;</span>
+    }
+    
+    public int[] calculateRoundedXYCentroids(TIntSet pixelIdxs, int imgWidth) {
+
+<span class="nc" id="L826">        double xc = 0;</span>
+<span class="nc" id="L827">        double yc = 0;</span>
+
+<span class="nc" id="L829">        TIntIterator iter = pixelIdxs.iterator();</span>
+<span class="nc bnc" id="L830" title="All 2 branches missed.">        while (iter.hasNext()) {</span>
+
+<span class="nc" id="L832">            int pixIdx = iter.next();</span>
+            
+<span class="nc" id="L834">            int y = pixIdx/imgWidth;</span>
+<span class="nc" id="L835">            int x = pixIdx - (y * imgWidth);</span>
+            
+<span class="nc" id="L837">            xc += x;</span>
+<span class="nc" id="L838">            yc += y;</span>
+<span class="nc" id="L839">        }</span>
+
+<span class="nc" id="L841">        xc /= (double)pixelIdxs.size();</span>
+<span class="nc" id="L842">        yc /= (double)pixelIdxs.size();</span>
+        
+<span class="nc" id="L844">        int[] out = new int[2];</span>
+<span class="nc" id="L845">        out[0] = (int)Math.round(xc);</span>
+<span class="nc" id="L846">        out[1] = (int)Math.round(yc);</span>
+
+<span class="nc" id="L848">        return out;</span>
+    }
+
+    public double[] calculateXYCentroids(float[] x, float[] y) {
+
+<span class="nc bnc" id="L853" title="All 2 branches missed.">        if (x == null) {</span>
+<span class="nc" id="L854">            throw new IllegalArgumentException(&quot;x cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L856" title="All 2 branches missed.">        if (y == null) {</span>
+<span class="nc" id="L857">            throw new IllegalArgumentException(&quot;y cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L859" title="All 2 branches missed.">        if (x.length != y.length) {</span>
+<span class="nc" id="L860">            throw new IllegalArgumentException(&quot;x and y must be same length&quot;);</span>
+        }
+
+<span class="nc" id="L863">        double xc = 0;</span>
+<span class="nc" id="L864">        double yc = 0;</span>
+
+<span class="nc bnc" id="L866" title="All 2 branches missed.">        for (int i = 0; i &lt; x.length; i++) {</span>
+
+<span class="nc" id="L868">            xc += x[i];</span>
+
+<span class="nc" id="L870">            yc += y[i];</span>
+        }
+
+<span class="nc" id="L873">        xc /= (double)(x.length);</span>
+
+<span class="nc" id="L875">        yc /= (double)(x.length);</span>
+
+<span class="nc" id="L877">        return new double[]{xc, yc};</span>
+    }
+    
+    public double[] calculateXYCentroids(int[] x, int[] y) {
+
+<span class="nc bnc" id="L882" title="All 2 branches missed.">        if (x == null) {</span>
+<span class="nc" id="L883">            throw new IllegalArgumentException(&quot;x cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L885" title="All 2 branches missed.">        if (y == null) {</span>
+<span class="nc" id="L886">            throw new IllegalArgumentException(&quot;y cannot be null&quot;);</span>
+        }
+<span class="nc bnc" id="L888" title="All 2 branches missed.">        if (x.length != y.length) {</span>
+<span class="nc" id="L889">            throw new IllegalArgumentException(&quot;x and y must be same length&quot;);</span>
+        }
+
+<span class="nc" id="L892">        double xc = 0;</span>
+<span class="nc" id="L893">        double yc = 0;</span>
+
+<span class="nc bnc" id="L895" title="All 2 branches missed.">        for (int i = 0; i &lt; x.length; i++) {</span>
+
+<span class="nc" id="L897">            xc += x[i];</span>
+
+<span class="nc" id="L899">            yc += y[i];</span>
+        }
+
+<span class="nc" id="L902">        xc /= (double)(x.length);</span>
+
+<span class="nc" id="L904">        yc /= (double)(x.length);</span>
+
+<span class="nc" id="L906">        return new double[]{xc, yc};</span>
+    }
+
+    /**
+     * does removing the point at idx create a gap between it's neighboring
+     * pixels?  this uses the simplest test of only the points at idx-1
+     * and idx+1.
+     *
+     * @param edge
+     * @param idx
+     * @return
+     */
+    public boolean doesDisconnect(PairIntArray edge, int idx) {
+
+        // test for endpoints first
+<span class="nc bnc" id="L921" title="All 2 branches missed.">        if (idx == 0) {</span>
+
+<span class="nc bnc" id="L923" title="All 2 branches missed.">            if (edge.getN() &lt; 3) {</span>
+<span class="nc" id="L924">                return true;</span>
+            }
+
+            // does this point currently connect to the last point?
+<span class="nc" id="L928">            float diffX = edge.getX(idx) - edge.getX(edge.getN() - 1);</span>
+<span class="nc bnc" id="L929" title="All 2 branches missed.">            if (diffX &lt; 0) {</span>
+<span class="nc" id="L930">                diffX *= -1;</span>
+            }
+<span class="nc" id="L932">            float diffY = edge.getY(idx) - edge.getY(edge.getN() - 1);</span>
+<span class="nc bnc" id="L933" title="All 2 branches missed.">            if (diffY &lt; 0) {</span>
+<span class="nc" id="L934">                diffY *= -1;</span>
+            }
+<span class="nc bnc" id="L936" title="All 4 branches missed.">            if (((diffX &lt; 2) &amp;&amp; (diffY &lt; 2))) {</span>
+                // this is connected to the last point in the edge
+                // check to see if lastPoint and idx + 1 are adjacent
+<span class="nc" id="L939">                diffX = edge.getX(idx + 1) - edge.getX(edge.getN() - 1);</span>
+<span class="nc bnc" id="L940" title="All 2 branches missed.">                if (diffX &lt; 0) {</span>
+<span class="nc" id="L941">                    diffX *= -1;</span>
+                }
+<span class="nc bnc" id="L943" title="All 2 branches missed.">                if (diffX &gt; 1) {</span>
+<span class="nc" id="L944">                    return true;</span>
+                }
+
+<span class="nc" id="L947">                diffY = edge.getY(idx + 1) - edge.getY(edge.getN() - 1);</span>
+<span class="nc bnc" id="L948" title="All 2 branches missed.">                if (diffY &lt; 0) {</span>
+<span class="nc" id="L949">                    diffY *= -1;</span>
+                }
+<span class="nc bnc" id="L951" title="All 2 branches missed.">                if (diffY &gt; 1) {</span>
+<span class="nc" id="L952">                    return true;</span>
+                }
+            }
+<span class="nc" id="L955">            return false;</span>
+        }
+
+<span class="nc bnc" id="L958" title="All 2 branches missed.">        if (idx == (edge.getN() - 1)) {</span>
+
+<span class="nc bnc" id="L960" title="All 2 branches missed.">            if (edge.getN() &lt; 3) {</span>
+<span class="nc" id="L961">                return true;</span>
+            }
+
+            // does this point currently connect to the first point?
+<span class="nc" id="L965">            float diffX = edge.getX(idx) - edge.getX(0);</span>
+<span class="nc bnc" id="L966" title="All 2 branches missed.">            if (diffX &lt; 0) {</span>
+<span class="nc" id="L967">                diffX *= -1;</span>
+            }
+<span class="nc" id="L969">            float diffY = edge.getY(idx) - edge.getY(0);</span>
+<span class="nc bnc" id="L970" title="All 2 branches missed.">            if (diffY &lt; 0) {</span>
+<span class="nc" id="L971">                diffY *= -1;</span>
+            }
+<span class="nc bnc" id="L973" title="All 4 branches missed.">            if (((diffX &lt; 2) &amp;&amp; (diffY &lt; 2))) {</span>
+                // this is connected to the first point in the edge
+                // check to see if lastPoint - 1 and first point are adjacent
+<span class="nc" id="L976">                diffX = edge.getX(idx - 1) - edge.getX(0);</span>
+<span class="nc bnc" id="L977" title="All 2 branches missed.">                if (diffX &lt; 0) {</span>
+<span class="nc" id="L978">                    diffX *= -1;</span>
+                }
+<span class="nc bnc" id="L980" title="All 2 branches missed.">                if (diffX &gt; 1) {</span>
+<span class="nc" id="L981">                    return true;</span>
+                }
+
+<span class="nc" id="L984">                diffY = edge.getY(idx - 1) - edge.getY(0);</span>
+<span class="nc bnc" id="L985" title="All 2 branches missed.">                if (diffY &lt; 0) {</span>
+<span class="nc" id="L986">                    diffY *= -1;</span>
+                }
+<span class="nc bnc" id="L988" title="All 2 branches missed.">                if (diffY &gt; 1) {</span>
+<span class="nc" id="L989">                    return true;</span>
+                }
+            }
+<span class="nc" id="L992">            return false;</span>
+        }
+
+<span class="nc bnc" id="L995" title="All 2 branches missed.">        if ((idx + 1) &lt; edge.getN()) {</span>
+<span class="nc" id="L996">            float diffX = edge.getX(idx - 1) - edge.getX(idx + 1);</span>
+<span class="nc bnc" id="L997" title="All 2 branches missed.">            if (diffX &lt; 0) {</span>
+<span class="nc" id="L998">                diffX *= -1;</span>
+            }
+<span class="nc bnc" id="L1000" title="All 2 branches missed.">            if (diffX &gt; 1) {</span>
+<span class="nc" id="L1001">                return true;</span>
+            }
+
+<span class="nc" id="L1004">            float diffY = edge.getY(idx - 1) - edge.getY(idx + 1);</span>
+<span class="nc bnc" id="L1005" title="All 2 branches missed.">            if (diffY &lt; 0) {</span>
+<span class="nc" id="L1006">                diffY *= -1;</span>
+            }
+<span class="nc bnc" id="L1008" title="All 2 branches missed.">            if (diffY &gt; 1) {</span>
+<span class="nc" id="L1009">                return true;</span>
+            }
+
+<span class="nc" id="L1012">            return false;</span>
+        }
+
+<span class="nc" id="L1015">        return false;</span>
+    }
+
+    public double distanceFromPointToALine(float lineX0, float lineY0,
+        float lineX1, float lineY1, float xP, float yP) {
+
+        /*
+        en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+
+        for the edge, we have the 2 points (lineX0, lineY0) and (lineX1, lineY1)
+
+        distance between that edge and a point (xP, yP) is
+
+        defining diffX = lineX1 - lineX0
+                 diffY = lineY1 - lineY0;
+
+        d =
+           ( diffY*xP - diffX*yP - lineX0*lineY1 + lineX1*lineY0 )
+           ( --------------------------------------------------- )
+           (         (diffX*diffX + diffY*diffY)^0.5             )
+        )
+        */
+
+<span class="nc" id="L1038">        float diffX = lineX1 - lineX0;</span>
+<span class="nc" id="L1039">        float diffY = lineY1 - lineY0;</span>
+
+<span class="nc bnc" id="L1041" title="All 2 branches missed.">        if (diffY == 0) {</span>
+            // horizontal line
+<span class="nc" id="L1043">            return Math.abs(yP - lineY0);</span>
+<span class="nc bnc" id="L1044" title="All 2 branches missed.">        } else if (diffX == 0) {</span>
+            // vertical line
+<span class="nc" id="L1046">            return Math.abs(xP - lineX0);</span>
+        }
+
+<span class="nc" id="L1049">        double pt1 = Math.abs(diffY*xP - diffX*yP - lineX0*lineY1 + lineX1*lineY0);</span>
+
+<span class="nc" id="L1051">        double pt2 = Math.sqrt(diffX*diffX + diffY*diffY);</span>
+
+<span class="nc" id="L1053">        double dist = pt1/pt2;</span>
+
+<span class="nc" id="L1055">        return dist;</span>
+    }
+
+    public void sortByX(PairIntArray curve) {
+<span class="nc bnc" id="L1059" title="All 2 branches missed.">        if (curve.getN() &lt; 2) {</span>
+<span class="nc" id="L1060">            return;</span>
+        }
+<span class="nc" id="L1062">        sortByX(curve, 0, curve.getN() - 1);</span>
+<span class="nc" id="L1063">    }</span>
+
+    private void sortByX(PairIntArray curve, int idxLo, int idxHi) {
+<span class="nc bnc" id="L1066" title="All 2 branches missed.">        if (idxLo &lt; idxHi) {</span>
+<span class="nc" id="L1067">            int idxMid = partitionByX(curve, idxLo, idxHi);</span>
+<span class="nc" id="L1068">            sortByX(curve, idxLo, idxMid - 1);</span>
+<span class="nc" id="L1069">            sortByX(curve, idxMid + 1, idxHi);</span>
+        }
+<span class="nc" id="L1071">    }</span>
+
+    private int partitionByX(PairIntArray curve, int idxLo, int idxHi) {
+
+<span class="nc" id="L1075">        int x = curve.getX(idxHi);  //for comparison</span>
+<span class="nc" id="L1076">        int store = idxLo - 1;      //store to swap after pivot</span>
+
+<span class="nc bnc" id="L1078" title="All 2 branches missed.">        for (int i = idxLo; i &lt; idxHi; i++) {</span>
+<span class="nc bnc" id="L1079" title="All 2 branches missed.">            if (curve.getX(i) &lt;= x) {</span>
+<span class="nc" id="L1080">                store++;</span>
+<span class="nc" id="L1081">                int swapX = curve.getX(store);</span>
+<span class="nc" id="L1082">                int swapY = curve.getY(store);</span>
+<span class="nc" id="L1083">                curve.set(store, curve.getX(i), curve.getY(i));</span>
+<span class="nc" id="L1084">                curve.set(i, swapX, swapY);</span>
+            }
+        }
+<span class="nc" id="L1087">        store++;</span>
+
+<span class="nc" id="L1089">        int swapX = curve.getX(store);</span>
+<span class="nc" id="L1090">        int swapY = curve.getY(store);</span>
+<span class="nc" id="L1091">        curve.set(store, curve.getX(idxHi), curve.getY(idxHi));</span>
+<span class="nc" id="L1092">        curve.set(idxHi, swapX, swapY);</span>
+
+<span class="nc" id="L1094">        return store;</span>
+    }
+
+    protected void findNeighbors(int x, int y, Set&lt;PairInt&gt; outputNeighbors,
+        Set&lt;PairInt&gt; points, Set&lt;PairInt&gt; tmpAddedPoints,
+        Set&lt;PairInt&gt; tmpRemovedPoints, int imageWidth, int imageHeight) {
+
+<span class="nc" id="L1101">        outputNeighbors.clear();</span>
+
+<span class="nc bnc" id="L1103" title="All 2 branches missed.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
+
+<span class="nc" id="L1105">            int x2 = x + eightNeighborsX[i];</span>
+<span class="nc" id="L1106">            int y2 = y + eightNeighborsY[i];</span>
+
+<span class="nc bnc" id="L1108" title="All 8 branches missed.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) ||</span>
+                (y2 &gt; (imageHeight - 1))) {
+<span class="nc" id="L1110">                continue;</span>
+            }
+
+<span class="nc" id="L1113">            PairInt p2 = new PairInt(x2, y2);</span>
+
+<span class="nc bnc" id="L1115" title="All 2 branches missed.">            if (tmpRemovedPoints.contains(p2)) {</span>
+<span class="nc" id="L1116">                continue;</span>
+            }
+<span class="nc bnc" id="L1118" title="All 4 branches missed.">            if (tmpAddedPoints.contains(p2) || points.contains(p2)) {</span>
+<span class="nc" id="L1119">                outputNeighbors.add(p2);</span>
+            }
+        }
+<span class="nc" id="L1122">    }</span>
+
+    public Set&lt;PairInt&gt; findNeighbors(int x, int y, Set&lt;PairInt&gt; points) {
+
+<span class="nc" id="L1126">        Set&lt;PairInt&gt; neighbors = new HashSet&lt;PairInt&gt;();</span>
+
+<span class="nc bnc" id="L1128" title="All 2 branches missed.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
+
+<span class="nc" id="L1130">            int x2 = x + eightNeighborsX[i];</span>
+<span class="nc" id="L1131">            int y2 = y + eightNeighborsY[i];</span>
+
+<span class="nc" id="L1133">            PairInt p2 = new PairInt(x2, y2);</span>
+
+<span class="nc bnc" id="L1135" title="All 2 branches missed.">            if (points.contains(p2)) {</span>
+<span class="nc" id="L1136">                neighbors.add(p2);</span>
+            }
+        }
+
+<span class="nc" id="L1140">        return neighbors;</span>
+    }
+        
+    public void findNeighbors(int x, int y, Set&lt;PairInt&gt; points, 
+        Set&lt;PairInt&gt; excludePoints, int[] dxs, int[] dys, 
+        Set&lt;PairInt&gt; outputNeighbors) {
+        
+<span class="nc" id="L1147">        outputNeighbors.clear();</span>
+        
+<span class="nc bnc" id="L1149" title="All 2 branches missed.">        for (int i = 0; i &lt; dxs.length; i++) {</span>
+            
+<span class="nc" id="L1151">            int x2 = x + dxs[i];</span>
+<span class="nc" id="L1152">            int y2 = y + dys[i];</span>
+            
+<span class="nc" id="L1154">            PairInt p2 = new PairInt(x2, y2);</span>
+            
+<span class="nc bnc" id="L1156" title="All 2 branches missed.">            if (excludePoints.contains(p2)) {</span>
+<span class="nc" id="L1157">                continue;</span>
+            }
+<span class="nc bnc" id="L1159" title="All 2 branches missed.">            if (points.contains(p2)) {</span>
+<span class="nc" id="L1160">                outputNeighbors.add(p2);</span>
+            }
+        }
+<span class="nc" id="L1163">    }</span>
+
+    public void findNeighbors(int x, int y, Set&lt;PairInt&gt; outputNeighbors,
+        Set&lt;PairInt&gt; points, Set&lt;PairInt&gt; excludePoints, int imageWidth, int imageHeight) {
+
+<span class="nc" id="L1168">        outputNeighbors.clear();</span>
+
+<span class="nc bnc" id="L1170" title="All 2 branches missed.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
+
+<span class="nc" id="L1172">            int x2 = x + eightNeighborsX[i];</span>
+<span class="nc" id="L1173">            int y2 = y + eightNeighborsY[i];</span>
+
+<span class="nc bnc" id="L1175" title="All 8 branches missed.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) ||</span>
+                (y2 &gt; (imageHeight - 1))) {
+<span class="nc" id="L1177">                continue;</span>
+            }
+
+<span class="nc" id="L1180">            PairInt p2 = new PairInt(x2, y2);</span>
+
+<span class="nc bnc" id="L1182" title="All 2 branches missed.">            if (excludePoints.contains(p2)) {</span>
+<span class="nc" id="L1183">                continue;</span>
+            }
+<span class="nc bnc" id="L1185" title="All 2 branches missed.">            if (points.contains(p2)) {</span>
+<span class="nc" id="L1186">                outputNeighbors.add(p2);</span>
+            }
+        }
+<span class="nc" id="L1189">    }</span>
+
+    /**
+     * iterate through points, counting the number of pixels on the image
+     * boundaries, and return true if the number reaches numberOfPixels.
+     * @param numberOfPixels the number of pixels for which to return true
+     * if they are on the image boundaries.
+     * @param points
+     * @param imageWidth
+     * @param imageHeight
+     * @return
+     */
+    public boolean hasNumberOfPixelsOnImageBoundaries(int numberOfPixels,
+        Set&lt;PairInt&gt; points, int imageWidth, int imageHeight) {
+
+<span class="nc" id="L1204">        int n = 0;</span>
+
+<span class="nc bnc" id="L1206" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+
+<span class="nc" id="L1208">            int x = p.getX();</span>
+<span class="nc" id="L1209">            int y = p.getY();</span>
+
+<span class="nc bnc" id="L1211" title="All 8 branches missed.">            if ((x == 0) || (y == 0) || (x == (imageWidth - 1)) ||</span>
+                (y == (imageHeight - 1))) {
+
+<span class="nc" id="L1214">                n++;</span>
+
+<span class="nc bnc" id="L1216" title="All 2 branches missed.">                if (n == numberOfPixels) {</span>
+<span class="nc" id="L1217">                    return true;</span>
+                }
+            }
+<span class="nc" id="L1220">        }</span>
+
+<span class="nc bnc" id="L1222" title="All 2 branches missed.">        return (n &gt;= numberOfPixels);</span>
+    }
+
+    public int countNeighbors(int x, int y, Set&lt;PairInt&gt; points, int imageWidth,
+        int imageHeight) {
+
+<span class="nc" id="L1228">        int nn = 0;</span>
+
+<span class="nc bnc" id="L1230" title="All 2 branches missed.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
+
+<span class="nc" id="L1232">            int x2 = x + eightNeighborsX[i];</span>
+<span class="nc" id="L1233">            int y2 = y + eightNeighborsY[i];</span>
+
+<span class="nc bnc" id="L1235" title="All 8 branches missed.">            if ((x2 &lt; 0) || (x2 &gt; (imageWidth - 1)) || (y2 &lt; 0) ||</span>
+                (y2 &gt; (imageHeight - 1))) {
+<span class="nc" id="L1237">                continue;</span>
+            }
+
+<span class="nc" id="L1240">            PairInt p2 = new PairInt(x2, y2);</span>
+
+<span class="nc bnc" id="L1242" title="All 2 branches missed.">            if (points.contains(p2)) {</span>
+<span class="nc" id="L1243">                nn++;</span>
+            }
+        }
+
+<span class="nc" id="L1247">        return nn;</span>
+    }
+    
+    public int countNeighbors(int x, int y, Set&lt;PairInt&gt; points) {
+
+<span class="nc" id="L1252">        int nn = 0;</span>
+
+<span class="nc bnc" id="L1254" title="All 2 branches missed.">        for (int i = 0; i &lt; eightNeighborsX.length; i++) {</span>
+
+<span class="nc" id="L1256">            int x2 = x + eightNeighborsX[i];</span>
+<span class="nc" id="L1257">            int y2 = y + eightNeighborsY[i];</span>
+
+<span class="nc" id="L1259">            PairInt p2 = new PairInt(x2, y2);</span>
+
+<span class="nc bnc" id="L1261" title="All 2 branches missed.">            if (points.contains(p2)) {</span>
+<span class="nc" id="L1262">                nn++;</span>
+            }
+        }
+
+<span class="nc" id="L1266">        return nn;</span>
+    }
+
+    public boolean isAdjacent(PairIntArray edge, int idx1, int idx2) {
+        
+<span class="nc bnc" id="L1271" title="All 2 branches missed.">        if (idx2 &lt; 0) {</span>
+<span class="nc" id="L1272">            return false;</span>
+        }
+
+<span class="nc" id="L1275">        int x1 = edge.getX(idx1);</span>
+<span class="nc" id="L1276">        int y1 = edge.getY(idx1);</span>
+
+<span class="nc" id="L1278">        int x2 = edge.getX(idx2);</span>
+<span class="nc" id="L1279">        int y2 = edge.getY(idx2);</span>
+
+<span class="nc" id="L1281">        int diffX = Math.abs(x1 - x2);</span>
+<span class="nc" id="L1282">        int diffY = Math.abs(y1 - y2);</span>
+
+<span class="nc bnc" id="L1284" title="All 4 branches missed.">        if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
+<span class="nc" id="L1285">            return true;</span>
+        }
+
+<span class="nc" id="L1288">        return false;</span>
+    }
+    
+    public boolean isAdjacent(PairIntArray edge, int idx, int x, int y) {
+        
+<span class="nc bnc" id="L1293" title="All 4 branches missed.">        if (idx &lt; 0 || idx &gt; (edge.getN() - 1)) {</span>
+<span class="nc" id="L1294">            return false;</span>
+        }
+
+<span class="nc" id="L1297">        int x1 = edge.getX(idx);</span>
+<span class="nc" id="L1298">        int y1 = edge.getY(idx);</span>
+
+<span class="nc" id="L1300">        int diffX = Math.abs(x1 - x);</span>
+<span class="nc" id="L1301">        int diffY = Math.abs(y1 - y);</span>
+
+<span class="nc bnc" id="L1303" title="All 4 branches missed.">        if ((diffX &lt; 2) &amp;&amp; (diffY &lt; 2)) {</span>
+<span class="nc" id="L1304">            return true;</span>
+        }
+
+<span class="nc" id="L1307">        return false;</span>
+    }
+    
+    public boolean isAdjacent(PairIntArray edge, int idx1, int idx2,
+        float spacingBetweenPoints) {
+
+<span class="nc" id="L1313">        int x1 = edge.getX(idx1);</span>
+<span class="nc" id="L1314">        int y1 = edge.getY(idx1);</span>
+
+<span class="nc" id="L1316">        int x2 = edge.getX(idx2);</span>
+<span class="nc" id="L1317">        int y2 = edge.getY(idx2);</span>
+
+<span class="nc" id="L1319">        int diffX = Math.abs(x1 - x2);</span>
+<span class="nc" id="L1320">        int diffY = Math.abs(y1 - y2);</span>
+        
+<span class="nc" id="L1322">        float dist = (float)Math.sqrt(diffX*diffX + diffY*diffY);</span>
+
+<span class="nc bnc" id="L1324" title="All 2 branches missed.">        if (dist &lt;= spacingBetweenPoints) {</span>
+<span class="nc" id="L1325">            return true;</span>
+        }
+
+<span class="nc" id="L1328">        return false;</span>
+    }
+
+    /**
+     * given 3 counter-clockwise ordered points on a curve, calculate the angle 
+     * along the curve at the middle point, its direction is from p0 to p1.
+     * &lt;pre&gt;
+     * For example:
+     * 
+     * 135 degrees
+     *       .---
+     *       | .
+     *           p2   
+     *             p1
+     *                p0
+     * &lt;/pre&gt;
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @return
+     */
+    public double calculateAngleAtMidpoint(int x1, int y1, 
+        int x2, int y2, int x3, int y3) {
+
+        /*
+        given the points (x1, y1) (x2, y2) and (x3, y3), 
+        calculates the angle at the midpoint (x2, y2) for the path along
+        the points.
+        */
+        
+<span class="nc" id="L1361">        double theta1 = AngleUtil.polarAngleCCW(x2 - x1, y2 - y1);</span>
+        
+<span class="nc" id="L1363">        double theta2 = AngleUtil.polarAngleCCW(x3 - x2, y3 - y2);</span>
+        
+<span class="nc" id="L1365">        double theta = AngleUtil.getAngleAverageInRadians(theta1, theta2);</span>
+                
+<span class="nc" id="L1367">        return theta;</span>
+    }
+    
+    /**
+     * given 3 counter-clockwise ordered points on a curve, calculate the angle 
+     * tangent to the curve at the middle point - its direction follows
+     * the right hand rule.
+     * &lt;pre&gt;
+     * For example:
+     *                  45 degrees
+     *               __
+     *               . |
+     *       p2    .
+     *          p1
+     *             p0
+     * &lt;/pre&gt;
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @param x3
+     * @param y3
+     * @return
+     */
+    public double calculateAngleTangentToMidpoint(int x1, int y1, 
+        int x2, int y2, int x3, int y3) {
+
+<span class="nc" id="L1394">        double theta = calculateAngleAtMidpoint(x1, y1, x2, y2, x3, y3);</span>
+               
+<span class="nc" id="L1396">        double thetaMinus90 = theta - Math.PI/2.;</span>
+<span class="nc bnc" id="L1397" title="All 2 branches missed.">        if (thetaMinus90 &lt; 0) {</span>
+<span class="nc" id="L1398">            thetaMinus90 += (2.*Math.PI);</span>
+        }
+        
+<span class="nc" id="L1401">        return thetaMinus90;</span>
+    }
+
+    /**
+     * given theta and the point (xp, yp), determine which direction and hence
+     * polar angle (clockwise) is perpendicular away from the centroid.
+     * The reference point (xm, ym) is the point from which theta was also
+     * calculated, which is probably the point for kMaxIdx.  The points are also
+     * checked to make sure they aren't in the points set.
+     *
+     * @param theta
+     * @param xp
+     * @param yp
+     * @param xm
+     * @param ym
+     * @param centroidXY
+     * @param points
+     * @return
+     */
+    public double calculatePerpendicularAngleAwayFromCentroid(
+        double theta, int xp, int yp, int xm, int ym, double[] centroidXY,
+        Set&lt;PairInt&gt; points) {
+
+        /*
+        rotate the point (xm, ym) around (xp, yp) 90 degrees and -90 degrees.
+        The rotated point which is furthest from the centroid is the
+        direction of the vector pointing away from the centroid.
+        */
+
+        /*
+        math.cos(math.pi/2) = 0
+        math.sin(math.pi/2) = 1
+        math.sin(-math.pi/2) = -1
+
+        double xr = centroidX + ((y - centroidY) * sine(angle)));
+        double yr = centroidY + ((-(x - centroidX) * sine(angle)))
+        */
+
+<span class="nc" id="L1439">        int xmRot90 = xp + (ym - yp);</span>
+<span class="nc" id="L1440">        int ymRot90 = yp + (-(xm - xp));</span>
+
+<span class="nc" id="L1442">        int xmRotNegative90 = xp  - (ym - yp);</span>
+<span class="nc" id="L1443">        int ymRotNegative90 = yp + (xm - xp);</span>
+
+<span class="nc" id="L1445">        boolean rot90IsInPoints = points.contains(</span>
+<span class="nc" id="L1446">            new PairInt(Math.round(xmRot90), Math.round(ymRot90)));</span>
+
+<span class="nc" id="L1448">        boolean rotNegative90IsInPoints = points.contains(</span>
+<span class="nc" id="L1449">            new PairInt(Math.round(xmRotNegative90),</span>
+<span class="nc" id="L1450">            Math.round(ymRotNegative90)));</span>
+
+<span class="nc" id="L1452">        double distSqRot90 = (xmRot90 - centroidXY[0]) * (xmRot90 - centroidXY[0])</span>
+            + (ymRot90 - centroidXY[1]) * (ymRot90 - centroidXY[1]);
+
+<span class="nc" id="L1455">        double distSqRotNegative90 =</span>
+            (xmRotNegative90 - centroidXY[0]) * (xmRotNegative90 - centroidXY[0])
+            + (ymRotNegative90 - centroidXY[1]) * (ymRotNegative90 - centroidXY[1]);
+
+<span class="nc" id="L1459">        double perp = theta;</span>
+
+<span class="nc bnc" id="L1461" title="All 2 branches missed.">        if (distSqRot90 &gt; distSqRotNegative90) {</span>
+<span class="nc" id="L1462">            perp += Math.PI/2.;</span>
+<span class="nc bnc" id="L1463" title="All 2 branches missed.">        } else if (distSqRot90 &gt; distSqRotNegative90) {</span>
+<span class="nc bnc" id="L1464" title="All 4 branches missed.">            if (rot90IsInPoints &amp;&amp; !rotNegative90IsInPoints) {</span>
+<span class="nc" id="L1465">                perp -= Math.PI/2.;</span>
+<span class="nc bnc" id="L1466" title="All 4 branches missed.">            } else if (!rot90IsInPoints &amp;&amp; rotNegative90IsInPoints) {</span>
+<span class="nc" id="L1467">                perp += Math.PI/2.;</span>
+            } else {
+<span class="nc" id="L1469">                throw new IllegalStateException(&quot;Error in algorithm:&quot; +</span>
+                &quot; consider changing the test 90 and -90 points so that&quot; +
+                &quot; one will always be in points set.&quot;);
+            }
+        } else {
+<span class="nc" id="L1474">            perp -= Math.PI/2.;</span>
+        }
+
+<span class="nc bnc" id="L1477" title="All 2 branches missed.">        if (perp &gt;= 2*Math.PI) {</span>
+<span class="nc" id="L1478">            perp = perp - 2*Math.PI;</span>
+<span class="nc bnc" id="L1479" title="All 2 branches missed.">        } else if (perp &lt; 0) {</span>
+<span class="nc" id="L1480">            perp += 2*Math.PI;</span>
+        }
+
+<span class="nc" id="L1483">        return perp;</span>
+    }
+
+    public double calculateArea(PairIntArray closedCurve) {
+        
+<span class="nc" id="L1488">        int n = closedCurve.getN();</span>
+        
+<span class="nc" id="L1490">        double sum = 0;</span>
+        
+<span class="nc bnc" id="L1492" title="All 2 branches missed.">        for (int i = 0; i &lt; (n - 1); ++i) {</span>
+            
+<span class="nc" id="L1494">            double t = 0.5 * (closedCurve.getY(i + 1) + closedCurve.getY(i)) *</span>
+<span class="nc" id="L1495">                (closedCurve.getX(i + 1) - closedCurve.getX(i));</span>
+            
+<span class="nc" id="L1497">            sum += t;</span>
+        }
+        
+<span class="nc" id="L1500">        sum += ((closedCurve.getY(0) + closedCurve.getY(n - 1)) *</span>
+<span class="nc" id="L1501">                (closedCurve.getX(0) - closedCurve.getX(n -1)));</span>
+        
+<span class="nc" id="L1503">        return sum;</span>
+    }
+
+    public PairIntArray scaleDown(PairIntArray a, float scale) {
+        
+<span class="fc" id="L1508">        double[] cenXY = calculateXYCentroids(a);</span>
+     
+<span class="fc" id="L1510">        TransformationParameters params = new TransformationParameters();</span>
+<span class="fc" id="L1511">        params.setOriginX((float)cenXY[0]);</span>
+<span class="fc" id="L1512">        params.setOriginX((float)cenXY[1]);</span>
+<span class="fc" id="L1513">        params.setScale(scale);</span>
+        
+<span class="fc" id="L1515">        Transformer transformer = new Transformer();</span>
+<span class="fc" id="L1516">        PairIntArray b = transformer.applyTransformation(params, a);</span>
+    
+        // when shrinking, there may be overlapping points
+<span class="fc" id="L1519">        Set&lt;PairInt&gt; added = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L1520" title="All 2 branches covered.">        for (int i = (b.getN() - 1); i &gt; -1; --i) {</span>
+<span class="fc" id="L1521">            PairInt p = new PairInt(b.getX(i), b.getY(i));</span>
+<span class="pc bpc" id="L1522" title="1 of 2 branches missed.">            if (added.contains(p)) {</span>
+<span class="nc" id="L1523">                b.removeRange(i, i);</span>
+            } else {
+<span class="fc" id="L1525">                added.add(p);</span>
+            }
+        }
+        
+<span class="fc" id="L1529">        return b;</span>
+    }
+
+    public PairIntArray createContiguousCircle(float radius) {
+
+<span class="nc" id="L1534">        int shift = (int)Math.ceil(radius);</span>
+    
+<span class="nc" id="L1536">        return createContiguousCircle(radius, shift, shift);</span>
+    }
+    
+    public PairIntArray createContiguousCircle(float radius, int xShift, 
+        int yShift) {
+        
+        // for a change in y to be at least 1 pixel, theta would be:
+        //   theta = asin(1/r)
+<span class="nc" id="L1544">        double theta = Math.asin(1./radius);</span>
+        
+<span class="nc" id="L1546">        Set&lt;PairInt&gt; added = new HashSet&lt;PairInt&gt;();</span>
+        
+<span class="nc" id="L1548">        PairIntArray circle = new PairIntArray();</span>
+<span class="nc" id="L1549">        double t = 0;</span>
+        int x, y;
+<span class="nc bnc" id="L1551" title="All 2 branches missed.">        while (t &lt;= Math.PI/2.) {</span>
+<span class="nc" id="L1552">            x = xShift + (int)Math.round(radius * Math.cos(t));</span>
+<span class="nc" id="L1553">            y = yShift + (int)Math.round(radius * Math.sin(t));</span>
+<span class="nc" id="L1554">            PairInt p = new PairInt(x, y);</span>
+<span class="nc" id="L1555">            t += theta;</span>
+<span class="nc bnc" id="L1556" title="All 2 branches missed.">            if (added.contains(p)) {</span>
+<span class="nc" id="L1557">                continue;</span>
+            }
+<span class="nc" id="L1559">            circle.add(x, y);</span>
+<span class="nc" id="L1560">            added.add(p);</span>
+<span class="nc" id="L1561">        }</span>
+<span class="nc" id="L1562">        int n90 = circle.getN();</span>
+<span class="nc bnc" id="L1563" title="All 2 branches missed.">        for (int i = (n90 - 1); i &gt; -1; --i) {</span>
+<span class="nc" id="L1564">            x = xShift -1 * (circle.getX(i) - xShift);</span>
+<span class="nc" id="L1565">            y = circle.getY(i);</span>
+<span class="nc" id="L1566">            PairInt p = new PairInt(x, y);</span>
+<span class="nc bnc" id="L1567" title="All 2 branches missed.">            if (added.contains(p)) {</span>
+<span class="nc" id="L1568">                continue;</span>
+            }
+<span class="nc" id="L1570">            circle.add(x, y);</span>
+<span class="nc" id="L1571">            added.add(p);</span>
+        }
+<span class="nc" id="L1573">        int n180 = circle.getN();</span>
+<span class="nc bnc" id="L1574" title="All 2 branches missed.">        for (int i = (n180 - 1); i &gt; -1; --i) {</span>
+<span class="nc" id="L1575">            x = circle.getX(i);</span>
+<span class="nc" id="L1576">            y = yShift -1 * (circle.getY(i) - yShift);</span>
+<span class="nc" id="L1577">            PairInt p = new PairInt(x, y);</span>
+<span class="nc bnc" id="L1578" title="All 2 branches missed.">            if (added.contains(p)) {</span>
+<span class="nc" id="L1579">                continue;</span>
+            }
+<span class="nc" id="L1581">            circle.add(x, y);</span>
+<span class="nc" id="L1582">            added.add(p);</span>
+        }
+        
+<span class="nc" id="L1585">        return circle;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
