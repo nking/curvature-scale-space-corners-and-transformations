@@ -26,7 +26,7 @@ public class CameraPoseTest extends TestCase {
     }
     
     public void estNCBook() throws IOException {
-        NeurochemistryBookData2.runCorresMaker();
+        //NeurochemistryBookData2.runCorresMaker();
     }
 
     /**
