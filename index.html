@@ -26,19 +26,45 @@
   <body>
     <section class="page-header">
       <h1 class="project-name">Curvature-scale-space-corners-and-transformations</h1>
-      <h2 class="project-tagline">Curvature Scale Space contour matcher and  corner detector and other computer vision programs</h2>
+      <h2 class="project-tagline">Machine Learning and Computer Vision Programs</h2>
       <a href="https://github.com/nking/curvature-scale-space-corners-and-transformations" class="btn">View on GitHub</a>
       <a href="https://github.com/nking/curvature-scale-space-corners-and-transformations/zipball/master" class="btn">Download .zip</a>
       <a href="https://github.com/nking/curvature-scale-space-corners-and-transformations/tarball/master" class="btn">Download .tar.gz</a>
     </section>
 
     <section class="main-content">
-      <p>A few keypoint detectors, feature matchers, and transformation solvers
-      are present with other computer vision methods.</p>
+      <p>This holds a few summary notes and snapshots.</p>
 
-<p>The project is still in progress, and what is here has been mildly tested.</p>
+<p>Machine Learning:</p>
+        <ul>
+            <li> Object detection with the
+                <a href="https://paperswithcode.com/method/ssd">(SSD)</a>
+                single-stage object detection algorithm.
+                Using transfer-learning from a pre-trained SSD model and re-fitting the
+                classifier using android lawn statue images
+                while retaining (not re-training) the detection head weights
+                learned from the COCO dataset, the android statues are identified in
+                video frames from a YouTube video.
+                <table>
+                    <tr>
+                        <td>
+                            <!--
+                            <a href="images/....png">
+                                <img alt="snapshots of object detection with android lawn statues"
+                                     src="images/....png"
+                                     width="30" height="30"/>
+                            </a>
+                            -->
+                        </td>
+                        <td>
+                            <a href="https://raw.githubusercontent.com/nking/curvature-scale-space-corners-and-transformations/master/src/duckies_and_statues,_interactive_eager_few_shot_obj_det_training_colab.ipynb">The colab notebook.</a>
+                        </td>
+                    </tr>
+                </table>
+            </li>
+        </ul>
 
-<p>Highlights of results so far are:</p>
+<p>Highlights of computer vision algorithms:</p>
     <ul>
         <li> Finding an object in a segmented image by shape alone (ShapeFinder2.java)
              has the true solution in the top matches, but not necessarily the top match,
