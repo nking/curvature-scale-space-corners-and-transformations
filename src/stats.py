@@ -19,26 +19,19 @@ def calc_prec_recall(gt_labels, pred_labels, class_labels):
     stats["prec"] = p
     stats["rec"] = r
     stats["f1"] = fs
+
+    # could just use sklearn.metrics.classification_report for these:
     # these are all same for multiclass classification
     stats["micro_prec"] = sklearn.metrics.precision_score(gt_labels, pred_labels, labels=class_labels, average='micro', zero_division=0.)
     stats["micro_rec"] = sklearn.metrics.recall_score(gt_labels, pred_labels, labels=class_labels, average='micro', zero_division=0.)
     stats["micro_f1"] = sklearn.metrics.f1_score(gt_labels, pred_labels, labels=class_labels, average='micro', zero_division=0.)
     stats["acc"] = sklearn.metrics.accuracy_score(gt_labels, pred_labels, normalize=True)
 
+    # if had pred_labels for top k predictions (by not using max on the detector's 
+    # sigmoid scores), one could here, use top_k_accuracy_score
+
     return stats
 
-# i is class id:
-# tp[i] = conf_matrix[i][i]
-# tn[i] = conf_matrix_sum - rowsums[i] - colsums[i]
-# fp[i] = colsums[i] - conf_matrix[i][i]
-# fn[i] = rowsums[i] - conf_matrix[i][i]
-# accuracy = diagsum / conf_matrix_sum
-# precision[i] = tp[i]/(tp[i] + fp[i]) = np.trace(conf_matrix) / colsums
-# recall[i] = tp[i]/(tp[i] + fn[i])    = np.trace(conf_matrix) / rowsums
-# f1[i] = 2./( (1./precision[i]) + (1./recall[i])) = ...
-# macro_precision = sum(precision) / (len(precision))
-# macro_recall = sum(recall) / (len(recall))
-#
 # also, from https://www.evidentlyai.com/ml-in-production/data-drift:
 # Data drift: is a change in the input data seen as a change in the data distribution
 #    (presumably, the "bias" change as change in distribution location parameter, or "variance" change
@@ -74,6 +67,8 @@ gt_labels_0.extend([3, 0, 3, 7])
 gt_labels_0.extend([1, 6])
 gt_labels_0.extend([9, 1])
 gt_labels_0.extend([9, 6])
+
+print(f'ground_truth_labels_all={gt_labels_0}')
 
 num_classes = 9 #ignoring dummy class id 9
 
