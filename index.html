@@ -61,7 +61,16 @@
                             <a href="https://github.com/nking/curvature-scale-space-corners-and-transformations/raw/master/doc/statues_transfer_learning_object_detection.pdf">Summary snapshots and statistics.</a>
                         </td>
                     </tr>
-                </table>
+                 </table>
+                            <button onclick="x=document.getElementById('concl'); if (window.getComputedStyle(x).display === 'none') {x.style.display='block';} else {x.style.display='none'}">Conclusion</button>
+                            <div id="concl" style="display:none">
+                            <ul>
+                            <li>add more training data
+                            <li>try other pre-trained models
+                            <li>try other variants of transfer-learning with object detection models.
+                            <li>for the test frames from the video, could consider applying HMM inference to the best scoring identifications for “smoothing” inference where missing data. can use “filtering” queries for the next observations… can use particle filtering for similar reasons.  can build a better training set by adding the inferred missing identifications (bounding boxes and new ground truth labels) to the existing training dataset and then get a new test dataset.
+                            </ul>
+                            </div>
             </li>
             <!-- add the multiclass classification notes
             <li>
