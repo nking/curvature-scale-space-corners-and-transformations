@@ -12,12 +12,9 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
- given a set of features in image coordinates and world coordinate space with
-  known camera intrinsic parameters, estimate the camera pose, that is
-  extract the camera extrinsic parameters.
- <em>See also PNP.java when it's ready for use.</em>
-
- Recommended method to use: calculatePoseUsingBouguet(...)
+ given a set of features in 1 image in image coordinates and world coordinate space,
+ estimate the intrinsic and extrinsic camera parameters.
+ This is also called "geometric camera calibration".
 
  TODO: write overloaded methods to use quaternion rotation.
  see
@@ -34,8 +31,6 @@ import java.util.Arrays;
  * We show that homography-based approaches are more accurate than essential-matrix 
  * or relative orientation–based approaches under noisy conditions.
  *
- * TODO: improve use of memory by reusing array references, use System.arrayCopy, etc.
- *
  * @author nichole
  */
 public class CameraPose {
@@ -43,12 +38,9 @@ public class CameraPose {
     public static double eps = 1e-7;
     
     /**
-     * NOT READY FOR USE.
-     * TODO: correct this for normalizations.
-     * given a set of features in image space and world coordinate space,
-     * estimate the camera pose, that is
-     * extract the camera extrinsic parameters of rotation and translation and also the camera
-     * intrinsic parameters.
+     * given an image and matched image features coordinates with real world coordinates, estimate the
+     * camera matrix intrinsic and extrinsic parameters using a pin-hole camera model.
+     *
      * This is also known as estimating the Motion.
      * This method uses DLT and should be followed by non-linear optimization
      * to improve the parameter estimates.
@@ -62,8 +54,6 @@ public class CameraPose {
        Kitani lecture notes http://www.cs.cmu.edu/~16385/s17/Slides/11.3_Pose_Estimation.pdf
      </pre>
      <pre>
-     While reading this, keep in mind that this method needs x in image reference frame (units os pixels).
-     The case of camera coordinates is explained also, butshould be applied to calculatePoseUsingDLT().
 
      Regarding translation, p3 is included in the results.  p3 is the last column in the projection
      matrix calculated internally.  (2) and (4) outlined below are what you should consider using
@@ -99,75 +89,68 @@ public class CameraPose {
      * NOTE x and X should both be distortion-free or both should be distorted.
      * @return 
      */
-    public static CameraPoseParameters calculatePoseAndKUsingDLT(double[][] x, double[][] X)
+    public static CameraPoseParameters calculatePoseFromXXW(double[][] x, double[][] X)
         throws NotConvergedException {
-                
+
+        // from x = P * X:
         double[][] p = calculatePFromXXW(x, X);
 
-        /*
-        Szeliski Sect 6.2.1
-        Since K is by convention upper-triangular 
-        (see the discussion in Section 2.1.5), both K and R can be obtained 
-        from the front 3 ⇥ 3 sub-matrix of P using RQ factorization 
-        (Golub and Van Loan 1996)
-        */
+        // P = K * [ R | t ]
+        // let M = K*R
 
-        // [3X3]
+        //(1)
+        RQ rqDecomp = RQ.factorize(new DenseMatrix(MatrixUtil.copySubMatrix(p, 0,2,0,2)));
+        double[][] kEst = MatrixUtil.convertToRowMajor(rqDecomp.getR());
+        double[][] rEst = MatrixUtil.convertToRowMajor(rqDecomp.getQ());
+
+        // because the intrinsic camera matrix K has a positive diagonal, we can rewrite K*R as:
+        //  (K * D) * (D^-1 * R)
+        // to enforce the positive diagonal:
+        double[] d = new double[3];
+        for (int i = 0; i < 3; ++i) {
+            d[i] = (kEst[i][i] > 0) ? 1 : -1;
+        }
+        kEst = MatrixUtil.multiplyByDiagonal(kEst, d);
+        rEst = MatrixUtil.multiplyDiagonalByMatrix(d, rEst);
+        MatrixUtil.multiply(kEst, 1./kEst[2][2]);
+
         double[][] M = MatrixUtil.copySubMatrix(p, 0, 2, 0, 2);
-        double[][] invM = MatrixUtil.pseudoinverseFullColumnRank(M);
+
+        //(2) estimate the camera position C
+        // use assumption P*C=0 to solve for the null space of P, but we lose scale
+        MatrixUtil.SVDProducts svdP = MatrixUtil.performSVD(p);
+        double[] C = Arrays.copyOf(svdP.vT[svdP.vT.length - 1], 3);
+        MatrixUtil.multiply(C, 1./C[2]);
+        double[] t = MatrixUtil.multiplyMatrixByColumnVector(rEst, C);
+        MatrixUtil.multiply(t, -1);
+
+        // instead, could use:  last column of P = M*C => C = pseudoinv(M) * P
+        // [3X3]
+        double[][] invM;
+        int rank = MatrixUtil.rank(M, 1E-5);
+        if (rank == 3) {
+            invM = MatrixUtil.pseudoinverseFullColumnRank(M);
+        } else {
+            invM = MatrixUtil.pseudoinverseRankDeficient(M);
+        }
 
         // this assumes xc=R*(xw-t) instead of xc=R*xw + t
         // calculates: last column of P = P[*][3] = -K*R*X_0 where X_0 is projection center of camera.
         // X_0 = -1 * R^-1 * K^-1 * P[*][3]
         double[] p3 = MatrixUtil.extractColumn(p, 3);
-        double[] projectionCenter = MatrixUtil.multiplyMatrixByColumnVector(invM, p3);
-        MatrixUtil.multiply(projectionCenter, -1);
-
-        /* this block is
-        from calc_KRZ_from_P.m
-        https://www.ipb.uni-bonn.de/book-pcv/#cod
-        The code offered on the author's book site, and a subdirectory has a readme.txt file
-        which states that the code can be used for non-commercial purposes unless permission is obtained.
-        Photogrammetric Computer Vision
-        Statistics, Geometry, and Reconstruction
-        Wolfgang Förstner, Bernhard P. Wrobel
-         */
-        // normalize M
-        double detM = MatrixUtil.determinant(M);
-        // assuming detM != 0.
-        double sign = (detM < 0) ? -1 : 1.;
-        MatrixUtil.multiply(M, sign);
-
-        invM = MatrixUtil.pseudoinverseFullColumnRank(M);
-
-        QR qr = QR.factorize(new DenseMatrix(invM)); // Q=rot^T, R=K^-1
-        double[][] rot = MatrixUtil.transpose(MatrixUtil.convertToRowMajor(qr.getQ()));
-        double[][] k = MatrixUtil.pseudoinverseFullColumnRank(MatrixUtil.convertToRowMajor(qr.getR()));
-
-        int i;
-
-        //from calc_KRZ_from_P.m
-        //% change chirality abd signs in K if necessary
-        double[] diagK = new double[]{1, 1, 1};
-        double[] diagSc = new double[]{-1, -1, 1};
-        double[][] di = MatrixUtil.zeros(3, 3);
-        for (i = 0; i < 3; ++i) {
-            if (k[i][i] < 0) {
-                diagK[i] = -1;
-            }
-            di[i][i] = diagK[i]*diagSc[i];
-        }
-        rot = MatrixUtil.multiply(di, rot);
-        k = MatrixUtil.multiply(k, di);
-
-        MatrixUtil.multiply(k, 1./k[2][2]);
+        double[] C2 = MatrixUtil.multiplyMatrixByColumnVector(invM, p3);
+        //double[] C3 = Arrays.copyOf(C2, C2.length);
+        //MatrixUtil.multiply(C3, 1./C3[2]);
+        MatrixUtil.multiply(C2, -1);
+        double[] t2 = MatrixUtil.multiplyMatrixByColumnVector(rEst, C2);
+        MatrixUtil.multiply(t2, -1);
 
         CameraExtrinsicParameters extrinsics = new CameraExtrinsicParameters();
-        extrinsics.setRotation(rot);
-        extrinsics.setTranslation(projectionCenter);
+        extrinsics.setRotation(rEst);
+        extrinsics.setTranslation(t2);
 
         CameraIntrinsicParameters intrinsics = new CameraIntrinsicParameters();
-        intrinsics.setIntrinsic(k);
+        intrinsics.setIntrinsic(kEst);
 
         CameraPoseParameters camera = new CameraPoseParameters(intrinsics, extrinsics, p3);
         
@@ -175,31 +158,13 @@ public class CameraPose {
     }
 
     /**
-     * calculate projection matrix P from x = P * X.
-     <pre>
-     x = P * X where x and X are homogeneous coordinates (normalized so that last item = 1).
-             p11*X[0] + p12*X[1] + p13*X[2] + p14
-     x[0] = -------------------------------------
-             p31*X[0] + p32*X[1] + p32*X[2] + p34
-
-             p21*X[0] + p22*X[1] + p23*X[2] + p24
-     x[1] = -------------------------------------
-             p31*X[0] + p32*X[1] + p32*X[2] + p34
-
-     rewrite in terms of factoring p members for DLT:
-     -p11*X[0] - p12*X[1] - p13*X[2] - p14                                       + x[0]*(p31*X[0] + p32*X[1] + p32*X[2] + p34) = 0
-                                           -p21*X[0] - p22*X[1] - p23*X[2] - p24 + x[1]*(p31*X[0] + p32*X[1] + p32*X[2] + p34) = 0
-
-    A =  [ -X[0], -X[1], -X[2], -1,   0,        0,    0,   0,  x[0]*X[0], x[0]*X[1], x[0]*X[2], x[0] ]   *  [p11, p12, p13, p14, p21, p22, ...]^T
-         [ 0,      0,     0,  0,  -X[0], -X[1], -X[2], -1,  x[1]*X[0], x[1]*X[1], x[1]*X[2], x[1]    ]
-
-      A * p = 0
-
-     and svd for least squares fit.
-     </pre>
-     * @param x coordinates in camera or image reference frame of the objects in X.  need at least 6 points
-     * @param X coordinates of objects in world reference frame.
+     * given a single image which has matched image positions x with real world positions X,
+     * estimate the camera matrix P using a camera model x = P * X and DLT.
+     * This method enforces det(R)>0.
+     * @param x
+     * @param X
      * @return
+     * @throws NotConvergedException
      */
     public static double[][] calculatePFromXXW(double[][] x, double[][] X) throws NotConvergedException {
         if (x.length != 3) {
@@ -221,13 +186,6 @@ public class CameraPose {
 
         int i, j;
 
-        // normalize by last coordinate just in case nor performed already:
-        for (i = 0; i < x[0].length; ++i) {
-            for (j = 0; j < x.length; ++j) {
-                x[j][i] /= x[x.length - 1][i];
-            }
-        }
-
         // 2*n X 12
         double xi, yi, Xi, Yi, Zi;
         double[][] ell = new double[2*n][12];
@@ -237,8 +195,8 @@ public class CameraPose {
             Xi = X[0][i];
             Yi = X[1][i];
             Zi = X[2][i];
-            ell[2*i]     = new double[]{-Xi, -Yi, -Zi, -1, 0, 0, 0, 0, xi*Xi, xi*Yi, xi*Zi, xi};
-            ell[2*i + 1] = new double[]{0, 0, 0, 0, -Xi, -Yi, -Zi, -1, yi*Xi, yi*Yi, yi*Zi, yi};
+            ell[2*i]     = new double[]{Xi, Yi, Zi, 1, 0, 0, 0, 0, -xi*Xi, -xi*Yi, -xi*Zi, -xi};
+            ell[2*i + 1] = new double[]{0, 0, 0, 0, Xi, Yi, Zi, 1, -yi*Xi, -yi*Yi, -yi*Zi, -yi};
         }
 
         // SVD.V is 12 X 12.  SVD.U is 2n X 2n
@@ -258,6 +216,10 @@ public class CameraPose {
         System.arraycopy(xOrth, 4, P2[1], 0, 4);
         System.arraycopy(xOrth, 8, P2[2], 0, 4);
 
+        // enforce det(R) > 0
+        double detR = MatrixUtil.determinant(MatrixUtil.copySubMatrix(P2, 0,2, 0, 2));
+        detR = (detR>0) ? 1 : -1;
+        MatrixUtil.multiply(P2, detR);
         return P2;
     }
 
@@ -541,7 +503,7 @@ public class CameraPose {
      * @param om rotation vector (3x1 vector) between world coordinate frame and camera reference frame.
      * @param t translation vector (3x1 vector) between world coordinate frame and camera reference frame.
      * @param intrinsics camera intrinsic parameters
-*    @param useBouguetForRodrigues if true, uses only the Bouguet algoirthms for Rodrigues rotation matrices and vectors
+*    @param useBouguetForRodrigues if true, uses only the Bouguet algorithms for Rodrigues rotation matrices and vectors
      * @return [xp, dxpdom, dxpdT] where xp are the Projected pixel coordinates (2xN matrix for N points)
      * dxpdom are the Derivatives of xp with respect to om ((2N)x3 matrix), and
      * dxpdT are the derivatives of xp with respect to T ((2N)x3 matrix).

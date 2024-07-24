@@ -208,8 +208,6 @@ public class Triangulation {
      * If the data are not perfect, need more than 1 pair for best fit.
      * @return the 3D coordinate of the point in world scene.  note that
      * the entire array can be normalized by the last element.
-     * @return the 3D coordinate of the point in world scene.  note that
-     * the entire array can be normalized by the last element.
      */
     public static WCSPt calculateWCSPoint(double[][] camera1, double[][] camera2,
                                           double[][] x1c, double[][] x2c) {
