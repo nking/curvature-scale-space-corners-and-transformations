@@ -1,7 +1,7 @@
 .DS_Store
 *~
 venv
-.iml
+*.iml
 *.swp
 *.swo
 *.swp
