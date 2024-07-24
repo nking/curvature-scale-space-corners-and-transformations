@@ -394,8 +394,9 @@ public class Triangulation {
         assert(vT.length == 4);
         assert(vT[0].length == 4);
         
-        // eigenvector corresponding to smallest eigenvector is last row in svd.V^T
+        // eigenvector corresponding to the smallest eigenvalue is last row in svd.V^T
         double[] X = Arrays.copyOf(vT[vT.length - 1], vT[0].length);
+        MatrixUtil.multiply(X, 1./X[X.length - 1]);
         
         /*
         System.out.printf("x1=\n%s\n", FormatArray.toString(x1, "%.4e"));
