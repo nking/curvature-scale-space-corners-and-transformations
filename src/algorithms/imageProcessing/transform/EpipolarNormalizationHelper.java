@@ -220,7 +220,7 @@ public class EpipolarNormalizationHelper {
         return tinv;
     }
 
-    private static double[][] inverseT(double[][] t) {
+    public static double[][] inverseT(double[][] t) {
 
         double[][] inv = MatrixUtil.zeros(3,3);
         inv[0][0] = 1./t[0][0];

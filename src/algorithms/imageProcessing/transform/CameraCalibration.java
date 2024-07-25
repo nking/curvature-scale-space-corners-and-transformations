@@ -88,7 +88,7 @@ public class CameraCalibration {
                the first row is the X coordinates, the second row
                is the Y coordinates, and the third row is 1's 
                (Z_w = 0, the scale factor is lost in the homography).
-               It is a 2 dimensional double array of format
+               It is a 2-dimensional double array of format
                3 X n
        @param useR2R4 use radial distortion function from Ma et al. 2004 for model #4 in Table 2,
     f(r) = 1 +k1*r^2 + k2*r^4 if true,

@@ -4,6 +4,7 @@ import algorithms.imageProcessing.transform.Camera.CameraExtrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraIntrinsicParameters;
 import algorithms.imageProcessing.transform.Camera.CameraPoseParameters;
 import algorithms.matrix.MatrixUtil;
+import algorithms.misc.MiscMath;
 import algorithms.misc.MiscMath0;
 import algorithms.util.FormatArray;
 import no.uib.cipr.matrix.*;
@@ -92,14 +93,16 @@ public class CameraPose {
     public static CameraPoseParameters calculatePoseFromXXW(double[][] x, double[][] X)
         throws NotConvergedException {
 
-        // from x = P * X:
+        // from x = P * X.  rescaled to near the projection scale, but only roughly, not refined.
         double[][] p = calculatePFromXXW(x, X);
 
         // P = K * [ R | t ]
         // let M = K*R
 
+        double[][] M = MatrixUtil.copySubMatrix(p, 0, 2, 0, 2);
+
         //(1)
-        RQ rqDecomp = RQ.factorize(new DenseMatrix(MatrixUtil.copySubMatrix(p, 0,2,0,2)));
+        RQ rqDecomp = RQ.factorize(new DenseMatrix(M));
         double[][] kEst = MatrixUtil.convertToRowMajor(rqDecomp.getR());
         double[][] rEst = MatrixUtil.convertToRowMajor(rqDecomp.getQ());
 
@@ -114,8 +117,6 @@ public class CameraPose {
         rEst = MatrixUtil.multiplyDiagonalByMatrix(d, rEst);
         MatrixUtil.multiply(kEst, 1./kEst[2][2]);
 
-        double[][] M = MatrixUtil.copySubMatrix(p, 0, 2, 0, 2);
-
         //(2) estimate the camera position C
         // use assumption P*C=0 to solve for the null space of P, but we lose scale
         MatrixUtil.SVDProducts svdP = MatrixUtil.performSVD(p);
@@ -126,7 +127,7 @@ public class CameraPose {
 
         // instead, could use:  last column of P = M*C => C = pseudoinv(M) * P
         // [3X3]
-        double[][] invM;
+        /*double[][] invM;
         int rank = MatrixUtil.rank(M, 1E-5);
         if (rank == 3) {
             invM = MatrixUtil.pseudoinverseFullColumnRank(M);
@@ -144,10 +145,12 @@ public class CameraPose {
         MatrixUtil.multiply(C2, -1);
         double[] t2 = MatrixUtil.multiplyMatrixByColumnVector(rEst, C2);
         MatrixUtil.multiply(t2, -1);
+        */
+        double[] p3 = MatrixUtil.extractColumn(p, 3);
 
         CameraExtrinsicParameters extrinsics = new CameraExtrinsicParameters();
         extrinsics.setRotation(rEst);
-        extrinsics.setTranslation(t2);
+        extrinsics.setTranslation(t);
 
         CameraIntrinsicParameters intrinsics = new CameraIntrinsicParameters();
         intrinsics.setIntrinsic(kEst);
@@ -157,10 +160,17 @@ public class CameraPose {
         return camera;
     }
 
+    private static double meanOfAbs(double[] a) {
+        double sum = 0;
+        for (int i = 0; i < a.length; ++i) {
+            sum += Math.abs(a[i]);
+        }
+        return sum/a.length;
+    }
+
     /**
      * given a single image which has matched image positions x with real world positions X,
      * estimate the camera matrix P using a camera model x = P * X and DLT.
-     * This method enforces det(R)>0.
      * @param x
      * @param X
      * @return
@@ -181,8 +191,12 @@ public class CameraPose {
             throw new IllegalArgumentException("the number of columns in X must be the same as in x");
         }
 
+        // need to standardize the data, then restore it
+        // copy to not modify the original data
         x = MatrixUtil.copy(x);
-        X = MatrixUtil.copy(X);
+
+        double[][] pNorm = EpipolarNormalizationHelper.unitStandardNormalize(x);
+        double[][] invPNorm = EpipolarNormalizationHelper.inverseT(pNorm);
 
         int i, j;
 
@@ -205,6 +219,7 @@ public class CameraPose {
         // vT is 12X12.  last row in vT is the eigenvector for the smallest eigenvalue
         // it is also the epipole e1, defined as the right nullspace
         double[] xOrth = svd.vT[svd.vT.length - 1];
+        MatrixUtil.multiply(xOrth, 1./xOrth[xOrth.length - 1]);
 
         // assert that ell * xOrth ~ 0
         //double[] chk = MatrixUtil.multiplyMatrixByColumnVector(ell, xOrth);
@@ -216,10 +231,42 @@ public class CameraPose {
         System.arraycopy(xOrth, 4, P2[1], 0, 4);
         System.arraycopy(xOrth, 8, P2[2], 0, 4);
 
+        P2 = MatrixUtil.multiply(invPNorm, P2);
+
         // enforce det(R) > 0
         double detR = MatrixUtil.determinant(MatrixUtil.copySubMatrix(P2, 0,2, 0, 2));
         detR = (detR>0) ? 1 : -1;
         MatrixUtil.multiply(P2, detR);
+
+        // there may still be a large difference between x and P*X
+        // so this is a look at applying a scalar to P*X*s.  xOrth scale is lost in the decomposition, so we would like
+        // to apply a scalar factor s to P.
+        // We want to minimize (x - P*X*s).  The simplest, but not robust solution is a quick division.
+        // if x==P*X, s=1 => so, figuratively, P*X/x=1 and then  s = x/(P*X).
+        // caveat is that the last column of P does not have data to constrain it (think of P*X and X[3] being 1).
+
+        double[][] _X = new double[4][X[0].length];//4xn
+        Arrays.fill(_X[3], 1);
+        System.arraycopy(X[0], 0, _X[0], 0, _X[0].length);
+        System.arraycopy(X[1], 0, _X[1], 0, _X[1].length);
+        System.arraycopy(X[2], 0, _X[2], 0, _X[2].length);
+        double[][] PX = MatrixUtil.multiply(P2, _X); // 3x4  4xn = 3xn
+
+        double xScale = 0;
+        double yScale = 0;
+        int nD = 0;
+        for (i = 0; i < x[0].length; ++i) {
+            if (PX[0][i] != 0 && PX[1][i] != 0) {
+                xScale += x[0][i] / PX[0][i];
+                yScale += x[1][i] / PX[1][i];
+                ++nD;
+            }
+        }
+        xScale /= nD;
+        yScale /= nD;
+        double s = Math.sqrt((xScale * xScale + yScale*yScale)/2.);
+        MatrixUtil.multiply(P2, s);
+
         return P2;
     }
 
@@ -1639,6 +1686,6 @@ public class CameraPose {
         throw new UnsupportedOperationException("not yet implemented");
     }
     */
-    
-   
+
+
 }

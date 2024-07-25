@@ -134,9 +134,9 @@ public class CameraPoseTest extends TestCase {
             System.arraycopy(xBou.xEst[1], 0, _xBou[1], 0, xBou.xEst[1].length);
 
             //double[][] xc = Camera.pixelToCameraCoordinates(x, expectedKIntr, radial, true);
-            // TODO: follow up on why the intrinsic estimates are far off here:
             Camera.CameraPoseParameters result = CameraPose.calculatePoseFromXXW(x, xW);
             Camera.CameraPoseParameters result11 = CameraPose.calculatePoseFromXXW(_xBou, xW);
+            // looks like the results from calculatePoseFromXXW need refinement
 
             Camera.CameraExtrinsicParameters extr = result.getExtrinsicParameters();
             Camera.CameraIntrinsicParameters intr = result.getIntrinsicParameters();
