@@ -136,7 +136,9 @@ public class ReconstructionTest extends TestCase {
         //
         // this is left02.jpg and right02.jpg
         //
-        //
+        // Page 3 of miscNotes/bouguetj_5th_calibration_example.pdf shows that the triangulation results
+        // of points in the world coordinate system should have Z coordinates between 350 and 500.
+
         // note: the checkerboard squares are 30mm in WCS metric
         //
         // note: radial distortion should be corrected:  use on the original coordinates:
@@ -270,10 +272,12 @@ public class ReconstructionTest extends TestCase {
 
         // put x into camera coordinates reference frame.  radial distortion has been removed.
         Triangulation.WCSPt wcsPt;
+        double[][] XWFromT = new double[3][n];
+
         for (ii = 0; ii < n; ++ii) {
             for (j = 0; j < 3; ++j) {
-                x1Pt[j][0] = x1c[j][ii];
-                x2Pt[j][0] = x2c[j][ii];
+                x1Pt[j][0] = x1[j][ii];
+                x2Pt[j][0] = x2[j][ii];
             }
             wcsPt = Triangulation.calculateWCSPoint(camera2Left, camera2Right, x1Pt, x2Pt);
             MatrixUtil.multiply(wcsPt.X, 1. / wcsPt.X[3]);
@@ -281,8 +285,44 @@ public class ReconstructionTest extends TestCase {
             System.out.printf("WCS[%d]=%s,\t alpha=%.3e\n",
                     ii, FormatArray.toString(wcsPt.X, "%.3e"),
                     wcsPt.alpha);
+
+            for (j = 0; j < 3; ++j) {
+                XWFromT[j][ii] = wcsPt.X[j];// last column is '1'
+            }
         }
 
+        // having x1 and XWFromT or x1 and XWFromT, can test the camera pose methods
+        Camera.CameraPoseParameters cPose1 = CameraPose.calculatePoseFromXXW(x1, XWFromT);
+        Camera.CameraPoseParameters cPose2 = CameraPose.calculatePoseFromXXW(x2, XWFromT);
+
+        // differences from expected for camera pose
+        //TODO: look into the intrinsic scale factors in cPose1 and cPose2
+        double[][] diffIntr1 = new double[3][3];
+        double[][] diffIntr2 = new double[3][3];
+        double[][] diffRot1 = Rotation.procrustesAlgorithmForRotation(
+                cPose1.getExtrinsicParameters().getRotation(),
+                r2LeftOrth); // or rtLeft
+        double[][] diffRot2 = Rotation.procrustesAlgorithmForRotation(
+            cPose2.getExtrinsicParameters().getRotation(),
+            r2RightOrth); // or rtRight
+        double[] diffT1 = MatrixUtil.subtract(cPose1.getExtrinsicParameters().getTranslation(),
+                t2Left);
+        double[] diffT2 = MatrixUtil.subtract(cPose2.getExtrinsicParameters().getTranslation(),
+                t2Right);
+
+        for (int i2 = 0; i2 < 3; ++i2) {
+            for (int j2 = 0; j2 < 3; ++j2) {
+                diffIntr1[i2][j2] = cPose1.getIntrinsicParameters().getIntrinsic()[i2][j2] - k2IntrLeft[i2][j2];
+                if (k2IntrLeft[i2][j2] != 0) {
+                    diffIntr1[i2][j2] = Math.abs(diffIntr1[i2][j2] / k2IntrLeft[i2][j2]);
+                }
+                diffIntr2[i2][j2] = cPose2.getIntrinsicParameters().getIntrinsic()[i2][j2] - k2IntrRight[i2][j2];
+                if (k2IntrRight[i2][j2] != 0) {
+                    diffIntr2[i2][j2] = Math.abs(diffIntr2[i2][j2] / k2IntrRight[i2][j2]);
+                }
+            }
+        }
+        //TODO: add asserts
 
         boolean calibrated = true;
         double[][] x1n, x2n;
@@ -701,6 +741,7 @@ public class ReconstructionTest extends TestCase {
 
     }
 
+    //NOTE: should not use the Zhang data for this.  x,y are not homogeneous coords
     public void estCalculateProjectiveReconstruction() throws Exception {
         System.out.println("testCalculateProjectiveReconstruction");
 
@@ -853,21 +894,7 @@ public class ReconstructionTest extends TestCase {
         x2[0] = new double[]{76, 110, 84, 164, 110, 124, 218, 275, 401, 402};
         x2[1] = new double[]{168, 331, 372, 401, 78, 295, 302, 134, 52, 318};
         x2[2] = new double[]{1, 1, 1, 1, 1, 1, 1, 1,  1, 1};
-        
-        /*
-        System.out.printf("results=%s\n\n", rr.toString());
-        
-  //multiply by focal length?  or K?   see if triangulation in szeliski has advice
-        
-        System.out.println("XW points normalized by last coordinates:");
-        double[] pt = new double[4];
-        for (int j = 0; j < rr.XW[0].length; ++j) {    
-            for (int i = 0; i < rr.XW.length; ++i) {
-                pt[i] = rr.XW[i][j]/rr.XW[3][j];
-            }
-            System.out.printf("%s\n", FormatArray.toString(pt, "%.3e"));
-        }
-        */
+
     }
     
     public void estAffine() throws NotConvergedException, IOException {
@@ -1110,13 +1137,13 @@ public class ReconstructionTest extends TestCase {
         if (!f.exists()) {
             throw new IOException("could not find file at " + path);
         }
-        /*
+
         ImageExt leftImage = ImageIOHelper.readImageExt(path);
         ImageExt rightImage = ImageIOHelper.readImageExt(ResourceFinder.findTestResourcesDirectory() + sep + "bouguet_stereo"
                 + sep + "right02_masked.png");
 
         CorrespondencePlotter plotter = new CorrespondencePlotter(leftImage, rightImage);
-*/
+
         left2 = getBouguetIm2LeftCorresDouble();
         right2 = getBouguetIm2RightCorresDouble();
 
@@ -1133,13 +1160,13 @@ public class ReconstructionTest extends TestCase {
             y1 = (int)left2[1][idx1];
             x2 = (int)right2[0][idx1];
             y2 = (int)right2[1][idx1];
-           // plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
+            plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 1);
             for (j = 0; j < 2; ++j) {
                 corres.x1[j][i] = left2[j][idx1];
                 corres.x2[j][i] = right2[j][idx1];
             }
         }
-        //plotter.writeImage("_bouguet_left2_right2_corres");
+        plotter.writeImage("_bouguet_left2_right2_corres");
 
         return corres;
     }

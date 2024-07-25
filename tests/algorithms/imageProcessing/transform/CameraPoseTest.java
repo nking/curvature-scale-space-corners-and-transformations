@@ -2,13 +2,8 @@ package algorithms.imageProcessing.transform;
 
 import static algorithms.imageProcessing.transform.Rotation.extractThetaFromZYX;
 
-import algorithms.matrix.BlockMatrixIsometric;
 import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.NotConvergedException;
 
@@ -31,8 +26,9 @@ public class CameraPoseTest extends TestCase {
 
     /**
      * Test of calculatePoseUsingDLT method, of class CameraPose.
+     * NOTE: not using this because need the image points to be homogeneous coordinates.
      */
-    public void testCalculatePoseUsingDLT() throws Exception {
+    public void estCalculatePoseUsingZhangeData() throws Exception {
 
         System.out.println("testCalculatePoseUsingDLT");
         // see testresources/zhang1998/README.txt
@@ -50,6 +46,8 @@ public class CameraPoseTest extends TestCase {
 
         double[][] expectedKIntr = Zhang98Data.getIntrinsicCameraMatrix();
         double[] radial = Zhang98Data.getRadialDistortionR2R4();
+        Camera.CameraIntrinsicParameters expectedIntr = new Camera.CameraIntrinsicParameters(
+                expectedKIntr, radial, true);
 
         double[][] rT0 = new double[5][];
         double[][] rT2 = new double[5][];
@@ -62,29 +60,82 @@ public class CameraPoseTest extends TestCase {
             // and estimated rotations below.
 
             System.out.println();
+            //3 X 256
             double[][] x = Zhang98Data.getObservedFeaturesInImage(i);
 
-            // remove distortion from x
-            double[][] xU = CameraCalibration.removeRadialDistortion(x, radial[0], radial[1], true);
-
             double[][] expectedR = Zhang98Data.getRotation(i);
+            double detR = MatrixUtil.determinant(expectedR);
             double[] expectedT = Arrays.copyOf(Zhang98Data.getTranslation(i), 3);
             MatrixUtil.multiply(expectedT, 1./expectedT[2]);
 
             double[] qHamiltonE = Rotation.createHamiltonQuaternionZYX(Rotation.extractThetaFromZYX(expectedR));
             double[] qBarfootE = Rotation.convertHamiltonToBarfootQuaternion(qHamiltonE);
 
+            // debug, check using bouguet
+            {
+
+                Triangulation.WCSPt[] wcs = null;
+
+                if (i < 5) {
+                    wcs = new Triangulation.WCSPt[x[0].length];
+
+                    //TODO: consider radial distortion corrections
+
+                    double[][] x2 = Zhang98Data.getObservedFeaturesInImage(i+1);
+                    double[][] expectedR2 = Zhang98Data.getRotation(i+1);
+                    double[] expectedT2 = Arrays.copyOf(Zhang98Data.getTranslation(i+1), 3);
+                    MatrixUtil.multiply(expectedT2, 1./expectedT2[2]);
+
+                    //3 x N for a single point
+                    for (int j = 0; j < x[0].length; ++j) {
+                        double[][] _x1 = new double[][]{MatrixUtil.extractColumn(x, j)};
+                        double[][] _x2 = new double[][]{MatrixUtil.extractColumn(x2, j)};
+                        _x1 = MatrixUtil.transpose(_x1);
+                        _x2 = MatrixUtil.transpose(_x2);
+
+                        // the predicted WCS are too small by a factor of 10-ish, but triangulation algorithm is
+                        // correct.
+                        // it looks like the image data as x, y are not homogeneous coordinates truncated to x,y
+                        // so not a good idea to use for pose testing.  need one more dimension to the data.
+
+                        wcs[j] = Triangulation.calculateWCSPoint(expectedKIntr, expectedR, expectedT,
+                                expectedKIntr, expectedR2, expectedT2, _x1, _x2);
+                    }
+
+                    // x = alpha * P * X
+                    // alpha is 1/depth of point
+                    System.out.printf("from triangulation:\n");
+                    for (int j = 0; j < x[0].length; ++j) {
+                        double[] _XW = MatrixUtil.extractColumn(xW, j);
+                        System.out.printf("%d) alpha=%f\n", j, wcs[j].alpha);
+                        System.out.printf("%s\n", FormatArray.toString(_XW, "%.5f"));
+                        double[] _XWC = Arrays.copyOf(wcs[j].X, 4);
+                        MatrixUtil.multiply(_XWC, 1./_XWC[3]);
+                        System.out.printf("%s\n\n", FormatArray.toString(_XWC, "%.5f"));
+                    }
+
+                }
+
+                boolean useBouguetForRodrigues = false;
+                //double[] om = qHamiltonE;
+                //double[] om = qBarfootE;
+                double[] om = Rotation.extractRodriguesRotationVectorBouguet(expectedR).om;
+                CameraPose.ProjectedPoints xBou = CameraPose.bouguetProjectPoints2(
+                        xW, om, expectedT, expectedIntr, useBouguetForRodrigues);
+            }
             double[][] xc = Camera.pixelToCameraCoordinates(x, expectedKIntr, radial, true);
+            // remove distortion from x.  these should be in camera reference frame
+            //double[][] xcU = CameraCalibration.removeRadialDistortion(xc, radial[0], radial[1], true);
 
-            // potentially has normalization problems:
-            Camera.CameraPoseParameters result = CameraPose.calculatePoseAndKUsingDLT(xU, xW);
-
-            Camera.CameraExtrinsicParameters extr2 = CameraPose.calculatePoseUsingCameraCalibration(
-                    new Camera.CameraIntrinsicParameters(expectedKIntr, radial, useR2R4), x, xW);
+            //Camera.CameraPoseParameters result = CameraPose.calculatePoseFromXXW(xcU, xW);
+            Camera.CameraPoseParameters result = CameraPose.calculatePoseFromXXW(x, xW);
 
             Camera.CameraExtrinsicParameters extr = result.getExtrinsicParameters();
             Camera.CameraIntrinsicParameters intr = result.getIntrinsicParameters();
             double[] p3 = Arrays.copyOf(result.getP3(), result.getP3().length);
+
+            Camera.CameraExtrinsicParameters extr2 = CameraPose.calculatePoseUsingCameraCalibration(
+                    new Camera.CameraIntrinsicParameters(expectedKIntr, radial, useR2R4), x, xW);
 
             /*
             tc1 = -1*(R^-1)*p3
