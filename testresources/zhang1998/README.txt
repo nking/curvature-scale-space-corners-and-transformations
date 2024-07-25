@@ -5,7 +5,6 @@ Here's a description of the data:
 The model plane contains a pattern of 8×8 squares, so there are 256 corners. 
 The size of the pattern is 17cm x 17cm. 
 The 2D coordinates (in inches) of these points are in Model.txt.
-(We assume the plane is at Z=0.)
 
 We have taken five an off-the-shelf PULNiX CCD camera with 6 mm lens. 
 The image resolution is 640×480. The five images are available here: 

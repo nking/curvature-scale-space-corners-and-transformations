@@ -3,6 +3,7 @@ package algorithms.imageProcessing.transform;
 import static algorithms.imageProcessing.transform.Rotation.extractThetaFromZYX;
 
 import algorithms.matrix.MatrixUtil;
+import algorithms.misc.MiscMath;
 import algorithms.util.FormatArray;
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.NotConvergedException;
@@ -26,9 +27,8 @@ public class CameraPoseTest extends TestCase {
 
     /**
      * Test of calculatePoseUsingDLT method, of class CameraPose.
-     * NOTE: not using this because need the image points to be homogeneous coordinates.
      */
-    public void estCalculatePoseUsingZhangeData() throws Exception {
+    public void testCalculatePoseUsingZhangeData() throws Exception {
 
         System.out.println("testCalculatePoseUsingDLT");
         // see testresources/zhang1998/README.txt
@@ -39,7 +39,8 @@ public class CameraPoseTest extends TestCase {
         int nFeatures = 256;
         int nImages = 5;
 
-        // 3 X 256
+        // 3 X 256 size
+        // range of values is [0, 17/2.54] w/ center at (0.5*17/2.54)
         double[][] xW = Zhang98Data.getFeatureWCS();
         assertEquals(3, xW.length);
         assertEquals(nFeatures, xW[0].length);
@@ -71,64 +72,71 @@ public class CameraPoseTest extends TestCase {
             double[] qHamiltonE = Rotation.createHamiltonQuaternionZYX(Rotation.extractThetaFromZYX(expectedR));
             double[] qBarfootE = Rotation.convertHamiltonToBarfootQuaternion(qHamiltonE);
 
+            // avg is -0.2946225
+            double[] zMeanAndStd = null;
+            double _zMean = -0.295;
+
             // debug, check using bouguet
-            {
+            Triangulation.WCSPt[] wcs = null;
 
-                Triangulation.WCSPt[] wcs = null;
+            double[] WCSZ = null;
+            if (i < 5) {
+                wcs = new Triangulation.WCSPt[x[0].length];
+                WCSZ = new double[x[0].length];
 
-                if (i < 5) {
-                    wcs = new Triangulation.WCSPt[x[0].length];
+                // changing to camera coordinates to put a distance from aperture back into
+                // the coordinates for use in triangulation:
 
-                    //TODO: consider radial distortion corrections
+                double[][] x2 = Zhang98Data.getObservedFeaturesInImage(i+1);
+                double[][] expectedR2 = Zhang98Data.getRotation(i+1);
+                double[] expectedT2 = Arrays.copyOf(Zhang98Data.getTranslation(i+1), 3);
+                MatrixUtil.multiply(expectedT2, 1./expectedT2[2]);
 
-                    double[][] x2 = Zhang98Data.getObservedFeaturesInImage(i+1);
-                    double[][] expectedR2 = Zhang98Data.getRotation(i+1);
-                    double[] expectedT2 = Arrays.copyOf(Zhang98Data.getTranslation(i+1), 3);
-                    MatrixUtil.multiply(expectedT2, 1./expectedT2[2]);
+                //3 x N for a single point
+                for (int j = 0; j < x[0].length; ++j) {
+                    double[][] _x1 = new double[][]{MatrixUtil.extractColumn(x, j)};
+                    double[][] _x2 = new double[][]{MatrixUtil.extractColumn(x2, j)};
+                    _x1 = MatrixUtil.transpose(_x1);
+                    _x2 = MatrixUtil.transpose(_x2);
 
-                    //3 x N for a single point
-                    for (int j = 0; j < x[0].length; ++j) {
-                        double[][] _x1 = new double[][]{MatrixUtil.extractColumn(x, j)};
-                        double[][] _x2 = new double[][]{MatrixUtil.extractColumn(x2, j)};
-                        _x1 = MatrixUtil.transpose(_x1);
-                        _x2 = MatrixUtil.transpose(_x2);
+                    // the predicted WCS are too small by a factor of 10-ish, but triangulation algorithm is
+                    // correct.
+                    // it looks like the image data as x, y are not homogeneous coordinates truncated to x,y
+                    // so not a good idea to use for pose testing.  need one more dimension to the data.
 
-                        // the predicted WCS are too small by a factor of 10-ish, but triangulation algorithm is
-                        // correct.
-                        // it looks like the image data as x, y are not homogeneous coordinates truncated to x,y
-                        // so not a good idea to use for pose testing.  need one more dimension to the data.
-
-                        wcs[j] = Triangulation.calculateWCSPoint(expectedKIntr, expectedR, expectedT,
-                                expectedKIntr, expectedR2, expectedT2, _x1, _x2);
-                    }
-
-                    // x = alpha * P * X
-                    // alpha is 1/depth of point
-                    System.out.printf("from triangulation:\n");
-                    for (int j = 0; j < x[0].length; ++j) {
-                        double[] _XW = MatrixUtil.extractColumn(xW, j);
-                        System.out.printf("%d) alpha=%f\n", j, wcs[j].alpha);
-                        System.out.printf("%s\n", FormatArray.toString(_XW, "%.5f"));
-                        double[] _XWC = Arrays.copyOf(wcs[j].X, 4);
-                        MatrixUtil.multiply(_XWC, 1./_XWC[3]);
-                        System.out.printf("%s\n\n", FormatArray.toString(_XWC, "%.5f"));
-                    }
-
+                    wcs[j] = Triangulation.calculateWCSPoint(expectedKIntr, expectedR, expectedT,
+                            expectedKIntr, expectedR2, expectedT2, _x1, _x2);
+                    WCSZ[j] = wcs[j].X[2];
                 }
+                zMeanAndStd = MiscMath.getAvgAndStDev(WCSZ);
 
-                boolean useBouguetForRodrigues = false;
-                //double[] om = qHamiltonE;
-                //double[] om = qBarfootE;
-                double[] om = Rotation.extractRodriguesRotationVectorBouguet(expectedR).om;
-                CameraPose.ProjectedPoints xBou = CameraPose.bouguetProjectPoints2(
-                        xW, om, expectedT, expectedIntr, useBouguetForRodrigues);
+                // x = alpha * P * X
+                // alpha is 1/depth of point
+                System.out.printf("from triangulation (Z = %.5f +- %.5f):\n", zMeanAndStd[0], zMeanAndStd[1]);
             }
-            double[][] xc = Camera.pixelToCameraCoordinates(x, expectedKIntr, radial, true);
-            // remove distortion from x.  these should be in camera reference frame
-            //double[][] xcU = CameraCalibration.removeRadialDistortion(xc, radial[0], radial[1], true);
 
-            //Camera.CameraPoseParameters result = CameraPose.calculatePoseFromXXW(xcU, xW);
+            boolean useBouguetForRodrigues = false;
+            //double[] om = qHamiltonE;
+            //double[] om = qBarfootE;
+            double[] om = Rotation.extractRodriguesRotationVectorBouguet(expectedR).om;
+            CameraPose.ProjectedPoints xBou = CameraPose.bouguetProjectPoints2(
+                    xW, om, expectedT, expectedIntr, useBouguetForRodrigues);
+
+            // the bouguet results are reasonable, so have an error in calculatePoseFromXXW
+            boolean refine = false;
+            boolean useBouguetsRodrigues = true;
+            Camera.CameraExtrinsicParameters c = CameraPose.calculatePoseUsingBouguet(
+                    expectedIntr, x, xW, refine, useBouguetsRodrigues);
+
+            double[][] _xBou = new double[3][xW[0].length];
+            Arrays.fill(_xBou[2], 1);
+            System.arraycopy(xBou.xEst[0], 0, _xBou[0], 0, xBou.xEst[0].length);
+            System.arraycopy(xBou.xEst[1], 0, _xBou[1], 0, xBou.xEst[1].length);
+
+            //double[][] xc = Camera.pixelToCameraCoordinates(x, expectedKIntr, radial, true);
+            // TODO: follow up on why the intrinsic estimates are far off here:
             Camera.CameraPoseParameters result = CameraPose.calculatePoseFromXXW(x, xW);
+            Camera.CameraPoseParameters result11 = CameraPose.calculatePoseFromXXW(_xBou, xW);
 
             Camera.CameraExtrinsicParameters extr = result.getExtrinsicParameters();
             Camera.CameraIntrinsicParameters intr = result.getIntrinsicParameters();
@@ -269,7 +277,7 @@ public class CameraPoseTest extends TestCase {
 
     }
 
-    public void testCalculatePoseUsingBouguet() throws IOException, NotConvergedException {
+    public void estCalculatePoseUsingBouguet() throws IOException, NotConvergedException {
 
         System.out.println("testCalculatePoseUsingBouguet");
         // following unit test at bottom of

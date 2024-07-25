@@ -74,7 +74,33 @@ public class Zhang98Data {
         }
         return uv;
     }
-    
+
+    /**
+     * get the coordinates of the features in image idx transformed to camera coordinates.
+     * @param idx
+     * @return
+     * @throws IOException
+     */
+    public static double[][] getObservedFeaturesInCameraCorr(int idx) throws IOException, NotConvergedException {
+        double[][] x = getObservedFeaturesInImage(idx);
+        return Camera.pixelToCameraCoordinates(x, getIntrinsicCameraMatrix(), getRadialDistortionR2R4(),
+        true);
+    }
+
+    /**
+     * get the coordinates of the features in image idx transformed to camera coordinates.
+     * @param idx
+     * @return
+     * @throws IOException
+     */
+    public static double[][] getObservedFeaturesInNormCameraCorr(int idx) throws IOException, NotConvergedException {
+        double[][] x = getObservedFeaturesInImage(idx);
+        Camera.CameraIntrinsicParameters intr = new Camera.CameraIntrinsicParameters(
+                getIntrinsicCameraMatrix(), getRadialDistortionR2R4(),
+                true);
+        return Camera.pixelToNormalizedCameraCoordinates(x, intr);
+    }
+
     // data1.txt through data5.txt
     // size is 3 X 256
     public static double[][] getObservedFeaturesInImage(int idx) throws IOException {
