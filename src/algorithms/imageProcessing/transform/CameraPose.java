@@ -96,8 +96,9 @@ public class CameraPose {
         // from x = P * X.  rescaled to near the projection scale, but only roughly, not refined.
         double[][] p = calculatePFromXXW(x, X);
 
-        // P = K * [ R | t ]
+        // P = K * [ R | t ] = [K*R | K*t]  = [K*R | -K*R*C] where t=-R*C
         // let M = K*R
+        // P = [M | M*C]
 
         double[][] M = MatrixUtil.copySubMatrix(p, 0, 2, 0, 2);
 
@@ -122,6 +123,7 @@ public class CameraPose {
         MatrixUtil.SVDProducts svdP = MatrixUtil.performSVD(p);
         double[] C = Arrays.copyOf(svdP.vT[svdP.vT.length - 1], 3);
         MatrixUtil.multiply(C, 1./C[2]);
+        // t = -R*C
         double[] t = MatrixUtil.multiplyMatrixByColumnVector(rEst, C);
         MatrixUtil.multiply(t, -1);
 
@@ -213,8 +215,8 @@ public class CameraPose {
             ell[2*i + 1] = new double[]{0, 0, 0, 0, Xi, Yi, Zi, 1, -yi*Xi, -yi*Yi, -yi*Zi, -yi};
         }
 
-        // SVD.V is 12 X 12.  SVD.U is 2n X 2n
-        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(ell);
+        // SVD(ell).V is 12 X 12.  SVD(ell).U is 2n X 2n
+        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(MatrixUtil.createATransposedTimesA(ell));
 
         // vT is 12X12.  last row in vT is the eigenvector for the smallest eigenvalue
         // it is also the epipole e1, defined as the right nullspace

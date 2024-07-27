@@ -372,7 +372,7 @@ public class EpipolarTransformer {
         SVDProducts svd0 = null;
         try {
             // we only need V in first SVD operation, so can let the method use a or a^T*a
-            svd0 = MatrixUtil.performSVD(a);
+            svd0 = MatrixUtil.performSVD(MatrixUtil.createATransposedTimesA(a));
         } catch (NotConvergedException ex) {
             //Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
             return null;
@@ -457,7 +457,7 @@ public class EpipolarTransformer {
 
         SVDProducts svd = null;
         try {
-            svd = MatrixUtil.performSVD(a);
+            svd = MatrixUtil.performSVD(MatrixUtil.createATransposedTimesA(a));
         } catch (NotConvergedException ex) {
             Logger.getLogger(EpipolarTransformer.class.getName()).log(Level.SEVERE, null, ex);
             return null;

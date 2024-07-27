@@ -221,7 +221,7 @@ public class Reconstruction {
         /*
         http://www.cs.cmu.edu/~16385/s17/Slides/12.5_Reconstruction.pdf
         
-        (3) For each point correspondence, compute the point X in 3D space (triangularization)
+        (3) For each point correspondence, compute the point X in 3D space (triangulation)
         */
                         
         double[][] XW = new double[4][n];
@@ -336,8 +336,8 @@ public class Reconstruction {
     }
 
     /**
-     * estimate the extrinsic camera matrix P2 assuming P1 is[I|0]
-     * using epipolar geometry.
+     * estimate the extrinsic camera matrix P2 (notion) assuming P1 is[I|0]
+     * using epipolar geometry given correspondence points between 2 images (structure).
      * The essential matrix contains information about the relative position
      * T and orientation R between 2 cameras (the camera pose).
      * The best of 4 solutions constructed from the essential matrix is returned
@@ -388,7 +388,7 @@ public class Reconstruction {
         
         (1) compute essential matrix EM from the correspondence x1, x2
         (2) compute the extrinsic camera matrices P1, P2 from FM.
-        (3) For each point correspondence, compute the point X in 3D space (triangularization)
+        (3) For each point correspondence, compute the point X in 3D space (triangulation)
         
         see also notes above from notes from Serge Belongie/Kris Katani lectures from Computer Vision II, CSE 252B, USSD
         */
@@ -1483,7 +1483,7 @@ public class Reconstruction {
         
         (1) compute fundamental matrix FM from the correspondence x1, x2
         (2) compute the camera matrices P1, P2 from FM.
-        (3) For each point correspondence, compute the point X in 3D space (triangularization)
+        (3) For each point correspondence, compute the point X in 3D space (triangulation)
         */
         
         double[][] k1IntrInv = Camera.createIntrinsicCameraMatrixInverse(intr1);

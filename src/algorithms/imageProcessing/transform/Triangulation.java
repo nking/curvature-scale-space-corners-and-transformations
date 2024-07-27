@@ -10,6 +10,8 @@ import java.util.logging.Logger;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.SVD;
+import java.util.Map;
+import java.util.List;
 
 /**
  * given correspondence between two images (in camera reference frame, a.k.a. calibrated coordinates)
@@ -419,6 +421,89 @@ public class Triangulation {
         System.out.printf("x2Rev=\n%s\n", FormatArray.toString(x2Rev, "%.4e"));        
         System.out.printf("x2=\n%s\n", FormatArray.toString(MatrixUtil.extractColumn(x2, 0), "%.4e"));
         */
+
+        //System.out.printf("alpha=\n%.3e\n", alpha);
+        //MatrixUtil.multiply(X, alpha);
+
+        WCSPt w = new WCSPt();
+        w.X = X;
+        w.alpha = alpha;
+
+        return w;
+    }
+
+    /**
+     * for a feature, given image coordinates of the features, camera matrices, and a map from image coordinate index to camera,
+     * calculate the location of the point in 3D WCS.
+     * @param imageToCameraIndexMap a map from xs index to camera matrix index
+     * @param cameras the camera matrices
+     * @param x a 3 x n matrix of image coordinates of a point in n images.
+     * @return
+     */
+    public static WCSPt calculateWCSPoint(Map<Integer, Integer> imageToCameraIndexMap,
+                                          List<CameraProjection> cameras, double[][] x) {
+        if (x.length != 3) {
+            throw new IllegalArgumentException("x.length must be 3");
+        }
+        int n = x[0].length;
+        if (n < 2) {
+            throw new IllegalArgumentException("x[0].length must be >= 2");
+        }
+
+        double ux, uy;
+        CameraProjection p;
+        double[] tmp;
+        double[][] a = new double[n * 2][4];
+        int i;
+        for (i = 0; i < n; ++i) {
+            ux = x[0][i];
+            uy = x[1][i];
+            p = cameras.get(imageToCameraIndexMap.get(i));
+
+            //y1 * p1vec[2]^T - p1vec[1]^T
+            tmp = Arrays.copyOf(p.getP()[2], 4);
+            MatrixUtil.multiply(tmp, uy);
+            a[2*i] = MatrixUtil.subtract(tmp, p.getP()[1]);
+
+            //p1vec[0]^T - x1 * p1vec[2]^T
+            tmp = Arrays.copyOf(p.getP()[2], 4);
+            MatrixUtil.multiply(tmp, ux);
+            a[2*i+1] = MatrixUtil.subtract(p.getP()[0], tmp);
+        }
+
+        // A is  4*N X 4
+        // A^T*A is 4 X 4
+        double[][] aTa = MatrixUtil.createATransposedTimesA(a);
+        assert(aTa.length == 4);
+        assert(aTa[0].length == 4);
+
+        //NOTE: SVD(A).V is the same as SVD(A^TA).V
+
+        SVD svd = null;
+        try {
+            svd = SVD.factorize(new DenseMatrix(aTa));
+        } catch (NotConvergedException ex) {
+            Logger.getLogger(Triangulation.class.getName()).log(Level.SEVERE, null, ex);
+            return null;
+        }
+
+        double[][] vT = MatrixUtil.convertToRowMajor(svd.getVt());
+        assert(vT.length == 4);
+        assert(vT[0].length == 4);
+
+        // eigenvector corresponding to the smallest eigenvalue is last row in svd.V^T
+        double[] X = Arrays.copyOf(vT[vT.length - 1], vT[0].length);
+        MatrixUtil.multiply(X, 1./X[X.length - 1]);
+
+        // can see that the constraint ||X||^2 = 1 is preserved
+
+        double alpha = 0;
+        for (i = 0; i < n; ++i) {
+            p = cameras.get(imageToCameraIndexMap.get(i));
+            double[] xRev = MatrixUtil.multiplyMatrixByColumnVector(p.getP(), X);
+            alpha += (1./xRev[2]);
+        }
+        alpha /= n;
 
         //System.out.printf("alpha=\n%.3e\n", alpha);
         //MatrixUtil.multiply(X, alpha);

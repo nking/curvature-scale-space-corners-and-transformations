@@ -11,6 +11,7 @@ import no.uib.cipr.matrix.NotConvergedException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  *
@@ -363,5 +364,149 @@ public class CameraPoseTest extends TestCase {
         // for nP=100:
         double oTol = 1E-3;
         double tTol = 5E-1;
+    }
+
+    public void testRandom() throws NotConvergedException {
+        // generate a set of features for an image
+        // create a camera intrinsic matrix K,
+        // motion w.r.t. image and scene, rotation R, and translation t
+        // and then projected WCS features.
+        // test that can recover the projection matrix
+
+        /*
+        smartphones K intr from Wu, Chen, &Chen "Visual Positioning Indoors: Human Eyes vs SmartPhone Cameras"
+        Table 1
+        Model  Xiaomi 5 Huawei P9 Samsung Note5 Lenovo Tango iPhone 7P
+          fx    3831.011 3096.023 4048.113 3854.211 3289.89
+          fy    3832.273 3096.611 4046.466 3851.217 3289.17
+          ox    1844.276 1482.911 2587.339 1492.329 1991.804
+          oy    2226.916 1982.791 1556.018 2692.189 1491.939
+
+         */
+
+        long seed = System.currentTimeMillis();
+        System.out.println("seed=" + seed);
+        Random rand = new Random(seed);
+
+        int nTests = 10;
+
+        double[][] x;
+        double[][] K;
+        double[][] R;
+        double[] t;
+        double[][] P = new double[3][4];
+        P[2][3] = 1;
+        double[][] XW;
+        for (int i = 0; i < nTests; ++i) {
+
+            int nP = 5000;//8 + rand.nextInt(200);
+
+            // image size [400 x 650]
+            x = randomPoints(rand, 400, 640, nP);
+            R = randomRotation(rand);
+
+            if (i % 3 == 0) {
+                t = randomTranslationSmall(rand);
+            } else {
+                t = randomTranslation(rand);
+            }
+
+            // wide angle: f <= 35 mm
+            // telephoto: f > 35mm
+            K = new double[][]{
+                        {3831.011, 0, 1844.276},
+                        {0, 3832.273, 2226.916},
+                        {0, 0, 1}
+                };
+
+            System.arraycopy(R[0], 0, P[0], 0,3);
+            System.arraycopy(R[1], 0, P[1], 0, 3);
+            System.arraycopy(R[2], 0, P[2], 0, 3);
+            P[0][3] = t[0];
+            P[1][3] = t[1];
+
+            P = MatrixUtil.multiply(K, P);
+
+            // x = P * X
+            double[][] pInv = MatrixUtil.pseudoinverseFullRowRank(P);
+            XW = MatrixUtil.multiply(pInv, x);
+            normalize(XW);
+            XW = MatrixUtil.copySubMatrix(XW, 0, 2, 0, XW[0].length - 1);
+
+            Camera.CameraPoseParameters result = CameraPose.calculatePoseFromXXW(x, XW);
+
+            double[][] resultR = result.getExtrinsicParameters().getRotation();
+            double[] resultT = result.getExtrinsicParameters().getTranslation();
+            MatrixUtil.multiply(resultT, 1./resultT[resultT.length - 1]);
+            double[][] resultK = result.getIntrinsicParameters().getIntrinsic();
+            double resultLambda = result.getIntrinsicParameters().getLambda();
+
+            double[][] diffR = Rotation.procrustesAlgorithmForRotation(R, resultR);
+            double[] diffT = MatrixUtil.subtract(t, resultT);
+            double[][] diffK = MatrixUtil.pointwiseSubtract(K, resultK);
+            double diffRSum = MatrixUtil.frobeniusNorm(diffR);
+            double diffTSum = MatrixUtil.lPSum(diffT, 2);
+            double diffKSum = MatrixUtil.frobeniusNorm(diffK);
+
+            int _t = 1;
+        }
+
+    }
+
+    private double[] randomTranslation(Random rand) {
+        double[] t = new double[]{rand.nextInt(1000), rand.nextInt(1000), 1};
+        if (rand.nextBoolean()) {
+            t[0] *= -1;
+        }
+        if (rand.nextBoolean()) {
+            t[1] *= -1;
+        }
+        return t;
+    }
+
+    private double[] randomTranslationSmall(Random rand) {
+        double[] t = new double[]{rand.nextDouble(), rand.nextDouble(), 1};
+        if (rand.nextBoolean()) {
+            t[0] *= -1;
+        }
+        if (rand.nextBoolean()) {
+            t[1] *= -1;
+        }
+        return t;
+    }
+
+    private double[][] randomPoints(Random rand, int c, int r, int n) {
+        double[][] x = new double[3][n];
+        Arrays.fill(x[2], 1);
+        for (int i = 0; i < n; ++i) {
+            x[0][i] = rand.nextInt(c);
+            x[1][i] = rand.nextInt(r);
+        }
+        return x;
+    }
+
+    //det(R)=1 is a proper rotation matrix.  rotation angles are counterclockwise.
+    private double[][] randomRotation(Random rand) {
+        double x = rand.nextInt(360) * Math.PI/180.;
+        double y = rand.nextInt(360) * Math.PI/180.;
+        double z = rand.nextInt(360) * Math.PI/180.;
+
+        double[][] r = Rotation.createRotationXYZ(x, y, z);
+        double det = MatrixUtil.determinant(r);
+        assert(Math.abs(det - 1) < 1E-7);
+        return r;
+    }
+
+    protected void normalize(double[][] XW) {
+        for (int i = 0; i < XW[0].length; ++i) {
+            //Z should be negative
+            boolean isPos = XW[2][i] > 0;
+            for (int j = 0; j < 4; ++j) {
+                XW[j][i] /= XW[3][i];
+                if (isPos) {
+                    //XW[j][i] *= -1;
+                }
+            }
+        }
     }
 }

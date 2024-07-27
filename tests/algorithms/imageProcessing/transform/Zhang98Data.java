@@ -36,7 +36,7 @@ public class Zhang98Data {
      * @throws IOException 
      */
     public static double[][] getFeatureWCS() throws IOException {
-        
+
         String path = ResourceFinder.findTestResourcesDirectory() + sep + ZHANGDIR
             + sep + "Model.txt";
         
@@ -621,5 +621,30 @@ public class Zhang98Data {
         ImageExt image = ImageIOHelper.readImageExt(path);
 
         return image;
+    }
+
+    /**
+     * get camera projection matrix for index idx.
+     * P = K * [R | -t]
+     * @param idx
+     * @return
+     */
+    public static double[][] getProjectionMatrix(int idx) {
+        if (idx < 1 || idx > 5) {
+            throw new IllegalArgumentException("idx must be 1 through 5, inclusive");
+        }
+        double[][] R = Zhang98Data.getRotation(idx);
+        double[] t = Zhang98Data.getTranslation(idx);
+
+        double[][] P = new double[3][4];
+        for (int i = 0; i < 3; ++i) {
+            System.arraycopy(R[i], 0, P[i], 0, 3);
+            P[i][3] = -1*t[i];
+        }
+
+        double[][] K = getIntrinsicCameraMatrix();
+        P = MatrixUtil.multiply(K, P);
+
+        return P;
     }
 }

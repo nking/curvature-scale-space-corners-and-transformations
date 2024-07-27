@@ -4,7 +4,9 @@ import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.text.Normalizer;
+import java.util.*;
+
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.NotConvergedException;
 import org.junit.Test;
@@ -159,5 +161,78 @@ public class TriangulationTest extends TestCase {
         System.out.printf("      =%s\n", FormatArray.toString(xw, "%.3e"));
 
         assertTrue(Math.abs(Math.abs(xw[2]) - 425) < 150);
+    }
+
+
+    /**
+     * Test of calculateWCSPoint method, of class Triangulation.
+     */
+    public void testCalculateWCSPoints() throws IOException, NotConvergedException {
+
+        double[][] expectedXW = Zhang98Data.getFeatureWCS();
+
+        Map<Integer, Integer> imageToCameraIndexMap = new HashMap<>();
+        List<Camera.CameraProjection> cameras = new ArrayList<Camera.CameraProjection>();
+        for (int j = 0; j < 5; ++j) {
+            double[][] p = Zhang98Data.getProjectionMatrix(j + 1);
+            Camera.CameraProjection P = new Camera.CameraProjection(p);
+            cameras.add(P);
+            imageToCameraIndexMap.put(j, j);
+        }
+
+        double[][] x1 = Zhang98Data.getObservedFeaturesInImage(1);
+        double[][] x2 = Zhang98Data.getObservedFeaturesInImage(2);
+        double[][] x3 = Zhang98Data.getObservedFeaturesInImage(3);
+        double[][] x4 = Zhang98Data.getObservedFeaturesInImage(4);
+        double[][] x5 = Zhang98Data.getObservedFeaturesInImage(5);
+
+        int n = expectedXW[0].length;
+
+        // 256 points, 5 images
+        double[][] x;
+        //for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < n; i += 50) {
+            // point i
+            x = new double[3][5];
+            Arrays.fill(x[2], 1);
+
+            for (int j = 0; j < 5; ++j) {
+                // point i in image j
+                double[][] _x = null;
+                switch (j) {
+                    case 0:
+                        _x = x1;
+                        break;
+                    case 1:
+                        _x = x2;
+                        break;
+                    case 2:
+                        _x = x3;
+                        break;
+                    case 3:
+                        _x = x4;
+                        break;
+                    case 4:
+                        _x = x5;
+                        break;
+                }
+                x[0][j] = _x[0][i];
+                x[1][j] = _x[1][i];
+            }// end j
+
+            double[] expected = MatrixUtil.extractColumn(expectedXW, i);
+
+            Triangulation.WCSPt wcs = Triangulation.calculateWCSPoint(imageToCameraIndexMap, cameras, x);
+            MatrixUtil.multiply(wcs.X, 1./wcs.X[2]);
+            MatrixUtil.multiply(wcs.X, 1./wcs.X[3]);
+            MatrixUtil.multiply(wcs.X, -1);
+
+            //System.out.printf("\nresult=%s\n", FormatArray.toString(wcs.X, "%.5f"));
+            //System.out.printf("expect=%s\n", FormatArray.toString(expected, "%.5f"));
+
+            assertTrue(Math.abs(wcs.X[0] - expected[0]) < 0.1);
+            assertTrue(Math.abs(wcs.X[1] - expected[1]) < 0.1);
+
+        }// end i
     }
 }

@@ -267,7 +267,7 @@ public class CameraCalibration {
             ell[2*i + 1] = new double[]{0, 0, 0, X, Y, 1, -v*X, -v*Y, -v};
         }
         
-        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(ell);
+        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(MatrixUtil.createATransposedTimesA(ell));
         
         // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
         double[] xOrth = svd.vT[svd.vT.length - 1];
@@ -680,7 +680,7 @@ public class CameraCalibration {
         }
         
         //Vb = 0 and b = [B11, B12, B22, B13, B23, B33]^T
-        SVDProducts svd = MatrixUtil.performSVD(v);
+        SVDProducts svd = MatrixUtil.performSVD(MatrixUtil.createATransposedTimesA(v));
         
         // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
         double[] b = svd.vT[svd.vT.length - 1];
@@ -870,7 +870,7 @@ public class CameraCalibration {
             a[2*i + 1] = new double[]{0, 0, 0, X, Y, 1, -v*X, -v*Y, -v};
         }
         
-        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(a);
+        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(MatrixUtil.createATransposedTimesA(a));
         
         // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
         double[] h = svd.vT[svd.vT.length - 1];

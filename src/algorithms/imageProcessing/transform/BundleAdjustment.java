@@ -18,7 +18,7 @@ import no.uib.cipr.matrix.*;
  in refinement of the intrinsic and extrinsic camera parameters.
  BundleAdjustment calculates partial derivatives of the parameters
  and calculates the re-projection error to form the parameter update steps,
- the gradient covector, and the evaluation of the objective (sum of squares of
+ the gradient covector, and the evaluation of the objective (minimize sum of squares of
  the re-projection error).
 
  The main method is solveSparsely(...).
@@ -33,7 +33,7 @@ import no.uib.cipr.matrix.*;
  * rays leaving each 3D feature and converging on each camera centre, which are 
  * ‘adjusted’ optimally with respect to both feature and camera positions. 
  * Equivalently — unlike independent model methods, which merge partial 
- * reconstructions without up- dating their internal structure — all of the 
+ * reconstructions without up-dating their internal structure — all of the
  * structure and camera parameters are adjusted together ‘in one bundle’."
  * 
  * This version of Bundle-Adjustment uses Levenberg-Marquardt Algorithm (LMA) 
@@ -52,7 +52,8 @@ import no.uib.cipr.matrix.*;
  * 
  * TODO: consider implementing the "reduced structure system" for the cases
  * where (9^3)*mImages > (3^3)*nFeatures,  The "reduced camera system" is
- * currently implemented.
+ * currently implemented only, but "reduced structure system"
+ * for some cases would be more efficient.
  * 
  * <pre>
  * for a bigger picture summary, see Section 
@@ -62,7 +63,7 @@ import no.uib.cipr.matrix.*;
  * Also see Chap 5.2, pp 127-128 of MASKS for constrained optimization.
  * </pre>
  <pre>
- Note, if need to estimate the instrinsic camera for initial conditions, one can generally
+ Note, if need to estimate the intrinsic camera for initial conditions, one can generally
  start with:
  MASKS Algorithm 11.6, step 1:
  Guess a calibration matrix K by choosing the optical center at the center of the image,
@@ -79,7 +80,7 @@ public class BundleAdjustment {
 
     private int useHomography = 0;
         
-    //private static qfinal Level LEVEL = Level.INFO;
+    //private static final Level LEVEL = Level.INFO;
     private static final Logger log = Logger.getLogger(CameraCalibration.class.getSimpleName());
     
     public BundleAdjustment() {
@@ -167,9 +168,9 @@ public class BundleAdjustment {
             a pair of stereo-images.  it also uses cholesky factoring of block
             sparse matrix structure.
            
-     Tomasi 2007,CPS 296.1 Supplementary Lectur Notes, Duke University
+     Tomasi 2007,CPS 296.1 Supplementary Lecture Notes, Duke University
      
-     graph partioning:
+     graph partitioning:
         https://cseweb.ucsd.edu/classes/fa04/cse252c/manmohan1.pdf
         recursive partitioning w/ elimination graph and vertex cut.
         
@@ -183,7 +184,7 @@ public class BundleAdjustment {
         UnweightedGraphCommunityFinder.java
         
      </pre>
-     TODO: review nad improve the derivatives.
+     TODO: review nad improve the derivatives.  need good test data.
      * @param coordsI the features observed in different images (in coordinates
      * of the image reference frame).
      * The format of coordsI is 3 X (nFeatures*nImages). Each row should
