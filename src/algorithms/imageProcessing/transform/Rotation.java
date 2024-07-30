@@ -1540,7 +1540,7 @@ public class Rotation {
             throw new IllegalArgumentException("r must be 3x3");
         }
         double det = MatrixUtil.determinant(r);
-        if (Math.abs(det - 1) > 1E-7) {
+        if (Math.abs(det - 1) < 1E-7) {
             throw new IllegalArgumentException("expecting det(r) = 1 for proper rotation matrix");
         }
 
