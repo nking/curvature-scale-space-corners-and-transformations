@@ -93,16 +93,143 @@ public class CameraPose {
     public static CameraPoseParameters calculatePoseFromXXW(double[][] x, double[][] X)
         throws NotConvergedException {
 
-        // from x = P * X.  rescaled to near the projection scale, but only roughly, not refined.
+        if (x.length != 3) {
+            throw new IllegalArgumentException("x.length must be 3");
+        }
+        if (X.length != 3) {
+            throw new IllegalArgumentException("X.length must be 3");
+        }
+        int n = x[0].length;
+        if (n < 6) {
+            throw new IllegalArgumentException("x must have at least 6 correspondences");
+        }
+        if (X[0].length != n) {
+            throw new IllegalArgumentException("the number of columns in X must be the same as in x");
+        }
+
+        // from x = P * X.
         double[][] p = calculatePFromXXW(x, X);
+
+        //TODO: refine p to minimize the reproduction error ||x - P*X||^2
+
+        return calculatePoseFromP(p);
+    }
+
+    /**
+     * given the camera projection matrix (i.e. K*[R|t]), estimate the
+     * camera matrix intrinsic and extrinsic parameters using a pin-hole camera model.
+     *
+     * This is also known as estimating the Motion.
+     * This method uses DLT and should be followed by non-linear optimization
+     * to improve the parameter estimates.
+     <pre>
+     references:
+     https://www.ipb.uni-bonn.de/html/teaching/msr2-2020/sse2-13-DLT.pdf
+     slides from a lecture titled "Photogrammetry & Robotics Lab,
+     Camera Calibration: Direct Linear Transform" by Cyrill Stachniss
+     see also http://www.ipb.uni-bonn.de/photogrammetry-i-ii/
+     and
+     Kitani lecture notes http://www.cs.cmu.edu/~16385/s17/Slides/11.3_Pose_Estimation.pdf
+
+     Zhang, chap 2 of camera calibration book:
+     https://people.cs.rutgers.edu/~elgammal/classes/cs534/lectures/CameraCalibration-book-chapter.pdf
+     </pre>
+     <pre>
+
+     Regarding translation, p3 is included in the results.  p3 is the last column in the projection
+     matrix calculated internally.  (2) and (4) outlined below are what you should consider using
+     to estimate the translation, depending upon your system's use of translate then rotate or vice versa.
+     If the user is assuming translate then rotate: X_c = R * (X_wcs - t).
+     (1) The projection matrix constructed would be [R | -R*t]
+     where the last column is -R*t, R is rotation, t is translation,
+     XW is object in real world coordinate frame, X_c is the object location seen in
+     the camera reference frame.
+     In this case, one would extract the translation
+     using t = -1*(R^-1)*p3.  Note that when properly formed, R^-1 = R^T because rotation is orthogonal and unitary.
+     (2) For the context of X_im = K * X_c, we have P = [K*R | -K*R*t]
+     where K is the intrinsic parameter matrix for the camera.
+     In this case, one would extract the translation
+     using t = -1 * R^-1 * K^-1 * p3.
+     If the user is assuming rotate then translate, X_c = R * X_wcs + t.
+     (3) The projection matrix constructed would be [R | t].
+     In this case, one would extract the translation
+     using t = p3.
+     (4) For the context of X_im = K * X_c, we have P = [K*R | K*t].
+     In this case, one would extract the translation
+     using t = K^-1 * p3.
+
+     This method returns case (2) translation in the CameraExtrinsics field and assumes that x are given
+     in image coordinates.
+     
+     </pre>
+     * @param x the image coordinates of the features in pixels in format 3 X N where
+     * 3 is for x, y, 1 rows, and N columns is the number of features.  At least 6 features are needed.
+     * NOTE x and X should both be distortion-free or both should be distorted.
+     * @param X the world coordinates of the features in format 3 X N where
+     * 3 is for x, y, 1 rows, and N columns is the number of features.  At least 6 features are needed.
+     * NOTE x and X should both be distortion-free or both should be distorted.
+     * @return
+     */
+    public static CameraPoseParameters calculatePoseFromP(double[][] p)
+            throws NotConvergedException {
+
+        if (p.length != 3) {
+            throw new IllegalArgumentException("p.length must be 3");
+        }
+        if (p[0].length != 4) {
+            throw new IllegalArgumentException("p[0].length must be 4");
+        }
 
         // P = K * [ R | t ] = [K*R | K*t]  = [K*R | -K*R*C] where t=-R*C
         // let M = K*R
         // P = [M | M*C]
 
+        double[] p3 = MatrixUtil.extractColumn(p, 3);
+
         double[][] M = MatrixUtil.copySubMatrix(p, 0, 2, 0, 2);
 
-        //(1)
+        // method from zhang chap2 of camera calibration book
+        /* K2 = M*M^T = K*K^T
+              = [ ku=(alpha^2 + gamma^2 + u0^2)  kc=(u0*v0 + c+alpha)     u0 ]
+                [ kc=(u0*v0 + c+alpha)           kv=(alphav^2 + v0^2)     v0 ]
+                [ u0                              v0                      1  ]
+           normalize K2 so that K2[2][2]=1
+
+          u0 = k2[0][2]
+          v0 = k2[1][2]
+          beta = sqrt(kv - v0^2)
+          gamma = (kc - u0*v0)/beta
+          alpha = sqrt(ku - u0^2 - gamma^2)
+
+          alpha, beta > 0
+
+          then form K from those
+          R = K^-1 * M
+          t = K^-1 * (last column of P)
+         */
+        double[][] k2 = MatrixUtil.multiply(M, MatrixUtil.transpose(M));
+        MatrixUtil.multiply(k2, 1./k2[2][2]);
+
+        double u0 = k2[0][2];
+        double v0 = k2[1][2];
+        double beta = Math.sqrt(k2[1][1] - v0*v0);
+        double gamma = (k2[0][1] - u0*v0)/beta;
+        double alpha = Math.sqrt(k2[0][0] - u0*u0 - gamma*gamma);
+        double[][] kEst1 = new double[][]{
+                {alpha, gamma, u0}, {0, beta, v0}, {0, 0, 1}
+        };
+        double[][] kEst1Inv = Camera.createIntrinsicCameraMatrixInverse(kEst1);
+        double[][] rEst1 = MatrixUtil.multiply(kEst1Inv, M);
+        double[] tEst1 = MatrixUtil.multiplyMatrixByColumnVector(kEst1Inv, p3);
+
+        // scale _t and _r by:
+        double lambda1_1 = 1./MatrixUtil.lPSum(MatrixUtil.extractColumn(rEst1, 0), 2);
+        double lambda1_2 = 1./MatrixUtil.lPSum(MatrixUtil.extractColumn(rEst1, 1), 2);
+        MatrixUtil.multiply(tEst1, lambda1_1);
+        MatrixUtil.multiply(rEst1, lambda1_1);
+
+        /*
+        //(1) method from kitani lecture
         RQ rqDecomp = RQ.factorize(new DenseMatrix(M));
         double[][] kEst = MatrixUtil.convertToRowMajor(rqDecomp.getR());
         double[][] rEst = MatrixUtil.convertToRowMajor(rqDecomp.getQ());
@@ -124,41 +251,23 @@ public class CameraPose {
         double[] C = Arrays.copyOf(svdP.vT[svdP.vT.length - 1], 3);
         MatrixUtil.multiply(C, 1./C[2]);
         // t = -R*C
-        double[] t = MatrixUtil.multiplyMatrixByColumnVector(rEst, C);
-        MatrixUtil.multiply(t, -1);
+        double[] tEst = MatrixUtil.multiplyMatrixByColumnVector(rEst, C);
+        MatrixUtil.multiply(tEst, -1);
 
-        // instead, could use:  last column of P = M*C => C = pseudoinv(M) * P
-        // [3X3]
-        /*double[][] invM;
-        int rank = MatrixUtil.rank(M, 1E-5);
-        if (rank == 3) {
-            invM = MatrixUtil.pseudoinverseFullColumnRank(M);
-        } else {
-            invM = MatrixUtil.pseudoinverseRankDeficient(M);
-        }
-
-        // this assumes xc=R*(xw-t) instead of xc=R*xw + t
-        // calculates: last column of P = P[*][3] = -K*R*X_0 where X_0 is projection center of camera.
-        // X_0 = -1 * R^-1 * K^-1 * P[*][3]
-        double[] p3 = MatrixUtil.extractColumn(p, 3);
-        double[] C2 = MatrixUtil.multiplyMatrixByColumnVector(invM, p3);
-        //double[] C3 = Arrays.copyOf(C2, C2.length);
-        //MatrixUtil.multiply(C3, 1./C3[2]);
-        MatrixUtil.multiply(C2, -1);
-        double[] t2 = MatrixUtil.multiplyMatrixByColumnVector(rEst, C2);
-        MatrixUtil.multiply(t2, -1);
+        double lambda2_1 = 1./MatrixUtil.lPSum(MatrixUtil.extractColumn(rEst, 0), 2);
+        double lambda2_2 = 1./MatrixUtil.lPSum(MatrixUtil.extractColumn(rEst, 1), 2);
+        double lambda3_2 = 1./MatrixUtil.lPSum(MatrixUtil.extractColumn(rEst, 2), 2);
         */
-        double[] p3 = MatrixUtil.extractColumn(p, 3);
 
         CameraExtrinsicParameters extrinsics = new CameraExtrinsicParameters();
-        extrinsics.setRotation(rEst);
-        extrinsics.setTranslation(t);
+        extrinsics.setRotation(rEst1);
+        extrinsics.setTranslation(tEst1);
 
         CameraIntrinsicParameters intrinsics = new CameraIntrinsicParameters();
-        intrinsics.setIntrinsic(kEst);
+        intrinsics.setIntrinsic(kEst1);
 
         CameraPoseParameters camera = new CameraPoseParameters(intrinsics, extrinsics, p3);
-        
+
         return camera;
     }
 
@@ -221,7 +330,9 @@ public class CameraPose {
         // vT is 12X12.  last row in vT is the eigenvector for the smallest eigenvalue
         // it is also the epipole e1, defined as the right nullspace
         double[] xOrth = svd.vT[svd.vT.length - 1];
-        MatrixUtil.multiply(xOrth, 1./xOrth[xOrth.length - 1]);
+
+        // subject to ||x|| = 1
+        xOrth = MatrixUtil.normalizeLP(xOrth, 2);
 
         // assert that ell * xOrth ~ 0
         //double[] chk = MatrixUtil.multiplyMatrixByColumnVector(ell, xOrth);
@@ -233,6 +344,7 @@ public class CameraPose {
         System.arraycopy(xOrth, 4, P2[1], 0, 4);
         System.arraycopy(xOrth, 8, P2[2], 0, 4);
 
+        // put back into data units
         P2 = MatrixUtil.multiply(invPNorm, P2);
 
         // enforce det(R) > 0
@@ -240,34 +352,9 @@ public class CameraPose {
         detR = (detR>0) ? 1 : -1;
         MatrixUtil.multiply(P2, detR);
 
-        // there may still be a large difference between x and P*X
-        // so this is a look at applying a scalar to P*X*s.  xOrth scale is lost in the decomposition, so we would like
-        // to apply a scalar factor s to P.
-        // We want to minimize (x - P*X*s).  The simplest, but not robust solution is a quick division.
-        // if x==P*X, s=1 => so, figuratively, P*X/x=1 and then  s = x/(P*X).
+        // there may still be a large difference between x and P*X.
+        // after this, refinement should be used to minimize (x - P*X/s).
         // caveat is that the last column of P does not have data to constrain it (think of P*X and X[3] being 1).
-
-        double[][] _X = new double[4][X[0].length];//4xn
-        Arrays.fill(_X[3], 1);
-        System.arraycopy(X[0], 0, _X[0], 0, _X[0].length);
-        System.arraycopy(X[1], 0, _X[1], 0, _X[1].length);
-        System.arraycopy(X[2], 0, _X[2], 0, _X[2].length);
-        double[][] PX = MatrixUtil.multiply(P2, _X); // 3x4  4xn = 3xn
-
-        double xScale = 0;
-        double yScale = 0;
-        int nD = 0;
-        for (i = 0; i < x[0].length; ++i) {
-            if (PX[0][i] != 0 && PX[1][i] != 0) {
-                xScale += x[0][i] / PX[0][i];
-                yScale += x[1][i] / PX[1][i];
-                ++nD;
-            }
-        }
-        xScale /= nD;
-        yScale /= nD;
-        double s = Math.sqrt((xScale * xScale + yScale*yScale)/2.);
-        MatrixUtil.multiply(P2, s);
 
         return P2;
     }

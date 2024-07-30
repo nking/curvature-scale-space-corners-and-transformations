@@ -92,14 +92,14 @@ two ways that the skew matrix are expressed are transposed from one another:
 *  Boost, GNU Octave, NASA’s SPICE.
 
 Note that Shuster 1993 use rotation matrices that are transposed from the standard
-* in createRotationZYX():
+ in createRotationZYX():
     
         about z-axis (yaw):           about the y-axis (pitch):    about x-axis (roll): 
             | cos φ    sin φ    0 |    |  cos ψ    0 -sin ψ |      |    1       0       0 |  
             |-sin φ    cos φ    0 |    |      0    1      0 |      |    0   cos θ   sin θ |  
             |     0        0    1 |    |  sin ψ    0  cos ψ |      |    0  -sin θ   cos θ | 
             * 
-    The Shuster transposed matrices are not used in this class.
+    The Shuster transposed matrices are not used in this java class.
     
  <pre>
  Some references in the "right hand system":
@@ -1539,6 +1539,11 @@ public class Rotation {
         if (r.length != 3 || r[0].length != 3) {
             throw new IllegalArgumentException("r must be 3x3");
         }
+        double det = MatrixUtil.determinant(r);
+        if (Math.abs(det - 1) > 1E-7) {
+            throw new IllegalArgumentException("expecting det(r) = 1 for proper rotation matrix");
+        }
+
         /*
         https://github.com/robEllenberg/comps-plugins/blob/master/python/rodrigues.py
         compare to:
@@ -1594,11 +1599,14 @@ public class Rotation {
         */
         
         // theta in range [0, Math.PI)
-        double theta = Math.acos(0.5*(traceR - 1.));
+        // Math.acos argument must be >= 0 and <= 1
+        // precision errors possibly result in > 1 so rounding here assuming machine precision 1E-11
+        double arg = Math.round(0.5*(traceR - 1.)*1E11)/1E11;
+        double theta = Math.acos(arg);
         
         // but // http://www2.ece.ohio-state.edu/~zhang/RoboticsClass/docs/LN3_RotationalMotion.pdf
-        // use t1 without theta factor: 
-        double t1 = 0.5*theta/Math.sin(theta);
+        // use t1 without theta factor:
+        double t1 = (theta == 0) ? 1 : 0.5*theta/Math.sin(theta);
         double[] w = new double[3];
         w[0] = t1*(r[2][1] - r[1][2]);
         w[1] = t1*(r[0][2] - r[2][0]);
@@ -2157,7 +2165,7 @@ public class Rotation {
     }
     
     /**
-     * calculate  R_xyz = R_z(theta_z)*R_y(theta_y)*R_z(theta_z)
+     * calculate  R_xyz = R_z(theta_z)*R_y(theta_y)*R_x(theta_x)
      * ,
      * that is, given an array of rotation angles, return the rotation matrix
      * as the rotations for z, y, x multiplied in that order.
