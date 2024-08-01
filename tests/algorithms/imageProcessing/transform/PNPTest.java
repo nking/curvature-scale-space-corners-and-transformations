@@ -8,9 +8,6 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
-import no.uib.cipr.matrix.NotConvergedException;
-import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  *
@@ -59,7 +56,7 @@ public class PNPTest extends TestCase {
         System.out.printf("coordsW dimensions = [%d X %d]\ncoordsI dimensions = [%d X %d]\n",
             coordsW.length, coordsW[0].length, coordsI.length, coordsI[0].length);
         
-        CameraMatrices cameraMatrices = CameraCalibration.estimateCamera(nFeatures, coordsI, coordsW, useR2R4);
+        CameraMatrices cameraMatrices = CameraCalibration.estimateCameraPlanar(nFeatures, coordsI, coordsW, useR2R4);
         
         CameraIntrinsicParameters kIntr = cameraMatrices.getIntrinsics();
         

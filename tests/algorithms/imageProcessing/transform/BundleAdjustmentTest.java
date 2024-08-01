@@ -76,7 +76,7 @@ public class BundleAdjustmentTest extends TestCase {
 
         boolean useBouguetForRodrigues = false;
 
-        Camera.CameraMatrices cameraMatrices = CameraCalibration.estimateCamera(nFeatures, coordsI, coordsW, useR2R4);
+        Camera.CameraMatrices cameraMatrices = CameraCalibration.estimateCameraPlanar(nFeatures, coordsI, coordsW, useR2R4);
         
         Camera.CameraIntrinsicParameters kIntr = cameraMatrices.getIntrinsics();
         List<Camera.CameraExtrinsicParameters> extrinsics = cameraMatrices.getExtrinsics();

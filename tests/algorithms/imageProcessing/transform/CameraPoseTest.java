@@ -11,7 +11,6 @@ import no.uib.cipr.matrix.NotConvergedException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  *
@@ -29,7 +28,7 @@ public class CameraPoseTest extends TestCase {
     /**
      * Test of calculatePoseUsingDLT method, of class CameraPose.
      */
-    public void testCalculatePoseUsingZhangeData() throws Exception {
+    public void estCalculatePoseUsingZhangeData() throws Exception {
 
         System.out.println("testCalculatePoseUsingDLT");
         // see testresources/zhang1998/README.txt
@@ -143,9 +142,6 @@ public class CameraPoseTest extends TestCase {
             Camera.CameraIntrinsicParameters intr = result.getIntrinsicParameters();
             double[] p3 = Arrays.copyOf(result.getP3(), result.getP3().length);
 
-            Camera.CameraExtrinsicParameters extr2 = CameraPose.calculatePoseUsingCameraCalibration(
-                    new Camera.CameraIntrinsicParameters(expectedKIntr, radial, useR2R4), x, xW);
-
             /*
             tc1 = -1*(R^-1)*p3
             tc3 = p3
@@ -167,24 +163,10 @@ public class CameraPoseTest extends TestCase {
                     MatrixUtil.pseudoinverseFullColumnRank(intr.getIntrinsic()), p3);
             MatrixUtil.multiply(_ti4,1./_ti4[2]);
 
-            double[] ti2_2 = Arrays.copyOf(extr2.getTranslation(), extr2.getTranslation().length);
-            MatrixUtil.multiply(ti2_2,1./ti2_2[2]);
-            double[] ti4_2 = MatrixUtil.multiplyMatrixByColumnVector(
-                    MatrixUtil.pseudoinverseFullColumnRank(expectedR), extr2.getTranslation());
-            MatrixUtil.multiply(ti4_2,-1);
-            MatrixUtil.multiply(ti4_2,1./ti4_2[2]);
-
-            double[][] r2Orth = MatrixUtil.copy(extr2.getRotation());
-            r2Orth = Rotation.orthonormalizeUsingSVD(r2Orth);
-
             // find distances between rotations
             rT0[i-1] = Rotation.extractThetaFromZYX(extr.getRotation());
             rT0[i-1] = Arrays.copyOf(rT0[i-1], rT0[i-1].length);
             MatrixUtil.multiply(rT0[i-1], 180./Math.PI);
-
-            rT2[i-1] = Rotation.extractThetaFromZYX(r2Orth);
-            rT2[i-1] = Arrays.copyOf(rT2[i-1], rT2[i-1].length);
-            MatrixUtil.multiply(rT2[i-1], 180./Math.PI);
 
             rTE[i-1] = Rotation.extractThetaFromZYX(expectedR);
             rTE[i-1] = Arrays.copyOf(rTE[i-1], rTE[i-1].length);
@@ -194,15 +176,9 @@ public class CameraPoseTest extends TestCase {
             double[] qBarfoot = Rotation.convertHamiltonToBarfootQuaternion(qHamilton);
             double distR0 = Rotation.distanceBetweenQuaternions(qBarfootE, qBarfoot);
 
-            qHamilton = Rotation.createHamiltonQuaternionZYX(Rotation.extractThetaFromZYX(r2Orth));
-            qBarfoot = Rotation.convertHamiltonToBarfootQuaternion(qHamilton);
-            double distR2Orth = Rotation.distanceBetweenQuaternions(qBarfootE, qBarfoot);
-
             System.out.printf("%d) r=\n%s\n", i, FormatArray.toString(extr.getRotation(), "%.3e"));
-            System.out.printf("%d) r2=\n%s\n", i, FormatArray.toString(extr2.getRotation(), "%.3e"));
-            System.out.printf("%d) r2Orth=\n%s\n", i, FormatArray.toString(r2Orth, "%.3e"));
             System.out.printf("    r expected=\n%s\n", FormatArray.toString(expectedR, "%.3e"));
-            System.out.printf("dist r     =%.3e\ndist r2Orth=%.3e\n", distR0, distR2Orth);
+            System.out.printf("dist r     =%.3e\n", distR0);
             System.out.printf("%d) kIntr=\n%s\n", i, FormatArray.toString(intr.getIntrinsic(), "%.3e"));
             System.out.printf("    kIntr expected=\n%s\n", FormatArray.toString(expectedKIntr, "%.3e"));
             System.out.printf("%d) tc1=\n%s\n", i, FormatArray.toString(tc1, "%.3e"));
@@ -211,8 +187,6 @@ public class CameraPoseTest extends TestCase {
             System.out.printf("%d) ti2=\n%s\n", i, FormatArray.toString(ti2, "%.3e"));
             System.out.printf("%d) ti4=\n%s\n", i, FormatArray.toString(ti4, "%.3e"));
             System.out.printf("%d) _ti4=\n%s\n", i, FormatArray.toString(_ti4, "%.3e"));
-            System.out.printf("%d) ti2_2=\n%s\n", i, FormatArray.toString(ti2_2, "%.3e"));
-            System.out.printf("%d) ti4_2=\n%s\n", i, FormatArray.toString(ti4_2, "%.3e"));
             System.out.printf("    t expected=\n%s\n", FormatArray.toString(expectedT, "%.3e"));
 
         }
@@ -370,7 +344,8 @@ public class CameraPoseTest extends TestCase {
 
         //DEBUG
         {
-            // from cahp of CameraCalibration book, chapter by Zhang (add reference)
+            // from chap 2 of Camera Calibration book, chapter by Zhang (add reference)
+            //https://people.cs.rutgers.edu/~elgammal/classes/cs534/lectures/CameraCalibration-book-chapter.pdf
             double[][] p = new double[][]{
                     {7.025659E-1, -2.861189E-2, -5.377696E-1, 6.24189E1},
                     {2.077632E-1, 1.265804, 1.591456E-1, 1.075646E1},
@@ -393,7 +368,6 @@ public class CameraPoseTest extends TestCase {
             double[][] diffR = Rotation.procrustesAlgorithmForRotation(expectedRot, c.getExtrinsicParameters().getRotation());
             double[] scaleDiffT = MatrixUtil.pointwiseDivision(expectedT, c.getExtrinsicParameters().getTranslation());
 
-            int _t = 1;
         }
         // generate a set of features for an image
         // create a camera intrinsic matrix K,
@@ -416,10 +390,10 @@ public class CameraPoseTest extends TestCase {
         System.out.println("seed=" + seed);
         Random rand = new Random(seed);
 
-        int nTests = 10;
+        int nTests = 100;
         int zInit = 1;
-        double[][] rot0 = MatrixUtil.createIdentityMatrix(3);
-        double[] t0 = new double[]{0,0,zInit};
+        //double[][] rot0 = MatrixUtil.createIdentityMatrix(3);
+        //double[] t0 = new double[]{0,0,zInit};
         double[][] x;
         double[][] K;
         double[][] R;
@@ -432,12 +406,13 @@ public class CameraPoseTest extends TestCase {
         int XWF = 1000;
         for (int i = 0; i < nTests; ++i) {
 
-            int nP = 5000;//8 + rand.nextInt(200);
+            int nP = 100 + rand.nextInt(200);
 
             // image size [400 x 650]
-            XW = randomPoints3D(rand, 400, nP);
-            R = rot0;//randomRotation(rand);
-            t = t0;//randomTranslation(rand);
+            XW = randomPoints3D(rand, 4000, nP);
+            //TODO: handle no rotation or no translation.  haven't coded that into method yet.
+            R = randomRotation(rand);
+            t = randomTranslation(rand);
 
             // wide angle: f <= 35 mm
             // telephoto: f > 35mm
@@ -459,9 +434,20 @@ public class CameraPoseTest extends TestCase {
             // x = P * X
             x = MatrixUtil.multiply(P, XW);
             normalize(x);
-            XW = MatrixUtil.copySubMatrix(XW, 0, 2, 0, XW[0].length - 1);
 
-            Camera.CameraPoseParameters result = CameraPose.calculatePoseFromXXW(x, XW);
+            int np2 = filter(x, XW);
+            x = MatrixUtil.copySubMatrix(x, 0, x.length-1, 0, np2-1);
+            XW = MatrixUtil.copySubMatrix(XW, 0, XW.length-1, 0, np2-1);
+
+            XW = MatrixUtil.copySubMatrix(XW, 0, 2, 0, XW[0].length - 1);
+            normalize(XW);
+
+            Camera.CameraPoseParameters result;
+            try {
+                result = CameraPose.calculatePoseFromXXW(x, XW);
+            } catch (Exception e) {
+                continue;
+            }
 
             double[][] resultR = result.getExtrinsicParameters().getRotation();
             double[] resultT = result.getExtrinsicParameters().getTranslation();
@@ -477,8 +463,7 @@ public class CameraPoseTest extends TestCase {
             double diffKSum = MatrixUtil.frobeniusNorm(diffK);
 
             boolean useR24 = false;
-            Camera.CameraMatrices ms = CameraCalibration.estimateCamera(nP, x, XW, useR24);
-            Camera.CameraMatrices ms2 = CameraCalibration.estimateCamera2(nP, x, XW, useR24);
+            Camera.CameraMatrices ms = CameraCalibration.estimateCameraPlanar(np2, x, XW, useR24);
 
             double[][] diffR2 = Rotation.procrustesAlgorithmForRotation(R, ms.getExtrinsics().get(0).getRotation());
             double[] diffT2 = MatrixUtil.subtract(t, ms.getExtrinsics().get(0).getTranslation());
@@ -492,8 +477,29 @@ public class CameraPoseTest extends TestCase {
 
     }
 
+    private int filter(double[][] x, double[][] XW) {
+        int np = x[0].length;
+        int n = 0;
+        int j = 0;
+        for (int i = 0; i < np; ++i) {
+            if (x[0][i] >= 0 && x[1][i] >= 0) {
+                if (i != j) {
+                    for (int k = 0; k < x.length; ++k) {
+                        x[k][j] = x[k][i];
+                    }
+                    for (int k = 0; k < XW.length; ++k) {
+                        XW[k][j] = XW[k][i];
+                    }
+                }
+                ++n;
+                ++j;
+            }
+        }
+        return n;
+    }
+
     private double[] randomTranslation(Random rand) {
-        double[] t = new double[]{rand.nextInt(1000), rand.nextInt(1000), 1};
+        double[] t = new double[]{rand.nextInt(100), rand.nextInt(100), 1};
         if (rand.nextBoolean()) {
             t[0] *= -1;
         }

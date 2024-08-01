@@ -75,43 +75,47 @@ public class EpipolarNormalizationHelper {
     </pre>
      */
     public static double[][] unitStandardNormalize(double[][] x) {
-        if (x.length != 3) {
-            throw new IllegalArgumentException("x.length must be 3");
+        if (x.length != 3 && x.length != 4) {
+            throw new IllegalArgumentException("x.length must be 3 or 4");
         }
         int n = x[0].length;
 
-        double[] mS = new double[4];
+        int nd = x.length - 1;
+
+        double[] mS = new double[2*nd];
 
         int i;
         int j;
         for (i = 0; i < n; ++i) {
-            for (j = 0; j < 2; ++j) {
+            for (j = 0; j < nd; ++j) {
                 mS[j] += x[j][i];
             }
         }
 
-        for (j = 0; j < 2; ++j) {
+        for (j = 0; j < nd; ++j) {
             mS[j] /= n;
         }
 
         double d;
         for (i = 0; i < n; ++i) {
-            for (j = 0; j < 2; ++j) {
+            for (j = 0; j < nd; ++j) {
                 d = (x[j][i] - mS[j]);
-                mS[j + 2] += (d * d);
+                mS[j + nd] += (d * d);
             }
         }
-        for (j = 2; j < 4; ++j) {
+        for (j = nd; j < 2*nd; ++j) {
             mS[j] = Math.sqrt(mS[j]/(n - 1.0));
         }
 
-        double[][] t = new double[3][];
-        t[0] = new double[]{1./mS[2],       0,     -mS[0]/mS[2]};
-        t[1] = new double[]{0,           1./mS[3], -mS[1]/mS[3]};
-        t[2] = new double[]{0,           0,           1};
+        double[][] t = new double[x.length][x.length];
+        for (i = 0; i < nd; ++i) {
+            t[i][i] = 1. / mS[nd];
+            t[i][t[i].length - 1] = -mS[i] / mS[nd+i];
+        }
+        t[x.length - 1][x.length - 1] = 1;
 
         double[][] xyN = MatrixUtil.multiply(t, x);
-        for (i = 0; i < 3; ++i) {
+        for (i = 0; i < x.length; ++i) {
             System.arraycopy(xyN[i], 0, x[i], 0, xyN[i].length);
         }
         return t;
@@ -209,13 +213,17 @@ public class EpipolarNormalizationHelper {
     }
 
     private static double[][] transposeInverseT(double[][] t) {
+        if (t.length != 3 && t.length != 4) {
+            throw new IllegalArgumentException("t.length must be 3 or 4");
+        }
+        int nd = t.length - 1;
 
-        double[][] tinv = MatrixUtil.zeros(3, 3);
-        tinv[0][0] = 1. / t[0][0];
-        tinv[1][1] = 1. / t[1][1];
-        tinv[2][2] = 1;
-        tinv[2][0] = -1. * t[0][2]/t[0][0];
-        tinv[2][1] = -1. * t[1][2]/t[1][1];
+        double[][] tinv = new double[t.length][t.length];
+        for (int i = 0; i < nd; ++i) {
+            tinv[i][i] = 1./t[i][i];
+            tinv[i][t.length - 1] = -1 * t[i][t.length - 1]/t[i][i];
+        }
+        tinv[nd][nd] = 1;
 
         return tinv;
     }

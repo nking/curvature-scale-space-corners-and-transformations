@@ -877,6 +877,25 @@ public class Reconstruction {
         return r2;
     }
 
+    public static boolean isInFrontOfCamera(double[] x, double[][] p, double[] XW) {
+        /*
+        from projection:
+           scaleFactor * x = P * XW  (we don't have it, but it is a positive number)
+           let M = P[0:2][0:2] the left 3x3 matrix of P
+           let m3 = last row in M = M[2]
+           where XW = [X Y Z W]^T and x = [u v 1]^T
+
+           depth = scaleFactor * sign( det(M) ) / (W * lpsum(m3, 2))
+
+           return depth >= 0
+         */
+        double W = (XW.length == 4) ? XW[3] : 1;
+        double[][] m = MatrixUtil.copySubMatrix(p, 0, 2, 0, 2);
+        //double[] m3 = Arrays.copyOfRange(m[2], 0, 3);
+        double detM = MatrixUtil.determinant(m);
+        return (detM / W) > 0;
+    }
+
     /**
      * estimate the projection matrices P1 and P2 using planar homography.
      * This is also called Projective Structure From Motion for the

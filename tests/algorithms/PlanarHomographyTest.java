@@ -525,7 +525,9 @@ public class PlanarHomographyTest extends TestCase {
         x1 = MatrixUtil.multiply(intr, x1); // 3 x nCorres
         x2 = MatrixUtil.multiply(intr, x2);
 
-        double[][] hEst3 = CameraCalibration.solveForHomography(x1, x2);
+        boolean useNormConditioning = true;
+
+        double[][] hEst3 = CameraCalibration.solveForHomography(x1, x2, useNormConditioning);
 
         MatrixUtil.SVDProducts svd5 = MatrixUtil.performSVD(hEst3);
 
