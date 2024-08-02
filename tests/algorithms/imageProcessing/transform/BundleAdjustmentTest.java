@@ -28,18 +28,18 @@ public class BundleAdjustmentTest extends TestCase {
     private static final Logger log;
     static {
         log = Logger.getLogger(CameraCalibration.class.getSimpleName());
-        log.setLevel(LEVEL);
+        //log.setLevel(LEVEL);
     }
     
     public BundleAdjustmentTest() {
     }
-    
-    public void test0(){}
-    
+
     /**
      * Test of solveUsingSparse method, of class BundleAdjustment.
      */
     public void testSolveUsingSparse_ZhangData() throws Exception {
+
+        // this shows that the refinement methods need improvements
         
         // see testresources/zhang1998/README.txt
         /*
@@ -102,12 +102,13 @@ public class BundleAdjustmentTest extends TestCase {
         double k1E = 0.1371;
         double k2E = -0.20101;
 
-        log.log(LEVEL, "From CameraCalibration.estimateCamera:\n");
+        /*log.log(LEVEL, "From CameraCalibration.estimateCamera:\n");
         log.log(LEVEL, String.format("\n(fX, fY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", fX, fY, alphaE, betaE));
         log.log(LEVEL, String.format("(oX, oY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", oX, oY, u0E, v0E));
         log.log(LEVEL, String.format("skew=%.3e.  expected=%.3e\n", skew, gammaE));
         log.log(LEVEL, String.format("[kRadial]=[%.3e, %.3e].  expected=[%.3e, %.3e]\n", 
             kRadial[0], kRadial[1], k1E, k2E));
+         */
 
         List<String> distances = new ArrayList<String>();
 
@@ -162,7 +163,7 @@ public class BundleAdjustmentTest extends TestCase {
         //Zhang98Data.printObservedMinusProjected_Image_Frame_Eqn2();
 
         BundleAdjustment ba = new BundleAdjustment();
-        //ba.setUseHomography();
+        ba.setUseHomography();
         ba.solveSparsely(coordsI, coordsW, imageFeaturesMap,
             intr, extrRotVecs, extrTrans,
             kRadials, nMaxIter, useR2R4, useBouguetForRodrigues);
@@ -170,23 +171,29 @@ public class BundleAdjustmentTest extends TestCase {
         log.log(LEVEL, String.format("\nAfter BundleAdjustment\n"));
         
         // only f is refined:
-        fX = intr.getBlock(0, 0)[0][0];
-        fY = intr.getBlock(0, 0)[1][1];
-        oX = intr.getBlock(0, 0)[0][2];
-        oY = intr.getBlock(0, 0)[1][1];
-        skew = intr.getBlock(0, 0)[0][1];
-        kRadial = kRadials[0];
-        
-        log.log(LEVEL, String.format("\n(fX, fY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", 
-            fX, fY, alphaE, betaE));
-        log.log(LEVEL, String.format("(oX, oY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", 
-            oX, oY, u0E, v0E));
-        log.log(LEVEL, String.format("skew=%.3e.  expected=%.3e\n", 
-            skew, gammaE));
-        log.log(LEVEL, String.format("[kRadial]=[%.3e, %.3e].  expected=[%.3e, %.3e]\n", 
-            kRadial[0], kRadial[1], k1E, k2E));
+        double fX2 = intr.getBlock(0, 0)[0][0];
+        double fY2 = intr.getBlock(0, 0)[1][1];
+        double oX2 = intr.getBlock(0, 0)[0][2];
+        double oY2 = intr.getBlock(0, 0)[1][1];
+        double skew2 = intr.getBlock(0, 0)[0][1];
+        double[] kRadial2 = kRadials[0];
 
         System.out.printf("Compare method results to Zhang 1998:\n");
+
+        log.log(LEVEL, String.format("\n(fx0, fx1, fx expected)=(%.3e, %.3e, %.3e)\n",
+            fX, fX2, alphaE));
+        log.log(LEVEL, String.format("\n(fy0, fy1, fy expected)=(%.3e, %.3e, %.3e)\n",
+                fY, fY2, betaE));
+        log.log(LEVEL, String.format("\n(ox0, ox1, ox expected)=(%.3e, %.3e, %.3e)\n",
+                oX, oX2, u0E));
+        log.log(LEVEL, String.format("\n(oy0, oy1, oy expected)=(%.3e, %.3e, %.3e)\n",
+                oY, oY2, v0E));
+        log.log(LEVEL, String.format("\n(skew0, skew1, skew expected)=(%.3e, %.3e, %.3e)\n",
+                skew, skew2, gammaE));
+        log.log(LEVEL, String.format("kRadial0=[%.3e, %.3e], kRadial1=[%.3e, %.3e],  kRadial expected=[%.3e, %.3e]\n",
+            kRadial[0], kRadial[1], kRadial2[0], kRadial2[1], k1E, k2E));
+
+
         Camera.CameraExtrinsicParameters[] refined = new Camera.CameraExtrinsicParameters[nImages];
         for (i = 0; i < nImages; ++i) {
             Camera.CameraExtrinsicParameters init = extrinsics.get(i);
@@ -196,45 +203,34 @@ public class BundleAdjustmentTest extends TestCase {
             refined[i] = CameraPose.bouguetPoseRefine(init, kIntr, xi, coordsW, useBouguetForRodrigues);
 
             // print camera calib, bouguet refined rot(rVec), then zhang98
-            double[] cCalibRVec = init.getRodriguesVector();
-            double[] bRefinedRVec = refined[i].getRodriguesVector();
-            double[] bARefinedRVec = extrRotVecs[i];
+            //double[] cCalibRVec = init.getRodriguesVector();
+            //double[] bRefinedRVec = refined[i].getRodriguesVector();
             double[][] cCalibRot = init.getRotation();
-            double[][] bRefinedRot = refined[i].getRotation();
-            double[][] zhangRot = Zhang98Data.getRotation(i + 1);
-            double[][] bARefinedRot = Rotation.createRodriguesFormulaRotationMatrix(bARefinedRVec);
+            double[][] bouguetRefinedRot = refined[i].getRotation();
+            double[][] expectedRot = Zhang98Data.getRotation(i + 1);
+            double[][] bARefinedRot = Rotation.createRodriguesFormulaRotationMatrix(extrRotVecs[i]);
 
-            System.out.printf("%d) camera calib:\n  rVec=%s\n  rot=\n%s\n   distZhangR=%.3e\n", i,
-                    FormatArray.toString(cCalibRVec, "%.3e"), FormatArray.toString(cCalibRot, "%.3e"),
-                    Rotation.distanceUsingRigidBodyDisplacements(Zhang98Data.getRotation(i+1), cCalibRot, false));
-            System.out.printf("%d) bouguet refined:\n  rVec=%s\n  rot=\n%s\n   distZhangR=%.3e\n", i,
-                    FormatArray.toString(bRefinedRVec, "%.3e"), FormatArray.toString(bRefinedRot, "%.3e"),
-                    Rotation.distanceUsingRigidBodyDisplacements(Zhang98Data.getRotation(i+1), bRefinedRot, false));
-            System.out.printf("%d) bundle adjustment:\n  rVec=%s\n  rot=\n%s\n   distZhangR=%.3e\n", i,
-                    FormatArray.toString(bARefinedRVec, "%.3e"), FormatArray.toString(bARefinedRot, "%.3e"),
-                    Rotation.distanceUsingRigidBodyDisplacements(Zhang98Data.getRotation(i+1), bARefinedRot, false));
-            System.out.printf("%d) zhang:\n    rot=\n%s\n", i,
-                    FormatArray.toString(zhangRot, "%.3e"));
+            System.out.printf("%d) rotation:\n  rot0=\n%s\n  rot refined (BA)=\n%s\n   rot refined (bouguet)=\n%s\n  rot expected=\n%s\n",
+                    i,
+                    FormatArray.toString(cCalibRot, "%.3e"),
+                    FormatArray.toString(bARefinedRot, "%.3e"),
+                    FormatArray.toString(bouguetRefinedRot, "%.3e"),
+                    FormatArray.toString(expectedRot, "%.3e")
+                    );
 
             // translations
             double[] cCalibT = init.getTranslation();
-            double[] bRefinedT = refined[i].getTranslation();
+            double[] bouguetRefinedT = refined[i].getTranslation();
             double[] bARefinedT = extrTrans[i];
+            double[] expectedT = Zhang98Data.getTranslation(i + 1);
 
-            System.out.printf("\n%d) camera calib:\n  T=%s\n  distZhangT=%.3e\n", i,
+            System.out.printf("\n%d) translation:\n  T0=%s\n  T refined (BA)=%s\n   T refined (Bouguet)=%s\n   T expected=%s\n",
+                    i,
                     FormatArray.toString(cCalibT, "%.3e"),
-                    MatrixUtil.lPSum(MatrixUtil.subtract(Zhang98Data.getTranslation(i+1),
-                            cCalibT), 2));
-            System.out.printf("%d) bouguet refined:\n  T=%s\n  distZhangT=%.3e\n", i,
-                    FormatArray.toString(bRefinedT, "%.3e"),
-                    MatrixUtil.lPSum(MatrixUtil.subtract(Zhang98Data.getTranslation(i+1),
-                            bRefinedT), 2));
-            System.out.printf("%d) bundle adjustment:\n  T=%s\n  distZhangT=%.3e\n", i,
                     FormatArray.toString(bARefinedT, "%.3e"),
-                    MatrixUtil.lPSum(MatrixUtil.subtract(Zhang98Data.getTranslation(i+1),
-                            bARefinedT), 2));
-            System.out.printf("%d) zhang:\n    trans=\n%s\n", i,
-                    FormatArray.toString(Zhang98Data.getTranslation(i+1), "%.3e"));
+                    FormatArray.toString(bouguetRefinedT, "%.3e"),
+                    FormatArray.toString(expectedT, "%.3e"));
+
         }
 
     }
