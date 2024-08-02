@@ -186,11 +186,11 @@ public class CameraPose {
 
         double detM = MatrixUtil.determinant(M);
         detM = Math.round(detM * 1E11)/1E11;
-        if (detM == 0) {
-            System.out.printf("camera center is at inifinity");
+        /*if (detM == 0) {
+            System.out.println("camera center is at infinity");
         } else {
-            System.out.printf("finite projective camera");
-        }
+            System.out.println("finite projective camera");
+        }*/
 
         // method from zhang chap2 of camera calibration book
         /* K2 = M*M^T = K*K^T
@@ -243,6 +243,7 @@ public class CameraPose {
         rEst1 = MatrixUtil.multiplyDiagonalByMatrix(d, rEst1);
 
         /*
+        // ==========================
         //(1) method from kitani lecture
         RQ rqDecomp = RQ.factorize(new DenseMatrix(M));
         double[][] kEst = MatrixUtil.convertToRowMajor(rqDecomp.getR());
@@ -268,7 +269,7 @@ public class CameraPose {
         // t = -R*C
         double[] tEst = MatrixUtil.multiplyMatrixByColumnVector(rEst, C);
         MatrixUtil.multiply(tEst, -1);
-        */
+        */// ===========================
 
         CameraExtrinsicParameters extrinsics = new CameraExtrinsicParameters();
         extrinsics.setRotation(rEst1);
@@ -380,7 +381,7 @@ public class CameraPose {
         if (useNormConditioning) {
             P2 = MatrixUtil.multiply(txInv, P2);
             P2 = MatrixUtil.multiply(P2, tX);
-        }// 3x3 * 3x4 = 3X4;  3x4 * 4x4 = 3x4
+        }
 
         return P2;
     }

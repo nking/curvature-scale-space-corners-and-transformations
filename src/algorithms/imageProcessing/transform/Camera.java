@@ -112,6 +112,10 @@ public class Camera {
         
         return k;
     }
+
+    public static double[][] createInverseRotation(double[][] r) {
+        return MatrixUtil.transpose(r);
+    }
     
     /**
      *  create the inverse of camera intrinsic matrix k.

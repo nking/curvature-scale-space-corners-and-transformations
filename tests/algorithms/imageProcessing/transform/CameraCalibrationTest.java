@@ -7,7 +7,8 @@ import algorithms.statistics.Standardization;
 import algorithms.util.FormatArray;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.array.TDoubleArrayList;
-import java.util.List;
+
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
@@ -21,17 +22,16 @@ public class CameraCalibrationTest extends TestCase {
     
     static double eps = 1.e-5;
     
-    private static final Level LEVEL = Level.INFO;
+    private static final Level LEVEL = Level.FINEST;
     private static final Logger log;
     static {
         log = Logger.getLogger(CameraCalibration.class.getSimpleName());
-        log.setLevel(LEVEL);
     }
     
     public CameraCalibrationTest() {
     }
     
-    public void estApplyRemoveRadialDistortion() 
+    public void testApplyRemoveRadialDistortion()
     throws Exception {
         
         log.log(LEVEL, "testApplyRemoveRadialDistortion");
@@ -79,17 +79,18 @@ public class CameraCalibrationTest extends TestCase {
         // apply radial distortion and remove radial distortion and compare
     }
 
-    public void testCalibration3D() throws Exception {
-        log.log(LEVEL, "testCalibration3D");
-        calibration(true);
+    public void estCalibration3DZhang() throws Exception {
+        // need the 3rd dimension to use this
+        //log.log(LEVEL, "testCalibration3DZhang");
+        //calibrationZhang(true);
     }
 
-    public void estCalibrationPlanar() throws Exception {
-        log.log(LEVEL, "testCalibrationPlanar");
-        calibration(false);
+    public void testCalibrationPlanarZhang() throws Exception {
+        log.log(LEVEL, "testCalibrationPlanarZhang");
+        calibrationZhang(false);
     }
-    
-    protected void calibration(boolean use3D) throws Exception {
+
+    protected void calibrationZhang(boolean use3D) throws Exception {
 
         // see testresources/zhang1998/README.txt
         
@@ -195,7 +196,185 @@ public class CameraCalibrationTest extends TestCase {
         }
 
     }
-   
+
+    public void testCalibration3DRandom() throws Exception {
+        log.log(LEVEL, "testCalibration3DRandom");
+
+        /*
+        generate an intrinsic camera matrix.
+        generate 3 or more extrinsic camera matrices (1 each for 1 image).
+        generate a projection matrix P for each image.
+
+        generate 3D points in WCS.
+
+        project points to images
+
+        use estimateCamera3D to recover the intrinsic and extrinsic matrices
+        */
+
+        long seed = 12345l;//System.nanoTime();
+        System.out.println("seed=" + seed);
+        Random rand = new Random(seed);
+
+        double[][] kIntr = new double[][]{
+                {1380, 0, 247},
+                {0, 2033, 244},
+                {0, 0, 1}
+        };
+
+        //TODO: change the signs in omI and tI
+        //TODO: add radial distortion
+        //TODO: change camera matrix and conditions for several cases: smart phone, telephoto, etc.
+        int nImages = 3 + rand.nextInt(7);
+        int nPoints = 200 + rand.nextInt(200);
+
+        List<double[]> om = new ArrayList<>();
+        List<double[][]> r = new ArrayList<>();
+        List<double[]> t = new ArrayList<>();
+        List<double[][]> p = new ArrayList<>();
+
+        double[] boundsWCS = new double[]{
+                Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY,
+                Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY,
+                Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY,
+                Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY
+        };
+
+        double[] radial = null;
+
+        //double[] expectedRom = new double[]{-0.08573, -0.99438, 0.0621};
+        //double[][] expectedRot = Rotation.createRotationFromUnitLengthAngleAxis(expectedRom, 47.7*Math.PI/180.);
+        //double[] expectedT = new double[]{-211.28, -106.06, 1583.75};
+
+        for (int i = 0; i < nImages; ++i) {
+            double e = 1E-4;
+
+            double[] omI = new double[]{rand.nextDouble(), rand.nextDouble(), rand.nextDouble()};
+            omI = MatrixUtil.normalizeLP(omI, 2);
+            double[][] rI = Rotation.createRotationFromUnitLengthAngleAxis(omI, 5*rand.nextDouble() * Math.PI/180.);
+            double[] tI = new double[]{-rand.nextInt((int)Math.round(kIntr[0][2])),
+                    -rand.nextInt((int)Math.round(kIntr[1][2])), rand.nextInt((int)Math.round(kIntr[1][1]))};
+
+            double[][] pI = new double[3][4];
+            for (int j = 0; j < 3; ++j) {
+                System.arraycopy(rI[j], 0, pI[j], 0, 3);
+                pI[j][3] = tI[j];
+            }
+            pI = MatrixUtil.multiply(kIntr, pI);
+
+            Camera.CameraPoseParameters pose = CameraPose.calculatePoseFromP(pI);
+
+            // assert that we recover the camera matrices:
+            double[][] diff = MatrixUtil.pointwiseSubtract(kIntr, pose.getIntrinsicParameters().getIntrinsic());
+            double fs = MatrixUtil.frobeniusNorm(diff) / Math.sqrt(5);
+            assertTrue(fs < 1E-7);
+            diff = MatrixUtil.pointwiseSubtract(rI, pose.getExtrinsicParameters().getRotation());
+            fs = MatrixUtil.frobeniusNorm(diff) / Math.sqrt(9);
+            assertTrue(fs < 1E-7);
+            fs = MatrixUtil.lPSum(MatrixUtil.subtract(tI, pose.getExtrinsicParameters().getTranslation()), 2);
+            assertTrue(fs < 1E-7);
+
+            // TODO: make the coord generation simpler.
+            // this is a quick look at using pInv to de-project an image point into WCS.
+            // looking at the bounds for the 3D points over all nImages to try to limit the range of 3D to create
+            // only those within image frame of all images.
+            // for the nImages random rotations and translations above, the intersection of 3D bounds over all images
+            // is 0, so to use this better, would need to improve the rotation and translation combinations.
+            // meanwhile, boundsWCS is still used, but not as intended.
+            double[][] pIInv = MatrixUtil.pseudoinverseFullRowRank(pI);
+            // 4x3 * 3xn = 4xn
+            double[][] bWCS = MatrixUtil.multiply(pIInv, new double[][]{
+                    {0, 2*kIntr[0][2]}, {0, 2*kIntr[1][2]}, {1, 1}
+            });
+
+            log.log(LEVEL, String.format("bWCS%d\n%s", i, FormatArray.toString(bWCS, "%10.2e")));
+            //double[][] _bIm = MatrixUtil.multiply(pI, bWCS);
+            //normalize(_bIm, 2);
+            for (int j = 0; j < 4; ++j) {
+                double min = Math.min(bWCS[j][0], bWCS[j][1]);
+                double max = Math.max(bWCS[j][0], bWCS[j][1]);
+                boundsWCS[2 * j] = Math.max(boundsWCS[2 * j], min);
+                boundsWCS[2 * j + 1] = Math.min(boundsWCS[2 * j + 1], max);
+            }
+
+            om.add(omI);
+            r.add(rI);
+            t.add(tI);
+            p.add(pI);
+        }
+        log.log(LEVEL, String.format("bounds=[%s]\n", FormatArray.toString(boundsWCS, "%.2e")));
+        for (int i=0; i < boundsWCS.length/2; ++i) {
+            log.log(LEVEL, String.format("boundsWCS %b\n", boundsWCS[2*i] < boundsWCS[2*i + 1]));
+        }
+
+        // roughly, find the largest lower left and smallest upper right corner in boundsWCS
+
+        double[][] XW = generateWCS(rand, nPoints, boundsWCS);
+
+        double[][] coordsI = new double[3][nPoints * nImages];
+        List<double[][]> x = new ArrayList<>();
+        for (int i = 0; i < nImages; ++i) {
+            double[][] xI = MatrixUtil.multiply(p.get(i), XW);
+            normalize(xI, 2);
+            x.add(xI);
+            for (int j = 0; j < xI[0].length; ++j) {
+                if (xI[0][i] < 0 || xI[1][i] < 0) {
+                    int _t=1;
+                }
+            }
+            for (int j = 0; j < xI.length; ++j) {
+                System.arraycopy(xI[j], 0, coordsI[j], i * nPoints, nPoints);
+            }
+        }
+
+        normalize(XW, 3);
+        double[][] coordsW = MatrixUtil.copySubMatrix(XW, 0, 2, 0, XW[0].length-1);
+        //normalize(coordsW, 2); need this dimension in forming P
+
+
+        boolean useR2R4 = false;
+        CameraMatrices c = CameraCalibration.estimateCamera3D(nPoints, coordsI, coordsW, useR2R4);
+        double[][] resultK = c.getIntrinsics().getIntrinsic();
+
+        double[][] kDiff = MatrixUtil.pointwiseSubtract(kIntr, resultK);
+        double kFS = MatrixUtil.frobeniusNorm(kDiff);
+        log.log(LEVEL, FormatArray.toString(kDiff, "%10.4e"));
+        log.log(LEVEL, String.format("   kSSD=%.3f\n", kFS*kFS));
+
+        for (int i = 0; i < nImages; ++i) {
+            CameraExtrinsicParameters extr = c.getExtrinsics().get(i);
+            double[][] resultR = extr.getRotation();
+            double[] resultT = extr.getTranslation();
+
+            double[][] rDiff = Rotation.procrustesAlgorithmForRotation(r.get(i), resultR);
+            double[] tDiff = MatrixUtil.subtract(t.get(i), resultT);
+            double rFS = MatrixUtil.frobeniusNorm(rDiff);
+            double tS = MatrixUtil.lPSum(tDiff, 2);
+            log.log(LEVEL, String.format("   tSSD=%.3f\n", tS*tS));
+            log.log(LEVEL, String.format("   rSSD=%.3f\n", rFS));
+        }
+    }
+
+    private double[][] generateWCS(Random rand, int nPoints, double[] boundsWCS) {
+        ///example bounds=-7.47e-05, -3.31e-03, 2.03e-01, 2.48e+02, 5.90e-02, 1.20e-03
+        double[][] XW = new double[4][nPoints];
+        for (int i = 0; i < nPoints; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                double diff = boundsWCS[2*j+1] - boundsWCS[2*j];
+                XW[j][i] = boundsWCS[2*j] + rand.nextDouble()*diff;
+            }
+        }
+        return XW;
+    }
+
+    protected void normalize(double[][] x, int normRow) {
+        for (int i = 0; i < x[0].length; ++i) {
+            for (int j = 0; j < x.length; ++j) {
+                x[j][i] /= x[normRow][i];
+            }
+        }
+    }
+
     /**
      * generate coordinates in 5 radial annuli in area 100x100 then unit standard normalized
      * @return 

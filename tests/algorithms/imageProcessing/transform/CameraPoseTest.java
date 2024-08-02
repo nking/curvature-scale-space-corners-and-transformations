@@ -359,7 +359,11 @@ public class CameraPoseTest extends TestCase {
             double[] expectedRom = new double[]{-0.08573, -0.99438, 0.0621};
             double[][] expectedRot = Rotation.createRotationFromUnitLengthAngleAxis(expectedRom, 47.7*Math.PI/180.);
             double[] expectedT = new double[]{-211.28, -106.06, 1583.75};
-
+            /*
+            [0.6754157514983702, 0.07380618479382034, 0.7337335414536662]
+            [-0.018055997202522985, 0.9963349883554182, -0.08360037739679924]
+            [-0.7372151949959936, 0.04321677014823319, 0.6742735113225491]
+             */
             Camera.CameraPoseParameters c = CameraPose.calculatePoseFromP(p);
             double fs = MatrixUtil.frobeniusNorm(
                     MatrixUtil.pointwiseSubtract(expectedKIntr, c.getIntrinsicParameters().getIntrinsic()));
