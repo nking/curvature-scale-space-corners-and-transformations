@@ -3,7 +3,10 @@ package algorithms.imageProcessing;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
+
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * class to hold data with values in range 0-255 or -255 to 255 depending
@@ -1181,6 +1184,22 @@ public class GreyscaleImage {
         
         return a;
     }
+
+    /**
+     * export the image in format row major, that is img[i][j] is img[y][x]
+     * where x and y are the pixel coordinates.
+     * @return
+     */
+    public double[][] exportRowMajor() {
+        double[][] out = new double[height][width];
+        for (int x = 0; x < width; ++x) {
+            for (int y = 0; y < height; ++y) {
+                out[y][x] = getValue(x, y);
+            }
+        }
+        return out;
+    }
+
 
     @Override
     public String toString() {

@@ -2,6 +2,8 @@ package algorithms.imageProcessing;
 
 import algorithms.util.PairInt;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * space conserving image data holder.
@@ -950,6 +952,52 @@ public class Image {
                 setRGB(i, j, red, green, blue);
             }
         }
+    }
+
+    /**
+     * export red, blue and green frames to 1 double[][] each, in format col major, that is red[i][j] is red[x][y]
+     * where x and y are the pixel coordinates.
+     * @return
+     */
+    public List<double[][]> exportColMajor() {
+        double[][] r = new double[width][height];
+        double[][] g = new double[width][height];
+        double[][] b = new double[width][height];
+        for (int x = 0; x < width; ++x) {
+            for (int y = 0; y < height; ++y) {
+                r[x][y] = getR(x, y);
+                g[x][y] = getG(x, y);
+                b[x][y] = getB(x, y);
+            }
+        }
+        List<double[][]> list = new ArrayList<>();
+        list.add(r);
+        list.add(g);
+        list.add(b);
+        return list;
+    }
+
+    /**
+     * export red, blue and green frames to 1 double[][] each, in format row major, that is red[i][j] is red[y][x]
+     * where x and y are the pixel coordinates.
+     * @return
+     */
+    public List<double[][]> exportRowMajor() {
+        double[][] r = new double[height][width];
+        double[][] g = new double[height][width];
+        double[][] b = new double[height][width];
+        for (int x = 0; x < width; ++x) {
+            for (int y = 0; y < height; ++y) {
+                r[y][x] = getR(x, y);
+                g[y][x] = getG(x, y);
+                b[y][x] = getB(x, y);
+            }
+        }
+        List<double[][]> list = new ArrayList<>();
+        list.add(r);
+        list.add(g);
+        list.add(b);
+        return list;
     }
 
     /**

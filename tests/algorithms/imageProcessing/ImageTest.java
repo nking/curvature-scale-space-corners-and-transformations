@@ -3,6 +3,8 @@ package algorithms.imageProcessing;
 import algorithms.util.ResourceFinder;
 import junit.framework.TestCase;
 
+import java.util.List;
+
 /**
  *
  * @author nichole
@@ -148,6 +150,21 @@ public class ImageTest extends TestCase {
         assertTrue(((float)nr/(float)imgR2.getNPixels()) > 0.8);
         assertTrue((nr > ng) && (ng > 0));
         assertTrue((ng > nb) && (nb > 0));
+
+        Image img = ImageIOHelper.readImage(filePath2);
+        List<double[][]> listC = img.exportColMajor();
+        List<double[][]> listR = img.exportRowMajor();
+        for (int i = 0; i < img.getWidth(); ++i) {
+            for (int j = 0; j < img.getHeight(); ++j) {
+                assertEquals(img.getR(i, j), (int)listC.get(0)[i][j]);
+                assertEquals(img.getG(i, j), (int)listC.get(1)[i][j]);
+                assertEquals(img.getB(i, j), (int)listC.get(2)[i][j]);
+
+                assertEquals(img.getR(i, j), (int)listR.get(0)[j][i]);
+                assertEquals(img.getG(i, j), (int)listR.get(1)[j][i]);
+                assertEquals(img.getB(i, j), (int)listR.get(2)[j][i]);
+            }
+        }
     }
     
 }

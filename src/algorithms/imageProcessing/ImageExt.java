@@ -2,6 +2,8 @@ package algorithms.imageProcessing;
 
 import algorithms.matrix.MatrixUtil;
 import java.awt.Color;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * image specialized to hold CIE 1931 xy chromaticity coordinates (colors) 
@@ -496,6 +498,30 @@ public class ImageExt extends Image {
         System.arraycopy(copyThis.luma, 0, luma, 0, nPixels);
         System.arraycopy(copyThis.extPopulated, 0, extPopulated, 0, 
             nPixels);
+    }
+
+
+    /**
+     * export H, S, B frames to 1 double[][] each, in format row major, that is hue[i][j] is hue[y][x]
+     * where x and y are the pixel coordinates.
+     * @return
+     */
+    public List<double[][]> exportHSBRowMajor() {
+        double[][] h = new double[height][width];
+        double[][] s = new double[height][width];
+        double[][] b = new double[height][width];
+        for (int x = 0; x < width; ++x) {
+            for (int y = 0; y < height; ++y) {
+                h[y][x] = getHue(x, y);
+                s[y][x] = getSaturation(x, y);
+                b[y][x] = getBrightness(x, y);
+            }
+        }
+        List<double[][]> list = new ArrayList<>();
+        list.add(h);
+        list.add(s);
+        list.add(b);
+        return list;
     }
 
 }

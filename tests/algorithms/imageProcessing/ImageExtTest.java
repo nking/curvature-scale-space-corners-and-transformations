@@ -3,6 +3,8 @@ package algorithms.imageProcessing;
 import algorithms.matrix.MatrixUtil;
 import java.awt.Color;
 import java.security.SecureRandom;
+import java.util.List;
+
 import junit.framework.TestCase;
 
 
@@ -259,6 +261,18 @@ public class ImageExtTest extends TestCase {
                     assertTrue(Math.abs(img.getBrightness(index) - expectedHSB[2]) < 0.01);
                     assertTrue(Math.abs(img.getLuma(index) - expectedYUV[0]) < 0.01);
                 }
+            }
+        }
+    }
+
+    public void testExportHSBRowMajor() {
+        ImageExt img = getImageExt0();
+        List<double[][]> hsb = img.exportHSBRowMajor();
+        for (int x = 0; x < img.getWidth(); ++x) {
+            for (int y = 0; y < img.getHeight(); ++y) {
+                assertTrue(Math.abs(hsb.get(0)[y][x] - img.getHue(x, y)) < 1E-7);
+                assertTrue(Math.abs(hsb.get(1)[y][x] - img.getSaturation(x, y)) < 1E-7);
+                assertTrue(Math.abs(hsb.get(2)[y][x] - img.getBrightness(x, y)) < 1E-7);
             }
         }
     }

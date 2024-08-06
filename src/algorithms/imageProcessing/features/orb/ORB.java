@@ -199,7 +199,9 @@ public class ORB {
      * although there may be multiple color images in the pyramid, there is
      * only one set of coordinates derived for each scale.
      */
+    // coordinates of first dimension (rows)
     protected List<TIntList> keypoints0List = null;
+    // coordinates of 2nd dimension (cols)
     protected List<TIntList> keypoints1List = null;
     
     protected List<TDoubleList> orientationsList = null;
@@ -1998,7 +2000,8 @@ public class ORB {
     /**
      * get a list of each octave's keypoint rows as a combined list.
      * The list contains coordinates which have already been scaled to the
-     * full image reference frame and are in column major format.
+     * full image reference frame and are in column major format, that is
+     * (x, y) ordering of coordinates.
      * @return
      */
     public List<PairInt> getAllKeyPoints() {
