@@ -120,12 +120,12 @@ public class StructureTensorD {
         if (kernel != null) {
             imageProcessor.applyKernelTwo1Ds(dXdY, kernel);
         }
-        
+
+        dX = gX;
+        dY = gY;
+
         if (create2ndDerivs) {
-            
-            dX = gX;
-            dY = gY;
-            
+
             // for curvature, need d/dy(dy) and d/dx(dx)
             kernel = (sigma > 0) ?
                     MiscMath0.convertFloatToDouble(Gaussian1DFirstDeriv.getKernel(sigma)) :
@@ -138,9 +138,7 @@ public class StructureTensorD {
             imageProcessor.applyKernel1D(d2Y, kernel, false);
         
         } else {
-            dX = null;
             d2X = null;
-            dY = null;
             d2Y = null;
         }
     }
