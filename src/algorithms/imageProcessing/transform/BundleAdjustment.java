@@ -184,7 +184,7 @@ public class BundleAdjustment {
         UnweightedGraphCommunityFinder.java
         
      </pre>
-     TODO: review nad improve the derivatives.  need good test data.
+     TODO: review and improve the derivatives.  need good test data.
      * @param coordsI the features observed in different images (in coordinates
      * of the image reference frame).
      * The format of coordsI is 3 X (nFeatures*nImages). Each row should

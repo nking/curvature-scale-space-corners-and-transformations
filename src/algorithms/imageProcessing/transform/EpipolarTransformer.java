@@ -1725,6 +1725,7 @@ public class EpipolarTransformer {
         }
 
         /*
+        [nx9]
         (2) each row in matrix A:
             x_1*x_2,  x_1*y_2,  x_1,  y_1*x_2,  y_1*y_2,  y_1,  x_2,  y_2,  1
         */
@@ -1774,6 +1775,7 @@ public class EpipolarTransformer {
     public static double[][] calculateEpipoles(DenseMatrix fundamentalMatrix) {
 
         /*
+        A is mxn=[3x3].  U is [mxm=3x3], V is [nxn=3x3]
         NOTE:
             SVD(A).U == SVD(A^T).V == SVD(AA^T).U == SVD(AA^T).V
             SVD(A).V == SVD(A^T).U == SVD(A^TA).V == SVD(A^TA).U

@@ -903,6 +903,67 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         }
     }
 
+    public void applyKernel(double[][] input, double[][] kernel) {
+
+        // using col major notation here, but input can be row major to create same results.
+        int h = (kernel.length - 1) >> 1;
+
+        int width = input.length;
+        int height = input[0].length;
+
+        double[][] output = new double[width][height];
+
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+
+                double value = 0;
+
+                // apply the kernel to pixels centered in (i, j)
+
+                for (int col = 0; col < kernel.length; col++) {
+
+                    int x = col - h;
+
+                    int imgX = i + x;
+
+                    // edge corrections.  use replication
+                    if (imgX < 0) {
+                        imgX = -1 * imgX - 1;
+                    } else if (imgX >= width) {
+                        int diff = imgX - width;
+                        imgX = width - diff - 1;
+                    }
+
+                    for (int row = 0; row < kernel[col].length; row++) {
+
+                        int y = row - h;
+
+                        int imgY = j + y;
+
+                        // edge corrections.  use replication
+                        if (imgY < 0) {
+                            imgY = -1 * imgY - 1;
+                        } else if (imgY >= height) {
+                            int diff = imgY - height;
+                            imgY = height - diff - 1;
+                        }
+
+                        double v = input[imgX][imgY];
+
+                        double k = kernel[col][row];
+
+                        value += k * v;
+                    }
+                }
+                output[i][j] = value;
+            }
+        }
+
+        for (int i = 0; i < width; ++i) {
+            System.arraycopy(output[i], 0, input[i], 0, height);
+        }
+    }
+
     /**
      * apply kernel to input. NOTE, that because the image is composed of vectors
      * that should have values between 0 and 255, inclusive, if the kernel application
