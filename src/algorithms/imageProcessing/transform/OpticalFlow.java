@@ -22,8 +22,16 @@ public class OpticalFlow {
 
     /**
      * HS is fine for small displacements between images.
-     * @param im1
-     * @param im2
+     <pre>
+     references:
+     Horn, B.K. and Schunck, B.G., 1980. Determining optical flow.
+
+     boundary condition handling was adopted from:
+     Meinhardt-Llopis, Pérez, and Kondermann, "Horn-Schunck Optical Flow with a Multi-Scale Strategy",
+     Image Processing On Line, 3 (2013), pp. 151–172. https://doi.org/10.5201/ipol.2013.20
+     </pre>
+     * @param im1 image array.  for best results, should be in range [0, 255]
+     * @param im2 image array taken shortly after im1 in time.  for best results, should be in range [0, 255]
      * @return u and v for im1
      */
     public static List<double[][]> hornSchunck(double[][] im1, double[][] im2) {
@@ -33,15 +41,18 @@ public class OpticalFlow {
     /**
      * HS can be used for small displacements between images.
      <pre>
+     references:
+     Horn, B.K. and Schunck, B.G., 1980. Determining optical flow.
+
      boundary condition handling was adopted from:
      Meinhardt-Llopis, Pérez, and Kondermann, "Horn-Schunck Optical Flow with a Multi-Scale Strategy",
      Image Processing On Line, 3 (2013), pp. 151–172. https://doi.org/10.5201/ipol.2013.20
      </pre>
-     * @param im1 first image, values must be >= 0
-     * @param im2 second image, values must be >= 0
+     * @param im1 image array.  for best results, should be in range [0, 255]
+     * @param im2 image array taken shortly after im1 in time.  for best results, should be in range [0, 255]
      * @param uInit initial guess for u.
      * @param vInit initial guess for v.
-     * @param alpha a weight parameter used in the updates.  must be >= 1.
+     * @param alpha a weight parameter used in the updates.  must be >= 1.  for best results should be in range [1,10].
      * @param maxIter maximum number of iterations to perform.  if u,v square differences do not converge to
      *                <= epsSq, up to maxIter iterations are performed.
      * @param epsSq the condition for convergence.  sum of the square differences of u,v from previous iteration
@@ -104,10 +115,6 @@ public class OpticalFlow {
         boolean hasConverged = false;
 
         ImageProcessor imageProcessor = new ImageProcessor();
-
-        // weighted sum over the 8 neighbors.
-        // Horn, Schunck 1980  section 8
-        double[][] kernel = new double[][]{{1./12., 1./6, 1./12.}, {1./6, 0, 1./6}, {1./12, 1./6, 1./12}};
 
         double[][] prevU = null;
         double[][] prevV = null;
@@ -381,6 +388,12 @@ public class OpticalFlow {
         return b;
     }
 
+    /**
+     * weighted sum over the 8 neighbors.
+     * Horn, Schunck 1980  section 8
+     * @param out
+     * @param in
+     */
     private static void hsConvolve(double[][] out, double[][] in) {
         int h = in.length;
         int w = in[0].length;

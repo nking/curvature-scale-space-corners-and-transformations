@@ -137,14 +137,14 @@ public class OpticalFlowTest extends TestCase {
         int maxIter = 1000;
         double epsSq = 1E-9;
 
-        double alphaSq = 1E0;
+        double alphaSq = 1;
 
         for (int iTest = 1; iTest < 10; ++iTest) {
             //m = iTest * 10;
             //n = m;
             im1 = new double[m][n];
             im2 = new double[m][n];
-            double deltaI = 255. / m;
+            double deltaI = 255 / m;
 
             //alphaSq = iTest;
 
