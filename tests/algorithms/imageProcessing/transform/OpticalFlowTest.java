@@ -128,25 +128,47 @@ public class OpticalFlowTest extends TestCase {
     }
 
     public void test2HornSchunck() throws IOException {
-        int m = 20;
+
+        /*
+        some empirically derived numbers from unit tests:
+            image width 32, maxV=[32,*), alpha=0.1, maxIter=100, epsSq=1E-2, up to dx=14
+            image width 64, maxV=[64,*), alpha=0.1, maxIter=100, epsSq=1E-2, up to dx=16
+            image width 64, maxV=[64,*), alpha=0.1, maxIter=1000, epsSq=1E-4, up to dx=53
+            image width 128, maxV=[128,*), alpha=0.1, maxIter=100, epsSq=1E-2, up to dx=9
+            image width 128, maxV=[128,*), alpha=0.1, maxIter=100, epsSq=[1E-4, 1E-3], up to dx=30
+            image width 128, maxV=[128,*), alpha=0.1, maxIter=1000, epsSq=1E-4, up to dx=101
+            image width 128, maxV=[128,*), alpha=0.1, maxIter=[1000, 10000], epsSq=1E-3, up to dx=31
+            image width 255, maxV=[128,*), alpha=0.1, maxIter=[1000, 200000] epsSq=[1E-10, 1E-3], up to dx=2
+
+        summary of those results:
+            ---------------------------------------------------
+            motion    image dimension for fastest calculations
+            -------  -----------------------------------------
+            14 pix       32
+            53 pix       64
+            101 pix      128
+        */
+        int pixMax = 32;
+        int m = 32;
+        //System.out.printf("pixMax=%d, m=%d\n", pixMax, m);
         int n = m;
         double[][] im1;
         double[][] im2;
         double uInit = 0;//0.5;
         double vInit = 0;//0.5;
-        int maxIter = 1000;
-        double epsSq = 1E-9;
+        int maxIter = 100;
+        double epsSq = 1E-2;
 
-        double alphaSq = 1;
+        double alpha = 1E-1;//1E1;
 
-        for (int iTest = 1; iTest < 10; ++iTest) {
+        for (int iTest = 1; iTest < 14; ++iTest) {
             //m = iTest * 10;
             //n = m;
             im1 = new double[m][n];
             im2 = new double[m][n];
-            double deltaI = 255 / m;
+            double deltaI = pixMax / m;
 
-            //alphaSq = iTest;
+            //alpha = iTest;
 
             for (int i = 1; i < m; ++i) {
                 double b = deltaI * i;
@@ -166,7 +188,7 @@ public class OpticalFlowTest extends TestCase {
             //System.out.printf("im1:\n%s\n", FormatArray.toString(im1, "%.3f"));
             //System.out.printf("im2:\n%s\n", FormatArray.toString(im2, "%.3f"));
 
-            List<double[][]> uvHS = OpticalFlow.hornSchunck(im1, im2, uInit, vInit, alphaSq,
+            List<double[][]> uvHS = OpticalFlow.hornSchunck(im1, im2, uInit, vInit, alpha,
                 maxIter, epsSq);
 
             double[][] uH = Histogram.createHistogram(MatrixUtil.stack(uvHS.get(0)), 255);
@@ -183,8 +205,8 @@ public class OpticalFlowTest extends TestCase {
                     MatrixUtil.copySubMatrix(uvHS.get(1), 1, m - 1, 1, n - 1)
             ));
 
-            System.out.printf("Test=%d, uEst=%.3f, vEst=%.3f (avgs=%.3f,%.3f) (uInit,vInit=%.1f,%.1f), alpha=%.4e\n",
-                    iTest, uMode, vMode, avgU, avgV, uInit, vInit, alphaSq);
+            //System.out.printf("Test=%d, uEst=%.3f, vEst=%.3f (avgs=%.3f,%.3f) (uInit,vInit=%.1f,%.1f), alpha=%.4e\n",
+            //        iTest, uMode, vMode, avgU, avgV, uInit, vInit, alpha);
             //System.out.printf("u:\n%s\n", FormatArray.toString(uvHS.get(0), "%.3f"));
             //System.out.printf("v:\n%s\n", FormatArray.toString(uvHS.get(1), "%.3f"));
             //System.out.flush();

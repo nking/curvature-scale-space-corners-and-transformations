@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * various optical flow algorithms.
@@ -20,50 +22,115 @@ import java.util.Arrays;
  */
 public class OpticalFlow {
 
-    /**
-     * HS is fine for small displacements between images.
-     <pre>
-     references:
-     Horn, B.K. and Schunck, B.G., 1980. Determining optical flow.
-
-     boundary condition handling was adopted from:
-     Meinhardt-Llopis, Pérez, and Kondermann, "Horn-Schunck Optical Flow with a Multi-Scale Strategy",
-     Image Processing On Line, 3 (2013), pp. 151–172. https://doi.org/10.5201/ipol.2013.20
-     </pre>
-     * @param im1 image array.  for best results, should be in range [0, 255]
-     * @param im2 image array taken shortly after im1 in time.  for best results, should be in range [0, 255]
-     * @return u and v for im1
-     */
-    public static List<double[][]> hornSchunck(double[][] im1, double[][] im2) {
-        return hornSchunck(im1, im2, 0, 0, 1, 2000, 1E-9);
+    private static final Level LEVEL = Level.FINE;
+    private static final Logger log;
+    static {
+        log = Logger.getLogger(CameraCalibration.class.getSimpleName());
     }
 
     /**
-     * HS can be used for small displacements between images.
+     an algorithm that estimates the motion between 2 images, assuming constancy of brightness and short elapsed times.
+     The algorithm can be used for small displacements between images.
+     The algorithm is extremely sensitive to the size of the input images.
      <pre>
-     references:
+     to help determine the best image size to use for this algorithm, here are some empirically derived numbers from
+     unit tests:
+         image width 32, maxV=[32,*), alpha=0.1, maxIter=100, epsSq=1E-2, up to dx=14
+         image width 64, maxV=[64,*), alpha=0.1, maxIter=100, epsSq=1E-2, up to dx=16
+         image width 64, maxV=[64,*), alpha=0.1, maxIter=1000, epsSq=1E-4, up to dx=53
+         image width 128, maxV=[128,*), alpha=0.1, maxIter=100, epsSq=1E-2, up to dx=9
+         image width 128, maxV=[128,*), alpha=0.1, maxIter=100, epsSq=[1E-4, 1E-3], up to dx=30
+         image width 128, maxV=[128,*), alpha=0.1, maxIter=1000, epsSq=1E-4, up to dx=101
+         image width 128, maxV=[128,*), alpha=0.1, maxIter=[1000, 10000], epsSq=1E-3, up to dx=31
+         image width 255, maxV=[128,*), alpha=0.1, maxIter=[1000, 200000] epsSq=[1E-10, 1E-3], up to dx=2
+
+     summary of those results:
+         ---------------------------------------------------
+         motion    image dimension for fastest calculations
+         -------  -----------------------------------------
+         14 pix       32
+         53 pix       64
+         101 pix      128
+
+     </pre>
+     <pre>
+     references for the algorithm details:
+
+     cmu lectures for Computer Vision 16-385, lectures 14 by Kris Kitani
+
      Horn, B.K. and Schunck, B.G., 1980. Determining optical flow.
 
      boundary condition handling was adopted from:
      Meinhardt-Llopis, Pérez, and Kondermann, "Horn-Schunck Optical Flow with a Multi-Scale Strategy",
      Image Processing On Line, 3 (2013), pp. 151–172. https://doi.org/10.5201/ipol.2013.20
      </pre>
-     * @param im1 image array.  for best results, should be in range [0, 255]
-     * @param im2 image array taken shortly after im1 in time.  for best results, should be in range [0, 255]
+     uses default values of alpha=1, epsSq=1E-9, maxIter=1000, uInit=0, vInit=0
+     * @param im1 image array.  for best results, consider the image to be integers, that is, signal range should be > 1
+     *            i.e, [0, 255]
+     * @param im2 image array taken shortly after im1 in time.
+     * @return u and v as motion between im1 and im2 in units of pixels.  u is dx/dt and v is dy/dt.
+     */
+    public static List<double[][]> hornSchunck(double[][] im1, double[][] im2) {
+        return hornSchunck(im1, im2, 0, 0, 0.1, 1000, 1E-4);
+    }
+
+    /**
+     an algorithm that estimates the motion between 2 images, assuming constancy of brightness and short elapsed times.
+     The algorithm can be used for small displacements between images that are mostly smooth gradients.
+     The algorithm is extremely sensitive to the size of the input images.
+     <pre>
+     to help determine the best image size to use for this algorithm, here are some empirically derived numbers from
+     unit tests:
+         image width 32, maxV=[32,*), alpha=0.1, maxIter=100, epsSq=1E-2, up to dx=14
+         image width 64, maxV=[64,*), alpha=0.1, maxIter=100, epsSq=1E-2, up to dx=16
+         image width 64, maxV=[64,*), alpha=0.1, maxIter=1000, epsSq=1E-4, up to dx=53
+         image width 128, maxV=[128,*), alpha=0.1, maxIter=100, epsSq=1E-2, up to dx=9
+         image width 128, maxV=[128,*), alpha=0.1, maxIter=100, epsSq=[1E-4, 1E-3], up to dx=30
+         image width 128, maxV=[128,*), alpha=0.1, maxIter=1000, epsSq=1E-4, up to dx=101
+         image width 128, maxV=[128,*), alpha=0.1, maxIter=[1000, 10000], epsSq=1E-3, up to dx=31
+         image width 255, maxV=[128,*), alpha=0.1, maxIter=[1000, 200000] epsSq=[1E-10, 1E-3], up to dx=2
+
+     summary of those results:
+         ---------------------------------------------------
+         motion    image dimension for fastest calculations
+         -------  -----------------------------------------
+         14 pix       32
+         53 pix       64
+         101 pix      128
+
+     </pre>
+     <pre>
+     references for the algorithm details:
+
+     cmu lectures for Computer Vision 16-385, lectures 14 by Kris Kitani
+
+     Horn, B.K. and Schunck, B.G., 1980. Determining optical flow.
+
+     boundary condition handling was adopted from:
+     Meinhardt-Llopis, Pérez, and Kondermann, "Horn-Schunck Optical Flow with a Multi-Scale Strategy",
+     Image Processing On Line, 3 (2013), pp. 151–172. https://doi.org/10.5201/ipol.2013.20
+     </pre>
+     uses default values of alpha=1, epsSq=1E-9, maxIter=1000, uInit=0, vInit=0
+     * @param im1 image array.  for best results, consider the image to be integers, that is, signal range should be > 1
+     *            i.e, [0, 255] etc.
+     * @param im2 image array taken shortly after im1 in time.
      * @param uInit initial guess for u.
      * @param vInit initial guess for v.
-     * @param alpha a weight parameter used in the updates.  must be >= 1.  for best results should be in range [1,10].
+     * @param alpha a weight parameter used in the updates of u and v internally.  must be > 0.
+     *              for best results should be in range [1,10].
+     *              alpha=0.1 is recommended.
      * @param maxIter maximum number of iterations to perform.  if u,v square differences do not converge to
      *                <= epsSq, up to maxIter iterations are performed.
      * @param epsSq the condition for convergence.  sum of the square differences of u,v from previous iteration
      *              less than epsSq is convergence.
      * @return
      */
-    public static List<double[][]> hornSchunck(double[][] im1, double[][] im2, double uInit, double vInit,
-                                               double alpha, int maxIter, double epsSq) {
+    public static List<double[][]> hornSchunck(double[][] im1, double[][] im2,
+                                               final double uInit, final double vInit,
+                                               final double alpha, final int maxIter, final double epsSq) {
 
-        if (alpha < 1) {
-            throw new IllegalArgumentException("alpha should be >= 1");
+        if (alpha <= 0) {
+            throw new IllegalArgumentException("alpha must be > 0");
         }
         int h = im1.length;
         int w = im1[0].length;
@@ -146,7 +213,7 @@ public class OpticalFlow {
             prevV = MatrixUtil.copy(v);
         }
 
-        System.out.println("nIter=" + nIter + ", sumDiff=" + sumDiff);
+        log.log(LEVEL, "nIter=" + nIter + ", sumDiff=" + sumDiff);
 
         List<double[][]> out = new ArrayList<>();
         out.add(u);
