@@ -6,14 +6,13 @@ import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.imageProcessing.segmentation.NormalizedCuts;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
 import algorithms.matrix.MatrixUtil;
-import algorithms.misc.MiscDebug;
-import algorithms.misc.MiscMath;
-import algorithms.misc.MiscMath0;
+import algorithms.misc.*;
 import algorithms.util.FormatArray;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import junit.framework.TestCase;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -128,29 +127,30 @@ public class OpticalFlowTest extends TestCase {
         }
     }
 
-    public void test2HornSchunck() {
-        int m, n;
+    public void test2HornSchunck() throws IOException {
+        int m = 20;
+        int n = m;
         double[][] im1;
         double[][] im2;
         double uInit = 0;//0.5;
         double vInit = 0;//0.5;
+        int maxIter = 1000;
+        double epsSq = 1E-9;
 
-        double alphaSq = 1;
+        double alphaSq = 1E0;
 
         for (int iTest = 1; iTest < 10; ++iTest) {
-            m = iTest * 10;
-            n = m;
+            //m = iTest * 10;
+            //n = m;
             im1 = new double[m][n];
             im2 = new double[m][n];
-            double deltaI = 1. / m;
+            double deltaI = 255. / m;
 
-            if (iTest - uInit > 3) {
-                uInit = iTest - 3;
-                vInit = iTest - 3;
-            }
+            //alphaSq = iTest;
 
             for (int i = 1; i < m; ++i) {
                 double b = deltaI * i;
+                b = (int)Math.round(b); // to match image processing temporarily
                 for (int j = 0; j <= i; ++j) {
                     im1[i][j] = b;
                     im1[j][i] = b;
@@ -163,10 +163,18 @@ public class OpticalFlowTest extends TestCase {
                 }
             }
 
-            System.out.printf("im1:\n%s\n", FormatArray.toString(im1, "%.3f"));
-            System.out.printf("im2:\n%s\n", FormatArray.toString(im2, "%.3f"));
+            //System.out.printf("im1:\n%s\n", FormatArray.toString(im1, "%.3f"));
+            //System.out.printf("im2:\n%s\n", FormatArray.toString(im2, "%.3f"));
 
-            List<double[][]> uvHS = OpticalFlow.hornSchunck(im1, im2, uInit, vInit, alphaSq);
+            List<double[][]> uvHS = OpticalFlow.hornSchunck(im1, im2, uInit, vInit, alphaSq,
+                maxIter, epsSq);
+
+            double[][] uH = Histogram.createHistogram(MatrixUtil.stack(uvHS.get(0)), 255);
+            double[][] vH = Histogram.createHistogram(MatrixUtil.stack(uvHS.get(1)), 255);
+            int uIdx = MiscMath0.findYMaxIndex(uH[1]);
+            int vIdx = MiscMath0.findYMaxIndex(vH[1]);
+            double uMode = uH[0][uIdx];
+            double vMode = vH[0][vIdx];
 
             double avgU = MiscMath0.mean(MatrixUtil.rowMeans(
                     MatrixUtil.copySubMatrix(uvHS.get(0), 1, m - 1, 1, n - 1)
@@ -175,15 +183,36 @@ public class OpticalFlowTest extends TestCase {
                     MatrixUtil.copySubMatrix(uvHS.get(1), 1, m - 1, 1, n - 1)
             ));
 
-            System.out.printf("Test=%d, uAvg=%.3f, vAvg=%.3f (unit,vInit=%.1f,%.1f)\n",
-                    iTest, avgU, avgV, uInit, vInit);
-            System.out.printf("u:\n%s\n", FormatArray.toString(uvHS.get(0), "%.3f"));
-            System.out.printf("v:\n%s\n", FormatArray.toString(uvHS.get(1), "%.3f"));
-            System.out.flush();
-            //assertEquals(iTest, Math.round(avgU));
-            //assertEquals(iTest, Math.round(avgV));
+            System.out.printf("Test=%d, uEst=%.3f, vEst=%.3f (avgs=%.3f,%.3f) (uInit,vInit=%.1f,%.1f), alpha=%.4e\n",
+                    iTest, uMode, vMode, avgU, avgV, uInit, vInit, alphaSq);
+            //System.out.printf("u:\n%s\n", FormatArray.toString(uvHS.get(0), "%.3f"));
+            //System.out.printf("v:\n%s\n", FormatArray.toString(uvHS.get(1), "%.3f"));
+            //System.out.flush();
+
+            assertEquals(iTest, Math.round(uMode));
+            assertEquals(iTest, Math.round(vMode));
+
+            //writeToPng(im1, "im1_" + iTest + ".png");
+            //writeToPng(im2, "im2_" + iTest + ".png");
         }
 
+    }
+
+    protected void writeToPng(double[][] im1, String fileName) throws IOException {
+        // scale from 0 to 255
+        int h = im1.length;
+        int w = im1[0].length;
+
+        GreyscaleImage image = new GreyscaleImage(w, h);
+        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
+                int v = (int)Math.round(im1[y][x]);
+                image.setValue(x, y, v);
+            }
+        }
+        String sep = System.getProperty("file.separator");
+        String filePath = ResourceFinder.findOutputTestDirectory() + sep + fileName;
+        ImageIOHelper.writeOutputImage(filePath, image);
     }
 
     private List<PairInt> findKeyPoints(ImageExt img, int nCorners, int patchSize) {

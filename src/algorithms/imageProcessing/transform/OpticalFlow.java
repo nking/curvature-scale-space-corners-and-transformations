@@ -1,19 +1,11 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.imageProcessing.ImageProcessor;
-import algorithms.imageProcessing.StructureTensor;
-import algorithms.imageProcessing.StructureTensorD;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.Histogram;
-import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath0;
-import algorithms.statistics.Standardization;
-import algorithms.util.Errors;
 import algorithms.util.FormatArray;
-import algorithms.util.LinearRegression;
 import algorithms.util.PolygonAndPointPlotter;
-import no.uib.cipr.matrix.DenseMatrix;
-import no.uib.cipr.matrix.EVD;
 import no.uib.cipr.matrix.NotConvergedException;
 
 import java.io.IOException;
@@ -35,41 +27,56 @@ public class OpticalFlow {
      * @return u and v for im1
      */
     public static List<double[][]> hornSchunck(double[][] im1, double[][] im2) {
-        return hornSchunck(im1, im2, 0, 0, 10);
+        return hornSchunck(im1, im2, 0, 0, 1, 2000, 1E-9);
     }
 
     /**
-     * HS is fine for small displacements between images.
-     * @param im1
-     * @param im2
-     * @param alphaSq
-     * @return u and v for im1
+     * HS can be used for small displacements between images.
+     <pre>
+     boundary condition handling was adopted from:
+     Meinhardt-Llopis, Pérez, and Kondermann, "Horn-Schunck Optical Flow with a Multi-Scale Strategy",
+     Image Processing On Line, 3 (2013), pp. 151–172. https://doi.org/10.5201/ipol.2013.20
+     </pre>
+     * @param im1 first image, values must be >= 0
+     * @param im2 second image, values must be >= 0
+     * @param uInit initial guess for u.
+     * @param vInit initial guess for v.
+     * @param alpha a weight parameter used in the updates.  must be >= 1.
+     * @param maxIter maximum number of iterations to perform.  if u,v square differences do not converge to
+     *                <= epsSq, up to maxIter iterations are performed.
+     * @param epsSq the condition for convergence.  sum of the square differences of u,v from previous iteration
+     *              less than epsSq is convergence.
+     * @return
      */
     public static List<double[][]> hornSchunck(double[][] im1, double[][] im2, double uInit, double vInit,
-                                               double alphaSq) {
+                                               double alpha, int maxIter, double epsSq) {
 
-        if (alphaSq < 1) {
-            throw new IllegalArgumentException("alphaSq should be >= 1");
+        if (alpha < 1) {
+            throw new IllegalArgumentException("alpha should be >= 1");
         }
-        int m = im1.length;
-        int n = im1[0].length;
-        if (im2.length != m || im2[0].length != n) {
+        int h = im1.length;
+        int w = im1[0].length;
+        if (im2.length != h || im2[0].length != w) {
             throw new IllegalArgumentException("im2 and im2 should have same dimensions");
         }
 
         // image gradients
-        double[][] Ix = hsColumnDiff(im1, im2);
-        double[][] Iy = hsRowDiff(im1, im2);
+        double[][] gX = hsGradX(im1, im2);
+        double[][] gY = hsGradY(im1, im2);
+        // temporal differences
+        double[][] gT = hsGradT(im1, im2);
 
-        // temporal differences (gradients)
-        double[][] It = hsTemporalDiff(im1, im2);
+        //double denom = (1./lambda) + dIx*dIx + dIy*dIy;
+        //double denom = alpha*alpha + gX*gX + gY*gY;
+        double[][] denom = new double[h][w];
+        for (int r = 0; r < h; ++r) {
+            for (int c = 0; c < w; ++c) {
+                denom[r][c] = (alpha*alpha + gX[r][c]*gX[r][c] + gY[r][c]*gY[r][c]);
+            }
+        }
 
-        System.out.printf("Ix:\n%s\n", FormatArray.toString(Ix, "%.3f"));
-        System.out.printf("Iy:\n%s\n", FormatArray.toString(Iy, "%.3f"));
-        System.out.printf("It:\n%s\n", FormatArray.toString(It, "%.3f"));
-
-        double[][] u = new double[m][n];
-        double[][] v = new double[m][n];
+        double[][] u = new double[h][w];
+        double[][] v = new double[h][w];
         if (uInit != 0) {
             for (double[] uI : u) {
                 Arrays.fill(uI, uInit);
@@ -81,63 +88,55 @@ public class OpticalFlow {
             }
         }
 
-        double[][] uAvg;
-        double[][] vAvg;
+        double[][] uAvg = new double[h][w];
+        double[][] vAvg = new double[h][w];
 
-        int maxIter = 200_000;
         int nIter = 0;
 
         // smaller values of lambda for smoother flow
         //double lambda = 0.5;//1./(3.*3.);//1./(15.*15.);
         // alpha squared models an addition of moise
         //Math.pow(MiscMath0.mean(MatrixUtil.rowMeans(im1)), 2);
-        //System.out.println("Ix mean^2=" + Math.pow(MiscMath0.mean(MatrixUtil.rowMeans(Ix)), 2));
-        //System.out.println("It mean^2=" + Math.pow(MiscMath0.mean(MatrixUtil.rowMeans(It)), 2));
+        //System.out.println("gX mean^2=" + Math.pow(MiscMath0.mean(MatrixUtil.rowMeans(gX)), 2));
+        //System.out.println("gT mean^2=" + Math.pow(MiscMath0.mean(MatrixUtil.rowMeans(gT)), 2));
         //System.out.println("im1 max^2=" + Math.pow(MiscMath0.findMax(im1), 2));
-
-        double epsSq = 1E-9;
 
         boolean hasConverged = false;
 
         ImageProcessor imageProcessor = new ImageProcessor();
 
-        //double denom = (1./lambda) + dIx*dIx + dIy*dIy;
-        //double denom = alphaSq + dIx*dIx + dIy*dIy;
-        double[][] denom = MatrixUtil.pointwiseAdd(MatrixUtil.pointwiseMultiplication(Ix, Ix),
-            MatrixUtil.pointwiseMultiplication(Iy, Iy));
-        MatrixUtil.multiply(denom, alphaSq);
-
         // weighted sum over the 8 neighbors.
         // Horn, Schunck 1980  section 8
         double[][] kernel = new double[][]{{1./12., 1./6, 1./12.}, {1./6, 0, 1./6}, {1./12, 1./6, 1./12}};
+
+        double[][] prevU = null;
+        double[][] prevV = null;
 
         double sumDiff = 0;
         while (nIter == 0 || nIter < maxIter && !hasConverged) {
             sumDiff = 0;
             ++nIter;
 
-            uAvg = MatrixUtil.copy(u);
-            vAvg = MatrixUtil.copy(v);
-            imageProcessor.applyKernel(uAvg, kernel);
-            imageProcessor.applyKernel(vAvg, kernel);
+            hsConvolve(uAvg, u);
+            hsConvolve(vAvg, v);
 
-            for (int r = 0; r < m; ++r) {
-                for (int c = 0; c < n; ++c) {
-                    double dIx = Ix[r][c];
-                    double dIy = Iy[r][c];
-                    double _uAvg = uAvg[r][c];
-                    double _vAvg = vAvg[r][c];
-                    double dIt = It[r][c];
-
-                    double numer = (dIx * _uAvg) + (dIy * _vAvg) + dIt;
-                    double nd = (denom[r][c] == 0.) ? 0 : numer/denom[r][c];
-                    u[r][c] = _uAvg - dIx * nd;
-                    v[r][c] = _vAvg - dIy * nd;
-                    sumDiff += (Math.pow(uAvg[r][c] - u[r][c], 2) + Math.pow(vAvg[r][c] - v[r][c], 2));
+            for (int r = 0; r < h; ++r) {
+                for (int c = 0; c < w; ++c) {
+                    double numer = (gX[r][c] * uAvg[r][c]) + (gY[r][c] * vAvg[r][c]) + gT[r][c];
+                    double nd = numer/denom[r][c];
+                    u[r][c] = uAvg[r][c] - gX[r][c] * nd;
+                    v[r][c] = vAvg[r][c] - gY[r][c] * nd;
+                    if (prevU != null) {
+                        sumDiff += (Math.pow(u[r][c] - prevU[r][c], 2) + Math.pow(v[r][c] - prevV[r][c], 2));
+                    }
                 }
             }
-            sumDiff /= (m*n);
-            hasConverged = (sumDiff < epsSq);
+            if (prevU != null) {
+                sumDiff /= (h * w);
+                hasConverged = (sumDiff < epsSq);
+            }
+            prevU = MatrixUtil.copy(u);
+            prevV = MatrixUtil.copy(v);
         }
 
         System.out.println("nIter=" + nIter + ", sumDiff=" + sumDiff);
@@ -285,34 +284,54 @@ public class OpticalFlow {
         }
         return b;
     }
-    //Horn & Schmunck 1980, Sect 7
-    protected static double[][] hsColumnDiff(double[][] im1, double[][] im2) {
-        int m = im1.length;
-        int n = im1[0].length;
-        double[][] b = new double[m][n];
 
-        for (int i = 0; i < m-1; ++i) {
-            for (int j = 0; j < n-1; ++j) {
-                b[i][j] = im1[i][j+1] - im1[i][j] + im1[i+1][j+1] - im1[i+1][j]
-                        + im2[i][j+1] - im2[i][j] + im2[i+1][j+1] - im2[i+1][j];
-                b[i][j] /= 4.;
+    /**
+     * extract value from x w/ boundary replication when out of bounds.
+     * method adopted from
+     <pre>
+     boundary condition handling was adopted from:
+     Meinhardt-Llopis, Pérez, and Kondermann, "Horn-Schunck Optical Flow with a Multi-Scale Strategy",
+     Image Processing On Line, 3 (2013), pp. 151–172. https://doi.org/10.5201/ipol.2013.20
+     </pre>
+     * @param x
+     * @param col
+     * @param row
+     * @return
+     */
+    protected static double p(double[][] x, int row, int col) {
+        int w = x[0].length;
+        int h = x.length;
+        if (col < 0) col = 0;
+        if (row < 0) row = 0;
+        if (col >= w) col = w - 1;
+        if (row >= h) row = h - 1;
+        return x[row][col];
+    }
+
+    /**
+     create y gradient
+     <pre>
+     Horn & Schmunck 1980, Sect 7
+     </pre>
+     * @param im1
+     * @param im2
+     * @return
+     */
+    protected static double[][] hsGradY(double[][] im1, double[][] im2) {
+        int h = im1.length;
+        int w = im1[0].length;
+        double[][] b = new double[h][w];
+
+        for (int j = 0; j < h; ++j) {
+            for (int i = 0; i < w; ++i) {
+                b[j][i] = p(im1, j+1,i) - p(im1, j, i)
+                        + p(im1,j+1,i+1) - p(im1,j,i+1)
+                        + p(im2, j+1,i) - p(im2, j, i)
+                        + p(im2,j+1,i+1) - p(im2,j,i+1);
+                b[j][i] /= 4.;
             }
         }
-        // replicate for last row and column:
-        for (int j = 0; j < n-1; ++j) {
-            b[m-1][j] = b[m-2][j];
-        }
-        for (int i = 0; i < m-1; ++i) {
-            b[i][n-1] = b[i][n-2];
-        }
-        b[m-1][n-1] = b[m-2][n-2];
-
         return b;
-        /*
-        Ex=Ix is 1/4 of im1[i][j+1] - im1[i][j]
-            + im1[i+1][j+1] - im1[i+1][j]
-            + same for im2
-         */
     }
 
     protected static double[][] strictRowDiff(double[][] a) {
@@ -326,54 +345,53 @@ public class OpticalFlow {
     }
 
     //Horn & Schmunck 1980, Sect 7
-    protected static double[][] hsRowDiff(double[][] im1, double[][] im2) {
-        int m = im1.length;
-        int n = im1[0].length;
-        double[][] b = new double[m][n];
+    protected static double[][] hsGradX(double[][] im1, double[][] im2) {
+        int h = im1.length;
+        int w = im1[0].length;
+        double[][] b = new double[h][w];
 
-        for (int i = 0; i < m-1; ++i) {
-            for (int j = 0; j < n-1; ++j) {
-                b[i][j] = im1[i+1][j] - im1[i][j] + im1[i+1][j+1] - im1[i][j+1]
-                        + im2[i+1][j] - im2[i][j] + im2[i+1][j+1] - im2[i][j+1];
-                b[i][j] /= 4.;
+        for (int j = 0; j < h; ++j) {
+            for (int i = 0; i < w; ++i) {
+                b[j][i] = p(im1, j,i+1) - p(im1, j, i)
+                        + p(im1, j+1, i+1) - p(im1, j+1, i)
+                        + p(im2, i+1,j) - p(im2, j, i)
+                        + p(im2, j+1, i+1) - p(im2, j+1, i);
+                b[j][i] /= 4.;
             }
         }
-
-        // replicate for last row and column:
-        for (int j = 0; j < n-1; ++j) {
-            b[m-1][j] = b[m-2][j];
-        }
-        for (int i = 0; i < m-1; ++i) {
-            b[i][n-1] = b[i][n-2];
-        }
-        b[m-1][n-1] = b[m-2][n-2];
-
         return b;
     }
 
     //Horn & Schmunck 1980, Sect 7
-    protected static double[][] hsTemporalDiff(double[][] im1, double[][] im2) {
-        int m = im1.length;
-        int n = im1[0].length;
-        double[][] b = new double[m][n];
+    protected static double[][] hsGradT(double[][] im1, double[][] im2) {
+        int h = im1.length;
+        int w = im1[0].length;
+        double[][] b = new double[h][w];
 
-        for (int i = 0; i < m-1; ++i) {
-            for (int j = 0; j < n-1; ++j) {
-                b[i][j] = im2[i][j] - im1[i][j] + im2[i+1][j] - im1[i+1][j]
-                        + im2[i][j+1] - im1[i][j+1] + im2[i+1][j+1] - im1[i+1][j+1];
-                b[i][j] /= 4.;
+        for (int j = 0; j < h; ++j) {
+            for (int i = 0; i < w; ++i) {
+                b[j][i] = p(im2,j,i) - p(im1,j,i)
+                        + p(im2,j,i+1) - p(im1,j,i+1)
+                        + p(im2,j+1,i) - p(im1,j+1,i)
+                        + p(im2,j+1,i+1) - p(im1,j+1,i+1);
+                b[j][i] /= 4.;
             }
         }
 
-        // replicate for last row and column:
-        for (int j = 0; j < n-1; ++j) {
-            b[m-1][j] = b[m-2][j];
-        }
-        for (int i = 0; i < m-1; ++i) {
-            b[i][n-1] = b[i][n-2];
-        }
-        b[m-1][n-1] = b[m-2][n-2];
-
         return b;
     }
+
+    private static void hsConvolve(double[][] out, double[][] in) {
+        int h = in.length;
+        int w = in[0].length;
+        for (int j = 0; j < h; ++j) {
+            for (int i = 0; i < w; ++i) {
+                out[j][i] = (p(in, j-1, i) + p(in,j+1,i)
+                        + p(in,j,i-1) + p(in,j,i+1))/6.;
+                out[j][i] += (p(in, j-1, i-1) + p(in,j-1,i+1)
+                        + p(in,j+1,i-1) + p(in,j+1,i+1))/12.;
+            }
+        }
+    }
+
 }
