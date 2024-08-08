@@ -9,6 +9,7 @@ import algorithms.misc.HistogramHolder;
 import algorithms.misc.MiscMath0;
 import algorithms.statistics.Standardization;
 import algorithms.util.Errors;
+import algorithms.util.FormatArray;
 import algorithms.util.LinearRegression;
 import algorithms.util.PolygonAndPointPlotter;
 import no.uib.cipr.matrix.DenseMatrix;
@@ -34,16 +35,22 @@ public class OpticalFlow {
      * @return u and v for im1
      */
     public static List<double[][]> hornSchunck(double[][] im1, double[][] im2) {
-        return hornSchunck(im1, im2, 0, 0);
+        return hornSchunck(im1, im2, 0, 0, 10);
     }
+
     /**
      * HS is fine for small displacements between images.
      * @param im1
      * @param im2
+     * @param alphaSq
      * @return u and v for im1
      */
-    public static List<double[][]> hornSchunck(double[][] im1, double[][] im2, double uInit, double vInit) {
+    public static List<double[][]> hornSchunck(double[][] im1, double[][] im2, double uInit, double vInit,
+                                               double alphaSq) {
 
+        if (alphaSq < 1) {
+            throw new IllegalArgumentException("alphaSq should be >= 1");
+        }
         int m = im1.length;
         int n = im1[0].length;
         if (im2.length != m || im2[0].length != n) {
@@ -51,11 +58,15 @@ public class OpticalFlow {
         }
 
         // image gradients
-        double[][] s1X = strictColumnDiff(im1);
-        double[][] s1Y = strictRowDiff(im1);
+        double[][] Ix = hsColumnDiff(im1, im2);
+        double[][] Iy = hsRowDiff(im1, im2);
 
         // temporal differences (gradients)
-        double[][] t = MatrixUtil.pointwiseSubtract(im2, im1);
+        double[][] It = hsTemporalDiff(im1, im2);
+
+        System.out.printf("Ix:\n%s\n", FormatArray.toString(Ix, "%.3f"));
+        System.out.printf("Iy:\n%s\n", FormatArray.toString(Iy, "%.3f"));
+        System.out.printf("It:\n%s\n", FormatArray.toString(It, "%.3f"));
 
         double[][] u = new double[m][n];
         double[][] v = new double[m][n];
@@ -70,8 +81,8 @@ public class OpticalFlow {
             }
         }
 
-        double[][] uEst, uAvg;
-        double[][] vEst, vAvg;
+        double[][] uAvg;
+        double[][] vAvg;
 
         int maxIter = 200_000;
         int nIter = 0;
@@ -79,8 +90,11 @@ public class OpticalFlow {
         // smaller values of lambda for smoother flow
         //double lambda = 0.5;//1./(3.*3.);//1./(15.*15.);
         // alpha squared models an addition of moise
-        double alphaSq = 10;//Math.pow(MiscMath0.mean(MatrixUtil.rowMeans(im1)), 2);
-        System.out.println("alphaSq=" + alphaSq);
+        //Math.pow(MiscMath0.mean(MatrixUtil.rowMeans(im1)), 2);
+        //System.out.println("Ix mean^2=" + Math.pow(MiscMath0.mean(MatrixUtil.rowMeans(Ix)), 2));
+        //System.out.println("It mean^2=" + Math.pow(MiscMath0.mean(MatrixUtil.rowMeans(It)), 2));
+        //System.out.println("im1 max^2=" + Math.pow(MiscMath0.findMax(im1), 2));
+
         double epsSq = 1E-9;
 
         boolean hasConverged = false;
@@ -88,21 +102,19 @@ public class OpticalFlow {
         ImageProcessor imageProcessor = new ImageProcessor();
 
         //double denom = (1./lambda) + dIx*dIx + dIy*dIy;
-        double[][] denom = MatrixUtil.pointwiseAdd(MatrixUtil.pointwiseMultiplication(s1X, s1X),
-            MatrixUtil.pointwiseMultiplication(s1Y, s1Y));
+        //double denom = alphaSq + dIx*dIx + dIy*dIy;
+        double[][] denom = MatrixUtil.pointwiseAdd(MatrixUtil.pointwiseMultiplication(Ix, Ix),
+            MatrixUtil.pointwiseMultiplication(Iy, Iy));
         MatrixUtil.multiply(denom, alphaSq);
 
-        // average over the 4 neighbors.
-        //double[][] kernel = new double[][]{{0,0.25,0}, {0.25,0,0.25}, {0,0.25,0}};
-        // eqn 10 of "Horn-Schunck Optical Flow with a Multi-Scale Strategy"
-        //   by Meinhardt-Llopis, Sanchez & Kondermann 2012 for adding the 4 neighbors + 4 diagonal neighbors at half weight
+        // weighted sum over the 8 neighbors.
+        // Horn, Schunck 1980  section 8
         double[][] kernel = new double[][]{{1./12., 1./6, 1./12.}, {1./6, 0, 1./6}, {1./12, 1./6, 1./12}};
 
+        double sumDiff = 0;
         while (nIter == 0 || nIter < maxIter && !hasConverged) {
-            double sumDiff = 0;
+            sumDiff = 0;
             ++nIter;
-            uEst = new double[m][n];
-            vEst = new double[m][n];
 
             uAvg = MatrixUtil.copy(u);
             vAvg = MatrixUtil.copy(v);
@@ -111,24 +123,24 @@ public class OpticalFlow {
 
             for (int r = 0; r < m; ++r) {
                 for (int c = 0; c < n; ++c) {
-                    double dIx = s1X[r][c];
-                    double dIy = s1Y[r][c];
+                    double dIx = Ix[r][c];
+                    double dIy = Iy[r][c];
                     double _uAvg = uAvg[r][c];
                     double _vAvg = vAvg[r][c];
-                    double dIt = t[r][c];
+                    double dIt = It[r][c];
 
                     double numer = (dIx * _uAvg) + (dIy * _vAvg) + dIt;
                     double nd = (denom[r][c] == 0.) ? 0 : numer/denom[r][c];
-                    uEst[r][c] = _uAvg - dIx * nd;
-                    vEst[r][c] = _vAvg - dIy * nd;
-                    sumDiff += (Math.pow(uEst[r][c] - u[r][c], 2) + Math.pow(vEst[r][c] - v[r][c], 2));
+                    u[r][c] = _uAvg - dIx * nd;
+                    v[r][c] = _vAvg - dIy * nd;
+                    sumDiff += (Math.pow(uAvg[r][c] - u[r][c], 2) + Math.pow(vAvg[r][c] - v[r][c], 2));
                 }
             }
             sumDiff /= (m*n);
             hasConverged = (sumDiff < epsSq);
-            u = uEst;
-            v = vEst;
         }
+
+        System.out.println("nIter=" + nIter + ", sumDiff=" + sumDiff);
 
         List<double[][]> out = new ArrayList<>();
         out.add(u);
@@ -253,7 +265,7 @@ public class OpticalFlow {
             ++uvI;
         }
 
-        //Returns: 2 dimensional * array with row 0 being the bin centers, and row 1 being the histogram counts
+        //Returns: 2-dimensional * array with row 0 being the bin centers, and row 1 being the histogram counts
         double[][] uH = Histogram.createHistogram(u, 10);
         double[][] vH = Histogram.createHistogram(v, 10);
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
@@ -267,19 +279,101 @@ public class OpticalFlow {
     protected static double[][] strictColumnDiff(double[][] a) {
         double[][] b = new double[a.length][a[0].length];
         for (int i = 0; i < a.length; ++i) {
-            for (int j = 0; j < b.length-1; ++j) {
-                b[i][j] = a[i][j+1] - a[i][j];
+            for (int j = 1; j < b.length; ++j) {
+                b[i][j] = a[i][j] - a[i][j-1];
             }
         }
         return b;
     }
-    protected static double[][] strictRowDiff(double[][] a) {
-        double[][] b = new double[a.length][a[0].length];
-        for (int i =0; i < a.length-1; ++i) {
-            for (int j = 0; j < b.length; ++j) {
-                b[i][j] = a[i+1][j] - a[i][j];
+    //Horn & Schmunck 1980, Sect 7
+    protected static double[][] hsColumnDiff(double[][] im1, double[][] im2) {
+        int m = im1.length;
+        int n = im1[0].length;
+        double[][] b = new double[m][n];
+
+        for (int i = 0; i < m-1; ++i) {
+            for (int j = 0; j < n-1; ++j) {
+                b[i][j] = im1[i][j+1] - im1[i][j] + im1[i+1][j+1] - im1[i+1][j]
+                        + im2[i][j+1] - im2[i][j] + im2[i+1][j+1] - im2[i+1][j];
+                b[i][j] /= 4.;
             }
         }
+        // replicate for last row and column:
+        for (int j = 0; j < n-1; ++j) {
+            b[m-1][j] = b[m-2][j];
+        }
+        for (int i = 0; i < m-1; ++i) {
+            b[i][n-1] = b[i][n-2];
+        }
+        b[m-1][n-1] = b[m-2][n-2];
+
+        return b;
+        /*
+        Ex=Ix is 1/4 of im1[i][j+1] - im1[i][j]
+            + im1[i+1][j+1] - im1[i+1][j]
+            + same for im2
+         */
+    }
+
+    protected static double[][] strictRowDiff(double[][] a) {
+        double[][] b = new double[a.length][a[0].length];
+        for (int i =1; i < a.length; ++i) {
+            for (int j = 0; j < b.length; ++j) {
+                b[i][j] = a[i][j] - a[i-1][j];
+            }
+        }
+        return b;
+    }
+
+    //Horn & Schmunck 1980, Sect 7
+    protected static double[][] hsRowDiff(double[][] im1, double[][] im2) {
+        int m = im1.length;
+        int n = im1[0].length;
+        double[][] b = new double[m][n];
+
+        for (int i = 0; i < m-1; ++i) {
+            for (int j = 0; j < n-1; ++j) {
+                b[i][j] = im1[i+1][j] - im1[i][j] + im1[i+1][j+1] - im1[i][j+1]
+                        + im2[i+1][j] - im2[i][j] + im2[i+1][j+1] - im2[i][j+1];
+                b[i][j] /= 4.;
+            }
+        }
+
+        // replicate for last row and column:
+        for (int j = 0; j < n-1; ++j) {
+            b[m-1][j] = b[m-2][j];
+        }
+        for (int i = 0; i < m-1; ++i) {
+            b[i][n-1] = b[i][n-2];
+        }
+        b[m-1][n-1] = b[m-2][n-2];
+
+        return b;
+    }
+
+    //Horn & Schmunck 1980, Sect 7
+    protected static double[][] hsTemporalDiff(double[][] im1, double[][] im2) {
+        int m = im1.length;
+        int n = im1[0].length;
+        double[][] b = new double[m][n];
+
+        for (int i = 0; i < m-1; ++i) {
+            for (int j = 0; j < n-1; ++j) {
+                b[i][j] = im2[i][j] - im1[i][j] + im2[i+1][j] - im1[i+1][j]
+                        + im2[i][j+1] - im1[i][j+1] + im2[i+1][j+1] - im1[i+1][j+1];
+                b[i][j] /= 4.;
+            }
+        }
+
+        // replicate for last row and column:
+        for (int j = 0; j < n-1; ++j) {
+            b[m-1][j] = b[m-2][j];
+        }
+        for (int i = 0; i < m-1; ++i) {
+            b[i][n-1] = b[i][n-2];
+        }
+        b[m-1][n-1] = b[m-2][n-2];
+
         return b;
     }
 }

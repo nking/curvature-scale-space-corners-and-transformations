@@ -57,7 +57,7 @@ public class OpticalFlowTest extends TestCase {
             //double[][] b2 = img.exportHSBRowMajor().get(2);
             double[][] b2 = img.exportRowMajor().get(0);
 
-            List<double[][]> uvHS = OpticalFlow.hornSchunck(b1, b2, uInit, vInit);
+            List<double[][]> uvHS = OpticalFlow.hornSchunck(b1, b2);
 
             int t = 2;
         }
@@ -68,7 +68,7 @@ public class OpticalFlowTest extends TestCase {
         // each 300x225
         String[] fileNames = new String[]{"tomatoes_01.png", /*"tomatoes_02.png",*/ "tomatoes_03.png"};
         /*
-        a feature in the 3 tomatoe images:
+        a feature in the 3 tomato images:
         177, 140  in 01.png
         177, 139  in 02.png
         157, 135  in 03.png
@@ -128,32 +128,61 @@ public class OpticalFlowTest extends TestCase {
         }
     }
 
-    public void test2() {
-        int m = 10, n = m;
-        double[][] im1 = new double[m][n];
-        double[][] im2 = new double[m][n];
-        double deltaI = 1./m;
-        for (int i = 1; i < m; ++i) {
-            double b = deltaI*i;
-            for (int j = 0; j <= i; ++j) {
-                im1[i][j] = b;
-                im1[j][i] = b;
-
-                if (i+1 >= 0 && i+1 < m && j+1 >= 0 && j+1 < n) {
-                    im2[i + 1][j + 1] = b;
-                }
-                if (j+1 >= 0 && j+1 < m && i+1 >= 0 && i+1 < n) {
-                    im2[j + 1][i + 1] = b;
-                }
-            }
-        }
+    public void test2HornSchunck() {
+        int m, n;
+        double[][] im1;
+        double[][] im2;
         double uInit = 0;//0.5;
         double vInit = 0;//0.5;
 
-        List<double[][]> uvHS = OpticalFlow.hornSchunck(im1, im2, uInit, vInit);
+        double alphaSq = 1;
 
-        System.out.printf("u=%s\n", FormatArray.toString(uvHS.get(0), "%.3f"));
-        System.out.printf("v=%s\n", FormatArray.toString(uvHS.get(1), "%.3f"));
+        for (int iTest = 1; iTest < 10; ++iTest) {
+            m = iTest * 10;
+            n = m;
+            im1 = new double[m][n];
+            im2 = new double[m][n];
+            double deltaI = 1. / m;
+
+            if (iTest - uInit > 3) {
+                uInit = iTest - 3;
+                vInit = iTest - 3;
+            }
+
+            for (int i = 1; i < m; ++i) {
+                double b = deltaI * i;
+                for (int j = 0; j <= i; ++j) {
+                    im1[i][j] = b;
+                    im1[j][i] = b;
+                    if (i + iTest >= 0 && i + iTest < m && j + iTest >= 0 && j + iTest < n) {
+                        im2[i + iTest][j + iTest] = b;
+                    }
+                    if (j + iTest >= 0 && j + iTest < m && i + iTest >= 0 && i + iTest < n) {
+                        im2[j + iTest][i + iTest] = b;
+                    }
+                }
+            }
+
+            System.out.printf("im1:\n%s\n", FormatArray.toString(im1, "%.3f"));
+            System.out.printf("im2:\n%s\n", FormatArray.toString(im2, "%.3f"));
+
+            List<double[][]> uvHS = OpticalFlow.hornSchunck(im1, im2, uInit, vInit, alphaSq);
+
+            double avgU = MiscMath0.mean(MatrixUtil.rowMeans(
+                    MatrixUtil.copySubMatrix(uvHS.get(0), 1, m - 1, 1, n - 1)
+            ));
+            double avgV = MiscMath0.mean(MatrixUtil.rowMeans(
+                    MatrixUtil.copySubMatrix(uvHS.get(1), 1, m - 1, 1, n - 1)
+            ));
+
+            System.out.printf("Test=%d, uAvg=%.3f, vAvg=%.3f (unit,vInit=%.1f,%.1f)\n",
+                    iTest, avgU, avgV, uInit, vInit);
+            System.out.printf("u:\n%s\n", FormatArray.toString(uvHS.get(0), "%.3f"));
+            System.out.printf("v:\n%s\n", FormatArray.toString(uvHS.get(1), "%.3f"));
+            System.out.flush();
+            //assertEquals(iTest, Math.round(avgU));
+            //assertEquals(iTest, Math.round(avgV));
+        }
 
     }
 
