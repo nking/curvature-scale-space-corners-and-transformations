@@ -382,7 +382,8 @@ public class OpticalFlowTest extends TestCase {
             gsImg.normalizeToMax255();
             double[][] b1 = gsImg.exportRowMajor();*/
 
-
+        // NOTE: phase congruency is useful to smooth out noisy details in trees, leaves, etc.
+        // the edge map from it can be used to find good corners.
         ImageProcessor imageProcessor = new ImageProcessor();
         PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
@@ -403,6 +404,7 @@ public class OpticalFlowTest extends TestCase {
             }
         }
 
+        // ORB uses Harris corners among many things to choose keypoints:
         ORB orb1 = new ORB(edges, nCorners);
         orb1.overrideToNotCreateDescriptors();
         orb1.overrideToUseSingleScale();
