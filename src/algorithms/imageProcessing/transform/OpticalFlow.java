@@ -6,6 +6,8 @@ import algorithms.misc.Histogram;
 import algorithms.misc.MiscMath0;
 import algorithms.util.FormatArray;
 import algorithms.util.PolygonAndPointPlotter;
+import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.EVD;
 import no.uib.cipr.matrix.NotConvergedException;
 
 import java.io.IOException;
@@ -244,9 +246,29 @@ public class OpticalFlow {
      * calculate the flow of im1 over patches of dimension pathDimension where the patch centers are given as x,y coordinates.
      * The flow u,v is returned for each patch.
      * Corners make good patch centers.
+     <pre>
+     reference for the algorithm details:
+         cmu lectures for Computer Vision 16-385, lectures 14 by Kris Kitani
+     </pre>
+     <pre>
+     Some unit test results on a diagonal gradient image, printed here as information about estimatable motion range
+     in an image size under ideal conditions:
+
+     using the median of the calculated u's, v's as the estimated u (=dx/dt) over all patches:
+     m = image length = image width.
+     max value is maximum pixel intensity in test image.
+
+             m     patchDim   max value    allowing error m/10   nPatches  can calc up to max u
+             32      5         32             3                     21         23
+             64      5         64             6                     53         57
+             128     5         128            12                    117        120
+             256     5         256            25                    245        250   (largest error=7)
+             512     5         512            51                    501        506   (largest error=7)
+             1024    5         1024           102                   1013       1018  (largest error=7)
+     </pre>
      * TODO: consider overloading method for features specified in some format
-     * @param im1
-     * @param im2
+     * @param im1 image array.  for best results, should hold values similar to an image range [0, 255], etc.
+     * @param im2 image array taken shortly after im1 in time.
      * @param patchCenters x,y coordinates of patch centers in format of size [nPatches x 2], e.g.
      *                     patchCenters[0][0] = x0, patchCenters[0][1] = y0,
      *                     patchCenters[1][0] = x1, patchCenters[1][1] = y1, ...
@@ -256,9 +278,9 @@ public class OpticalFlow {
      * @return list of uv pairs, one for each patchCenter.
      */
     public static List<double[]> lucasKanade(double[][] im1, double[][] im2, int[][] patchCenters, int patchDimension) throws NotConvergedException, IOException {
-        int m = im1.length;
-        int n = im1[0].length;
-        if (im2.length != m || im2[0].length != n) {
+        int h = im1.length;
+        int w = im1[0].length;
+        if (im2.length != h || im2[0].length != w) {
             throw new IllegalArgumentException("im2 and im2 should have same dimensions");
         }
 
@@ -266,32 +288,27 @@ public class OpticalFlow {
             throw new IllegalArgumentException("patchDimension should be >= 3");
         }
 
-        im1 = MatrixUtil.copy(im1);
-        im2 = MatrixUtil.copy(im2);
-        double max = Math.max(MiscMath0.findMax(im1), MiscMath0.findMax(im2));
-        MatrixUtil.multiply(im1, 1./max);
-        MatrixUtil.multiply(im2, 1./max);
-
         List<double[]> uvList = new ArrayList<>();
 
         double thresh = 0.04;
 
-        // image gradients:
         // image gradients
-        double[][] s1X = strictColumnDiff(im1);
-        double[][] s1Y = strictRowDiff(im1);
+        double[][] gX = hsGradX(im1, im2);
+        double[][] gY = hsGradY(im1, im2);
+        // temporal differences
+        double[][] gT = hsGradT(im1, im2);
 
         double[] u = new double[patchCenters.length];
         double[] v = new double[patchCenters.length];
         int uvI = 0;
 
-        // temporal differences (gradients)
-        double[][] t = MatrixUtil.pointwiseSubtract(im2, im1);
         for (int[] pc : patchCenters) {
             // build A [patchDimension*patchDimension x 2]
+
             double[][] A = new double[2][2];
             // build b [patchDimension]
             double[] b = new double[2];
+
             for (int dX = -patchDimension/2; dX <= patchDimension/2; ++dX) {
                 if ((patchDimension & 1) != 1 && dX == patchDimension/2) continue;
                 int c = pc[0] + dX;
@@ -303,11 +320,11 @@ public class OpticalFlow {
                     if (r < 0 || r >= im2.length)
                         throw new IllegalArgumentException("row " + r + " out of bounds of height: " + r);
 
-                    A[0][0] += (s1X[r][c] * s1X[r][c]);
-                    A[0][1] += (s1X[r][c] * s1Y[r][c]);
-                    A[1][1] += (s1Y[r][c] * s1Y[r][c]);
-                    b[0] += s1X[r][c] * t[r][c];
-                    b[1] += s1Y[r][c] * t[r][c];
+                    A[0][0] += (gX[r][c] * gX[r][c]);
+                    A[0][1] += (gX[r][c] * gY[r][c]);
+                    A[1][1] += (gY[r][c] * gY[r][c]);
+                    b[0] += gX[r][c] * gT[r][c];
+                    b[1] += gY[r][c] * gT[r][c];
                 } // end for loop dY
             }// end for loop dX
             A[1][0] = A[0][1];
@@ -326,7 +343,8 @@ public class OpticalFlow {
             double[][] ATA = MatrixUtil.createATransposedTimesA(A);
             EVD evd = no.uib.cipr.matrix.EVD.factorize(new DenseMatrix(ATA));
             double[] eigenValues = evd.getRealEigenvalues();
-            boolean cont = eigenValues[eigenValues.length - 1] >= thresh;*/
+            boolean cont2 = eigenValues[eigenValues.length - 1] >= thresh;
+            */
             if (!cont)
                 continue;
 
@@ -337,14 +355,6 @@ public class OpticalFlow {
             v[uvI] = uv[1];
             ++uvI;
         }
-
-        //Returns: 2-dimensional * array with row 0 being the bin centers, and row 1 being the histogram counts
-        double[][] uH = Histogram.createHistogram(u, 10);
-        double[][] vH = Histogram.createHistogram(v, 10);
-        PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
-        plotter.addPlot(uH[0], uH[1],null,null, "U");
-        plotter.addPlot(vH[0], vH[1],null,null, "V");
-        plotter.writeFile();
 
         return uvList;
     }

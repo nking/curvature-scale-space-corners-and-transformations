@@ -7,14 +7,15 @@ import algorithms.imageProcessing.segmentation.NormalizedCuts;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.*;
+import algorithms.sort.MiscSorter;
 import algorithms.util.FormatArray;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import junit.framework.TestCase;
+import no.uib.cipr.matrix.NotConvergedException;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  *
@@ -124,6 +125,138 @@ public class OpticalFlowTest extends TestCase {
 
             int t = 1;
 
+        }
+    }
+
+    public void test2LucasKanade() throws IOException, NotConvergedException {
+        int patchDim = 5;
+        int m = 32;
+        int pixMax = m;
+        //System.out.printf("pixMax=%d, m=%d\n", pixMax, m);
+        int n = m;
+        double[][] im1;
+        double[][] im2;
+
+        /*
+        using the median of the calculated u's, v's and a generous error of 10% of image dimension:
+
+            m     patchDim   max value    allowing error m/10   nPatches  can calc up to max u
+            32      5         32             3                     21         23
+            64      5         64             6                     53         57
+            128     5         128            12                    117        120
+            256     5         256            25                    245        250   (largest error=7)
+            512     5         512            51                    501        506   (largest error=7)
+            1024    5         1024           102                   1013       1018  (largest error=7)
+        */
+
+        for (int iTest = 1; iTest < m-9 /*m-5*/; ++iTest) {
+
+            im1 = new double[m][n];
+            im2 = new double[m][n];
+            double deltaI = pixMax / m;
+
+            for (int i = 1; i < m; ++i) {
+                double b = deltaI * i;
+                b = (int)Math.round(b); // to match image processing temporarily
+                for (int j = 0; j <= i; ++j) {
+                    im1[i][j] = b;
+                    im1[j][i] = b;
+                    if (i + iTest >= 0 && i + iTest < m && j + iTest >= 0 && j + iTest < n) {
+                        im2[i + iTest][j + iTest] = b;
+                    }
+                    if (j + iTest >= 0 && j + iTest < m && i + iTest >= 0 && i + iTest < n) {
+                        im2[j + iTest][i + iTest] = b;
+                    }
+                }
+            }
+
+            // start at 1+patchDim.  end at (m-1)-patchDim // 6 32-5
+            int pIdxI = 1 + patchDim;
+            int pIdxF = (m - 1) - patchDim;
+            int pN = pIdxF - pIdxI + 1;
+
+            int[][] patchCenters = new int[pN][2];
+            for (int ii = 0; ii < pN; ++ii) {
+                patchCenters[ii][0] = pIdxI + ii;
+                patchCenters[ii][1] = pIdxI + ii;
+            }
+
+            //System.out.printf("im1:\n%s\n", FormatArray.toString(im1, "%.3f"));
+            //System.out.printf("im2:\n%s\n", FormatArray.toString(im2, "%.3f"));
+
+            List<double[]> uvLK = OpticalFlow.lucasKanade(im1, im2, patchCenters, patchDim);
+
+            if (uvLK.isEmpty()) {
+                System.out.println("Test=" + iTest + " failed to process any patches");
+                fail();
+            }
+            // calc mode of patches
+            Map<Integer, Integer> uCounts = new HashMap<>();
+            Map<Integer, Integer> vCounts = new HashMap<>();
+
+            double[] u = new double[uvLK.size()];
+            double[] v = new double[uvLK.size()];
+            //System.out.println("Test=" + iTest + ", pN=" + pN);
+            for (int ii = 0; ii < u.length; ++ii) {
+                int _u = (int)Math.round(uvLK.get(ii)[0]);
+                int _v = (int)Math.round(uvLK.get(ii)[1]);
+                u[ii] = _u;
+                v[ii] = _v;
+                //System.out.printf("(%.3f, %.3f) ", u[ii], v[ii]);
+                //System.out.flush();
+                uCounts.put(_u, uCounts.getOrDefault(_u, 0) + 1);
+                vCounts.put(_v, vCounts.getOrDefault(_v, 0) + 1);
+            }
+            //System.out.printf("\n");
+
+            int[] vals = new int[uCounts.size()];
+            int[] cts = new int[uCounts.size()];
+            int j = 0;
+            for (Map.Entry<Integer, Integer> entry : uCounts.entrySet()) {
+                vals[j] = entry.getKey();
+                cts[j++] = entry.getValue();
+            }
+            MiscSorter.sortBy1stArg(cts, vals);
+            // for larger displacements with small patches, cannot use mode:
+            int uMode = vals[vals.length - 1];
+            boolean uniqueU = vals.length == 1 || (cts[vals.length - 1] != cts[vals.length - 2]);
+            //assertEquals(iTest, -uMode);
+
+            vals = new int[vCounts.size()];
+            cts = new int[vCounts.size()];
+            j = 0;
+            for (Map.Entry<Integer, Integer> entry : vCounts.entrySet()) {
+                vals[j] = entry.getKey();
+                cts[j++] = entry.getValue();
+            }
+            MiscSorter.sortBy1stArg(cts, vals);
+            int vMode = vals[vals.length - 1];
+            boolean uniqueV = vals.length == 1 || (cts[vals.length - 1] != cts[vals.length - 2]);
+            // for larger displacements with small patches, cannot use mode:
+            //assertEquals(iTest, -vals[vals.length - 1]);
+
+            // use the median and an error
+            double[] mADMinMaxU = MiscMath0.calculateMedianOfAbsoluteDeviation(u);
+            double[] avgStd = MiscMath.getAvgAndStDev(u);
+            double s = 1.4826*mADMinMaxU[0];
+
+            // using 10% of image width or length as a generous error
+            double error = m/10;
+            // found that that largest needed was 7 for the number of patches I'm using and the gradient pattern
+            error = Math.min(error, 7);
+            //System.out.printf("expecting %d.  median=%.0f +- %.1f (s=%.1f, mean=%.1f, uMode=%d(%b))\n",
+            //        -iTest, mADMinMaxU[1], error, s, avgStd[0], uMode, uniqueU);
+            //System.out.flush();
+
+            if (false /*uniqueU*/) {
+                assertTrue(Math.abs(-uMode - iTest) <= error);
+                assertTrue(Math.abs(-vMode - iTest) <= error);
+            } else {
+                assertTrue(Math.abs(-mADMinMaxU[1] - iTest) <= error);
+                double[] mADMinMaxV = MiscMath0.calculateMedianOfAbsoluteDeviation(v);
+                s = 1.4826 * mADMinMaxV[0];
+                assertTrue(Math.abs(-mADMinMaxV[1] - iTest) <= error);
+            }
         }
     }
 
