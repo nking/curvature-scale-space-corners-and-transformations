@@ -54,16 +54,18 @@ public class StructureTensorD {
 
     private final float sigma;
 
+    private final double[][] dX;
+
     private final double[][] dXSq;
+
+    private final double[][] dY;
 
     private final double[][] dYSq;
 
     private final double[][] dXdY;
 
     // optional:
-    private final double[][] dX;
     private final double[][] d2X;
-    private final double[][] dY;
     private final double[][] d2Y;
 
     // created on demand
@@ -75,6 +77,10 @@ public class StructureTensorD {
      * sqrt(2)/2) followed by smoothing with a gaussian of sigma=given sigma.
      * If create2ndDerivs is true, the second derivatives needed for curvature
      * are calculated too.
+     *
+     * Note that column-major data is assumed, so if have row-major data and context, then
+     * use the opposite variable when accessing results.  e.g. if image context is row major,
+     * then use dY = getDX() and dX = getDY() etc.
      *
      * @param image assumed to be row major format
      * @param sigma
