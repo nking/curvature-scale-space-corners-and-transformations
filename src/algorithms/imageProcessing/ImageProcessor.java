@@ -2566,6 +2566,8 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
      * NOT YET TESTED.  this assumes x and y should be interpreted as integers that
      * will be indexes for gsImg.
      *
+     * gsImg and x and y are column major data, so if your gsImg is row major you will need to swap x and y input arguments.
+     *
      http://en.wikipedia.org/wiki/Bilinear_interpolation
      http://en.wikipedia.org/wiki/Bilinear_interpolation#/media/File:Bilinear_interpolation_visualisation.svg
      * @param x

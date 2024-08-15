@@ -1,0 +1,5 @@
+images are from the example code from the book
+     * Chapter 5, "An introduction to 3-D Vision"
+     * by Y. Ma, S. Soatto, J. Kosecka, S. Sastry (MASKS)
+     * Code distributed free for non-commercial use
+     * Copyright (c) MASKS, 2003

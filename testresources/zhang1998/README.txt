@@ -25,6 +25,8 @@ c the parameter describing the skewness of the two image axes.
 (u0, v0) the coordinates of the principal point,
     for radial distortion, they use the k1*r + k2*r^2 pattern.
 
+They use a quasi-affine projection in a pinhole camera model.
+
 Model.txt is 64 lines of 8 real numbers
      they hold the WCS (X,Y) coordinates of the checkerboard corners, w/ assumption that Z=0
 data?.txt are each 64 lines of 8 real numbers.

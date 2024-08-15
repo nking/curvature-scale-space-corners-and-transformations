@@ -18,6 +18,8 @@ import java.util.Arrays;
  * Ma, Soatto, Kosecka,& Sastry (MASKS)
  * "An Invitation to Computer Vision, From Images to Geometric Models"
  *
+ *the oldhouse images have rotation and translation
+ *the yos images have zoom (translation in z direction, perpendicular to image  plane)
  * @author nichole
  */
 public class MASKSData {

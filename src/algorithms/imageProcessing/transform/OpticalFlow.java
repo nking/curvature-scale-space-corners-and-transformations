@@ -249,6 +249,8 @@ public class OpticalFlow {
      <pre>
      reference for the algorithm details:
          cmu lectures for Computer Vision 16-385, lectures 14 by Kris Kitani
+
+         https://en.wikipedia.org/wiki/Lucas%E2%80%93Kanade_method
      </pre>
      <pre>
      Some unit test results on a diagonal gradient image, printed here as information about estimatable motion range
@@ -328,6 +330,9 @@ public class OpticalFlow {
                 } // end for loop dY
             }// end for loop dX
             A[1][0] = A[0][1];
+            b[0] *= -1;
+            b[1] *= -1;
+
             //xEst = pseudoInv(A) * b // [2x2] * [2x1] = [2X1]
 
             //A^T*A should be invertible
@@ -483,5 +488,6 @@ public class OpticalFlow {
             }
         }
     }
+
 
 }
