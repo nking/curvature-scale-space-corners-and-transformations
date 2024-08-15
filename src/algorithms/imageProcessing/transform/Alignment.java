@@ -61,6 +61,27 @@ public class Alignment {
         return inverseCompositional(template, image, pInit, maxIter, Type.AFFINE_2D);
     }
 
+    /** find the x and y translations that best align the template to the image.
+   This alignment minimizes the re-projection error between the projected image and template
+   (though the error is an LP1 sum rather than LP2).
+   <pre>
+   reference:
+   Figure 4 of
+   Baker & Matthews, 2016, CMU-RI-TR-02-16
+   "Lucas-Kanade 20 Years On: A Unifying Framework: Part 1"
+   </pre>
+    @param template
+    * @param image
+    * @param xYInit an array of length 2 holding the x initial guess (can be 0) and y initial guess (can be 0) for
+     *               translations of a pixel in template to match a pixel in image.
+     *              NOTE that the final solution is written into this array.
+     *              xYInit is an in-out variable.
+    @param maxIter the maximum number of iterations to perform
+    * @throws NotConvergedException
+    * @throws IOException
+    @return returns the square root of the sum of squared error image values where error image is the difference between
+    the warped image and the template.  Note that the solution x and y offsets are written into xYInit.
+   */
     public static double inverseCompositional2DTranslation(double[][] template, double[][] image,
                                                            double[] xYInit,
                                                       int maxIter)
