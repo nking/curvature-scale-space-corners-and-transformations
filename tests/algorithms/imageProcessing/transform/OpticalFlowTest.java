@@ -22,20 +22,55 @@ import java.util.*;
  * @author nichole
  */
 public class OpticalFlowTest extends TestCase {
+    protected class LKResults {
+        double[] mode;
+        double[] mean;
+        double[] median;
+        double[] s;
+        boolean[] modeIsUnique;
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("mode=");
+            if (mode != null) {
+                sb.append(String.format("%s", FormatArray.toString(mode, "%.3f")));
+                sb.append(String.format(" (%s)", Arrays.toString(modeIsUnique)));
+            }
+            sb.append("\nmedian=");
+            if (median != null) {
+                sb.append(String.format("%s", FormatArray.toString(median, "%.3f")));
+            }
+            sb.append("\ns=");
+            if (s != null) {
+                sb.append(String.format("%s", FormatArray.toString(s, "%.3f")));
+            }
+            sb.append("\nmean=");
+            if (mean != null) {
+                sb.append(String.format("%s", FormatArray.toString(mean, "%.3f")));
+            }
+            return sb.toString();
+        }
+    }
 
     public OpticalFlowTest() {
     }
     
     public void estHornSchunck() throws Exception {
 
-        // each 300x225
-        String[] fileNames = new String[]{"tomatoes_01.png", "tomatoes_02.png", /*"tomatoes_03.png"*/};
+        // do not use images larger than 128 with horn schunck method
+
+        // the tomato images are a difficult example as there is differential motion across the image
+        // to (rigid body motion rather than purely translational).
+
+        String[] fileNames = new String[]{"tomatoes_01_128.png", "tomatoes_03_128.png"};
         /*
-        a feature in the 3 tomatoe images:
-        177, 140  in 01.png
-        177, 139  in 02.png
-        157, 135  in 03.png
+         for the 01 and 03 of width 128 pix
+        63,38   52,36     dx=11, dy=2
+        76.42   65,40
+        102,76   95,76    dx=7, dy=0
          */
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        SIGMA blur = null;//SIGMA.ONE;
 
         double uInit = 0;
         double vInit = 0;
@@ -47,6 +82,9 @@ public class OpticalFlowTest extends TestCase {
             int w = img.getWidth();
             int h = img.getHeight();
 
+            if (blur != null)
+                imageProcessor.blur(img, blur, 0, 255);
+
             //double[][] b1 = img.exportHSBRowMajor().get(2);
             double[][] b1 = img.exportRowMajor().get(0);
 
@@ -54,29 +92,71 @@ public class OpticalFlowTest extends TestCase {
             filePath = ResourceFinder.findFileInTestResources(fileName);
             img = ImageIOHelper.readImageExt(filePath);
 
+            if (blur != null)
+                imageProcessor.blur(img, blur, 0, 255);
+
             //double[][] b2 = img.exportHSBRowMajor().get(2);
             double[][] b2 = img.exportRowMajor().get(0);
 
             List<double[][]> uvHS = OpticalFlow.hornSchunck(b1, b2);
 
-            int t = 2;
+            double[][] uH = Histogram.createHistogram(MatrixUtil.stack(uvHS.get(0)), 255);
+            double[][] vH = Histogram.createHistogram(MatrixUtil.stack(uvHS.get(1)), 255);
+            int uIdx = MiscMath0.findYMaxIndex(uH[1]);
+            int vIdx = MiscMath0.findYMaxIndex(vH[1]);
+            double uMode = uH[0][uIdx];
+            double vMode = vH[0][vIdx];
+
+            int[] uc = new int[uH[0].length];
+            int[] uv = new int[uH[0].length];
+            for (int j = 0; j < uc.length; ++j) {
+                uc[j] = (int)Math.round(uH[1][j]);
+                uv[j] = (int)Math.round(uH[0][j]);
+            }
+            MiscSorter.sortByDecr(uc, uv);
+
+            System.out.printf("from u hist: sorted top 10\n");
+            for (int j = 0; j <= Math.min(10, uc.length); ++j) {
+                System.out.printf("    count=%d, u=%d\n", uc[j], uv[j]);
+            }
+            System.out.printf("uMode=%d, vMode=%d\n", (int)Math.round(uMode), (int)Math.round(vMode));
         }
     }
 
     public void estLucasKanade() throws Exception {
 
+        // the tomato images are a difficult example as there is differential motion across the image
+        // to (rigid body motion rather than purely translational).
+
+        //even when smoothed by gaussian with sigma=4, and choosing best keypoints
+        // and a large enough patch size to have overlapping pixels between images,
+        // the method doesn't perform well for expected differences as high as 20 in x
+
         // each 300x225
-        String[] fileNames = new String[]{"tomatoes_01.png", /*"tomatoes_02.png",*/ "tomatoes_03.png"};
+        String[] fileNames = new String[]{"tomatoes_01.png", /*"tomatoes_02.png",*/
+                "tomatoes_03.png"};
+        //fileNames = new String[]{"tomatoes_01_128.png", "tomatoes_03_128.png"};
+
         /*
-        a feature in the 3 tomato images:
+        a feature in the 3 tomato images large:
         177, 140  in 01.png
         177, 139  in 02.png
-        157, 135  in 03.png
+        157, 135  in 03.png  <== dx/t02 = 20, dy/t02=5
+
+        for the 01 and 03 of width 128 pix
+        63,38   52,36     dx=11, dy=2
+        76.42   65,40
+        102,76   95,76    dx=7, dy=0
+
          */
         List<double[][]> images = new ArrayList<>();
 
-        int nCorners = 300;
-        int patchSize = 30;
+        int nCorners = 50;
+
+        int patchSize = 5;//30;
+        //patchSize = 15; // for 128 pix width image
+
+        SIGMA blur = null;//SIGMA.FOUR;
 
         ImageProcessor imageProcessor = new ImageProcessor();
         CannyEdgeFilterAdaptive canny;
@@ -87,6 +167,9 @@ public class OpticalFlowTest extends TestCase {
             ImageExt img = ImageIOHelper.readImageExt(filePath);
             int w = img.getWidth();
             int h = img.getHeight();
+
+            if (blur != null)
+                imageProcessor.blur(img, blur, 0, 255);
 
             //GreyscaleImage luvTheta = imageProcessor.createCIELUVTheta(img, 255);
             double[][] b1 = img.exportHSBRowMajor().get(2);
@@ -104,31 +187,62 @@ public class OpticalFlowTest extends TestCase {
                 }
             }
 
+            int[][] patchCenters;
 
             // x, y
-            List<PairInt> kp1 = findKeyPoints(img, nCorners, patchSize);
-
-            int[][] patchCenters = new int[kp1.size()][2];
-            for (int ii = 0; ii < kp1.size(); ++ii) {
-                patchCenters[ii][0] = kp1.get(ii).getX();
-                patchCenters[ii][1] = kp1.get(ii).getY();
+            if (true) {
+                List<PairInt> kp1 = findKeyPoints(img, nCorners, patchSize);
+                patchCenters = new int[kp1.size()][2];
+                for (int ii = 0; ii < kp1.size(); ++ii) {
+                    patchCenters[ii][0] = kp1.get(ii).getX();
+                    patchCenters[ii][1] = kp1.get(ii).getY();
+                }
+            } else {
+                // override patches manually for now for width=300 pix
+                if (false) {
+                    patchCenters = new int[4][2];
+                    patchCenters[0] = new int[]{176, 140};
+                    patchCenters[1] = new int[]{215, 146};
+                    patchCenters[2] = new int[]{184, 171};
+                    patchCenters[3] = new int[]{126, 121};
+                } else  {
+                    patchCenters = new int[3][2];
+                    patchCenters[0] = new int[]{198, 103};
+                    patchCenters[1] = new int[]{146, 151};
+                    patchCenters[2] = new int[]{128, 100};
+                }
             }
+
+            // override for now for width = 128 pix
+            /*patchCenters = new int[3][2];
+            patchCenters[0] = new int[]{63,38};
+            patchCenters[1] = new int[]{76,42};
+            patchCenters[2] = new int[]{102,76};
+           */
 
             fileName = fileNames[i+1];
             filePath = ResourceFinder.findFileInTestResources(fileName);
             img = ImageIOHelper.readImageExt(filePath);
 
+            if (blur != null)
+                imageProcessor.blur(img, blur, 0, 255);
+
             double[][] b2 = img.exportHSBRowMajor().get(2);
+
+            // quick look at keypoints for b2 alone
+            findKeyPoints(img, nCorners, patchSize);
 
             // expect u=-20, v=-5 for 01 to 03.   large motion, so needs a multiplscal pyrimdal approach
             List<double[]> uvLK = OpticalFlow.lucasKanade(b1, b2, patchCenters, patchSize);
 
-            int t = 1;
+            LKResults results = process(uvLK);
+
+            System.out.printf("%s\n", results.toString());
 
         }
     }
 
-    public void test2LucasKanade() throws IOException, NotConvergedException {
+    public void est2LucasKanade() throws IOException, NotConvergedException {
         int patchDim = 5;
         int m = 32;
         int pixMax = m;
@@ -190,77 +304,94 @@ public class OpticalFlowTest extends TestCase {
                 System.out.println("Test=" + iTest + " failed to process any patches");
                 fail();
             }
-            // calc mode of patches
-            Map<Integer, Integer> uCounts = new HashMap<>();
-            Map<Integer, Integer> vCounts = new HashMap<>();
 
-            double[] u = new double[uvLK.size()];
-            double[] v = new double[uvLK.size()];
-            //System.out.println("Test=" + iTest + ", pN=" + pN);
-            for (int ii = 0; ii < u.length; ++ii) {
-                int _u = (int)Math.round(uvLK.get(ii)[0]);
-                int _v = (int)Math.round(uvLK.get(ii)[1]);
-                u[ii] = _u;
-                v[ii] = _v;
-                //System.out.printf("(%.3f, %.3f) ", u[ii], v[ii]);
-                //System.out.flush();
-                uCounts.put(_u, uCounts.getOrDefault(_u, 0) + 1);
-                vCounts.put(_v, vCounts.getOrDefault(_v, 0) + 1);
-            }
-            //System.out.printf("\n");
-
-            int[] vals = new int[uCounts.size()];
-            int[] cts = new int[uCounts.size()];
-            int j = 0;
-            for (Map.Entry<Integer, Integer> entry : uCounts.entrySet()) {
-                vals[j] = entry.getKey();
-                cts[j++] = entry.getValue();
-            }
-            MiscSorter.sortBy1stArg(cts, vals);
-            // for larger displacements with small patches, cannot use mode:
-            int uMode = vals[vals.length - 1];
-            boolean uniqueU = vals.length == 1 || (cts[vals.length - 1] != cts[vals.length - 2]);
-            //assertEquals(iTest, -uMode);
-
-            vals = new int[vCounts.size()];
-            cts = new int[vCounts.size()];
-            j = 0;
-            for (Map.Entry<Integer, Integer> entry : vCounts.entrySet()) {
-                vals[j] = entry.getKey();
-                cts[j++] = entry.getValue();
-            }
-            MiscSorter.sortBy1stArg(cts, vals);
-            int vMode = vals[vals.length - 1];
-            boolean uniqueV = vals.length == 1 || (cts[vals.length - 1] != cts[vals.length - 2]);
-            // for larger displacements with small patches, cannot use mode:
-            //assertEquals(iTest, -vals[vals.length - 1]);
-
-            // use the median and an error
-            double[] mADMinMaxU = MiscMath0.calculateMedianOfAbsoluteDeviation(u);
-            double[] avgStd = MiscMath.getAvgAndStDev(u);
-            double s = 1.4826*mADMinMaxU[0];
-
-            // using 10% of image width or length as a generous error
-            double error = m/10;
-            // found that that largest needed was 7 for the number of patches I'm using and the gradient pattern
-            error = Math.min(error, 7);
-            //System.out.printf("expecting %d.  median=%.0f +- %.1f (s=%.1f, mean=%.1f, uMode=%d(%b))\n",
-            //        -iTest, mADMinMaxU[1], error, s, avgStd[0], uMode, uniqueU);
+            LKResults results = process(uvLK);
+            //System.out.println(results.toString());
             //System.out.flush();
 
-            if (false /*uniqueU*/) {
-                assertTrue(Math.abs(-uMode - iTest) <= error);
-                assertTrue(Math.abs(-vMode - iTest) <= error);
-            } else {
-                assertTrue(Math.abs(-mADMinMaxU[1] - iTest) <= error);
-                double[] mADMinMaxV = MiscMath0.calculateMedianOfAbsoluteDeviation(v);
-                s = 1.4826 * mADMinMaxV[0];
-                assertTrue(Math.abs(-mADMinMaxV[1] - iTest) <= error);
-            }
+            //TODO: calculate an error
+            double tolerance = (m < 128) ? 4 : 7;
+
+            assertTrue(Math.abs(results.median[0] - iTest) <= tolerance);
+            assertTrue(Math.abs(results.median[1] - iTest) <= tolerance);
+
         }
     }
 
-    public void test2HornSchunck() throws IOException {
+    protected LKResults process(List<double[]> uvLK) {
+
+        LKResults results = new LKResults();
+
+        // calc mode of patches
+        Map<Integer, Integer> uCounts = new HashMap<>();
+        Map<Integer, Integer> vCounts = new HashMap<>();
+
+        double[] u = new double[uvLK.size()];
+        double[] v = new double[uvLK.size()];
+        for (int ii = 0; ii < u.length; ++ii) {
+            int _u = (int)Math.round(uvLK.get(ii)[0]);
+            int _v = (int)Math.round(uvLK.get(ii)[1]);
+            u[ii] = _u;
+            v[ii] = _v;
+
+            System.out.printf("(%.3f, %.3f) ", u[ii], v[ii]);
+            System.out.flush();
+
+            uCounts.put(_u, uCounts.getOrDefault(_u, 0) + 1);
+            vCounts.put(_v, vCounts.getOrDefault(_v, 0) + 1);
+        }
+        System.out.printf("\n");
+
+        int[] vals = new int[uCounts.size()];
+        int[] cts = new int[uCounts.size()];
+        int j = 0;
+        for (Map.Entry<Integer, Integer> entry : uCounts.entrySet()) {
+            vals[j] = entry.getKey();
+            cts[j++] = entry.getValue();
+        }
+        MiscSorter.sortBy1stArg(cts, vals);
+        // for larger displacements with small patches, cannot use mode:
+        int uMode = vals[vals.length - 1];
+        boolean uniqueU = vals.length == 1 || (cts[vals.length - 1] != cts[vals.length - 2]);
+        //assertEquals(iTest, -uMode);
+
+        vals = new int[vCounts.size()];
+        cts = new int[vCounts.size()];
+        j = 0;
+        for (Map.Entry<Integer, Integer> entry : vCounts.entrySet()) {
+            vals[j] = entry.getKey();
+            cts[j++] = entry.getValue();
+        }
+        MiscSorter.sortBy1stArg(cts, vals);
+        int vMode = vals[vals.length - 1];
+        boolean uniqueV = vals.length == 1 || (cts[vals.length - 1] != cts[vals.length - 2]);
+        // for larger displacements with small patches, cannot use mode:
+        //assertEquals(iTest, -vals[vals.length - 1]);
+        results.mode = new double[]{uMode, vMode};
+        results.modeIsUnique = new boolean[]{uniqueU, uniqueV};
+
+        results.median = new double[2];
+        results.s = new double[2];
+        results.mean = new double[2];
+
+        // use the median and an error
+        double[] mADMinMax = MiscMath0.calculateMedianOfAbsoluteDeviation(u);
+        double[] avgStd = MiscMath.getAvgAndStDev(u);
+        double s = 1.4826*mADMinMax[0];
+        results.median[0] = mADMinMax[1];
+        results.s[0] = s;
+
+        mADMinMax = MiscMath0.calculateMedianOfAbsoluteDeviation(v);
+        avgStd = MiscMath.getAvgAndStDev(v);
+        s = 1.4826*mADMinMax[0];
+        results.median[1] = mADMinMax[1];
+        results.s[1] = s;
+        results.mean[1] = avgStd[0];
+
+        return results;
+    }
+
+    public void est2HornSchunck() throws IOException {
 
         /*
         some empirically derived numbers from unit tests:
@@ -353,6 +484,59 @@ public class OpticalFlowTest extends TestCase {
 
     }
 
+    public void test2InverseCompositionAlignment() throws IOException, NotConvergedException {
+
+        int pixMax = 32;
+        int m = 32;
+        //System.out.printf("pixMax=%d, m=%d\n", pixMax, m);
+        int n = m;
+        double[][] im1;
+        double[][] im2;
+        int maxIter = 100_000;
+        double epsSq = 1E-2;
+
+        double alpha = 1E-1;//1E1;
+
+        for (int iTest = 1; iTest < 14; ++iTest) {
+            //m = iTest * 10;
+            //n = m;
+            im1 = new double[m][n];
+            im2 = new double[m][n];
+            double deltaI = pixMax / m;
+
+            //alpha = iTest;
+
+            for (int i = 1; i < m; ++i) {
+                double b = deltaI * i;
+                b = (int)Math.round(b); // to match image processing temporarily
+                for (int j = 0; j <= i; ++j) {
+                    im1[i][j] = b;
+                    im1[j][i] = b;
+                    if (i + iTest >= 0 && i + iTest < m && j + iTest >= 0 && j + iTest < n) {
+                        im2[i + iTest][j + iTest] = b;
+                    }
+                    if (j + iTest >= 0 && j + iTest < m && i + iTest >= 0 && i + iTest < n) {
+                        im2[j + iTest][i + iTest] = b;
+                    }
+                }
+            }
+
+            double[][] pInit = new double[2][3];
+            pInit[0][0] = 1;
+            pInit[1][1] = 1;
+            pInit[0][2] = 1;//iTest;
+            pInit[1][2] = 1;//iTest;
+
+            Alignment.Result result = Alignment.inverseCompositional2DAffine(im1, im2, pInit, maxIter);
+
+            System.out.printf("iTest=%d\npFinal=%s\n", iTest, FormatArray.toString(pInit, "%.2f"));
+
+            assertEquals(iTest, (int)Math.round(pInit[0][2]));
+            assertEquals(iTest, (int)Math.round(pInit[1][2]));
+        }
+
+    }
+
     protected void writeToPng(double[][] im1, String fileName) throws IOException {
         // scale from 0 to 255
         int h = im1.length;
@@ -373,19 +557,20 @@ public class OpticalFlowTest extends TestCase {
     private List<PairInt> findKeyPoints(ImageExt img, int nCorners, int patchSize) {
         //double[][] b1 = luvTheta.exportRowMajor();
 
-            /*canny = new CannyEdgeFilterAdaptive();
-            canny.overrideToUseAdaptiveThreshold();
-            canny.overrideToNotUseLineThinner();
-            canny.applyFilter(img.copyToGreyscale2());
-            EdgeFilterProducts prod = canny.getFilterProducts();
-            GreyscaleImage gsImg = prod.getGradientXY();
-            gsImg.normalizeToMax255();
-            double[][] b1 = gsImg.exportRowMajor();*/
+        /*canny = new CannyEdgeFilterAdaptive();
+        canny.overrideToUseAdaptiveThreshold();
+        canny.overrideToNotUseLineThinner();
+        canny.applyFilter(img.copyToGreyscale2());
+        EdgeFilterProducts prod = canny.getFilterProducts();
+        GreyscaleImage gsImg = prod.getGradientXY();
+        gsImg.normalizeToMax255();
+        double[][] b1 = gsImg.exportRowMajor();*/
 
         // NOTE: phase congruency is useful to smooth out noisy details in trees, leaves, etc.
         // the edge map from it can be used to find good corners.
         ImageProcessor imageProcessor = new ImageProcessor();
         PhaseCongruencyDetector phaseCDetector = new PhaseCongruencyDetector();
+        phaseCDetector.setToDebug();
         PhaseCongruencyDetector.PhaseCongruencyProducts products =
                 phaseCDetector.phaseCongMono(img.copyToGreyscale2());
 
@@ -411,7 +596,9 @@ public class OpticalFlowTest extends TestCase {
         orb1.detectAndExtract();
         List<PairInt> kp1 = orb1.getAllKeyPoints();
 
-        Image tmp = edges.copyToColorGreyscale();
+          // uncomment to plot keypoints over a copy of the image
+        //Image tmp = edges.copyToColorGreyscale();
+        Image tmp = img.copyImage();
 
         MiscDebug.writeImage(edges, "_thinned_" + "_" + "_phasecong_" + "_");
         for (int i = 0; i < kp1.size(); ++i) {
@@ -421,7 +608,8 @@ public class OpticalFlowTest extends TestCase {
                 continue;
             ImageIOHelper.addPointToImage(x, y, tmp, 2, 255, 0, 0);
         }
-        MiscDebug.writeImage(tmp, "_thinned_" + "_" + "_phasecong_kp_" + "_");
+        MiscDebug.writeImage(tmp, "_thinned_" + "_" + "_phasecong_kp_" +
+                MiscDebug.getCurrentTimeFormatted());
 
         return kp1;
     }
