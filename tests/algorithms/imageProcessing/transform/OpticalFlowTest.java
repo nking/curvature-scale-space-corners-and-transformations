@@ -492,7 +492,7 @@ public class OpticalFlowTest extends TestCase {
         int n = m;
         double[][] im1;
         double[][] im2;
-        int maxIter = 100_000;
+        int maxIter = 1000;
         double epsSq = 1E-2;
 
         double alpha = 1E-1;//1E1;
@@ -521,18 +521,25 @@ public class OpticalFlowTest extends TestCase {
                 }
             }
 
+            double errSSD;
+            ///*
+            double[] xYInit = new double[]{0, 0};
+            errSSD = Alignment.inverseCompositional2DTranslation(im1, im2, xYInit, maxIter);
+            System.out.printf("iTest=%d\npFinal=%s\n", iTest, FormatArray.toString(xYInit, "%.2f"));
+            assertEquals(iTest, (int)Math.round(xYInit[0]));
+            assertEquals(iTest, (int)Math.round(xYInit[1]));
+            //*/
+            ///*
             double[][] pInit = new double[2][3];
-            pInit[0][0] = 1;
-            pInit[1][1] = 1;
-            pInit[0][2] = 1;//iTest;
-            pInit[1][2] = 1;//iTest;
-
-            Alignment.Result result = Alignment.inverseCompositional2DAffine(im1, im2, pInit, maxIter);
-
+            pInit[0][0] = 0;
+            pInit[1][1] = 0;
+            pInit[0][2] = 0;//iTest;
+            pInit[1][2] = 0;//iTest;
+            errSSD = Alignment.inverseCompositional2DAffine(im1, im2, pInit, maxIter);
             System.out.printf("iTest=%d\npFinal=%s\n", iTest, FormatArray.toString(pInit, "%.2f"));
-
             assertEquals(iTest, (int)Math.round(pInit[0][2]));
             assertEquals(iTest, (int)Math.round(pInit[1][2]));
+            //*/
         }
 
     }
