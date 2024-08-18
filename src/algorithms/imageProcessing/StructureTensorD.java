@@ -96,7 +96,7 @@ public class StructureTensorD {
         // switch X and Y sobel operations to match scipy (column major to row major or vice versa)
 
         // NOTE: may need to revisit this
-        double norm = 4.f;//(0.707f * (double)Math.sqrt(2. * Math.PI));
+        double norm = 0.5;//(0.707f * Math.sqrt(2. * Math.PI));
         
         double[][] gX = imageProcessor.copy(image);
         imageProcessor.applySobelX(gX);
