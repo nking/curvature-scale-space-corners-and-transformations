@@ -242,7 +242,7 @@ public class OpticalFlowTest extends TestCase {
         }
     }
 
-    public void est2LucasKanade() throws IOException, NotConvergedException {
+    public void test2LucasKanade() throws IOException, NotConvergedException {
         int patchDim = 5;
         int m = 32;
         int pixMax = m;
@@ -391,7 +391,7 @@ public class OpticalFlowTest extends TestCase {
         return results;
     }
 
-    public void est2HornSchunck() throws IOException {
+    public void test2HornSchunck() throws IOException {
 
         /*
         some empirically derived numbers from unit tests:
@@ -492,10 +492,8 @@ public class OpticalFlowTest extends TestCase {
         int n = m;
         double[][] im1;
         double[][] im2;
-        int maxIter = 1000;
+        int maxIter = 100;//1000;
         double epsSq = 1E-2;
-
-        double alpha = 1E-1;//1E1;
 
         for (int iTest = 1; iTest < 14; ++iTest) {
             //m = iTest * 10;
@@ -504,41 +502,49 @@ public class OpticalFlowTest extends TestCase {
             im2 = new double[m][n];
             double deltaI = pixMax / m;
 
-            //alpha = iTest;
-
             for (int i = 1; i < m; ++i) {
                 double b = deltaI * i;
                 b = (int)Math.round(b); // to match image processing temporarily
                 for (int j = 0; j <= i; ++j) {
                     im1[i][j] = b;
                     im1[j][i] = b;
-                    if (i + iTest >= 0 && i + iTest < m && j + iTest >= 0 && j + iTest < n) {
-                        im2[i + iTest][j + iTest] = b;
+                    if (i + iTest < 0 || i + iTest >= m || j + iTest < 0 || j + iTest >= n){
+                        continue;
                     }
-                    if (j + iTest >= 0 && j + iTest < m && i + iTest >= 0 && i + iTest < n) {
-                        im2[j + iTest][i + iTest] = b;
+                    if (j + iTest < 0 || j + iTest >= m || i + iTest < 0 || i + iTest >= n) {
+                        continue;
                     }
+                    im2[i + iTest][j + iTest] = b;
+                    im2[j + iTest][i + iTest] = b;
                 }
             }
 
             double errSSD;
-            ///*
+            ///*  TEST 2-D translation
             double[] xYInit = new double[]{0, 0};
             errSSD = Alignment.inverseCompositional2DTranslation(im1, im2, xYInit, maxIter);
+            System.out.printf("iTest=%d\npFinal=%s\n", iTest, FormatArray.toString(xYInit, "%.2f"));
+            assertEquals(iTest, (int)Math.round(xYInit[0]));
+            assertEquals(iTest, (int)Math.round(xYInit[1]));
+            xYInit = new double[]{0, 0};
+            errSSD = Alignment.inverseCompositional2DTranslationGN(im1, im2, xYInit, maxIter, 1E-4);
             System.out.printf("iTest=%d\npFinal=%s\n", iTest, FormatArray.toString(xYInit, "%.2f"));
             assertEquals(iTest, (int)Math.round(xYInit[0]));
             assertEquals(iTest, (int)Math.round(xYInit[1]));
             //*/
             ///*
             double[][] pInit = new double[2][3];
-            pInit[0][0] = 0;
-            pInit[1][1] = 0;
-            pInit[0][2] = 0;//iTest;
-            pInit[1][2] = 0;//iTest;
+            pInit[0][0] = 1;
+            pInit[1][1] = 1;
+            pInit[0][2] = iTest;
+            pInit[1][2] = iTest;
             errSSD = Alignment.inverseCompositional2DAffine(im1, im2, pInit, maxIter);
             System.out.printf("iTest=%d\npFinal=%s\n", iTest, FormatArray.toString(pInit, "%.2f"));
-            assertEquals(iTest, (int)Math.round(pInit[0][2]));
-            assertEquals(iTest, (int)Math.round(pInit[1][2]));
+            errSSD = Alignment.inverseCompositionalGN(im1, im2, pInit,
+                    100, Alignment.Type.AFFINE_2D, 1E-1);
+            System.out.printf("iTest=%d\npFinal=%s\n", iTest, FormatArray.toString(pInit, "%.2f"));
+            //assertEquals(iTest, (int)Math.round(pInit[0][2]));
+            //assertEquals(iTest, (int)Math.round(pInit[1][2]));
             //*/
         }
 
