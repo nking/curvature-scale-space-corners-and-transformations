@@ -115,10 +115,10 @@ public class OpticalFlowTest extends TestCase {
             }
             MiscSorter.sortByDecr(uc, uv);
 
-            System.out.printf("from u hist: sorted top 10\n");
+            /*System.out.printf("from u hist: sorted top 10\n");
             for (int j = 0; j <= Math.min(10, uc.length); ++j) {
                 System.out.printf("    count=%d, u=%d\n", uc[j], uv[j]);
-            }
+            }*/
             System.out.printf("uMode=%d, vMode=%d\n", (int)Math.round(uMode), (int)Math.round(vMode));
         }
     }
@@ -334,13 +334,13 @@ public class OpticalFlowTest extends TestCase {
             u[ii] = _u;
             v[ii] = _v;
 
-            System.out.printf("(%.3f, %.3f) ", u[ii], v[ii]);
-            System.out.flush();
+            //System.out.printf("(%.3f, %.3f) ", u[ii], v[ii]);
+            //System.out.flush();
 
             uCounts.put(_u, uCounts.getOrDefault(_u, 0) + 1);
             vCounts.put(_v, vCounts.getOrDefault(_v, 0) + 1);
         }
-        System.out.printf("\n");
+       // System.out.printf("\n");
 
         int[] vals = new int[uCounts.size()];
         int[] cts = new int[uCounts.size()];
@@ -485,9 +485,9 @@ public class OpticalFlowTest extends TestCase {
     }
 
     public void test2InverseCompositionAlignment() throws IOException, NotConvergedException {
-
-        int pixMax = 32;
-        int m = 32;
+        System.out.printf("test2InverseCompositionAlignment\n");
+        int pixMax = 32*2;
+        int m = 32*2;
         //System.out.printf("pixMax=%d, m=%d\n", pixMax, m);
         int n = m;
         double[][] im1;
@@ -495,14 +495,14 @@ public class OpticalFlowTest extends TestCase {
         int maxIter = 100;//1000;
         double epsSq = 1E-2;
 
-        for (int iTest = 1; iTest < 14; ++iTest) {
+        for (int iTest = 1; iTest < (m/2)-3; ++iTest) {
             //m = iTest * 10;
             //n = m;
             im1 = new double[m][n];
             im2 = new double[m][n];
             double deltaI = pixMax / m;
 
-            for (int i = 1; i < m; ++i) {
+            for (int i = 0; i < m; ++i) {
                 double b = deltaI * i;
                 b = (int)Math.round(b); // to match image processing temporarily
                 for (int j = 0; j <= i; ++j) {
@@ -519,30 +519,41 @@ public class OpticalFlowTest extends TestCase {
                 }
             }
 
+            double uInit = 0;
+            double vInit = 0;
+            double p00 = 0;//1;
+            double p11 = 0;//1;
+
+            System.out.printf("\niTest=%d\n", iTest);
+
             double errSSD;
             ///*  TEST 2-D translation
-            double[] xYInit = new double[]{0, 0};
+            double[] xYInit = new double[]{uInit, vInit};
             errSSD = Alignment.inverseCompositional2DTranslation(im1, im2, xYInit, maxIter);
-            System.out.printf("iTest=%d\npFinal=%s\n", iTest, FormatArray.toString(xYInit, "%.2f"));
+            System.out.printf("2D trans newton: uvFinal=\n%s\n", FormatArray.toString(xYInit, "%.2f"));
             assertEquals(iTest, (int)Math.round(xYInit[0]));
             assertEquals(iTest, (int)Math.round(xYInit[1]));
-            xYInit = new double[]{0, 0};
+            xYInit = new double[]{uInit, vInit};
             errSSD = Alignment.inverseCompositional2DTranslationGN(im1, im2, xYInit, maxIter, 1E-4);
-            System.out.printf("iTest=%d\npFinal=%s\n", iTest, FormatArray.toString(xYInit, "%.2f"));
+            System.out.printf("2D trans GN: uvFinal=\n%s\n", FormatArray.toString(xYInit, "%.2f"));
             assertEquals(iTest, (int)Math.round(xYInit[0]));
             assertEquals(iTest, (int)Math.round(xYInit[1]));
             //*/
             ///*
             double[][] pInit = new double[2][3];
-            pInit[0][0] = 1;
-            pInit[1][1] = 1;
-            pInit[0][2] = iTest;
-            pInit[1][2] = iTest;
+            pInit[0][0] = p00;
+            pInit[1][1] = p11;
+            pInit[0][2] = uInit;
+            pInit[1][2] = vInit;
             errSSD = Alignment.inverseCompositional2DAffine(im1, im2, pInit, maxIter);
-            System.out.printf("iTest=%d\npFinal=%s\n", iTest, FormatArray.toString(pInit, "%.2f"));
+            System.out.printf("2D affine Newton: pFinal=\n%s\n", FormatArray.toString(pInit, "%.2f"));
+            pInit[0][0] = p00;
+            pInit[1][1] = p11;
+            pInit[0][2] = uInit;
+            pInit[1][2] = vInit;
             errSSD = Alignment.inverseCompositionalGN(im1, im2, pInit,
-                    100, Alignment.Type.AFFINE_2D, 1E-1);
-            System.out.printf("iTest=%d\npFinal=%s\n", iTest, FormatArray.toString(pInit, "%.2f"));
+                    maxIter, Alignment.Type.AFFINE_2D, epsSq);
+            System.out.printf("2D affine GN: pFinal=\n%s\n", FormatArray.toString(pInit, "%.2f"));
             //assertEquals(iTest, (int)Math.round(pInit[0][2]));
             //assertEquals(iTest, (int)Math.round(pInit[1][2]));
             //*/

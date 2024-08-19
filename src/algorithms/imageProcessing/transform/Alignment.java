@@ -193,6 +193,9 @@ public class Alignment {
         // Hessian: [6 x nTX*nTY]*[nTX*nTY X 6] = [6x6] for affine 2D;  for trans2D [2x2]
         double[][] hessianTmplt = MatrixUtil.createATransposedTimesA(dTdWdp);
 
+        //G must be invertible.  the template image must have gradient info in x and y at each point of evaluation
+        //   for the affine transformation.  for that reason, need to perform the affine algorithm over patches
+        // TODO: implement a patch based version <add Bouguet reference>
         double[][] invHessianTmplt = MatrixUtil.inverse(hessianTmplt);//MatrixUtil.pseudoinverseFullRowRank(hessianTmplt);
 
         //======  end precompute  =======
@@ -231,7 +234,7 @@ public class Alignment {
             }
 
             // (1),(2),(7): warp I and subtract from T, then mult by steepest descent image, summing over all x
-            nPAndErr = sumSteepestDescErrImageProduct(image, template, warp, dTdWdp, pSum);
+            nPAndErr = sumSteepestDescErrImageProduct(image, template, warp, dTdWdp, pSum, type);
 
             if (type.equals(Type.AFFINE_2D)) {
                 warp[0][0] -= 1;
@@ -247,13 +250,10 @@ public class Alignment {
             ++nIter;
         }
 
-        System.out.printf("nIter=%d, converged=%b\npInit=%s\ndeltaP=%s\n",
-                nIter, converged, FormatArray.toString(pInit, "%.3f"), FormatArray.toString(deltaP, "%.3f"));
+        System.out.printf("nIter=%d, converged=%b\n", nIter, converged);
 
         System.arraycopy(warp[0], 0, pInit[0], 0, pInit[0].length);
         System.arraycopy(warp[1], 0, pInit[1], 0, pInit[1].length);
-
-        System.out.printf("pFinal=%s\n", FormatArray.toString(pInit, "%.3f"));
 
         return nPAndErr[1];
     }
@@ -350,7 +350,7 @@ public class Alignment {
             }
 
             // (1),(2),(7): warp I and subtract from T, then mult by steepest descent image, summing over all x
-            nPAndErr = sumSteepestDescErrImageProduct(image, template, warp, dTdWdp, pSum);
+            nPAndErr = sumSteepestDescErrImageProduct(image, template, warp, dTdWdp, pSum, type);
 
             if (type.equals(Type.AFFINE_2D)) {
                 warp[0][0] -= 1;
@@ -366,6 +366,9 @@ public class Alignment {
             double numer = MatrixUtil.dot(pSum, pSum);
             double denom = MatrixUtil.dot(pSum, MatrixUtil.multiplyMatrixByColumnVector(hessianTmplt, pSum));
             double c = numer / denom;
+            if (Double.isNaN(c)) {
+                break;
+            }
             MatrixUtil.multiply(deltaP, c);
             // does invHess / c = I? no... diagonalization of invHess fails too
 
@@ -379,13 +382,10 @@ public class Alignment {
             ++nIter;
         }
 
-        System.out.printf("nIter=%d, converged=%b\npInit=%s\ndeltaP=%s\n",
-                nIter, converged, FormatArray.toString(pInit, "%.3f"), FormatArray.toString(deltaP, "%.3f"));
+        System.out.printf("nIter=%d, converged=%b\n", nIter, converged);
 
         System.arraycopy(warp[0], 0, pInit[0], 0, pInit[0].length);
         System.arraycopy(warp[1], 0, pInit[1], 0, pInit[1].length);
-
-        System.out.printf("pFinal=%s\n", FormatArray.toString(pInit, "%.3f"));
 
         return nPAndErr[1];
     }
@@ -551,7 +551,7 @@ public class Alignment {
      * as double[]{nP, errSSD}.
      */
     private static double[] sumSteepestDescErrImageProduct(double[][] image, double[][] t,
-        double[][] warp, double[][] steep, double[] outPSum) {
+        double[][] warp, double[][] steep, double[] outPSum, Type type) {
 
         // since the error image is only used in the calculation of the product of the steepest descent image
         // and the error image, we will return the result instead of intermediate products
@@ -568,7 +568,7 @@ public class Alignment {
 
         double[] xy2;
         double[] xy = new double[]{0,0,1};
-        double v2, diff;
+        double v2, diff=0;
         double[] pS;
         double errSSD = 0;
         int idx;
@@ -586,8 +586,11 @@ public class Alignment {
 
                 // error image is I(w(x;p)) - T(x).  not squared nor abs value of
                 // TODO: this could be improved by considering the fraction of the pixel represented
-                //diff = v2 - t[y][x]; // paper has I(W(x))-T(x)
-                diff = t[y][x] - v2; // needed for 2D-translation
+                if (type.equals(Type.AFFINE_2D)) {
+                    diff = v2 - t[y][x];
+                } else if (type.equals(Type.TRANSLATION_2D)) {
+                    diff = t[y][x] - v2;
+                }
 
                 errSSD += diff * diff;
 
@@ -668,14 +671,24 @@ public class Alignment {
 
     private static void updateWarp2DAffIC(double[][] warp, double[] deltaP) throws NotConvergedException {
 
-        double[][] params = inverseWParam2DAff(deltaP); //[3X3]
+        // for affine, found a different estimate for the update in Bouguet
+        // "
+
+        //double[][] params = inverseWParam2DAff(deltaP); //[3X3]
 
         // the 3D affine needs this:  (the +1 and -1 from warp[0][0], warp[1][1] are from Baker Matthews example code
         //  which is in matlab
         warp[0][0] += 1;
         warp[1][1] += 1;
 
-        double[][] tmp = MatrixUtil.multiply(warp, params);
+        double[][] _params = new double[][]{
+                {1+deltaP[0], deltaP[2], deltaP[4]},
+                {deltaP[1], 1+deltaP[3], deltaP[5]},
+                {0, 0, 1}
+        };
+        double[][] tmp = MatrixUtil.multiply(warp, _params);
+
+        //double[][] tmp = MatrixUtil.multiply(warp, params);
         for (int i = 0; i < warp.length; ++i) {
             System.arraycopy(tmp[i], 0, warp[i], 0, tmp[i].length);
         }
