@@ -517,6 +517,9 @@ public class Alignment {
                 for (x2 = x - patchHalfWidth; x2 <= x + patchHalfWidth; ++x2) {
                     tmp1[0][0] = getBoundaryCorrectedValue(gTX, y2, x2);
                     tmp1[0][1] = getBoundaryCorrectedValue(gTY, y2, x2);
+
+                    TODO: here, the coordinates x2 and y2 might need to be the offsets from the keypoint
+                    and might need to use a weight for the distance from the keypoint
                     tmp2[0][0] = x2;
                     tmp2[0][2] = y2;
                     tmp2[0][4] = 1;
