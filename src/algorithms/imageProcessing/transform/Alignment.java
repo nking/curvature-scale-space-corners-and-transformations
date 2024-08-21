@@ -265,7 +265,10 @@ public class Alignment {
      * @param eps e.g. 0.1 or 0.5
      * @param yXKeypoints a 2-D array of size [nKeypoints x 2] of keypoints to calculate affine warp at.
      *                  Note that the keypoints should not be closer to the image bounds than patchHalfWidth.
-     * @param patchHalfWidth a box of size 2*patchHalfWidth is used for the calculations are patch centers in yXPAthes.
+     * @param patchHalfWidth a box of size 2*patchHalfWidth is used for the calculations are patch centers in yXKeypoints.
+     *                       Note that patchHalfWidth+1 has to be large enough to include the true displacement in
+     *                       x and y.
+     *                       TODO:  adjust method to accept half widths in x and y separately.
      * @return
      * @throws NotConvergedException
      * @throws IOException

@@ -656,6 +656,113 @@ public class OpticalFlowTest extends TestCase {
 
     }
 
+    public void test4InverseCompositionAlignment() throws IOException, NotConvergedException {
+        System.out.printf("test4InverseCompositionAlignment\n");
+
+        int pixMax = 2*32;
+        int m = 2*32;
+        //System.out.printf("pixMax=%d, m=%d\n", pixMax, m);
+        int n = m;
+        double[][] im1;
+        double[][] im2;
+        int maxIter = 100;//1000;
+        double eps = 1E-3;
+
+        // test images having dy = 2*dx
+
+        for (int iTest = 1; iTest < (m/3); ++iTest) {
+            //m = iTest * 10;
+            //n = m;
+            im1 = new double[m][n];
+            im2 = new double[m][n];
+            double deltaI = pixMax / m;
+
+            int patchHalfWidth = 2*iTest + 1;
+            int nPatches = m - 2*patchHalfWidth-1;
+            if (nPatches < 1) break;
+            int[][] yXPatches = new int[nPatches][];
+            int iP = 0;
+
+            for (int i = 0; i < m; ++i) {
+                double b = deltaI * i;
+                b = (int) Math.round(b); // to match image processing temporarily
+                for (int j = 0; j <= i; ++j) {
+                    im1[i][j] = b;
+                    im1[j][i] = b;
+                }
+                if (i >= patchHalfWidth && i+iTest < (m-patchHalfWidth)) {
+                    yXPatches[iP++] = new int[]{i, i};
+                }
+            }
+            if (iP == 0) {
+                break;
+            }
+            // im2 is im1 shifted by dy=iTest, dx=2*iTest
+            for (int i = 0; i < m; ++i) {
+                int i2 = i + iTest;
+                if (i2 >= m) continue;
+                for (int j = 0; j < n; ++j) {
+                    int j2 = j + 2*iTest;
+                    if (j2 >= n) continue;
+                    im2[i2][j2] = im1[i][j];
+                }
+            }
+
+            yXPatches = Arrays.copyOf(yXPatches, iP);
+
+            double uInit = 0;
+            double vInit = 0;
+            double p00 = 0;//1;
+            double p11 = 0;//1;
+
+            System.out.printf("\niTest=%d\n", iTest);
+
+            Alignment.Warps warps;
+            ///*  TEST 2-D translation
+            double[] xYInit = new double[]{uInit, vInit};
+
+            double errSSD = Alignment.inverseCompositional2DTranslation(im1, im2, xYInit, maxIter, eps);
+            System.out.printf("IC 2DTrans: pFinal=\n%s\n", FormatArray.toString(xYInit, "%.2f"));
+            assertEquals(2*iTest, (int)Math.round(xYInit[0]));
+            assertEquals(iTest, (int)Math.round(xYInit[1]));
+
+            warps = Alignment.inverseComposition2DTranslationKeypoints(im1, im2, xYInit, maxIter, eps,
+                    yXPatches, patchHalfWidth, Alignment.Type.TRANSLATION_2D);
+            System.out.printf("IC 2DTrans keypoints: pFinal=\n%s\n", FormatArray.toString(warps.warps[1], "%.2f"));
+            assertEquals(2*iTest, (int)Math.round(warps.warps[1][0][2]));
+            assertEquals(iTest, (int)Math.round(warps.warps[1][1][2]));
+            //*/
+
+            ///*
+            double[][] pInit = new double[2][3];
+            pInit[0][0] = p00;
+            pInit[1][1] = p11;
+            pInit[0][2] = uInit;
+            pInit[1][2] = vInit;
+
+            warps = Alignment.inverseCompositionKeypoints(im1, im2, pInit, maxIter, eps,
+                    yXPatches, patchHalfWidth, Alignment.Type.AFFINE_2D);
+            System.out.printf("2D affine patches: pFinal=\n%s\n", FormatArray.toString(warps.warps[1], "%.2f"));
+
+            //assertEquals(iTest, (int)Math.round(pInit[0][2]));
+            //assertEquals(iTest, (int)Math.round(pInit[1][2]));
+            //*/
+
+            /*
+             e.g. a first pass through
+             Alignment.inverseCompositionKeypoints(im1, im2, pInit, maxIter, eps, yXPatches, patchHalfWidth, Type.AFFINE_2D);
+                resulting in
+                     0.53, 0.47, -3.57
+                     0.47, 0.53, -3.57
+                     0.00, 0.00, 1.00
+             is not a feasible combination of th and sh_x, sh_y for scale in x and y = 1
+                 [ sh_x * sin(th)   sh_x * cos(th) ]  = [ 0.53  0,47 ]
+                 [ sh_y * cos(th)  -sh_y * sin(th)  ]    [0.47   0.53 ]
+             */
+        }
+
+    }
+
     protected void writeToPng(double[][] im1, String fileName) throws IOException {
         // scale from 0 to 255
         int h = im1.length;
