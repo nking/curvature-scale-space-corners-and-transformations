@@ -103,7 +103,7 @@ public class Alignment {
 
     // Gauss-Newton.
     // NOT READY FOR USE
-    public static double _inverseCompositional2DTranslationGN(double[][] template, double[][] image,
+    private static double _inverseCompositional2DTranslationGN(double[][] template, double[][] image,
                                                               double[] xYInit,
                                                               int maxIter, double eps)
             throws NotConvergedException, IOException {
@@ -216,7 +216,7 @@ public class Alignment {
         while (nIter < maxIter && !converged) {
 
             if (nIter == 0) {
-                warp = createWarp0(pInit);
+                warp = init2DTranslationWarp(pInit);
                 if (type.equals(Type.AFFINE_2D)) {
                     warp[0][0] += 1;
                     warp[1][1] += 1;
@@ -225,10 +225,10 @@ public class Alignment {
                 // update the warp
                 if (type.equals(Type.AFFINE_2D)) {
                     // as suggested by Bouguet, use the forward composition warp update instead:
-                    updateWarp2DAffFC(warp, deltaP);
+                    update2DAffFCWarp(warp, deltaP);
                     //updateWarp2DAffIC(warp, deltaP);
                 } else if (type.equals(Type.TRANSLATION_2D)) {
-                    updateWarp2DTransIC(warp, deltaP);
+                    update2DTransICWarp(warp, deltaP);
                 }
             }
 
@@ -253,7 +253,6 @@ public class Alignment {
     }
 
     /**
-     *NOT READY FOR USE
      *      <pre>
      *      adapted from the single image aligment within:
      *      Bouguet, "Pyramidal Implementation of the Affine Kanade Feature Tracker
@@ -263,7 +262,7 @@ public class Alignment {
      * @param image
      * @param xYInit
      * @param maxIter
-     * @param eps
+     * @param eps e.g. 0.1 or 0.5
      * @param yXKeypoints a 2-D array of size [nKeypoints x 2] of keypoints to calculate affine warp at.
      *                  Note that the keypoints should not be closer to the image bounds than patchHalfWidth.
      * @param patchHalfWidth a box of size 2*patchHalfWidth is used for the calculations are patch centers in yXPAthes.
@@ -271,8 +270,8 @@ public class Alignment {
      * @throws NotConvergedException
      * @throws IOException
      */
-    static Warps _inverseComposition2DTranslationKeypoints(double[][] template, double[][] image,
-        double[] xYInit, int maxIter, double eps, int[][] yXKeypoints, int patchHalfWidth, Type type) throws NotConvergedException {
+    public static Warps inverseComposition2DTranslationKeypoints(double[][] template, double[][] image,
+                                                          double[] xYInit, int maxIter, double eps, int[][] yXKeypoints, int patchHalfWidth, Type type) throws NotConvergedException {
         if (xYInit.length != 2) {
             throw new IllegalArgumentException("expecting xYInit to be length 2");
         }
@@ -281,16 +280,63 @@ public class Alignment {
                 {1, 0, xYInit[0]},
                 {0, 1, xYInit[1]}
         };
-        return _inverseCompositionKeypoints(template, image, pInit, maxIter, eps, yXKeypoints, patchHalfWidth, type);
+        return inverseCompositionKeypoints(template, image, pInit, maxIter, eps, yXKeypoints, patchHalfWidth, type);
     }
 
     /**
-     * NOT READY FOR USE
+     the lucas kinade algorithm solved for keypoint patches.
+     The algorithm works for 2D-translation,
+     but the 2D-affine is not yet usable.
      <pre>
-     adapted from the single image aligment within:
+     adapted from the single image alignment within:
      Bouguet, "Pyramidal Implementation of the Affine Kanade Feature Tracker
      Descriptions of the Algorithm"
      </pre>
+
+     NOTE that the absolute values of the resulting warps are projection matrices of type 2D translation or 2D affine.
+     The 2D affine transformations solved for in this do not use a precedence for decomposition of terms.
+
+     One could use a pyramidal approach (a wrapper around invocations of this method) to find the solution with
+     the smallest re-projection error.
+
+     <pre>
+     Also, to decompose a warp matrix into the 7 unknown variables:
+         for 2D affine, rotation is 1 variable, shear is 2 variables, translation is 2 variables, scale is 2 variables,
+         so the total is 7 unknown variables encapsulated in the 6 numbers of the affine projection matrix.
+
+     here are the separate matrices for the 2D transformations:
+         [1  0  t_x ]  for translation
+         [0  1  t_y ]
+         [0  0   1  ]
+
+         [s_x  0    0 ]  for scale
+         [0    s_y  0 ]
+         [0    0    1 ]
+
+         [cos(th)  -sin(th)  0 ]  for rotation
+         [sin(th)  cos(th)   0 ]
+         [0         0        1 ]
+
+         [0     sh_x  0 ]  for shear
+         [sh_y  0     0 ]
+         [0     0     1  ]
+
+     a[0][0] and a[1][1] terms must be <= 1 for the rotation component in 2D affine.
+
+     For 2D affine, one could use a pyramidal approach to constrain the x and y scales within some feasible range,
+     reducing the number of variables to solve for to 5 and one could isolate the upper 2x2 left of the
+     warp (2D affine) matrix to these terms:
+
+             [ sh_x * sin(th)   sh_x * cos(th) ]
+             [ sh_y * cos(th)  -sh_y * sin(th)  ]
+     One can form ratios of terms to solve for th, then plug to solve for sh_x and sh_y.
+
+     tx and t_y are solved for in the last column of the warp with the caveat that the scale has been factored into them.
+     </pre>
+
+     If one needs a 2D affine solution, and this is not producing good results, consider use of
+     Reconstruction or CameraPose or epipolar methods.
+
      * @param template
      * @param image
      * @param pInit
@@ -298,29 +344,43 @@ public class Alignment {
      * @param eps
      * @param yXKeypoints a 2-D array of size [nKeypoints x 2] of keypoints to calculate affine warp at.
      *                  Note that the keypoints should not be closer to the image bounds than patchHalfWidth.
+     *                    need at least 3 points for the 2D affine.
      * @param patchHalfWidth a box of size 2*patchHalfWidth is used for the calculations are patch centers in yXPAthes.
      * @return
      * @throws NotConvergedException
      * @throws IOException
      */
-    static Warps _inverseCompositionKeypoints(double[][] template, double[][] image,
-        double[][] pInit, int maxIter, double eps, int[][] yXKeypoints, int patchHalfWidth,
-                                                            Type type) throws NotConvergedException {
+    public static Warps inverseCompositionKeypoints(double[][] template, double[][] image,
+                                             double[][] pInit, int maxIter, double eps, int[][] yXKeypoints, int patchHalfWidth,
+                                             Type type) throws NotConvergedException {
 
         if (pInit.length != 2 || pInit[0].length != 3) {
             throw new IllegalArgumentException("expecting pInit length to be 2, and pInit[0].length to be 3");
+        }
+        if (type.equals(Type.AFFINE_2D)) {
+            if (yXKeypoints.length * (2 * patchHalfWidth +1) < 3) {
+                throw new IllegalArgumentException("need at least 3 points to solve for affine");
+            }
         }
 
         //======  precompute  =======
 
         // gradients of T:   each is [nTR X nTC]
         ImageProcessor imageProcessor = new ImageProcessor();
-        double[][] gTX = MatrixUtil.copy(template);
+        /*double[][] gTX = MatrixUtil.copy(template);
         double[][] gTY = MatrixUtil.copy(template);
         imageProcessor.applyKernel1D(gTX, new double[]{-1, 0, +1}, false);
         imageProcessor.applyKernel1D(gTY, new double[]{-1, 0, +1}, true);
         MatrixUtil.multiply(gTX, 0.5);
-        MatrixUtil.multiply(gTY, 0.5);
+        MatrixUtil.multiply(gTY, 0.5);*/
+        /*StructureTensorD gT = new StructureTensorD(template, 1, false);
+        double[][] gTX = gT.getDY();
+        double[][] gTY = gT.getDX();*/
+        double[][] gTX = MatrixUtil.copy(template);
+        double[][] gTY = MatrixUtil.copy(template);
+        // {0, -1, 1} should match the paper diff in method sumSteepestDescErrImageProduct if change back to it
+        imageProcessor.applyKernel1D(gTX, new double[]{0, 1, -1}, false);
+        imageProcessor.applyKernel1D(gTY, new double[]{0, 1, -1}, true);
 
         int wT = template[0].length;
         //int hT = template.length;
@@ -331,19 +391,30 @@ public class Alignment {
 
         // ==== create the steepest decent image of the template ====
         //steepest descent img = gradient * dWdP = [keypoints.length X 6]
+        double[][] dTdWdp = null;
+        if (type.equals(Type.AFFINE_2D)) {
+            //[ntX*nTY X 6]
+            dTdWdp = createSteepestDescentImagesAffine2D(gTX, gTY, keypoints, patchHalfWidth);
+        } else if (type.equals(Type.TRANSLATION_2D)) {
+            //[ntX*nTY X 2]
+            dTdWdp = createSteepestDescentImagesTrans2D(gTX, gTY, keypoints, patchHalfWidth);
+        }
 
-        double[][] dTdWdp = createSteepestDescentImagesAffine2D(gTX, gTY, keypoints, patchHalfWidth);
-
-        // a hessian for each patch.   [nKeypoints X 6 X 6]
+        // a hessian for each patch.   [nKeypoints X 6 X 6] or [nKeypoints X 2 X 2]
         double[][][] hessianTmplt = createHessians(dTdWdp);
 
-        // [nKeypoints X 6 X 6]
+        // [nKeypoints X 6 X 6] or or [nKeypoints X 2 X 2]
         double[][][] invHessianTmplt = createInverseHessians(hessianTmplt);
         //======  end precompute  =======
 
+        int len = 6;
+        if (type.equals(Type.TRANSLATION_2D)) {
+            len = 2;
+        }
+
         double[][][] warp = new double[nKeypoints][3][3];
 
-        double[][] deltaP = new double[nKeypoints][6];
+        double[][] deltaP = new double[nKeypoints][len];
 
         boolean converged = false;
         int nIter = 0;
@@ -372,15 +443,14 @@ public class Alignment {
             for (int pIdx = 0; pIdx < nKeypoints; ++pIdx) {
                 double[] pSum = result.pSums[pIdx];
 
-                //MatrixUtil.multiplyMatrixByColumnVector(invHessianTmplt[pIdx], pSum, deltaP[pIdx]);
-                //double norm = MatrixUtil.lPSum(deltaP[pIdx], 2);
-                //converged &= (norm < eps);
+                MatrixUtil.multiplyMatrixByColumnVector(invHessianTmplt[pIdx], pSum, deltaP[pIdx]);
 
                 // checking eqn 34
                 // hessiant * deltaP[pIdx] - pSum
                 //double[] chk = MatrixUtil.subtract(MatrixUtil.multiplyMatrixByColumnVector(hessianTmplt[pIdx], deltaP[pIdx]),
                 //        pSum);
 
+                /*
                 //parameter c of eqn (91) as a substitute for 1/H. when diff=I-t, result is same for perfect data over these small patches
                 double numer = MatrixUtil.dot(pSum, pSum);
                 double denom = MatrixUtil.dot(pSum, MatrixUtil.multiplyMatrixByColumnVector(hessianTmplt[pIdx], pSum));
@@ -390,12 +460,10 @@ public class Alignment {
                 }
                 double[] _deltaP = Arrays.copyOf(pSum, pSum.length);
                 MatrixUtil.multiply(_deltaP, c);
-                if (true) {
-                    System.arraycopy(_deltaP, 0, deltaP[pIdx], 0, _deltaP.length);
-                }
-
+                System.arraycopy(_deltaP, 0, deltaP[pIdx], 0, _deltaP.length);
+                */
                 double norm = MatrixUtil.lPSum(deltaP[pIdx], 2);
-                converged &= (norm < eps);
+                converged &= (norm <= eps);
             }
 
             ++nIter;
@@ -485,7 +553,7 @@ public class Alignment {
         for (int pIdx = 0; pIdx < h.length; ++pIdx) {
             double[][] hI = h[pIdx];
             invH[pIdx] = MatrixUtil.inverse(hI);
-            if (Double.isNaN(invH[pIdx][0][0])) {
+            if (Double.isNaN(invH[pIdx][0][0])) {// if rank is less than
                 invH[pIdx] = MatrixUtil.pseudoinverseRankDeficient(hI);
             }
         }
@@ -496,6 +564,14 @@ public class Alignment {
                                                                   int patchHalfWidth) {
         int nYT = gTX.length;
         int nXT = gTY[0].length;
+
+        /*
+        creating a weighting for each point that is not x,y as squared distance from center.
+        the sum of the weights = 1.
+         */
+        double wSum = calcWeightNormEuclidean(patchHalfWidth);
+        // for x,y, will use weight = 1/2.
+        // else will use 1/(2*wSum)
 
         //steepest descent img = gradient * dWdP = [patchIdxs.length X 6]
         // for each x sum over range -patchHalfWidth to +patchHalfWidth
@@ -512,19 +588,28 @@ public class Alignment {
             y = yx[0];
             x = yx[1];
 
-            // sum over box around patch center
+            // sum over box around patch center, using weights based on 1/dist^2
             for (y2 = y - patchHalfWidth; y2 <= y + patchHalfWidth; ++y2) {
+                double dYSq = Math.abs(y-y2);
+                dYSq *= dYSq;
                 for (x2 = x - patchHalfWidth; x2 <= x + patchHalfWidth; ++x2) {
-                    tmp1[0][0] = getBoundaryCorrectedValue(gTX, y2, x2);
-                    tmp1[0][1] = getBoundaryCorrectedValue(gTY, y2, x2);
+                    double dXSq = Math.abs(x-x2);
+                    dXSq *= dXSq;
 
-                    TODO: here, the coordinates x2 and y2 might need to be the offsets from the keypoint
-                    and might need to use a weight for the distance from the keypoint
-                    tmp2[0][0] = x2;
-                    tmp2[0][2] = y2;
+                    double weight = 1./2;
+                    if (x != x2 || y != y2) {
+                        weight /= (dYSq + dXSq);
+                        weight /= wSum;
+                    }
+
+                    tmp1[0][0] = weight * getBoundaryCorrectedValue(gTX, y2, x2);
+                    tmp1[0][1] = weight * getBoundaryCorrectedValue(gTY, y2, x2);
+
+                    tmp2[0][0] = x2 - x;//x2;
+                    tmp2[0][2] = y2 - y;//y2;
                     tmp2[0][4] = 1;
-                    tmp2[1][1] = x2;
-                    tmp2[1][3] = y2;
+                    tmp2[1][1] = x2 - x;//x2;
+                    tmp2[1][3] = y2 - y;//y2;
                     tmp2[1][5] = 1;
                     /*
                     [ gx[pix]  gy[pix] ]  * [x2  0  y2  0  1  0]
@@ -540,6 +625,87 @@ public class Alignment {
                     }
                 }
             }
+        }
+        return dTdWdp;
+    }
+
+    private static double calcWeightNormEuclidean(int patchHalfWidth) {
+        double wSum = 0;
+        int nW = 0;
+        for (int i = 0; i <= 2* patchHalfWidth; ++i) {
+            double dISq = Math.abs(i - patchHalfWidth);
+            dISq *= dISq;
+            for (int j = 0; j <= 2* patchHalfWidth; ++j) {
+                double dJ = Math.abs(j - patchHalfWidth);
+                if (i==patchHalfWidth && j==patchHalfWidth) continue;
+                nW++;
+                wSum += 1./(dISq + dJ*dJ);
+            }
+        }
+        return wSum;
+    }
+
+    private static double[][] createSteepestDescentImagesTrans2D(double[][] gTX, double[][] gTY, int[] patchIdxs,
+                                                                  int patchHalfWidth) {
+        int nYT = gTX.length;
+        int nXT = gTY[0].length;
+
+        /*
+        using the column major notation of the paper
+        W is [ 1  0  p1]  * [x]
+             [ 0  1  p2]    [y]
+                            [1]
+         dW/dP = [ dWx/dp1   dWx/dp2 ]
+                 [ dWy/dp1   dWy/dp2 ]
+               = [  1         0 ]
+                 [  0         1 ]
+           which is the identity matrix
+
+         so the steepest descent image = each keypoint's weighted sum of gTx, gTy
+         */
+
+        /*
+        creating a weighting for each point that is not x,y as squared distance from center.
+        the sum of the weights = 1.
+         */
+        double wSum = calcWeightNormEuclidean(patchHalfWidth);
+        // for x,y, will use weight = 1/2.
+        // else will use 1/(2*wSum)
+
+        //steepest descent img = gradient * dWdP = [patchIdxs.length X 6]
+        // for each x sum over range -patchHalfWidth to +patchHalfWidth
+        double[][] dTdWdp = new double[patchIdxs.length][2];
+
+        int idx, y, x, x2, y2;
+        int[] yx = new int[2];
+        for (int pIdx = 0; pIdx < patchIdxs.length; ++pIdx) {
+            idx = patchIdxs[pIdx];
+            idxToRowCol(idx, nXT, yx);
+            y = yx[0];
+            x = yx[1];
+
+            double gTXSum = 0;
+            double gTYSum = 0;
+
+            // sum over box around patch center, using weights based on 1/dist^2
+            for (y2 = y - patchHalfWidth; y2 <= y + patchHalfWidth; ++y2) {
+                double dYSq = Math.abs(y-y2);
+                dYSq *= dYSq;
+                for (x2 = x - patchHalfWidth; x2 <= x + patchHalfWidth; ++x2) {
+                    double dXSq = Math.abs(x-x2);
+                    dXSq *= dXSq;
+
+                    double weight = 1./2;
+                    if (x != x2 || y != y2) {
+                        weight /= (dYSq + dXSq);
+                        weight /= wSum;
+                    }
+
+                    gTXSum += weight * getBoundaryCorrectedValue(gTX, y2, x2);
+                    gTYSum += weight * getBoundaryCorrectedValue(gTY, y2, x2);
+                }
+            }
+            dTdWdp[pIdx] = new double[]{gTXSum, gTYSum};
         }
         return dTdWdp;
     }
@@ -574,7 +740,7 @@ public class Alignment {
     }
 
     // NOT READY FOR USE
-    public static double _inverseCompositionalGN(double[][] template, double[][] image, double[][] pInit,
+    private static double _inverseCompositionalGN(double[][] template, double[][] image, double[][] pInit,
                                                  int maxIter, Type type, double eps)
             throws NotConvergedException, IOException {
 
@@ -635,7 +801,7 @@ public class Alignment {
         while (nIter < maxIter && !converged) {
 
             if (nIter == 0) {
-                warp = createWarp0(pInit);
+                warp = init2DTranslationWarp(pInit);
                 if (type.equals(Type.AFFINE_2D)) {
                     warp[0][0] += 1;
                     warp[1][1] += 1;
@@ -644,10 +810,10 @@ public class Alignment {
                 // update the warp
                 if (type.equals(Type.AFFINE_2D)) {
                     // using the forward compositional update instead as suggested by Bouguet
-                    updateWarp2DAffFC(warp, deltaP);
+                    update2DAffFCWarp(warp, deltaP);
                     //updateWarp2DAffIC(warp, deltaP);
                 } else if (type.equals(Type.TRANSLATION_2D)) {
-                    updateWarp2DTransIC(warp, deltaP);
+                    update2DTransICWarp(warp, deltaP);
                 }
             }
 
@@ -819,7 +985,7 @@ public class Alignment {
         return dTdWdp;
     }
 
-    private static double[][] createWarp0(double[][] pInit) {
+    private static double[][] init2DTranslationWarp(double[][] pInit) {
         return new double[][]{
                 {pInit[0][0], pInit[0][1], pInit[0][2]},
                 {pInit[1][0], pInit[1][1], pInit[1][2]},
@@ -929,6 +1095,15 @@ public class Alignment {
         int nYT = template.length;
         int nXT = template[0].length;
 
+        /*
+        creating a weighting for each point that is not x,y as squared distance from center.
+        the sum of the weights = 1.
+         */
+        double wSum = calcWeightNormEuclidean(patchHalfWidth);
+        // for x,y, will use weight = 1/2.
+        // else will use 1/(2*wSum)
+
+
         double[] xy2;
         double[] xy = new double[]{0,0,1};
         double v2, diff=0;
@@ -946,6 +1121,9 @@ public class Alignment {
 
             // sum over box around patch center
             for (y2 = y - patchHalfWidth; y2 <= y + patchHalfWidth; ++y2) {
+                double dYSq = Math.abs(y-y2);
+                dYSq *= dYSq;
+
                 for (x2 = x - patchHalfWidth; x2 <= x + patchHalfWidth; ++x2) {
 
                     xy[0] = getBoundaryCorrectedCoord(x2, nXT);
@@ -956,10 +1134,21 @@ public class Alignment {
                         //TODO: consider alternatives
                         continue;
                     }
+
+                    double dXSq = Math.abs(x-x2);
+                    dXSq *= dXSq;
+
+                    double weight = 1./2;
+                    if (x != x2 || y != y2) {
+                        weight /= (dYSq + dXSq);
+                        weight /= wSum;
+                    }
+
                     // method expecting col major data so reverse the coords:
                     v2 = imageProcessor.biLinearInterpolation(image, xy2[1], xy2[0]);
 
-                    diff = v2 - getBoundaryCorrectedValue(template, xy[1], xy[0]);
+                    diff = -v2 + getBoundaryCorrectedValue(template, xy[1], xy[0]);
+                    diff *= weight;
 
                     errSSD += diff * diff;
 
@@ -980,7 +1169,6 @@ public class Alignment {
     }
 
     private static double[][] inverseWParam2DTrans(double[] deltaP) throws NotConvergedException {
-        //TODO: write out the determinant and cofactor terms here
         return new double[][]{
                 {1, 0, -deltaP[0]},
                 {0, 1, -deltaP[1]},
@@ -1006,7 +1194,7 @@ public class Alignment {
         return out;
     }
 
-    private static void updateWarp2DTransIC(double[][] warp, double[] deltaP) throws NotConvergedException {
+    private static void update2DTransICWarp(double[][] warp, double[] deltaP) throws NotConvergedException {
         double[][] params = inverseWParam2DTrans(deltaP); //[3X3]
 
         double[][] tmp = MatrixUtil.multiply(warp, params);
@@ -1029,7 +1217,7 @@ public class Alignment {
         }
     }
 
-    private static void updateWarp2DAffFC(double[][] warp, double[] deltaP) throws NotConvergedException {
+    private static void update2DAffFCWarp(double[][] warp, double[] deltaP) throws NotConvergedException {
 
         // for affine, Bouguet uses forward composition:
         // instead of composition w = w * w(delta)^-1 it is w = w * w(delta).

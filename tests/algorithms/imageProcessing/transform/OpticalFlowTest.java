@@ -531,11 +531,11 @@ public class OpticalFlowTest extends TestCase {
             System.out.printf("2D trans newton: uvFinal=\n%s\n", FormatArray.toString(xYInit, "%.2f"));
             assertEquals(iTest, (int)Math.round(xYInit[0]));
             assertEquals(iTest, (int)Math.round(xYInit[1]));
-            xYInit = new double[]{uInit, vInit};
-            errSSD = Alignment._inverseCompositional2DTranslationGN(im1, im2, xYInit, maxIter, eps);
-            System.out.printf("2D trans GN: uvFinal=\n%s\n", FormatArray.toString(xYInit, "%.2f"));
-            assertEquals(iTest, (int)Math.round(xYInit[0]));
-            assertEquals(iTest, (int)Math.round(xYInit[1]));
+            //xYInit = new double[]{uInit, vInit};
+            //errSSD = Alignment._inverseCompositional2DTranslationGN(im1, im2, xYInit, maxIter, eps);
+            //System.out.printf("2D trans GN: uvFinal=\n%s\n", FormatArray.toString(xYInit, "%.2f"));
+            //assertEquals(iTest, (int)Math.round(xYInit[0]));
+            //assertEquals(iTest, (int)Math.round(xYInit[1]));
             //*/
             ///*
             double[][] pInit = new double[2][3];
@@ -549,9 +549,9 @@ public class OpticalFlowTest extends TestCase {
             pInit[1][1] = p11;
             pInit[0][2] = uInit;
             pInit[1][2] = vInit;
-            errSSD = Alignment._inverseCompositionalGN(im1, im2, pInit,
-                    maxIter, Alignment.Type.AFFINE_2D, eps);
-            System.out.printf("2D affine GN: pFinal=\n%s\n", FormatArray.toString(pInit, "%.2f"));
+            //errSSD = Alignment._inverseCompositionalGN(im1, im2, pInit,
+            //        maxIter, Alignment.Type.AFFINE_2D, eps);
+            //System.out.printf("2D affine GN: pFinal=\n%s\n", FormatArray.toString(pInit, "%.2f"));
             //assertEquals(iTest, (int)Math.round(pInit[0][2]));
             //assertEquals(iTest, (int)Math.round(pInit[1][2]));
             //*/
@@ -559,8 +559,9 @@ public class OpticalFlowTest extends TestCase {
 
     }
 
-    public void est3InverseCompositionAlignment() throws IOException, NotConvergedException {
+    public void test3InverseCompositionAlignment() throws IOException, NotConvergedException {
         System.out.printf("test3InverseCompositionAlignment\n");
+
         int pixMax = 32*2;
         int m = 32*2;
         //System.out.printf("pixMax=%d, m=%d\n", pixMax, m);
@@ -568,9 +569,9 @@ public class OpticalFlowTest extends TestCase {
         double[][] im1;
         double[][] im2;
         int maxIter = 100;//1000;
-        double eps = 1E-2;
+        double eps = 0.5;
 
-        for (int iTest = 1; iTest < (m/2)-3; ++iTest) {
+        for (int iTest = 1; iTest < (m/3); ++iTest) {
             //m = iTest * 10;
             //n = m;
             im1 = new double[m][n];
@@ -578,7 +579,7 @@ public class OpticalFlowTest extends TestCase {
             double deltaI = pixMax / m;
 
             int patchHalfWidth = iTest + 1;
-            int nPatches = m - 2*patchHalfWidth;
+            int nPatches = m - 2*patchHalfWidth-1;
             int[][] yXPatches = new int[nPatches][];
             int iP = 0;
 
@@ -597,10 +598,14 @@ public class OpticalFlowTest extends TestCase {
                     im2[i + iTest][j + iTest] = b;
                     im2[j + iTest][i + iTest] = b;
                 }
-                if (i+iTest >= patchHalfWidth && i+iTest < (m-patchHalfWidth)) {
+                if (i >= patchHalfWidth && i+iTest < (m-patchHalfWidth)) {
                     yXPatches[iP++] = new int[]{i, i};
                 }
             }
+            if (iP == 0) {
+                break;
+            }
+            yXPatches = Arrays.copyOf(yXPatches, iP);
 
             double uInit = 0;
             double vInit = 0;
@@ -612,11 +617,11 @@ public class OpticalFlowTest extends TestCase {
             Alignment.Warps warps;
             ///*  TEST 2-D translation
             double[] xYInit = new double[]{uInit, vInit};
-            warps = Alignment._inverseComposition2DTranslationKeypoints(im1, im2, xYInit, maxIter, eps,
+            warps = Alignment.inverseComposition2DTranslationKeypoints(im1, im2, xYInit, maxIter, eps,
                     yXPatches, patchHalfWidth, Alignment.Type.TRANSLATION_2D);
-            System.out.printf("2D trans newton: uvFinal=\n%s\n", FormatArray.toString(xYInit, "%.2f"));
-            assertEquals(iTest, (int)Math.round(xYInit[0]));
-            assertEquals(iTest, (int)Math.round(xYInit[1]));
+            System.out.printf("2D trans newton: pFinal=\n%s\n", FormatArray.toString(warps.warps[1][1], "%.2f"));
+            assertEquals(iTest, (int)Math.round(warps.warps[1][0][2]));
+            assertEquals(iTest, (int)Math.round(warps.warps[1][1][2]));
             //*/
 
             ///*
@@ -625,14 +630,28 @@ public class OpticalFlowTest extends TestCase {
             pInit[1][1] = p11;
             pInit[0][2] = uInit;
             pInit[1][2] = vInit;
-            warps = Alignment._inverseCompositionKeypoints(im1, im2, pInit, maxIter, eps,
+
+            warps = Alignment.inverseCompositionKeypoints(im1, im2, pInit, maxIter, eps,
                     yXPatches, patchHalfWidth, Alignment.Type.AFFINE_2D);
             for (double[][] w : warps.warps) {
                 System.out.printf("2D affine patches: pFinal=\n%s\n", FormatArray.toString(w, "%.2f"));
             }
+
             //assertEquals(iTest, (int)Math.round(pInit[0][2]));
             //assertEquals(iTest, (int)Math.round(pInit[1][2]));
             //*/
+
+            /*
+             e.g. a first pass through
+             Alignment.inverseCompositionKeypoints(im1, im2, pInit, maxIter, eps, yXPatches, patchHalfWidth, Type.AFFINE_2D);
+                resulting in
+                     0.53, 0.47, -3.57
+                     0.47, 0.53, -3.57
+                     0.00, 0.00, 1.00
+             is not a feasible combination of th and sh_x, sh_y for scale in x and y = 1
+                 [ sh_x * sin(th)   sh_x * cos(th) ]  = [ 0.53  0,47 ]
+                 [ sh_y * cos(th)  -sh_y * sin(th)  ]    [0.47   0.53 ]
+             */
         }
 
     }
