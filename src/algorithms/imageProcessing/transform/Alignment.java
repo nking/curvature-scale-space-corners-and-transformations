@@ -3,11 +3,9 @@ package algorithms.imageProcessing.transform;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.StructureTensorD;
 import algorithms.matrix.MatrixUtil;
-import algorithms.util.FormatArray;
 import no.uib.cipr.matrix.NotConvergedException;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 
 /**
@@ -22,12 +20,14 @@ public class Alignment {
      * affine 2-D matrix can contain terms for rotation in the plane, scale, shear, and translation.
      */
     enum Type{
-        TRANSLATION_2D, AFFINE_2D,
-        AFFINE_3D_NOT_IMPLEMENTED
+        TRANSLATION_2D, AFFINE_2D
     }
 
     /*
    NOT READY FOR USE...
+   (might be better to use Reconstruction or CameraPose or epipolar methods if need more than translation solved
+   as this algorithm provides rough solutions for small displacements for the simplest cases
+   of no scaling, no shear, and only translation.)
    refine pInit so that template and image are aligned by
    computing the warp that can be applied to the template to align it with the image.
    This alignment minimizes the re-projection error between the projected image and template
@@ -52,14 +52,14 @@ public class Alignment {
     the warped image and the template.
    */
     public static double inverseCompositional2DAffine(double[][] template, double[][] image, double[][] pInit,
-                                                      int maxIter)
+                                                      int maxIter, double eps)
             throws NotConvergedException, IOException {
 
         if (pInit.length != 2 || pInit[0].length != 3) {
             throw new IllegalArgumentException("expecting pInit length to be 2, and pInit[0].length to be 3");
         }
 
-        return inverseCompositional(template, image, pInit, maxIter, Type.AFFINE_2D);
+        return inverseCompositional(template, image, pInit, maxIter, Type.AFFINE_2D, eps);
     }
 
     /** find the x and y translations that best align the template to the image.
@@ -85,7 +85,7 @@ public class Alignment {
    */
     public static double inverseCompositional2DTranslation(double[][] template, double[][] image,
                                                            double[] xYInit,
-                                                      int maxIter)
+                                                      int maxIter, double eps)
             throws NotConvergedException, IOException {
         if (xYInit.length != 2) {
             throw new IllegalArgumentException("expecting xYInit to be length 2");
@@ -95,7 +95,7 @@ public class Alignment {
                 {1, 0, xYInit[0]},
                 {0, 1, xYInit[1]}
         };
-        double errSD = inverseCompositional(template, image, pInit, maxIter, Type.TRANSLATION_2D);
+        double errSD = inverseCompositional(template, image, pInit, maxIter, Type.TRANSLATION_2D, eps);
         xYInit[0] = pInit[0][2];
         xYInit[1] = pInit[1][2];
         return errSD;
@@ -103,9 +103,9 @@ public class Alignment {
 
     // Gauss-Newton.
     // NOT READY FOR USE
-    public static double inverseCompositional2DTranslationGN(double[][] template, double[][] image,
-                                                           double[] xYInit,
-                                                           int maxIter, double eps)
+    public static double _inverseCompositional2DTranslationGN(double[][] template, double[][] image,
+                                                              double[] xYInit,
+                                                              int maxIter, double eps)
             throws NotConvergedException, IOException {
         if (xYInit.length != 2) {
             throw new IllegalArgumentException("expecting xYInit to be length 2");
@@ -115,14 +115,14 @@ public class Alignment {
                 {1, 0, xYInit[0]},
                 {0, 1, xYInit[1]}
         };
-        double errSD = inverseCompositionalGN(template, image, pInit, maxIter, Type.TRANSLATION_2D, eps);
+        double errSD = _inverseCompositionalGN(template, image, pInit, maxIter, Type.TRANSLATION_2D, eps);
         xYInit[0] = pInit[0][2];
         xYInit[1] = pInit[1][2];
         return errSD;
     }
 
     /*
-    NOT READY FOR USE...
+    NOT READY FOR USE
     refine pInit so that template and image are aligned by
     computing the warp that can be applied to the template to align it with the image.
     This alignment minimizes the re-projection error between the projected image and template
@@ -130,10 +130,13 @@ public class Alignment {
     to get a good initial pInit, one could extract features from template and image and make correspondence list
     of matching features using tools such as ransac or assumptions of translation only etc depending upon context.
     <pre>
-    reference:
-    Figure 4 of
-    Baker & Matthews, 2016, CMU-RI-TR-02-16
-    "Lucas-Kanade 20 Years On: A Unifying Framework: Part 1"
+    reference2:
+        Figure 4 of
+        Baker & Matthews, 2016, CMU-RI-TR-02-16
+        "Lucas-Kanade 20 Years On: A Unifying Framework: Part 1"
+
+    the warp update change is adapted from Bouguet, "Pyramidal Implementation of the Affine Kanade Feature Tracker
+    Descriptions of the Algorithm"
     </pre>
      @param template
      * @param image
@@ -147,7 +150,7 @@ public class Alignment {
      the warped image and the template.
     */
     public static double inverseCompositional(double[][] template, double[][] image, double[][] pInit,
-                                                      int maxIter, Type type)
+                                                      int maxIter, Type type, double eps)
             throws NotConvergedException, IOException {
 
         if (pInit.length != 2 || pInit[0].length != 3) {
@@ -155,9 +158,6 @@ public class Alignment {
         }
         if (type == null) {
             throw new IllegalArgumentException("type cannot be null");
-        }
-        if (type.equals(Type.AFFINE_3D_NOT_IMPLEMENTED)) {
-            throw new IllegalArgumentException("not yet implemented");
         }
 
         /*
@@ -184,7 +184,7 @@ public class Alignment {
         double[][] dTdWdp = null;
         if (type.equals(Type.AFFINE_2D)) {
             //[ntX*nTY X 6]
-            dTdWdp = createSteepestDescentImageAffine2D(gTX, gTY);
+            dTdWdp = createSteepestDescentImagesAffine2D(gTX, gTY);
         } else if (type.equals(Type.TRANSLATION_2D)) {
             //[ntX*nTY X 2]
             dTdWdp = createSteepestDescentImageTranslation2D(gTX, gTY);
@@ -202,8 +202,6 @@ public class Alignment {
 
         double[][] warp = null;
 
-        double eps = 0.025;//1E-3;
-
         int len = 6;
         if (type.equals(Type.TRANSLATION_2D)) {
             len = 2;
@@ -219,27 +217,23 @@ public class Alignment {
 
             if (nIter == 0) {
                 warp = createWarp0(pInit);
+                if (type.equals(Type.AFFINE_2D)) {
+                    warp[0][0] += 1;
+                    warp[1][1] += 1;
+                }
             } else {
                 // update the warp
                 if (type.equals(Type.AFFINE_2D)) {
-                    updateWarp2DAffIC(warp, deltaP);
+                    // as suggested by Bouguet, use the forward composition warp update instead:
+                    updateWarp2DAffFC(warp, deltaP);
+                    //updateWarp2DAffIC(warp, deltaP);
                 } else if (type.equals(Type.TRANSLATION_2D)) {
                     updateWarp2DTransIC(warp, deltaP);
                 }
             }
 
-            if (type.equals(Type.AFFINE_2D)) {
-                warp[0][0] += 1;
-                warp[1][1] += 1;
-            }
-
             // (1),(2),(7): warp I and subtract from T, then mult by steepest descent image, summing over all x
             nPAndErr = sumSteepestDescErrImageProduct(image, template, warp, dTdWdp, pSum, type);
-
-            if (type.equals(Type.AFFINE_2D)) {
-                warp[0][0] -= 1;
-                warp[1][1] -= 1;
-            }
 
             // compute deltaP as invHessianTmplt * pSum = [6 X 6] * [6 X 1] or [2X2]*[2X1]
             MatrixUtil.multiplyMatrixByColumnVector(invHessianTmplt, pSum, deltaP);
@@ -258,20 +252,327 @@ public class Alignment {
         return nPAndErr[1];
     }
 
-    private static double[][] createHessian_23(double[][][] dTdWdp) {
-        //hessian as dTdWdp^T * dTdWdp
-        //           [3x2][2 x 3] = 3x3
-        double[][] h = new double[3][3];
-        for (int idx = 0; idx < dTdWdp.length; ++idx) {
-            double[][] tmp = MatrixUtil.createATransposedTimesA(dTdWdp[idx]);
-            MatrixUtil.pointwiseAdd(h, tmp, h);
+    /**
+     *NOT READY FOR USE
+     *      <pre>
+     *      adapted from the single image aligment within:
+     *      Bouguet, "Pyramidal Implementation of the Affine Kanade Feature Tracker
+     *      Descriptions of the Algorithm"
+     *      </pre>
+     * @param template
+     * @param image
+     * @param xYInit
+     * @param maxIter
+     * @param eps
+     * @param yXKeypoints a 2-D array of size [nKeypoints x 2] of keypoints to calculate affine warp at.
+     *                  Note that the keypoints should not be closer to the image bounds than patchHalfWidth.
+     * @param patchHalfWidth a box of size 2*patchHalfWidth is used for the calculations are patch centers in yXPAthes.
+     * @return
+     * @throws NotConvergedException
+     * @throws IOException
+     */
+    static Warps _inverseComposition2DTranslationKeypoints(double[][] template, double[][] image,
+        double[] xYInit, int maxIter, double eps, int[][] yXKeypoints, int patchHalfWidth, Type type) throws NotConvergedException {
+        if (xYInit.length != 2) {
+            throw new IllegalArgumentException("expecting xYInit to be length 2");
+        }
+
+        double[][] pInit = new double[][] {
+                {1, 0, xYInit[0]},
+                {0, 1, xYInit[1]}
+        };
+        return _inverseCompositionKeypoints(template, image, pInit, maxIter, eps, yXKeypoints, patchHalfWidth, type);
+    }
+
+    /**
+     * NOT READY FOR USE
+     <pre>
+     adapted from the single image aligment within:
+     Bouguet, "Pyramidal Implementation of the Affine Kanade Feature Tracker
+     Descriptions of the Algorithm"
+     </pre>
+     * @param template
+     * @param image
+     * @param pInit
+     * @param maxIter
+     * @param eps
+     * @param yXKeypoints a 2-D array of size [nKeypoints x 2] of keypoints to calculate affine warp at.
+     *                  Note that the keypoints should not be closer to the image bounds than patchHalfWidth.
+     * @param patchHalfWidth a box of size 2*patchHalfWidth is used for the calculations are patch centers in yXPAthes.
+     * @return
+     * @throws NotConvergedException
+     * @throws IOException
+     */
+    static Warps _inverseCompositionKeypoints(double[][] template, double[][] image,
+        double[][] pInit, int maxIter, double eps, int[][] yXKeypoints, int patchHalfWidth,
+                                                            Type type) throws NotConvergedException {
+
+        if (pInit.length != 2 || pInit[0].length != 3) {
+            throw new IllegalArgumentException("expecting pInit length to be 2, and pInit[0].length to be 3");
+        }
+
+        //======  precompute  =======
+
+        // gradients of T:   each is [nTR X nTC]
+        ImageProcessor imageProcessor = new ImageProcessor();
+        double[][] gTX = MatrixUtil.copy(template);
+        double[][] gTY = MatrixUtil.copy(template);
+        imageProcessor.applyKernel1D(gTX, new double[]{-1, 0, +1}, false);
+        imageProcessor.applyKernel1D(gTY, new double[]{-1, 0, +1}, true);
+        MatrixUtil.multiply(gTX, 0.5);
+        MatrixUtil.multiply(gTY, 0.5);
+
+        int wT = template[0].length;
+        //int hT = template.length;
+        int nKeypoints = yXKeypoints.length;
+
+        // array of single coordinates representing x and y coordinates
+        int[] keypoints = makeReverseLookupArray(yXKeypoints, wT);
+
+        // ==== create the steepest decent image of the template ====
+        //steepest descent img = gradient * dWdP = [keypoints.length X 6]
+
+        double[][] dTdWdp = createSteepestDescentImagesAffine2D(gTX, gTY, keypoints, patchHalfWidth);
+
+        // a hessian for each patch.   [nKeypoints X 6 X 6]
+        double[][][] hessianTmplt = createHessians(dTdWdp);
+
+        // [nKeypoints X 6 X 6]
+        double[][][] invHessianTmplt = createInverseHessians(hessianTmplt);
+        //======  end precompute  =======
+
+        double[][][] warp = new double[nKeypoints][3][3];
+
+        double[][] deltaP = new double[nKeypoints][6];
+
+        boolean converged = false;
+        int nIter = 0;
+        Result result = null;
+        while (nIter < maxIter && !converged) {
+
+            if (nIter == 0) {
+                if (type.equals(Type.AFFINE_2D)) {
+                    init2DAffineWarps(warp, pInit);
+                } else {
+                    init2DTranslationWarps(warp, pInit);
+                }
+            } else {
+                if (type.equals(Type.AFFINE_2D)) {
+                    update2DAffineWarps(warp, deltaP);
+                } else {
+                    update2DTranslationWarps(warp, deltaP);
+                }
+            }
+
+            // (1),(2),(7): warp I and subtract from T, then mult by steepest descent image, summing over all x in patches
+            result = sumSteepestDescErrImageProducts(image, template, warp, dTdWdp, keypoints, patchHalfWidth);
+
+            converged = true;
+            // compute deltaP as invHessianTmplt * pSum = [6 X 6] * [6 X 1] for each patch
+            for (int pIdx = 0; pIdx < nKeypoints; ++pIdx) {
+                double[] pSum = result.pSums[pIdx];
+
+                //MatrixUtil.multiplyMatrixByColumnVector(invHessianTmplt[pIdx], pSum, deltaP[pIdx]);
+                //double norm = MatrixUtil.lPSum(deltaP[pIdx], 2);
+                //converged &= (norm < eps);
+
+                // checking eqn 34
+                // hessiant * deltaP[pIdx] - pSum
+                //double[] chk = MatrixUtil.subtract(MatrixUtil.multiplyMatrixByColumnVector(hessianTmplt[pIdx], deltaP[pIdx]),
+                //        pSum);
+
+                //parameter c of eqn (91) as a substitute for 1/H. when diff=I-t, result is same for perfect data over these small patches
+                double numer = MatrixUtil.dot(pSum, pSum);
+                double denom = MatrixUtil.dot(pSum, MatrixUtil.multiplyMatrixByColumnVector(hessianTmplt[pIdx], pSum));
+                double c = numer / denom;
+                if (Double.isNaN(c)) {
+                    //break;
+                }
+                double[] _deltaP = Arrays.copyOf(pSum, pSum.length);
+                MatrixUtil.multiply(_deltaP, c);
+                if (true) {
+                    System.arraycopy(_deltaP, 0, deltaP[pIdx], 0, _deltaP.length);
+                }
+
+                double norm = MatrixUtil.lPSum(deltaP[pIdx], 2);
+                converged &= (norm < eps);
+            }
+
+            ++nIter;
+        }
+
+        System.out.printf("nIter=%d, converged=%b\n", nIter, converged);
+
+        Warps out = new Warps();
+        out.warps = warp;
+        out.ssd = result.ssd;
+        return out;
+    }
+
+
+    private static void update2DTranslationWarps(double[][][] warps, double[][] deltaPs) throws NotConvergedException {
+        for (int i = 0; i < warps.length; ++i) {
+            double[][] params = inverseWParam2DTrans(deltaPs[i]); //[3X3]
+            double[][] tmp = MatrixUtil.multiply(warps[i], params);
+            for (int i2 = 0; i2 < warps[i].length; ++i2) {
+                System.arraycopy(tmp[i2], 0, warps[i][i2], 0, tmp[i2].length);
+            }
+        }
+    }
+
+    private static void update2DAffineWarps(double[][][] warps, double[][] deltaPs) {
+
+        for (int i = 0; i < warps.length; ++i) {
+            double[][] params = new double[][]{
+                    {1 + deltaPs[i][0], deltaPs[i][2], deltaPs[i][4]},
+                    {deltaPs[i][1], 1 + deltaPs[i][3], deltaPs[i][5]},
+                    {0, 0, 1}
+            };
+            double[][] invParams = MatrixUtil.inverse(params);
+
+            // forward composition:
+            double[][] tmp1 = MatrixUtil.multiply(warps[i], params);
+            // inverse composition
+            double[][] tmp2 = MatrixUtil.multiply(warps[i], invParams);
+            double[][] tmp = tmp1;
+            for (int j = 0; j < tmp.length; ++j) {
+                System.arraycopy(tmp[j], 0, warps[i][j], 0, tmp[j].length);
+            }
+        }
+    }
+
+    private static void init2DAffineWarps(double[][][] warps, double[][] pInit) {
+        for (int i = 0; i < warps.length; ++i) {
+            for (int j = 0; j < pInit.length; ++j) {
+                System.arraycopy(pInit[j], 0, warps[i][j], 0, pInit[j].length);
+            }
+            warps[i][0][0] += 1;
+            warps[i][1][1] += 1;
+            warps[i][2][2] = 1;
+        };
+    }
+
+    private static void init2DTranslationWarps(double[][][] warps, double[][] pInit) {
+        for (int i = 0; i < warps.length; ++i) {
+            for (int j = 0; j < pInit.length; ++j) {
+                System.arraycopy(pInit[j], 0, warps[i][j], 0, pInit[j].length);
+            }
+            warps[i][2][2] = 1;
+        };
+    }
+
+    protected static class Result {
+        double[][] pSums;
+        double ssd;
+    }
+
+    protected static class Warps {
+        double[][][] warps;
+        double ssd;
+    }
+
+    private static double[][][] createHessians(double[][] dTdWdp) {
+        double[][][] h = new double[dTdWdp.length][dTdWdp[0].length][];
+        for (int pIdx = 0; pIdx < dTdWdp.length; ++pIdx) {
+            double[] steep = dTdWdp[pIdx];
+            h[pIdx] = MatrixUtil.outerProduct(steep, steep);
         }
         return h;
     }
 
+    private static double[][][] createInverseHessians(double[][][] h) throws NotConvergedException {
+        double[][][] invH = new double[h.length][h[0].length][];
+        for (int pIdx = 0; pIdx < h.length; ++pIdx) {
+            double[][] hI = h[pIdx];
+            invH[pIdx] = MatrixUtil.inverse(hI);
+            if (Double.isNaN(invH[pIdx][0][0])) {
+                invH[pIdx] = MatrixUtil.pseudoinverseRankDeficient(hI);
+            }
+        }
+        return h;
+    }
+
+    private static double[][] createSteepestDescentImagesAffine2D(double[][] gTX, double[][] gTY, int[] patchIdxs,
+                                                                  int patchHalfWidth) {
+        int nYT = gTX.length;
+        int nXT = gTY[0].length;
+
+        //steepest descent img = gradient * dWdP = [patchIdxs.length X 6]
+        // for each x sum over range -patchHalfWidth to +patchHalfWidth
+        double[][] dTdWdp = new double[patchIdxs.length][6];
+
+        double[][] tmp1 = new double[1][2];
+        double[][] tmp2 = new double[2][6];
+        double[][] tmp3 = new double[1][6];
+        int idx, y, x, x2, y2;
+        int[] yx = new int[2];
+        for (int pIdx = 0; pIdx < patchIdxs.length; ++pIdx) {
+            idx = patchIdxs[pIdx];
+            idxToRowCol(idx, nXT, yx);
+            y = yx[0];
+            x = yx[1];
+
+            // sum over box around patch center
+            for (y2 = y - patchHalfWidth; y2 <= y + patchHalfWidth; ++y2) {
+                for (x2 = x - patchHalfWidth; x2 <= x + patchHalfWidth; ++x2) {
+                    tmp1[0][0] = getBoundaryCorrectedValue(gTX, y2, x2);
+                    tmp1[0][1] = getBoundaryCorrectedValue(gTY, y2, x2);
+                    tmp2[0][0] = x2;
+                    tmp2[0][2] = y2;
+                    tmp2[0][4] = 1;
+                    tmp2[1][1] = x2;
+                    tmp2[1][3] = y2;
+                    tmp2[1][5] = 1;
+                    /*
+                    [ gx[pix]  gy[pix] ]  * [x2  0  y2  0  1  0]
+                                            [ 0  x2  0  y2 0  1]
+                      = [gx*x2  gy*y2  gx*y2  gy*y2  gx  gy]
+                     */
+
+                    // idx=x*width + y;  x=idx%width; y=idx/width
+                    //[1X6]
+                    MatrixUtil.multiply(tmp1, tmp2, tmp3);
+                    for (int k = 0; k < 6; ++k) {
+                        dTdWdp[pIdx][k] += tmp3[0][k];
+                    }
+                }
+            }
+        }
+        return dTdWdp;
+    }
+
+    private static double getBoundaryCorrectedValue(double[][] im, int y, int x) {
+        if (x < 0) {
+            x = 0;
+        }
+        if (y < 0) {
+            y = 0;
+        }
+        if (x >= im[0].length) {
+            x = im[0].length - 1;
+        }
+        if (y >= im.length) {
+            y = im.length - 1;
+        }
+        return im[y][x];
+    }
+    private static double getBoundaryCorrectedValue(double[][] im, double y, double x) {
+        return getBoundaryCorrectedValue(im, (int)Math.round(y), (int)Math.round(x));
+    }
+
+    private static int getBoundaryCorrectedCoord(int coord, int dimLen) {
+        if (coord < 0) {
+            return 0;
+        }
+        if (coord >= dimLen) {
+            return dimLen - 1;
+        }
+        return coord;
+    }
+
     // NOT READY FOR USE
-    public static double inverseCompositionalGN(double[][] template, double[][] image, double[][] pInit,
-                                                int maxIter, Type type, double eps)
+    public static double _inverseCompositionalGN(double[][] template, double[][] image, double[][] pInit,
+                                                 int maxIter, Type type, double eps)
             throws NotConvergedException, IOException {
 
         if (pInit.length != 2 || pInit[0].length != 3) {
@@ -279,9 +580,6 @@ public class Alignment {
         }
         if (type == null) {
             throw new IllegalArgumentException("type cannot be null");
-        }
-        if (type.equals(Type.AFFINE_3D_NOT_IMPLEMENTED)) {
-            throw new IllegalArgumentException("not yet implemented");
         }
 
         //======  precompute  =======
@@ -302,7 +600,7 @@ public class Alignment {
         double[][] dTdWdp = null;
         if (type.equals(Type.AFFINE_2D)) {
             //[ntX*nTY X 6]
-            dTdWdp = createSteepestDescentImageAffine2D(gTX, gTY);
+            dTdWdp = createSteepestDescentImagesAffine2D(gTX, gTY);
         } else if (type.equals(Type.TRANSLATION_2D)) {
             //[ntX*nTY X 2]
             dTdWdp = createSteepestDescentImageTranslation2D(gTX, gTY);
@@ -335,27 +633,23 @@ public class Alignment {
 
             if (nIter == 0) {
                 warp = createWarp0(pInit);
+                if (type.equals(Type.AFFINE_2D)) {
+                    warp[0][0] += 1;
+                    warp[1][1] += 1;
+                }
             } else {
                 // update the warp
                 if (type.equals(Type.AFFINE_2D)) {
-                    updateWarp2DAffIC(warp, deltaP);
+                    // using the forward compositional update instead as suggested by Bouguet
+                    updateWarp2DAffFC(warp, deltaP);
+                    //updateWarp2DAffIC(warp, deltaP);
                 } else if (type.equals(Type.TRANSLATION_2D)) {
                     updateWarp2DTransIC(warp, deltaP);
                 }
             }
 
-            if (type.equals(Type.AFFINE_2D)) {
-                warp[0][0] += 1;
-                warp[1][1] += 1;
-            }
-
             // (1),(2),(7): warp I and subtract from T, then mult by steepest descent image, summing over all x
             nPAndErr = sumSteepestDescErrImageProduct(image, template, warp, dTdWdp, pSum, type);
-
-            if (type.equals(Type.AFFINE_2D)) {
-                warp[0][0] -= 1;
-                warp[1][1] -= 1;
-            }
 
             // compute deltaP as c * pSum = [6 X 1] or [2X1]
             System.arraycopy(pSum, 0, deltaP, 0, pSum.length);
@@ -391,7 +685,7 @@ public class Alignment {
     }
 
 
-    private static double[][] createSteepestDescentImageAffine2D(double[][] gTX, double[][] gTY) {
+    private static double[][] createSteepestDescentImagesAffine2D(double[][] gTX, double[][] gTY) {
         //[nTR*nTC X 6]
         // steepest descent images  gT * dWdP = [nTR X nTC] * [nTR*nTC X 6] = [nTR*nTC X 6] for x then for y
         // can format as [nTr X nTc X 6] or [nTr * nTc X 6].
@@ -619,6 +913,69 @@ public class Alignment {
         return new double[]{nP, errSSD};
     }
 
+    private static Result sumSteepestDescErrImageProducts(double[][] image, double[][] template,
+                                                          double[][][] warps,
+                                                           double[][] dTdWdp, int[] patchIdxs, int patchHalfWidth) {
+
+        int nPatches = patchIdxs.length;
+
+        double[][] outPSums = new double[nPatches][dTdWdp[0].length];
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        int nYT = template.length;
+        int nXT = template[0].length;
+
+        double[] xy2;
+        double[] xy = new double[]{0,0,1};
+        double v2, diff=0;
+        double[] pS;
+        double errSSD = 0;
+        int idx, y, x, x2, y2;
+        int[] yx = new int[2];
+        for (int pIdx = 0; pIdx < patchIdxs.length; ++pIdx) {
+            idx = patchIdxs[pIdx];
+            idxToRowCol(idx, nXT, yx);
+            y = yx[0];
+            x = yx[1];
+
+            pS = dTdWdp[pIdx];
+
+            // sum over box around patch center
+            for (y2 = y - patchHalfWidth; y2 <= y + patchHalfWidth; ++y2) {
+                for (x2 = x - patchHalfWidth; x2 <= x + patchHalfWidth; ++x2) {
+
+                    xy[0] = getBoundaryCorrectedCoord(x2, nXT);
+                    xy[1] = getBoundaryCorrectedCoord(y2, nYT);
+                    xy2 = MatrixUtil.multiplyMatrixByColumnVector(warps[pIdx], xy);
+
+                    if (xy2[0] < 0 || Math.ceil(xy2[0]) >= image[0].length || xy2[1] < 0 || Math.ceil(xy2[1]) >= image.length) {
+                        //TODO: consider alternatives
+                        continue;
+                    }
+                    // method expecting col major data so reverse the coords:
+                    v2 = imageProcessor.biLinearInterpolation(image, xy2[1], xy2[0]);
+
+                    diff = v2 - getBoundaryCorrectedValue(template, xy[1], xy[0]);
+
+                    errSSD += diff * diff;
+
+                    for (int k = 0; k < outPSums[pIdx].length; ++k) {
+                        outPSums[pIdx][k] += (diff * pS[k]);
+                    }
+                }
+            } // end loop over patch
+        }
+
+        errSSD /= nPatches;
+        errSSD = Math.sqrt(errSSD);
+
+        Result result = new Result();
+        result.pSums = outPSums;
+        result.ssd = errSSD;
+        return result;
+    }
+
     private static double[][] inverseWParam2DTrans(double[] deltaP) throws NotConvergedException {
         //TODO: write out the determinant and cofactor terms here
         return new double[][]{
@@ -669,32 +1026,42 @@ public class Alignment {
         }
     }
 
-    private static void updateWarp2DAffIC(double[][] warp, double[] deltaP) throws NotConvergedException {
+    private static void updateWarp2DAffFC(double[][] warp, double[] deltaP) throws NotConvergedException {
 
-        // for affine, found a different estimate for the update in Bouguet
-        // "
+        // for affine, Bouguet uses forward composition:
+        // instead of composition w = w * w(delta)^-1 it is w = w * w(delta).
 
         //double[][] params = inverseWParam2DAff(deltaP); //[3X3]
-
-        // the 3D affine needs this:  (the +1 and -1 from warp[0][0], warp[1][1] are from Baker Matthews example code
-        //  which is in matlab
-        warp[0][0] += 1;
-        warp[1][1] += 1;
-
-        double[][] _params = new double[][]{
+        double[][] params = new double[][]{
                 {1+deltaP[0], deltaP[2], deltaP[4]},
                 {deltaP[1], 1+deltaP[3], deltaP[5]},
                 {0, 0, 1}
         };
-        double[][] tmp = MatrixUtil.multiply(warp, _params);
 
-        //double[][] tmp = MatrixUtil.multiply(warp, params);
+        double[][] tmp = MatrixUtil.multiply(warp, params);
+
         for (int i = 0; i < warp.length; ++i) {
             System.arraycopy(tmp[i], 0, warp[i], 0, tmp[i].length);
         }
+    }
+    private static void updateWarp2DAffIC(double[][] warp, double[] deltaP) throws NotConvergedException {
 
-        warp[0][0] -= 1;
-        warp[1][1] -= 1;
+        //double[][] params = inverseWParam2DAff(deltaP); //[3X3]
+        double[][] params = new double[][]{
+                {1+deltaP[0], deltaP[2], deltaP[4]},
+                {deltaP[1], 1+deltaP[3], deltaP[5]},
+                {0, 0, 1}
+        };
+        double[][] invParams = MatrixUtil.inverse(params);
+
+        if (Double.isNaN(invParams[0][0])) {
+            invParams = MatrixUtil.pseudoinverseRankDeficient(params);
+        }
+        double[][] tmp = MatrixUtil.multiply(warp, invParams);
+
+        for (int i = 0; i < warp.length; ++i) {
+            System.arraycopy(tmp[i], 0, warp[i], 0, tmp[i].length);
+        }
     }
 
     private static boolean areTheSame(double[][] a, double[][] b, double tol) {
@@ -715,5 +1082,28 @@ public class Alignment {
     }
 
 
+    /*
+    representation of a 2-dimensional point as 1 index:
+    idx = row*width + col
+    col = idx % width
+    row = idx / width
+     */
+    private static void idxToRowCol(int idx, int imgWidth, int[] out) {
+        out[0] = idx / imgWidth;
+        out[1] = idx % imgWidth;
+    }
+
+    private static int rowColToIdx(int row, int col, int imgWidth) {
+        return row * imgWidth + col;
+    }
+
+    private static int[] makeReverseLookupArray(int[][] yx, int imgWidth) {
+        int nP = yx.length;
+        int[] out = new int[nP];
+        for (int i = 0; i < nP; ++i) {
+            out[i] = rowColToIdx(yx[i][0], yx[i][1], imgWidth);
+        }
+        return out;
+    }
 
 }
