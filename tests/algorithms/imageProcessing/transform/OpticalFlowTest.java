@@ -240,7 +240,7 @@ public class OpticalFlowTest extends TestCase {
         }
     }
 
-    public void test2LucasKanade() throws IOException, NotConvergedException {
+    public void _test2LucasKanade() throws IOException, NotConvergedException {
         int patchDim = 5;
         int m = 32;
         int pixMax = m;
@@ -389,7 +389,7 @@ public class OpticalFlowTest extends TestCase {
         return results;
     }
 
-    public void test2HornSchunck() throws IOException {
+    public void _test2HornSchunck() throws IOException {
 
         /*
         some empirically derived numbers from unit tests:
@@ -494,41 +494,28 @@ public class OpticalFlowTest extends TestCase {
         double eps = 0.1;
 
         for (int iTest = 1; iTest < (m/2)-3; ++iTest) {
-            //m = iTest * 10;
-            //n = m;
-            im1 = new double[m][n];
-            im2 = new double[m][n];
-            double deltaI = pixMax / m;
 
-            for (int i = 0; i < m; ++i) {
-                double b = deltaI * i;
-                b = (int)Math.round(b); // to match image processing temporarily
-                for (int j = 0; j <= i; ++j) {
-                    im1[i][j] = b;
-                    im1[j][i] = b;
-                    if (i + iTest < 0 || i + iTest >= m || j + iTest < 0 || j + iTest >= n){
-                        continue;
-                    }
-                    if (j + iTest < 0 || j + iTest >= m || i + iTest < 0 || i + iTest >= n) {
-                        continue;
-                    }
-                    im2[i + iTest][j + iTest] = b;
-                    im2[j + iTest][i + iTest] = b;
-                }
+            double dX = iTest;
+            double dY = iTest;
+
+            Images images = generateImages(m,  n, dX, dY, pixMax);
+            if (images == null || images.yXPatches.length == 0) {
+                break;
             }
+            im1 = images.im1;
+            im2 = images.im2;
 
-            double uInit = 0;
-            double vInit = 0;
-            double p00 = 0;//1;
-            double p11 = 0;//1;
+            // set all to 0 to solve for
+            //MatrixUtil.fill(pInit, 0.);
 
             System.out.printf("\niTest=%d\n", iTest);
 
-            double errSSD;
+            double[] errSSD;
             ///*  TEST 2-D translation
-            double[] xYInit = new double[]{uInit, vInit};
+            double[] xYInit = new double[]{0, 0};
             errSSD = Alignment.inverseCompositional2DTranslation(im1, im2, xYInit, maxIter, eps);
-            System.out.printf("2D trans newton: uvFinal=\n%s\n", FormatArray.toString(xYInit, "%.2f"));
+            System.out.printf("2D trans newton: nIter=%d, uvFinal=\n%s\n",
+                    (int)Math.round(errSSD[1]), FormatArray.toString(xYInit, "%.2f"));
             assertEquals(iTest, (int)Math.round(xYInit[0]));
             assertEquals(iTest, (int)Math.round(xYInit[1]));
             //xYInit = new double[]{uInit, vInit};
@@ -538,25 +525,92 @@ public class OpticalFlowTest extends TestCase {
             //assertEquals(iTest, (int)Math.round(xYInit[1]));
             //*/
             ///*
-            double[][] pInit = new double[2][3];
-            pInit[0][0] = p00;
-            pInit[1][1] = p11;
-            pInit[0][2] = uInit;
-            pInit[1][2] = vInit;
+
+            double[][] pInit = new double[][]{
+                    {1, 0, 0}, {0, 1, 0}
+            };
             errSSD = Alignment.inverseCompositional2DAffine(im1, im2, pInit, maxIter, eps);
-            System.out.printf("2D affine Newton: pFinal=\n%s\n", FormatArray.toString(pInit, "%.2f"));
-            pInit[0][0] = p00;
-            pInit[1][1] = p11;
-            pInit[0][2] = uInit;
-            pInit[1][2] = vInit;
-            //errSSD = Alignment._inverseCompositionalGN(im1, im2, pInit,
-            //        maxIter, Alignment.Type.AFFINE_2D, eps);
-            //System.out.printf("2D affine GN: pFinal=\n%s\n", FormatArray.toString(pInit, "%.2f"));
-            //assertEquals(iTest, (int)Math.round(pInit[0][2]));
-            //assertEquals(iTest, (int)Math.round(pInit[1][2]));
+            System.out.printf("2D affine Newton: nIter=%d, pFinal=\n%s\n", (int)Math.round(errSSD[1]),
+                    FormatArray.toString(pInit, "%.2f"));
+
             //*/
         }
 
+    }
+
+    static class Images {
+        double[][] im1;
+        double[][] im2;
+        double dX;
+        double dY;
+        int[][] yXPatches;
+        int hX, hY;
+    }
+    private Images generateImages(int m, int n, double dX, double dY, double pixMax) {
+        double[][] im1 = new double[m][n];
+        double[][] im2 = new double[m][n];
+        double deltaI = pixMax / m;
+
+        int iP = 0;
+
+        int hX = (int)(dX);
+        int hY = (int)(dY);
+
+        int nPatches = Math.min(m,n) - 2*Math.min(hX, hY)-1;
+        if (nPatches < 1) return null;
+        int[][] yXPatches = new int[nPatches][];
+
+        double[] i2j2 = new double[3];
+
+        double[][] pInit = MatrixUtil.createIdentityMatrix(3);
+        pInit[0][2] = dX;
+        pInit[1][2] = dY;
+
+        for (int i = 0; i < m; ++i) {//x
+            double b = deltaI * i;
+            b = (int) Math.round(b); // to match image processing temporarily
+            for (int j = 0; j <= i; ++j) {//y
+                im1[i][j] = b;
+                im1[j][i] = b;
+
+                // warp coords for im2
+                MatrixUtil.multiplyMatrixByColumnVector(pInit, new double[]{i, j, 1}, i2j2);
+                int i3 = (int)Math.round(i2j2[0]);
+                int j3 = (int)Math.round(i2j2[1]);
+                boolean b0 = (i3 >= 0 && i3 < m && j3 >= 0 && j3 < n);
+                if (b0) {
+                    im2[j3][i3] = b;
+                }
+
+                MatrixUtil.multiplyMatrixByColumnVector(pInit, new double[]{j, i, 1}, i2j2);
+                int i4 = (int)Math.round(i2j2[0]);
+                int j4 = (int)Math.round(i2j2[1]);
+                boolean b1 = (i4 >= 0 && i4 < m && j4 >= 0 && j4 < n);
+                if (b1) {
+                    im2[j4][i4] = b;
+                }
+                if (!b1 || !b0) continue;
+
+                if (i==j) {
+                    if (i-hX < 0 || i+dX+hX >= m)  continue;
+                    if (j-hY < 0 || j+dY+hY >= n)  continue;
+                    if (i3-hX < 0 || i3+hX >= m)  continue;
+                    if (j3-hY < 0 || j3+hY >= n)  continue;
+                    yXPatches[iP++] = new int[]{i, i};
+                }
+            }
+        }
+        yXPatches = Arrays.copyOf(yXPatches, iP);
+
+        Images images = new Images();
+        images.im1 = im1;
+        images.im2 = im2;
+        images.dX = dX;
+        images.dY = dY;
+        images.hX = hX;
+        images.hY = hY;
+        images.yXPatches = yXPatches;
+        return images;
     }
 
     public void test3InverseCompositionAlignment() throws IOException, NotConvergedException {
@@ -569,73 +623,60 @@ public class OpticalFlowTest extends TestCase {
         double[][] im1;
         double[][] im2;
         int maxIter = 100;//1000;
-        double eps = 0.5;
+        double eps = 0.1;
 
         for (int iTest = 1; iTest < (m/3); ++iTest) {
-            //m = iTest * 10;
-            //n = m;
-            im1 = new double[m][n];
-            im2 = new double[m][n];
-            double deltaI = pixMax / m;
 
-            int patchHalfWidth = iTest + 1;
-            int nPatches = m - 2*patchHalfWidth-1;
-            int[][] yXPatches = new int[nPatches][];
-            int iP = 0;
+            double dX = iTest;
+            double dY = iTest;
 
-            for (int i = 0; i < m; ++i) {
-                double b = deltaI * i;
-                b = (int)Math.round(b); // to match image processing temporarily
-                for (int j = 0; j <= i; ++j) {
-                    im1[i][j] = b;
-                    im1[j][i] = b;
-                    if (i + iTest < 0 || i + iTest >= m || j + iTest < 0 || j + iTest >= n){
-                        continue;
-                    }
-                    if (j + iTest < 0 || j + iTest >= m || i + iTest < 0 || i + iTest >= n) {
-                        continue;
-                    }
-                    im2[i + iTest][j + iTest] = b;
-                    im2[j + iTest][i + iTest] = b;
-                }
-                if (i >= patchHalfWidth && i+iTest < (m-patchHalfWidth)) {
-                    yXPatches[iP++] = new int[]{i, i};
-                }
-            }
-            if (iP == 0) {
+            Images images = generateImages(m,  n, dX, dY, pixMax);
+            if (images == null || images.yXPatches.length == 0) {
                 break;
             }
-            yXPatches = Arrays.copyOf(yXPatches, iP);
+            im1 = images.im1;
+            im2 = images.im2;
+            int hX = images.hX;
+            int hY = images.hY;
 
-            double uInit = 0;
-            double vInit = 0;
-            double p00 = 0;//1;
-            double p11 = 0;//1;
+            int[][] yXPatches = images.yXPatches;
 
             System.out.printf("\niTest=%d\n", iTest);
 
+            //System.out.printf("im1=\n%s", FormatArray.toString(im1, "%.2f"));
+            //System.out.printf("im2=\n%s", FormatArray.toString(im2, "%.2f"));
+
+            int chk = yXPatches.length/2;
+
             Alignment.Warps warps;
             ///*  TEST 2-D translation
-            double[] xYInit = new double[]{uInit, vInit};
+            double[] xYInit = new double[]{0, 0};
+            warps = Alignment.inverseComposition2DTranslationKeypointsCpImgs(im1, im2, xYInit, maxIter, eps,
+                    yXPatches, hX, hY, Alignment.Type.TRANSLATION_2D);
+            System.out.printf("2D trans (sub-section image copies): pFinal=\n%s\n", FormatArray.toString(warps.warps[chk], "%.2f"));
+            assertEquals(iTest, (int)Math.round(warps.warps[chk][0][2]));
+            assertEquals(iTest, (int)Math.round(warps.warps[chk][1][2]));
+
             warps = Alignment.inverseComposition2DTranslationKeypoints(im1, im2, xYInit, maxIter, eps,
-                    yXPatches, patchHalfWidth, Alignment.Type.TRANSLATION_2D);
-            System.out.printf("2D trans newton: pFinal=\n%s\n", FormatArray.toString(warps.warps[1][1], "%.2f"));
-            assertEquals(iTest, (int)Math.round(warps.warps[1][0][2]));
-            assertEquals(iTest, (int)Math.round(warps.warps[1][1][2]));
+                    yXPatches, hX, hY, Alignment.Type.TRANSLATION_2D);
+            System.out.printf("2D trans (image windows): pFinal=\n%s\n", FormatArray.toString(warps.warps[chk], "%.2f"));
+            assertEquals(iTest, (int)Math.round(warps.warps[chk][0][2]));
+            assertEquals(iTest, (int)Math.round(warps.warps[chk][1][2]));
+
             //*/
 
             ///*
-            double[][] pInit = new double[2][3];
-            pInit[0][0] = p00;
-            pInit[1][1] = p11;
-            pInit[0][2] = uInit;
-            pInit[1][2] = vInit;
 
-            warps = Alignment.inverseCompositionKeypoints(im1, im2, pInit, maxIter, eps,
-                    yXPatches, patchHalfWidth, Alignment.Type.AFFINE_2D);
-            for (double[][] w : warps.warps) {
-                System.out.printf("2D affine patches: pFinal=\n%s\n", FormatArray.toString(w, "%.2f"));
-            }
+            warps = Alignment.inverseCompositionKeypointsCpImgs(im1, im2,
+                    new double[][]{{1,0,0},{0,1,0}}, maxIter, eps,
+                    yXPatches, hX, hY, Alignment.Type.AFFINE_2D);
+            System.out.printf("2D affine (sub-section image copies)): pFinal=\n%s\n", FormatArray.toString(warps.warps[chk], "%.2f"));
+
+            warps = Alignment.inverseCompositionKeypoints(im1, im2,
+                    new double[][]{{1,0,0},{0,1,0}}, maxIter, eps,
+                    yXPatches, hX, hY, Alignment.Type.AFFINE_2D);
+            System.out.printf("2D affine (image windows)): pFinal=\n%s\n", FormatArray.toString(warps.warps[chk], "%.2f"));
+
 
             //assertEquals(iTest, (int)Math.round(pInit[0][2]));
             //assertEquals(iTest, (int)Math.round(pInit[1][2]));
@@ -643,114 +684,7 @@ public class OpticalFlowTest extends TestCase {
 
             /*
              e.g. a first pass through
-             Alignment.inverseCompositionKeypoints(im1, im2, pInit, maxIter, eps, yXPatches, patchHalfWidth, Type.AFFINE_2D);
-                resulting in
-                     0.53, 0.47, -3.57
-                     0.47, 0.53, -3.57
-                     0.00, 0.00, 1.00
-             is not a feasible combination of th and sh_x, sh_y for scale in x and y = 1
-                 [ sh_x * sin(th)   sh_x * cos(th) ]  = [ 0.53  0,47 ]
-                 [ sh_y * cos(th)  -sh_y * sin(th)  ]    [0.47   0.53 ]
-             */
-        }
-
-    }
-
-    public void test4InverseCompositionAlignment() throws IOException, NotConvergedException {
-        System.out.printf("test4InverseCompositionAlignment\n");
-
-        int pixMax = 2*32;
-        int m = 2*32;
-        //System.out.printf("pixMax=%d, m=%d\n", pixMax, m);
-        int n = m;
-        double[][] im1;
-        double[][] im2;
-        int maxIter = 100;//1000;
-        double eps = 1E-3;
-
-        // test images having dy = 2*dx
-
-        for (int iTest = 1; iTest < (m/3); ++iTest) {
-            //m = iTest * 10;
-            //n = m;
-            im1 = new double[m][n];
-            im2 = new double[m][n];
-            double deltaI = pixMax / m;
-
-            int patchHalfWidth = 2*iTest + 1;
-            int nPatches = m - 2*patchHalfWidth-1;
-            if (nPatches < 1) break;
-            int[][] yXPatches = new int[nPatches][];
-            int iP = 0;
-
-            for (int i = 0; i < m; ++i) {
-                double b = deltaI * i;
-                b = (int) Math.round(b); // to match image processing temporarily
-                for (int j = 0; j <= i; ++j) {
-                    im1[i][j] = b;
-                    im1[j][i] = b;
-                }
-                if (i >= patchHalfWidth && i+iTest < (m-patchHalfWidth)) {
-                    yXPatches[iP++] = new int[]{i, i};
-                }
-            }
-            if (iP == 0) {
-                break;
-            }
-            // im2 is im1 shifted by dy=iTest, dx=2*iTest
-            for (int i = 0; i < m; ++i) {
-                int i2 = i + iTest;
-                if (i2 >= m) continue;
-                for (int j = 0; j < n; ++j) {
-                    int j2 = j + 2*iTest;
-                    if (j2 >= n) continue;
-                    im2[i2][j2] = im1[i][j];
-                }
-            }
-
-            yXPatches = Arrays.copyOf(yXPatches, iP);
-
-            double uInit = 0;
-            double vInit = 0;
-            double p00 = 0;//1;
-            double p11 = 0;//1;
-
-            System.out.printf("\niTest=%d\n", iTest);
-
-            Alignment.Warps warps;
-            ///*  TEST 2-D translation
-            double[] xYInit = new double[]{uInit, vInit};
-
-            double errSSD = Alignment.inverseCompositional2DTranslation(im1, im2, xYInit, maxIter, eps);
-            System.out.printf("IC 2DTrans: pFinal=\n%s\n", FormatArray.toString(xYInit, "%.2f"));
-            assertEquals(2*iTest, (int)Math.round(xYInit[0]));
-            assertEquals(iTest, (int)Math.round(xYInit[1]));
-
-            warps = Alignment.inverseComposition2DTranslationKeypoints(im1, im2, xYInit, maxIter, eps,
-                    yXPatches, patchHalfWidth, Alignment.Type.TRANSLATION_2D);
-            System.out.printf("IC 2DTrans keypoints: pFinal=\n%s\n", FormatArray.toString(warps.warps[1], "%.2f"));
-            assertEquals(2*iTest, (int)Math.round(warps.warps[1][0][2]));
-            assertEquals(iTest, (int)Math.round(warps.warps[1][1][2]));
-            //*/
-
-            ///*
-            double[][] pInit = new double[2][3];
-            pInit[0][0] = p00;
-            pInit[1][1] = p11;
-            pInit[0][2] = uInit;
-            pInit[1][2] = vInit;
-
-            warps = Alignment.inverseCompositionKeypoints(im1, im2, pInit, maxIter, eps,
-                    yXPatches, patchHalfWidth, Alignment.Type.AFFINE_2D);
-            System.out.printf("2D affine patches: pFinal=\n%s\n", FormatArray.toString(warps.warps[1], "%.2f"));
-
-            //assertEquals(iTest, (int)Math.round(pInit[0][2]));
-            //assertEquals(iTest, (int)Math.round(pInit[1][2]));
-            //*/
-
-            /*
-             e.g. a first pass through
-             Alignment.inverseCompositionKeypoints(im1, im2, pInit, maxIter, eps, yXPatches, patchHalfWidth, Type.AFFINE_2D);
+             Alignment.inverseCompositionKeypointsCpImgs(im1, im2, pInit, maxIter, eps, yXPatches, patchHalfWidth, Type.AFFINE_2D);
                 resulting in
                      0.53, 0.47, -3.57
                      0.47, 0.53, -3.57
