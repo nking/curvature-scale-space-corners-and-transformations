@@ -75,7 +75,7 @@ public class Reconstruction {
     // line rewritten in homogeneous coordinatrs is x_vec^T * ell.
     
     // general conic in 3 dimensions is a*x^2 + b*x*y + c*y^2 + d*x*z + e*y*z + f*z^2 = 0.
-    //     rewritten using 2D homogenouse coords, quadratice form: x_vec^T * C * x_vec = 0
+    //     rewritten using 2D homogeneous coords, quadratic form: x_vec^T * C * x_vec = 0
     //                  [a   b/2   d/2 ]
     //        where C = [b/2   c   c/2 ]
     //                  [d/2 c/2     f ]
@@ -85,7 +85,7 @@ public class Reconstruction {
     //               A * c = 0
     //        c = SVD(A).V^T[n-1], the eigenvector assoc w/ smallest eigenvalue.
     
-    Parallel lines lines intersect in points at infinity (also known as ideal points) 
+    Parallel lines intersect in points at infinity (also known as ideal points)
     and these points have the form (x, y, 0)^⊤
     the set of ideal points (i.e., points at infinity) is the set of points 
     where parallel lines intersect.
