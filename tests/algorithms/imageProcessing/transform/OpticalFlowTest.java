@@ -240,7 +240,7 @@ public class OpticalFlowTest extends TestCase {
         }
     }
 
-    public void _test2LucasKanade() throws IOException, NotConvergedException {
+    public void test2LucasKanade() throws IOException, NotConvergedException {
         int patchDim = 5;
         int m = 32;
         int pixMax = m;
@@ -389,7 +389,7 @@ public class OpticalFlowTest extends TestCase {
         return results;
     }
 
-    public void _test2HornSchunck() throws IOException {
+    public void test2HornSchunck() throws IOException {
 
         /*
         some empirically derived numbers from unit tests:
