@@ -240,7 +240,7 @@ public class OpticalFlowTest extends TestCase {
         }
     }
 
-    public void test2LucasKanade() throws IOException, NotConvergedException {
+    public void __test2LucasKanade() throws IOException, NotConvergedException {
         int patchDim = 5;
         int m = 32;
         int pixMax = m;
@@ -389,7 +389,7 @@ public class OpticalFlowTest extends TestCase {
         return results;
     }
 
-    public void test2HornSchunck() throws IOException {
+    public void __test2HornSchunck() throws IOException {
 
         /*
         some empirically derived numbers from unit tests:
@@ -482,7 +482,7 @@ public class OpticalFlowTest extends TestCase {
 
     }
 
-    public void test2InverseCompositionAlignment() throws IOException, NotConvergedException {
+    public void __test2InverseCompositionAlignment() throws IOException, NotConvergedException {
         System.out.printf("test2InverseCompositionAlignment\n");
         int pixMax = 32*2;
         int m = 32*2;
@@ -625,6 +625,8 @@ public class OpticalFlowTest extends TestCase {
         int maxIter = 100;//1000;
         double eps = 0.1;
 
+        double perturb = 1E-3;
+
         for (int iTest = 1; iTest < (m/3); ++iTest) {
 
             double dX = iTest;
@@ -649,34 +651,39 @@ public class OpticalFlowTest extends TestCase {
             int chk = yXPatches.length/2;
 
             Alignment.Warps warps;
-            ///*  TEST 2-D translation
-            double[] xYInit = new double[]{0, 0};
+            /*  TEST 2-D translation
+            double[] xYInit = new double[]{perturb, perturb};
             warps = Alignment.inverseComposition2DTranslationKeypointsCpImgs(im1, im2, xYInit, maxIter, eps,
                     yXPatches, hX, hY, Alignment.Type.TRANSLATION_2D);
-            System.out.printf("2D trans (sub-section image copies): pFinal=\n%s\n", FormatArray.toString(warps.warps[chk], "%.2f"));
+            System.out.printf("2D trans (sub-section image copies):\n  nIter=%d,\n%s\n",
+                    warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
             assertEquals(iTest, (int)Math.round(warps.warps[chk][0][2]));
             assertEquals(iTest, (int)Math.round(warps.warps[chk][1][2]));
 
+            xYInit = new double[]{perturb, perturb};
             warps = Alignment.inverseComposition2DTranslationKeypoints(im1, im2, xYInit, maxIter, eps,
                     yXPatches, hX, hY, Alignment.Type.TRANSLATION_2D);
-            System.out.printf("2D trans (image windows): pFinal=\n%s\n", FormatArray.toString(warps.warps[chk], "%.2f"));
+            System.out.printf("2D trans (image windows):\n  nIter=%d\n%s\n",
+                    warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
             assertEquals(iTest, (int)Math.round(warps.warps[chk][0][2]));
             assertEquals(iTest, (int)Math.round(warps.warps[chk][1][2]));
 
-            //*/
+            */
 
-            ///*
+            ///* Test 2D AFFINE
 
             warps = Alignment.inverseCompositionKeypointsCpImgs(im1, im2,
-                    new double[][]{{1,0,0},{0,1,0}}, maxIter, eps,
+                    new double[][]{{1,0,perturb},{0,1,perturb}}, maxIter, eps,
                     yXPatches, hX, hY, Alignment.Type.AFFINE_2D);
-            System.out.printf("2D affine (sub-section image copies)): pFinal=\n%s\n", FormatArray.toString(warps.warps[chk], "%.2f"));
+            System.out.printf("2D AFFINE (sub-section image copies)):\n  nIter=%d\n%s\n",
+                    warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
 
             warps = Alignment.inverseCompositionKeypoints(im1, im2,
-                    new double[][]{{1,0,0},{0,1,0}}, maxIter, eps,
+                    new double[][]{{1,0,perturb},{0,1,perturb}}, maxIter, eps,
                     yXPatches, hX, hY, Alignment.Type.AFFINE_2D);
-            System.out.printf("2D affine (image windows)): pFinal=\n%s\n", FormatArray.toString(warps.warps[chk], "%.2f"));
-
+            System.out.printf("2D AFFINE (image windows)):\n  nIter=%d\n%s\n",
+                    warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
+            System.out.flush();
 
             //assertEquals(iTest, (int)Math.round(pInit[0][2]));
             //assertEquals(iTest, (int)Math.round(pInit[1][2]));

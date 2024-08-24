@@ -199,6 +199,7 @@ public class Alignment {
         if (type.equals(Type.AFFINE_2D)) {
             //[ntX*nTY X 6]
             dTdWdp = createSteepestDescentImagesAffine2D(gTX, gTY);
+            int COMPARE1 = 2;
         } else if (type.equals(Type.TRANSLATION_2D)) {
             //[ntX*nTY X 2]
             dTdWdp = createSteepestDescentImageTranslation2D(gTX, gTY);
@@ -250,6 +251,8 @@ public class Alignment {
 
             // (1),(2),(7): warp I and subtract from T, then mult by steepest descent image, summing over all x
             nPAndErr = sumSteepestDescErrImageProduct(image, template, warp, dTdWdp, pSum, type);
+
+            int COMPARE1 = 2;
 
             // compute deltaP as invHessianTmplt * pSum = [6 X 6] * [6 X 1] or [2X2]*[2X1]
             MatrixUtil.multiplyMatrixByColumnVector(invHessianTmplt, pSum, deltaP);
@@ -335,6 +338,7 @@ public class Alignment {
         if (type.equals(Type.AFFINE_2D)) {
             //[ntX*nTY X 6]
             dTdWdp = createSteepestDescentImagesAffine2D(gTX, gTY, x-hX, x+hX, y-hY, y+hY);
+            int COMPARE2 = 2;
         } else if (type.equals(Type.TRANSLATION_2D)) {
             //[ntX*nTY X 2]
             dTdWdp = createSteepestDescentImageTranslation2D(gTX, gTY, x-hX, x+hX, y-hY, y+hY);
@@ -386,6 +390,8 @@ public class Alignment {
 
             // (1),(2),(7): warp I and subtract from T, then mult by steepest descent image, summing over all x
             nPAndErr = sumSteepestDescErrImageProduct(image, template, warp, dTdWdp, pSum, type, x-hX, x+hX, y-hY, y+hY);
+
+            int COMPARE2 = 2;
 
             // compute deltaP as invHessianTmplt * pSum = [6 X 6] * [6 X 1] or [2X2]*[2X1]
             MatrixUtil.multiplyMatrixByColumnVector(invHessianTmplt, pSum, deltaP);
@@ -513,21 +519,17 @@ public class Alignment {
         warps.warps = new double[nKeypoints][][];
         double ssd = 0;
         int y, x;
-        int iR, fR, iC, fC;
+        int maxOfNIters = 0;
         for (int i = 0; i < yXKeypoints.length; ++i) {
             y = yXKeypoints[i][0];
             x = yXKeypoints[i][1];
 
-            iR = y - hY;
-            fR = y + hY;
-            iC = x - hX;
-            fC = x + hX;
-
-            double[][] tImg = MatrixUtil.copySubMatrix(template, iR, fR, iC, fC);
-            double[][] iImg = MatrixUtil.copySubMatrix(image, iR, fR, iC, fC);
+            double[][] tImg = MatrixUtil.copySubMatrix(template, y - hY, y + hY, x - hX, x + hX);
+            double[][] iImg = MatrixUtil.copySubMatrix(image, y - hY, y + hY, x - hX, x + hX);
 
             double[][] _pInit = MatrixUtil.copy(pInit);
             double[] errSSD = Alignment.inverseCompositional(tImg, iImg, _pInit, maxIter, type, eps);
+            maxOfNIters = (int)Math.max(maxOfNIters, Math.round(errSSD[1]));
 
             warps.warps[i] = MatrixUtil.copy(_pInit);
 
@@ -536,6 +538,7 @@ public class Alignment {
         }
 
         warps.ssd = ssd;
+        warps.nIterMax = maxOfNIters;
         return warps;
     }
 
@@ -580,12 +583,15 @@ public class Alignment {
         warps.warps = new double[nKeypoints][][];
         double ssd = 0;
         int y, x;
+        int maxOfNIters = 0;
         for (int i = 0; i < yXKeypoints.length; ++i) {
             y = yXKeypoints[i][0];
             x = yXKeypoints[i][1];
 
             double[][] _pInit = MatrixUtil.copy(pInit);
             double[] errSSD = Alignment.inverseCompositional(template, image, x, y, hX, hY, _pInit, maxIter, type, eps);
+
+            maxOfNIters = (int)Math.max(maxOfNIters, Math.round(errSSD[1]));
 
             warps.warps[i] = MatrixUtil.copy(_pInit);
 
@@ -594,6 +600,7 @@ public class Alignment {
         }
 
         warps.ssd = ssd;
+        warps.nIterMax = maxOfNIters;
         return warps;
     }
 
@@ -603,6 +610,7 @@ public class Alignment {
     }
 
     protected static class Warps {
+        public int nIterMax;
         double[][][] warps;
         double ssd;
     }
@@ -650,11 +658,11 @@ public class Alignment {
                 tmp1[0][0] = gTX[y][x];
                 tmp1[0][1] = gTY[y][x];
 
-                tmp2[0][0] = x;
-                tmp2[0][2] = y;
+                tmp2[0][0] = x - beginX;
+                tmp2[0][2] = y - beginY;
                 tmp2[0][4] = 1;
-                tmp2[1][1] = x;
-                tmp2[1][3] = y;
+                tmp2[1][1] = x - beginX;
+                tmp2[1][3] = y - beginY;
                 tmp2[1][5] = 1;
 
                 //[1X6]
