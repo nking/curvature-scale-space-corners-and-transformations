@@ -7,6 +7,7 @@ import no.uib.cipr.matrix.NotConvergedException;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * various 2D alignment methods.
@@ -189,9 +190,18 @@ public class Alignment {
         //======  precompute  =======
 
         // gradients of T:   each is [nTR X nTC]
+        /*
         StructureTensorD gT = new StructureTensorD(template, 1, false);
         double[][] gTX = gT.getDY();
         double[][] gTY = gT.getDX();
+         */
+        ImageProcessor imageProcessor = new ImageProcessor();
+        double[][] gTX = MatrixUtil.copy(template);
+        double[][] gTY = MatrixUtil.copy(template);
+        // {0, -1, 1} should match the paper diff in method sumSteepestDescErrImageProduct if change back to it
+        imageProcessor.applyKernel1D(gTX, new double[]{0, 1, -1}, false);
+        imageProcessor.applyKernel1D(gTY, new double[]{0, 1, -1}, true);
+
 
         // ==== create the steepest decent image of the template ====
         //steepest descent img = gradient * dWdP
@@ -328,9 +338,17 @@ public class Alignment {
         //======  precompute  =======
 
         // gradients of T:   each is [nTR X nTC]
+        /*
         StructureTensorD gT = new StructureTensorD(template, 1, false);
         double[][] gTX = gT.getDY();
         double[][] gTY = gT.getDX();
+         */
+        ImageProcessor imageProcessor = new ImageProcessor();
+        double[][] gTX = MatrixUtil.copy(template);
+        double[][] gTY = MatrixUtil.copy(template);
+        // {0, -1, 1} should match the paper diff in method sumSteepestDescErrImageProduct if change back to it
+        imageProcessor.applyKernel1D(gTX, new double[]{0, 1, -1}, false);
+        imageProcessor.applyKernel1D(gTY, new double[]{0, 1, -1}, true);
 
         // ==== create the steepest decent image of the template ====
         //steepest descent img = gradient * dWdP
@@ -792,7 +810,11 @@ public class Alignment {
                 xy[1] = y;
                 xy2 = MatrixUtil.multiplyMatrixByColumnVector(warp, xy);
 
-                if (xy2[0] < 0 || Math.ceil(xy2[0]) >= image[0].length || xy2[1] < 0 || Math.ceil(xy2[1]) >= image.length) {
+                // roundoff
+                xy2[0] = Math.round(xy2[0] * 1E2)/1E2;
+                xy2[1] = Math.round(xy2[1] * 1E2)/1E2;
+
+                if (xy2[0] < beginX || Math.ceil(xy2[0]) > endX || xy2[1] < beginY || Math.ceil(xy2[1]) > endY) {
                     continue;
                 }
                 // method expecting col major data so reverse the coords:

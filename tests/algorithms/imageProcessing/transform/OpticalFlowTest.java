@@ -6,6 +6,7 @@ import algorithms.imageProcessing.features.orb.ORB;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.*;
 import algorithms.sort.MiscSorter;
+import algorithms.statistics.Standardization;
 import algorithms.util.FormatArray;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
@@ -555,6 +556,12 @@ public class OpticalFlowTest extends TestCase {
 
         int hX = (int)(dX);
         int hY = (int)(dY);
+        if (hX < 2) {
+            hX = 2;
+        }
+        if (hY < 2) {
+            hY = 2;
+        }
 
         int nPatches = Math.min(m,n) - 2*Math.min(hX, hY)-1;
         if (nPatches < 1) return null;
@@ -579,7 +586,7 @@ public class OpticalFlowTest extends TestCase {
                 int j3 = (int)Math.round(i2j2[1]);
                 boolean b0 = (i3 >= 0 && i3 < m && j3 >= 0 && j3 < n);
                 if (b0) {
-                    im2[j3][i3] = b;
+                    im2[i3][j3] = b;
                 }
 
                 MatrixUtil.multiplyMatrixByColumnVector(pInit, new double[]{j, i, 1}, i2j2);
@@ -587,20 +594,105 @@ public class OpticalFlowTest extends TestCase {
                 int j4 = (int)Math.round(i2j2[1]);
                 boolean b1 = (i4 >= 0 && i4 < m && j4 >= 0 && j4 < n);
                 if (b1) {
-                    im2[j4][i4] = b;
+                    im2[i4][j4] = b;
                 }
                 if (!b1 || !b0) continue;
 
                 if (i==j) {
-                    if (i-hX < 0 || i+dX+hX >= m)  continue;
-                    if (j-hY < 0 || j+dY+hY >= n)  continue;
-                    if (i3-hX < 0 || i3+hX >= m)  continue;
-                    if (j3-hY < 0 || j3+hY >= n)  continue;
+                    if (i - hY < 0 || i + dY + hX >= m) continue;
+                    if (j - hX < 0 || j + dX + hX >= n) continue;
+                    if (i3 - hY < 0 || i3 + hY >= m) continue;
+                    if (j3 - hX < 0 || j3 + hX >= n) continue;
                     yXPatches[iP++] = new int[]{i, i};
                 }
             }
         }
         yXPatches = Arrays.copyOf(yXPatches, iP);
+
+        // apply same min max normalization to all images, so learn it from the template:
+        double[] minMax = Standardization.minMaxNormalizeImage(im1);
+        Standardization.minMaxNormalizeImage(im2, minMax[0], minMax[1]);
+
+        Images images = new Images();
+        images.im1 = im1;
+        images.im2 = im2;
+        images.dX = dX;
+        images.dY = dY;
+        images.hX = hX;
+        images.hY = hY;
+        images.yXPatches = yXPatches;
+        return images;
+    }
+
+    private static void fillWithRandom(double[][] im, int minVal, int maxVal, Random rand) {
+        for (int i = 0; i < im.length; ++i) {//x
+            for (int j = 0; j < im[i].length; ++j) {//x
+                im[i][j] = minVal + rand.nextInt(maxVal - minVal);
+            }
+        }
+
+    }
+
+    private Images generateImages2(int m, int n, double dX, double dY, double pixMax) {
+        double[][] im1 = new double[m][n];
+        double[][] im2 = new double[m][n];
+
+        //the first image will be a random pattern, the 2nd will be im1 warped by projection matrix
+
+        long seed = System.nanoTime();
+        System.out.println("seed=" + seed);
+        Random rand = new Random(seed);
+
+        fillWithRandom(im1, 1, 255, rand);
+        fillWithRandom(im2, 1, 255, rand);
+
+        int iP = 0;
+
+        int hX = (int)(dX);
+        int hY = (int)(dY);
+        if (hX < 2) {
+            hX = 2;
+        }
+        if (hY < 2) {
+            hY = 2;
+        }
+
+        int nPatches = Math.min(m,n) - 2*Math.min(hX, hY)-1;
+        if (nPatches < 1) return null;
+        int[][] yXPatches = new int[nPatches][];
+
+        double[] i2j2 = new double[3];
+
+        double[][] pInit = MatrixUtil.createIdentityMatrix(3);
+        pInit[0][2] = dX;
+        pInit[1][2] = dY;
+
+        for (int i = 0; i < m; ++i) {//x
+            for (int j = 0; j < n; ++j) {//x
+
+                // warp coords for im2
+                MatrixUtil.multiplyMatrixByColumnVector(pInit, new double[]{i, j, 1}, i2j2);
+                int i3 = (int)Math.round(i2j2[0]);
+                int j3 = (int)Math.round(i2j2[1]);
+                if (i3 < 0 || i3 >= m || j3 < 0 || j3 >= n) {
+                    continue;
+                }
+                im2[i3][j3] = im1[i][j];
+
+                if (i == j) {
+                    if (i - hY < 0 || i + dY + hX >= m) continue;
+                    if (j - hX < 0 || j + dX + hX >= n) continue;
+                    if (i3 - hY < 0 || i3 + hY >= m) continue;
+                    if (j3 - hX < 0 || j3 + hX >= n) continue;
+                    yXPatches[iP++] = new int[]{i, i};
+                }
+            }
+        }
+        yXPatches = Arrays.copyOf(yXPatches, iP);
+
+        // apply same min max normalization to all images, so learn it from the template:
+        double[] minMax = Standardization.minMaxNormalizeImage(im1);
+        Standardization.minMaxNormalizeImage(im2, minMax[0], minMax[1]);
 
         Images images = new Images();
         images.im1 = im1;
@@ -623,7 +715,7 @@ public class OpticalFlowTest extends TestCase {
         double[][] im1;
         double[][] im2;
         int maxIter = 100;//1000;
-        double eps = 0.1;
+        double eps = 0.01;
 
         double perturb = 1E-3;
 
