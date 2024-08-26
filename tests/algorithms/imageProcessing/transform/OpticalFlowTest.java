@@ -743,7 +743,7 @@ public class OpticalFlowTest extends TestCase {
             int chk = yXPatches.length/2;
 
             Alignment.Warps warps;
-            /*  TEST 2-D translation
+            ///*  TEST 2-D translation
             double[] xYInit = new double[]{perturb, perturb};
             warps = Alignment.inverseComposition2DTranslationKeypointsCpImgs(im1, im2, xYInit, maxIter, eps,
                     yXPatches, hX, hY, Alignment.Type.TRANSLATION_2D);
@@ -760,7 +760,7 @@ public class OpticalFlowTest extends TestCase {
             assertEquals(iTest, (int)Math.round(warps.warps[chk][0][2]));
             assertEquals(iTest, (int)Math.round(warps.warps[chk][1][2]));
 
-            */
+            //*/
 
             ///* Test 2D AFFINE
 

@@ -667,6 +667,9 @@ public class Alignment {
 
         int n = (endX - beginX + 1) * (endY - beginY + 1);
 
+        double xc = (endX - beginX)/2;
+        double yc = (endY - beginY)/2;
+
         double[][] dTdWdp = new double[n][];
         double[][] tmp1 = new double[1][2];
         double[][] tmp2 = new double[2][6];
@@ -676,11 +679,11 @@ public class Alignment {
                 tmp1[0][0] = gTX[y][x];
                 tmp1[0][1] = gTY[y][x];
 
-                tmp2[0][0] = x - beginX;
-                tmp2[0][2] = y - beginY;
+                tmp2[0][0] = x - xc;
+                tmp2[0][2] = y - yc;
                 tmp2[0][4] = 1;
-                tmp2[1][1] = x - beginX;
-                tmp2[1][3] = y - beginY;
+                tmp2[1][1] = x - xc;
+                tmp2[1][3] = y - yc;
                 tmp2[1][5] = 1;
 
                 //[1X6]
