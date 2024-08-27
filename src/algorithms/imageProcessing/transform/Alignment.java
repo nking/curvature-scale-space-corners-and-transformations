@@ -190,18 +190,20 @@ public class Alignment {
         //======  precompute  =======
 
         // gradients of T:   each is [nTR X nTC]
-        /*
+
         StructureTensorD gT = new StructureTensorD(template, 1, false);
         double[][] gTX = gT.getDY();
         double[][] gTY = gT.getDX();
-         */
-        ImageProcessor imageProcessor = new ImageProcessor();
+
+        /*ImageProcessor imageProcessor = new ImageProcessor();
         double[][] gTX = MatrixUtil.copy(template);
         double[][] gTY = MatrixUtil.copy(template);
         // {0, -1, 1} should match the paper diff in method sumSteepestDescErrImageProduct if change back to it
         imageProcessor.applyKernel1D(gTX, new double[]{0, 1, -1}, false);
         imageProcessor.applyKernel1D(gTY, new double[]{0, 1, -1}, true);
-
+        gTX = strictColumnDiff(template);
+        gTY = strictRowDiff(template);
+        */
 
         // ==== create the steepest decent image of the template ====
         //steepest descent img = gradient * dWdP
@@ -542,6 +544,11 @@ public class Alignment {
             y = yXKeypoints[i][0];
             x = yXKeypoints[i][1];
 
+            // exclude out of bounds
+            if (y - hY < 0 || x - hX < 0 || y+hY>= template.length || x+hX >= template[0].length) {
+                throw new IllegalArgumentException("keypoints and their windows need to be within bounds of template image");
+            }
+
             double[][] tImg = MatrixUtil.copySubMatrix(template, y - hY, y + hY, x - hX, x + hX);
             double[][] iImg = MatrixUtil.copySubMatrix(image, y - hY, y + hY, x - hX, x + hX);
 
@@ -871,17 +878,29 @@ public class Alignment {
         }
     }
 
-    private static void update2DAffFCWarp(double[][] warp, double[] deltaP) throws NotConvergedException {
+    private static void update2DAffFCWarp(double[][] warp, double[] deltaP)  {
 
         // for affine, Bouguet uses forward composition:
         // instead of composition w = w * w(delta)^-1 it is w = w * w(delta).
 
-        //double[][] params = inverseWParam2DAff(deltaP); //[3X3]
         double[][] params = new double[][]{
                 {1+deltaP[0], deltaP[2], deltaP[4]},
                 {deltaP[1], 1+deltaP[3], deltaP[5]},
                 {0, 0, 1}
         };
+        /*double[][] invParams = MatrixUtil.inverse(params);
+        if (Double.isNaN(invParams[0][0])) {
+            try {
+                invParams = MatrixUtil.pseudoinverseRankDeficient(params);
+            } catch (NotConvergedException e) {
+                invParams = new double[][]{
+                        {0,0,0},
+                        {0,0,0},
+                        {0, 0, 0}
+                };
+            }
+        }
+        params = invParams;*/
 
         double[][] tmp = MatrixUtil.multiply(warp, params);
 
@@ -907,4 +926,23 @@ public class Alignment {
         return true;
     }
 
+    protected static double[][] strictColumnDiff(double[][] a) {
+        double[][] b = new double[a.length][a[0].length];
+        for (int i = 0; i < a.length; ++i) {
+            for (int j = 1; j < b.length; ++j) {
+                b[i][j] = a[i][j] - a[i][j-1];
+            }
+        }
+        return b;
+    }
+
+    protected static double[][] strictRowDiff(double[][] a) {
+        double[][] b = new double[a.length][a[0].length];
+        for (int i =1; i < a.length; ++i) {
+            for (int j = 0; j < b.length; ++j) {
+                b[i][j] = a[i][j] - a[i-1][j];
+            }
+        }
+        return b;
+    }
 }
