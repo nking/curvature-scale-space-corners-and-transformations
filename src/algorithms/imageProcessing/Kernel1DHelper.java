@@ -650,6 +650,82 @@ public class Kernel1DHelper {
     }
 
     /**
+     * convolve point[xyIdx] with the kernel g along a column if calcX is true,
+     * else along a row if calcX is false.
+     * The window boundaries by beginCol, endCol, beginRow, endRow are treated as image boundaries,
+     * that is the same out of bounds technique is applied (replication here).
+     * @param img
+     * @param col
+     * @param row
+     * @param g kernel to apply to img data within a window defined by beginCol, endCol, beginRow, endRow
+     *          centered on col, row.
+     * @param calcX if true and if img is row major format (i.e. img[row][col]) then the convolution
+     *              is over the column at the fixed row.
+     *              if true and if img is col major format (i.e. img[col][row] as the Image.java etc classes use),
+     *              then the convolution is also over the column at the fixed row.
+     *              the converse is true if calcX is false.
+     * @return
+     */
+    public double convolvePointWithKernel(final double[][] img, int col,
+                                          int row, int colBegin, int colEnd, int rowBegin, int rowEnd,
+                                          double[] g, final boolean calcX) {
+
+        int h = g.length >> 1;
+
+        double sum = 0;
+
+        //int len = calcX ? img.length : img[0].length;
+        int begin = calcX ? colBegin : rowBegin;
+        int end = calcX ? colEnd : rowEnd;
+
+        double gg;
+        int idx;
+        int cIdx;
+        double point;
+        for (int gIdx = 0; gIdx < g.length; gIdx++) {
+
+            gg = g[gIdx];
+
+            if (gg == 0) {
+                continue;
+            }
+
+            idx = gIdx - h;
+
+            cIdx = calcX ? (col + idx) : (row + idx);
+
+            if (cIdx < begin) {
+                // replicate
+                //cIdx = -1*cIdx - 1;
+                cIdx = begin + (begin-cIdx);
+                if (cIdx > end) {
+                    cIdx = end;
+                }
+            } else if (cIdx > end) {
+                //TODO: revisit this for range of kernel sizes vs edge sizes
+                //int diff = cIdx - len;
+                //cIdx = len - diff - 1;
+                cIdx = end - (cIdx - end);
+                if (cIdx < begin) {
+                    cIdx = begin;
+                }
+            }
+
+            if (calcX) {
+                // keep row constant
+                point = img[cIdx][row];
+            } else {
+                // keep col constant
+                point = img[col][cIdx];
+            }
+
+            sum += (point * gg);
+        }
+
+        return sum;
+    }
+
+    /**
      * convolve point[xyIdx] with the kernel g along a column if calcX is true.
      * @param img
      * @param col
