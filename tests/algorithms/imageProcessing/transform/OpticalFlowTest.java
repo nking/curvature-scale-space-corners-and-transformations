@@ -12,15 +12,16 @@ import algorithms.util.FormatArray;
 import algorithms.util.PairInt;
 import algorithms.util.ResourceFinder;
 import junit.framework.TestCase;
-import no.uib.cipr.matrix.DenseMatrix;
-import no.uib.cipr.matrix.EVD;
 import no.uib.cipr.matrix.NotConvergedException;
 
 import java.io.IOException;
-import java.text.Normalizer;
 import java.util.*;
 
 /**
+ *  TODO: add test data generation and tests for affine projected data (rotation and shear for a given
+ *   pyramid scale image)
+ *
+ *   TODO: add test data generation and tests for multiple moving objects (specified by keypoints and found by keypoints).
  *
  * @author nichole
  */
@@ -817,7 +818,7 @@ public class OpticalFlowTest extends TestCase {
 
         double perturb = 1E-3;
 
-        int nPoints = m*n;
+        int nPoints = m;
 
         //for (int gImg = 0; gImg < 4; ++gImg) {
         for (int iTest = 1; iTest < (m/3); ++iTest) {
@@ -930,13 +931,16 @@ public class OpticalFlowTest extends TestCase {
                 //System.out.printf("im1=\n%s", FormatArray.toString(im1, "%.2f"));
                 //System.out.printf("im2=\n%s", FormatArray.toString(im2, "%.2f"));
 
-                int chk = yXKeypoints.length / 2;
+                int chk = 0;//yXKeypoints.length / 2;
 
                 Alignment.Warps warps;
-                ///*  TEST 2-D translation
-                double[] xYInit = new double[]{perturb, perturb};
+                double[] errSSD;
+                double[] xYInit;
 
-                double[] errSSD = Alignment.inverseCompositional2DTranslation(im1, im2, xYInit, maxIter, eps);
+                ///*  TEST 2-D translation
+                xYInit = new double[]{perturb, perturb};
+
+                errSSD = Alignment.inverseCompositional2DTranslation(im1, im2, xYInit, maxIter, eps);
                 System.out.printf("2D trans (whole image):\n  nIter=%d\n  %s\n",
                         (int) Math.round(errSSD[1]), FormatArray.toString(xYInit, "%.2f"));
 
@@ -953,6 +957,7 @@ public class OpticalFlowTest extends TestCase {
                         yXKeypoints, hX, hY, Alignment.Type.TRANSLATION_2D);
                 System.out.printf("2D trans (image windows):\n  nIter=%d\n%s\n",
                         warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
+
                 //assertEquals(iTest, (int)Math.round(warps.warps[chk][0][2]));
                 //assertEquals(iTest, (int)Math.round(warps.warps[chk][1][2]));
 
@@ -966,11 +971,22 @@ public class OpticalFlowTest extends TestCase {
                 System.out.printf("2D AFFINE (sub-section image copies)):\n  nIter=%d\n%s\n",
                         warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
 
+                warps = Alignment.inverseCompositionKeypointsCpImgs2DAffinePre2DTrans(
+                        im1, im2, maxIter, eps, yXKeypoints, hX, hY);
+                System.out.printf("2D trans + 2D affine (sub-section image copies):\n  nIter=%d,\n%s\n",
+                        warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
+
                 warps = Alignment.inverseCompositionKeypoints(im1, im2,
                         new double[][]{{1, 0, perturb}, {0, 1, perturb}}, maxIter, eps,
                         yXKeypoints, hX, hY, Alignment.Type.AFFINE_2D);
                 System.out.printf("2D AFFINE (image windows)):\n  nIter=%d\n%s\n",
                         warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
+
+                warps = Alignment.inverseCompositionKeypoints2DAffinePre2DTrans(
+                        im1, im2, maxIter, eps, yXKeypoints, hX, hY);
+                System.out.printf("2D trans + 2D affine (image windows):\n  nIter=%d,\n%s\n",
+                        warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
+
                 System.out.flush();
 
                 //assertEquals(iTest, (int)Math.round(pInit[0][2]));

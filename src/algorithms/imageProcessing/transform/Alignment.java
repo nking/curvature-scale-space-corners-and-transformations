@@ -1,13 +1,13 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.Kernel1DHelper;
 import algorithms.imageProcessing.StructureTensorD;
 import algorithms.matrix.MatrixUtil;
 import no.uib.cipr.matrix.NotConvergedException;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Random;
 
 /**
  * various 2D alignment methods.
@@ -66,6 +66,8 @@ public class Alignment {
     enum Type{
         TRANSLATION_2D, AFFINE_2D
     }
+
+    protected static double[] kernel = new double[]{0, 1, -1};
 
     /*
    2D affine alignment.  Note that this method operates over the entire image, which might not be the best strategy for
@@ -191,19 +193,17 @@ public class Alignment {
 
         // gradients of T:   each is [nTR X nTC]
 
-        StructureTensorD gT = new StructureTensorD(template, 1, false);
-        double[][] gTX = gT.getDY();
-        double[][] gTY = gT.getDX();
-
-        /*ImageProcessor imageProcessor = new ImageProcessor();
+        //StructureTensorD gT = new StructureTensorD(template, 1, false);
+        //double[][] gTX = gT.getDY();
+        //double[][] gTY = gT.getDX();
+        //gTX = strictColumnDiff(template);
+        //gTY = strictRowDiff(template);
+        ImageProcessor imageProcessor = new ImageProcessor();
         double[][] gTX = MatrixUtil.copy(template);
         double[][] gTY = MatrixUtil.copy(template);
         // {0, -1, 1} should match the paper diff in method sumSteepestDescErrImageProduct if change back to it
-        imageProcessor.applyKernel1D(gTX, new double[]{0, 1, -1}, false);
-        imageProcessor.applyKernel1D(gTY, new double[]{0, 1, -1}, true);
-        gTX = strictColumnDiff(template);
-        gTY = strictRowDiff(template);
-        */
+        imageProcessor.applyKernel1D(gTX, kernel, false);
+        imageProcessor.applyKernel1D(gTY, kernel, true);
 
         // ==== create the steepest decent image of the template ====
         //steepest descent img = gradient * dWdP
@@ -345,22 +345,23 @@ public class Alignment {
         double[][] gTX = gT.getDY();
         double[][] gTY = gT.getDX();
          */
-        ImageProcessor imageProcessor = new ImageProcessor();
-        double[][] gTX = MatrixUtil.copy(template);
-        double[][] gTY = MatrixUtil.copy(template);
-        // {0, -1, 1} should match the paper diff in method sumSteepestDescErrImageProduct if change back to it
-        imageProcessor.applyKernel1D(gTX, new double[]{0, 1, -1}, false);
-        imageProcessor.applyKernel1D(gTY, new double[]{0, 1, -1}, true);
 
         // ==== create the steepest decent image of the template ====
         //steepest descent img = gradient * dWdP
         double[][] dTdWdp = null;
         if (type.equals(Type.AFFINE_2D)) {
             //[ntX*nTY X 6]
-            dTdWdp = createSteepestDescentImagesAffine2D(gTX, gTY, x-hX, x+hX, y-hY, y+hY);
+            dTdWdp = createSteepestDescentImagesAffine2D(template, x-hX, x+hX, y-hY, y+hY);
             int COMPARE2 = 2;
         } else if (type.equals(Type.TRANSLATION_2D)) {
             //[ntX*nTY X 2]
+            ImageProcessor imageProcessor = new ImageProcessor();
+            double[][] gTX = MatrixUtil.copy(template);
+            double[][] gTY = MatrixUtil.copy(template);
+            // {0, -1, 1} should match the paper diff in method sumSteepestDescErrImageProduct if change back to it
+            imageProcessor.applyKernel1D(gTX, kernel, false);
+            imageProcessor.applyKernel1D(gTY, kernel, true);
+
             dTdWdp = createSteepestDescentImageTranslation2D(gTX, gTY, x-hX, x+hX, y-hY, y+hY);
         }
 
@@ -568,6 +569,74 @@ public class Alignment {
     }
 
     /**
+     2D AFFINE alignment method for each keypoint in windows of half widths hX and hY.
+     * NOTE that internally, this method copies the window sections into images of those dimensions to calculate the
+     * warps.  Also, not that the warp is prefixed by an image-wide optical flow calculation
+     * in order to initialize the projection matrix.
+     *
+     * @param template
+     * @param image
+     * @param maxIter
+     * @param eps
+     * @param yXKeypoints a 2-D array of size [nKeypoints x 2] of keypoints to calculate affine warp at.
+     *                  Note that the keypoints should not be closer to the image bounds than patchHalfWidth.
+     *                    need at least 3 points for the 2D affine.
+     * @param hX half width of window around keypoint in x dimension.
+     * @param hY half width of window around keypoint in y dimension.
+     * @return
+     * @throws NotConvergedException
+     * @throws IOException
+     */
+     static Warps inverseCompositionKeypointsCpImgs2DAffinePre2DTrans(double[][] template, double[][] image,
+                                                          int maxIter, double eps, int[][] yXKeypoints, int hX, int hY)
+             throws NotConvergedException, IOException {
+
+        if (yXKeypoints.length * (2 * Math.min(hX, hY) +1) < 3) {
+            throw new IllegalArgumentException("need at least 3 points to solve for affine");
+        }
+
+        int nKeypoints = yXKeypoints.length;
+
+        double[] xYInit = new double[2];
+        double[] errSSD = Alignment.inverseCompositional2DTranslation(template, image, xYInit, maxIter, eps);
+
+        Warps warps = new Warps();
+        warps.warps = new double[nKeypoints][][];
+        double ssd = 0;
+        int y, x;
+        int maxOfNIters = 0;
+        for (int i = 0; i < yXKeypoints.length; ++i) {
+            y = yXKeypoints[i][0];
+            x = yXKeypoints[i][1];
+
+            // exclude out of bounds
+            if (y - hY < 0 || x - hX < 0 || y+hY>= template.length || x+hX >= template[0].length) {
+                throw new IllegalArgumentException("keypoints and their windows need to be within bounds of template image");
+            }
+
+            double[][] tImg = MatrixUtil.copySubMatrix(template, y - hY, y + hY, x - hX, x + hX);
+            double[][] iImg = MatrixUtil.copySubMatrix(image, y - hY, y + hY, x - hX, x + hX);
+
+            double[][] _pInit = new double[][]{
+                    {1, 0, xYInit[0]},
+                    {0, 1, xYInit[1]}
+            };
+            errSSD = Alignment.inverseCompositional(tImg, iImg, _pInit, maxIter,
+                    Type.AFFINE_2D, eps);
+            maxOfNIters = (int)Math.max(maxOfNIters, Math.round(errSSD[1]));
+
+            warps.warps[i] = MatrixUtil.copy(_pInit);
+
+            // TODO: revisit this. might need to add in quadrature
+            ssd += errSSD[0];
+        }
+
+        warps.ssd = ssd;
+        warps.nIterMax = maxOfNIters;
+        return warps;
+    }
+
+    /**
      * 2D alignment for each keypoint in windows of half widths hX and hY.
      * NOTE that internally, the method operates on windows in the full images rather than copying the windows
      * to smaller images as is done in inverseCompositionKeypointsCpImgs.
@@ -629,6 +698,48 @@ public class Alignment {
         return warps;
     }
 
+
+    static Warps inverseCompositionKeypoints2DAffinePre2DTrans(double[][] template, double[][] image, int maxIter,
+                                                               double eps, int[][] yXKeypoints, int hX, int hY) throws IOException, NotConvergedException {
+
+        if (yXKeypoints.length * (2 * Math.min(hX, hY) +1) < 3) {
+            throw new IllegalArgumentException("need at least 3 points to solve for affine");
+        }
+        double[] xYInit = new double[2];
+        double[] errSSD = Alignment.inverseCompositional2DTranslation(template, image, xYInit, maxIter, eps);
+
+        int nKeypoints = yXKeypoints.length;
+
+        Warps warps = new Warps();
+        warps.warps = new double[nKeypoints][][];
+        double ssd = 0;
+        int y, x;
+        int maxOfNIters = 0;
+        for (int i = 0; i < yXKeypoints.length; ++i) {
+            y = yXKeypoints[i][0];
+            x = yXKeypoints[i][1];
+
+            double[][] _pInit = new double[][]{
+                    {1, 0, xYInit[0]},
+                    {0, 1, xYInit[1]}
+            };
+            errSSD = Alignment.inverseCompositional(template, image, x, y, hX, hY, _pInit, maxIter,
+                    Type.AFFINE_2D, eps);
+
+            maxOfNIters = (int)Math.max(maxOfNIters, Math.round(errSSD[1]));
+
+            warps.warps[i] = MatrixUtil.copy(_pInit);
+
+            // TODO: revisit this. might need to add in quadrature
+            ssd += errSSD[0];
+        }
+
+        warps.ssd = ssd;
+        warps.nIterMax = maxOfNIters;
+        return warps;
+    }
+
+
     protected static class Result {
         double[][] pSums;
         double ssd;
@@ -644,6 +755,70 @@ public class Alignment {
         return createSteepestDescentImagesAffine2D(gTX, gTY, 0, gTX[0].length-1, 0, gTX.length - 1);
     }
 
+    /**
+     *
+     * @param template
+     * @param beginX first x coordinate
+     * @param endX last x coordinate, inclusive
+     * @param beginY first y coordinate
+     * @param endY last y coordinate, inclusive
+     * @return
+     */
+    private static double[][] createSteepestDescentImagesAffine2D(double[][] template,
+                                                                  int beginX, int endX, int beginY, int endY) {
+        //[nTR*nTC X 6]
+        // steepest descent images  gT * dWdP = [nTR X nTC] * [nTR*nTC X 6] = [nTR*nTC X 6] for x then for y
+        // can format as [nTr X nTc X 6] or [nTr * nTc X 6].
+        // will choose the latter to make the Hessian mult easier
+        //steepest descent img = gradient * dWdP
+        //                       [1x2] * [2x6]
+
+        /*
+        W(x; p) for a 2D affine warp:
+                = [1+p[0]      p2  p4 ] * [x]
+                  [  p[1]  1+p[3]  p5 ]   [y]
+                                          [1]
+        pdW/pdp = [x, 0, y, 0, 1, 0]
+                  [0, x, 0, y, 0, 1]
+        */
+
+        int n = (endX - beginX + 1) * (endY - beginY + 1);
+
+        double xc = (endX - beginX)/2;
+        double yc = (endY - beginY)/2;
+
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+
+        double[][] dTdWdp = new double[n][];
+        double[][] tmp1 = new double[1][2];
+        double[][] tmp2 = new double[2][6];
+        double gX, gY;
+        for (int y = beginY, idx = 0; y <= endY; ++y) {
+            for (int x = beginX; x <= endX; ++x, ++idx) {
+
+                // method expects column major data, so swap row and col:
+                gX = kernel1DHelper.convolvePointWithKernel(template, y, x,
+                        beginY, endY, beginX, endX, kernel, false);
+
+                gY = kernel1DHelper.convolvePointWithKernel(template, y, x,
+                        beginY, endY, beginX, endX, kernel, true);
+
+                tmp1[0][0] = gX;
+                tmp1[0][1] = gY;
+
+                tmp2[0][0] = x - xc;
+                tmp2[0][2] = y - yc;
+                tmp2[0][4] = 1;
+                tmp2[1][1] = x - xc;
+                tmp2[1][3] = y - yc;
+                tmp2[1][5] = 1;
+
+                //[1X6]
+                dTdWdp[idx] = MatrixUtil.multiply(tmp1, tmp2)[0];
+            }
+        }
+        return dTdWdp;
+    }
     /**
      *
      * @param gTX
@@ -680,6 +855,7 @@ public class Alignment {
         double[][] dTdWdp = new double[n][];
         double[][] tmp1 = new double[1][2];
         double[][] tmp2 = new double[2][6];
+        double gX, gY;
         for (int y = beginY, idx = 0; y <= endY; ++y) {
             for (int x = beginX; x <= endX; ++x, ++idx) {
 
@@ -832,11 +1008,11 @@ public class Alignment {
 
                 // error image is I(w(x;p)) - T(x).  not squared nor abs value of
                 // TODO: this could be improved by considering the fraction of the pixel represented
-                if (type.equals(Type.AFFINE_2D)) {
-                    diff = v2 - t[y][x];
-                } else if (type.equals(Type.TRANSLATION_2D)) {
+                //if (type.equals(Type.AFFINE_2D)) {
+                //    diff = v2 - t[y][x]; // use if change from inverse warp(x; deltaP)  to forward warp(x;deltap) in update
+                //} else if (type.equals(Type.TRANSLATION_2D)) {
                     diff = t[y][x] - v2;
-                }
+                //}
 
                 errSSD += diff * diff;
 
@@ -880,16 +1056,20 @@ public class Alignment {
 
     private static void update2DAffFCWarp(double[][] warp, double[] deltaP)  {
 
-        // for affine, Bouguet uses forward composition:
-        // instead of composition w = w * w(delta)^-1 it is w = w * w(delta).
+        // for affine, Bouguet uses forward composition w = w * w(delta)
+        // instead of composition w = w * w(delta)^-1 from Baker-Matthews.
+        // it gives similarly wrong results for test data, and similarly
+        // rarely right results (possibly are same to first order?).
+        // will use the Baker-Matthew's paper's inverse compositional update
+        // (future proofing for when have improved gradient windows here, etc.)
 
         double[][] params = new double[][]{
                 {1+deltaP[0], deltaP[2], deltaP[4]},
                 {deltaP[1], 1+deltaP[3], deltaP[5]},
                 {0, 0, 1}
         };
-        /*double[][] invParams = MatrixUtil.inverse(params);
-        if (Double.isNaN(invParams[0][0])) {
+        double[][] invParams = MatrixUtil.inverse(params);
+        /*if (Double.isNaN(invParams[0][0])) {
             try {
                 invParams = MatrixUtil.pseudoinverseRankDeficient(params);
             } catch (NotConvergedException e) {
@@ -899,8 +1079,8 @@ public class Alignment {
                         {0, 0, 0}
                 };
             }
-        }
-        params = invParams;*/
+        }*/
+        params = invParams;
 
         double[][] tmp = MatrixUtil.multiply(warp, params);
 
