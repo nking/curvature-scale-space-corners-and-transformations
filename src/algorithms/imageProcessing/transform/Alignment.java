@@ -345,6 +345,14 @@ public class Alignment {
         double[][] gTX = gT.getDY();
         double[][] gTY = gT.getDX();
          */
+        /*
+        ImageProcessor imageProcessor = new ImageProcessor();
+            double[][] gTX = MatrixUtil.copy(template);
+            double[][] gTY = MatrixUtil.copy(template);
+            // {0, -1, 1} should match the paper diff in method sumSteepestDescErrImageProduct if change back to it
+            imageProcessor.applyKernel1D(gTX, kernel, false);
+            imageProcessor.applyKernel1D(gTY, kernel, true);
+         */
 
         // ==== create the steepest decent image of the template ====
         //steepest descent img = gradient * dWdP
@@ -355,14 +363,7 @@ public class Alignment {
             int COMPARE2 = 2;
         } else if (type.equals(Type.TRANSLATION_2D)) {
             //[ntX*nTY X 2]
-            ImageProcessor imageProcessor = new ImageProcessor();
-            double[][] gTX = MatrixUtil.copy(template);
-            double[][] gTY = MatrixUtil.copy(template);
-            // {0, -1, 1} should match the paper diff in method sumSteepestDescErrImageProduct if change back to it
-            imageProcessor.applyKernel1D(gTX, kernel, false);
-            imageProcessor.applyKernel1D(gTY, kernel, true);
-
-            dTdWdp = createSteepestDescentImageTranslation2D(gTX, gTY, x-hX, x+hX, y-hY, y+hY);
+            dTdWdp = createSteepestDescentImageTranslation2D(template, x-hX, x+hX, y-hY, y+hY);
         }
 
         // Hessian: [6 x nTX*nTY]*[nTX*nTY X 6] = [6x6] for affine 2D;  for trans2D [2x2]
@@ -909,6 +910,47 @@ public class Alignment {
         for (int y = beginY, idx = 0; y <= endY; ++y) {
             for (int x = beginX; x <= endX; ++x, ++idx) {
                 dTdWdp[idx] = new double[]{gTX[y][x], gTY[y][x]};
+            }
+        }
+        return dTdWdp;
+    }
+
+    private static double[][] createSteepestDescentImageTranslation2D(double[][] template,
+                                                                      int beginX, int endX, int beginY, int endY) {
+        //[nTR*nTC X 2]
+        // steepest descent images  gT * dWdP = [nTR X nTC] * [nTR*nTC X 6] = [nTR*nTC X 6] for x then for y
+        // can format as [nTr X nTc X 6] or [nTr * nTc X 6].
+        // will choose the latter to make the Hessian mult easier
+        //steepest descent img = gradient * dWdP
+        //                       [1x2] * [2x2]
+        int n = (endX - beginX + 1) * (endY - beginY + 1);
+
+        /*
+        using the column major notation of the paper
+        W is [ 1  0  p1]  * [x]
+             [ 0  1  p2]    [y]
+                            [1]
+         dW/dP = [ dWx/dp1   dWx/dp2 ]
+                 [ dWy/dp1   dWy/dp2 ]
+               = [  1         0 ]
+                 [  0         1 ]
+           which is the identity matrix
+
+         so the steepest descent image = each pixel's gTx, gTy
+
+         */
+
+        Kernel1DHelper kernel1DHelper = new Kernel1DHelper();
+
+        double[][] dTdWdp = new double[n][];
+        for (int y = beginY, idx = 0; y <= endY; ++y) {
+            for (int x = beginX; x <= endX; ++x, ++idx) {
+                dTdWdp[idx] = new double[]{
+                        kernel1DHelper.convolvePointWithKernel(template, y, x,
+                                beginY, endY, beginX, endX, kernel, false),
+                        kernel1DHelper.convolvePointWithKernel(template, y, x,
+                                beginY, endY, beginX, endX, kernel, true)
+                };
             }
         }
         return dTdWdp;
