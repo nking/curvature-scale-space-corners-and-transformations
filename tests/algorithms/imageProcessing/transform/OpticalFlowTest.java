@@ -246,7 +246,7 @@ public class OpticalFlowTest extends TestCase {
         }
     }
 
-    public void __test2LucasKanade() throws IOException, NotConvergedException {
+    public void test2LucasKanade() throws IOException, NotConvergedException {
         int patchDim = 5;
         int m = 32;
         int pixMax = m;
@@ -395,7 +395,7 @@ public class OpticalFlowTest extends TestCase {
         return results;
     }
 
-    public void __test2HornSchunck() throws IOException {
+    public void test2HornSchunck() throws IOException {
 
         /*
         some empirically derived numbers from unit tests:
@@ -484,62 +484,6 @@ public class OpticalFlowTest extends TestCase {
 
             //writeToPng(im1, "im1_" + iTest + ".png");
             //writeToPng(im2, "im2_" + iTest + ".png");
-        }
-
-    }
-
-    public void __test2InverseCompositionAlignment() throws IOException, NotConvergedException {
-        System.out.printf("test2InverseCompositionAlignment\n");
-        int pixMax = 32*2;
-        int m = 32*2;
-        //System.out.printf("pixMax=%d, m=%d\n", pixMax, m);
-        int n = m;
-        double[][] im1;
-        double[][] im2;
-        int maxIter = 100;//1000;
-        double eps = 0.1;
-
-        for (int iTest = 1; iTest < (m/2)-3; ++iTest) {
-
-            double dX = iTest;
-            double dY = iTest;
-
-            Images images = generateImages(m,  n, dX, dY, pixMax);
-            if (images == null || images.yXKeypoints.length == 0) {
-                break;
-            }
-            im1 = images.im1;
-            im2 = images.im2;
-
-            // set all to 0 to solve for
-            //MatrixUtil.fill(pInit, 0.);
-
-            System.out.printf("\niTest=%d\n", iTest);
-
-            double[] errSSD;
-            ///*  TEST 2-D translation
-            double[] xYInit = new double[]{0, 0};
-            errSSD = Alignment.inverseCompositional2DTranslation(im1, im2, xYInit, maxIter, eps);
-            System.out.printf("2D trans newton: nIter=%d, uvFinal=\n%s\n",
-                    (int)Math.round(errSSD[1]), FormatArray.toString(xYInit, "%.2f"));
-            assertEquals(iTest, (int)Math.round(xYInit[0]));
-            assertEquals(iTest, (int)Math.round(xYInit[1]));
-            //xYInit = new double[]{uInit, vInit};
-            //errSSD = Alignment._inverseCompositional2DTranslationGN(im1, im2, xYInit, maxIter, eps);
-            //System.out.printf("2D trans GN: uvFinal=\n%s\n", FormatArray.toString(xYInit, "%.2f"));
-            //assertEquals(iTest, (int)Math.round(xYInit[0]));
-            //assertEquals(iTest, (int)Math.round(xYInit[1]));
-            //*/
-            ///*
-
-            double[][] pInit = new double[][]{
-                    {1, 0, 0}, {0, 1, 0}
-            };
-            errSSD = Alignment.inverseCompositional2DAffine(im1, im2, pInit, maxIter, eps);
-            System.out.printf("2D affine Newton: nIter=%d, pFinal=\n%s\n", (int)Math.round(errSSD[1]),
-                    FormatArray.toString(pInit, "%.2f"));
-
-            //*/
         }
 
     }
@@ -728,7 +672,7 @@ public class OpticalFlowTest extends TestCase {
 
         //the first image will be a random pattern, the 2nd will be im1 warped by projection matrix
 
-        long seed = 117823156728449L;//System.nanoTime();
+        long seed = System.nanoTime();
         System.out.println("seed=" + seed);
         Random rand = new Random(seed);
 
@@ -802,211 +746,6 @@ public class OpticalFlowTest extends TestCase {
         images.hY = hY;
         images.yXKeypoints = yXPatches;
         return images;
-    }
-
-    public void test3InverseCompositionAlignment() throws IOException, NotConvergedException {
-        System.out.printf("test3InverseCompositionAlignment\n");
-
-        int pixMax = 32;//32*2;
-        int m = 32;//32*2;
-        //System.out.printf("pixMax=%d, m=%d\n", pixMax, m);
-        int n = m;
-        double[][] im1;
-        double[][] im2;
-        int maxIter = 100;//1000;
-        double eps = 0.01;
-
-        double perturb = 1E-3;
-
-        int nPoints = m;
-
-        //for (int gImg = 0; gImg < 4; ++gImg) {
-        for (int iTest = 0; iTest < (m/3); ++iTest) {
-
-            String gTitle = null;
-            Images images = null;
-
-            //for (int iTest = 1; iTest < (m/3); ++iTest) {
-            for (int gImg = 0; gImg < 4; ++gImg) {
-
-                double dX = iTest;
-                double dY = iTest;
-
-                switch (gImg) {
-                    case(0) : {
-                        gTitle = "bands of LLRect";
-                        images = generateImages(m, n, dX, dY, pixMax);
-                        break;
-                    }
-                    case(1) : {
-                        gTitle = "V pattern";
-                        images = generateImagesV(m, n, dX, dY, pixMax);
-                        break;
-                    }
-                    case(2) : {
-                        gTitle = "Random blobs with details";
-                        images = generateImagesRandom(m, n, dX, dY, pixMax, 0);
-                        break;
-                    }
-                    case(3) : {
-                        gTitle = "Random big blobs";
-                        images = generateImagesRandom(m, n, dX, dY, pixMax, 1);
-                        break;
-                    }
-                }
-
-                if (images == null) {
-                    continue;
-                }
-                im1 = images.im1;
-                im2 = images.im2;
-                int hX = images.hX;
-                int hY = images.hY;
-
-                int[][] yXKeypoints0 = images.yXKeypoints;
-
-                double[] outMinMax = new double[2];
-                //shitomasi doesn't pick up the lower left corner of each rectangle band in generateImages()
-                //nor any keypoints in
-                int[][] keypoints3 = ShiTomasi.goodFeatureCoordinates(im1, nPoints, outMinMax);
-                int[][] yXKeypoints3 = new int[keypoints3.length][2];
-                int iP = 0;
-                for (int i = 0; i < keypoints3.length; ++i) {
-                    yXKeypoints3[iP][0] = keypoints3[i][1];
-                    yXKeypoints3[iP][1] = keypoints3[i][0];
-
-                    if (yXKeypoints3[iP][0] - hY < 0 || yXKeypoints3[iP][1] - hX < 0
-                            || yXKeypoints3[iP][0] + hY >= im1.length || yXKeypoints3[iP][1] + hX >= im1[0].length) {
-                        continue;
-                    }
-                    ++iP;
-                }
-                yXKeypoints3 = Arrays.copyOf(yXKeypoints3, iP);
-
-                GreyscaleImage gsImg = makeGSImg(im1);
-
-                // for 2D translation, the whole image result is optical flow and is always correct with
-                //   the 3 types of datasets.
-                // for the other 2D translation methods, the manually created keypoints0 have better results
-                //   than the orb generated keypoints.
-                ORB orb1 = new ORB(gsImg, nPoints);
-                orb1.overrideToNotCreateDescriptors();
-                orb1.overrideToUseSingleScale();
-                //orb1.overrideToCreateCurvaturePoints();
-                orb1.overrideToAlsoCreate1stDerivKeypoints();
-                orb1.detectAndExtract();
-                List<PairInt> kp1 = orb1.getAllKeyPoints();
-
-                int[][] yXKeypoints = new int[kp1.size()][2];
-                iP = 0;
-                for (int i = 0; i < kp1.size(); ++i) {
-                    yXKeypoints[iP][0] = kp1.get(i).getY();
-                    yXKeypoints[iP][1] = kp1.get(i).getX();
-
-                    if (yXKeypoints[iP][0] - hY < 0 || yXKeypoints[iP][1] - hX < 0
-                            || yXKeypoints[iP][0] + hY >= im1.length
-                            || yXKeypoints[iP][1] + hX >= im1[0].length) {
-                        continue;
-                    }
-
-                    ++iP;
-                }
-                yXKeypoints = Arrays.copyOf(yXKeypoints, iP);
-
-                /*
-                Image tmp = gsImg.copyToColorGreyscale();
-                for (int i = 0; i < yXKeypoints.length; ++i) {
-                    ImageIOHelper.addPointToImage(yXKeypoints[i][1], yXKeypoints[i][0], tmp, 2, 255, 0, 0);
-                }
-                long ts = MiscDebug.getCurrentTimeFormatted();
-                MiscDebug.writeImage(tmp, ts + "_orb_");
-                MiscDebug.writeImage(makeGSImg(im1).copyToColorGreyscale(), ts + "_1");
-                MiscDebug.writeImage(makeGSImg(im2).copyToColorGreyscale(), ts + "_2");
-                */
-
-                System.out.println("-----------------------------------------");
-                System.out.printf("\niTest=%d  (nPoints=%d)\ngenerated image type=%s\n",
-                        iTest, yXKeypoints.length, gTitle);
-
-                //System.out.printf("im1=\n%s", FormatArray.toString(im1, "%.2f"));
-                //System.out.printf("im2=\n%s", FormatArray.toString(im2, "%.2f"));
-
-                int chk = 0;//yXKeypoints.length / 2;
-
-                Alignment.Warps warps;
-                double[] errSSD;
-                double[] xYInit;
-
-                ///*  TEST 2-D translation
-                xYInit = new double[]{perturb, perturb};
-
-                errSSD = Alignment.inverseCompositional2DTranslation(im1, im2, xYInit, maxIter, eps);
-                System.out.printf("2D trans (whole image):\n  nIter=%d\n  %s\n",
-                        (int) Math.round(errSSD[1]), FormatArray.toString(xYInit, "%.2f"));
-                //*/
-                xYInit = new double[]{perturb, perturb};
-                warps = Alignment.inverseComposition2DTranslationKeypointsCpImgs(im1, im2, xYInit, maxIter, eps,
-                        yXKeypoints, hX, hY, Alignment.Type.TRANSLATION_2D);
-                System.out.printf("2D trans (sub-section image copies):\n  nIter=%d,\n%s\n",
-                        warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
-                //assertEquals(iTest, (int)Math.round(warps.warps[chk][0][2]));
-                //assertEquals(iTest, (int)Math.round(warps.warps[chk][1][2]));
-
-                ///*
-                xYInit = new double[]{perturb, perturb};
-                warps = Alignment.inverseComposition2DTranslationKeypoints(im1, im2, xYInit, maxIter, eps,
-                        yXKeypoints, hX, hY, Alignment.Type.TRANSLATION_2D);
-                System.out.printf("2D trans (image windows):\n  nIter=%d\n%s\n",
-                        warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
-
-                //assertEquals(iTest, (int)Math.round(warps.warps[chk][0][2]));
-                //assertEquals(iTest, (int)Math.round(warps.warps[chk][1][2]));
-                //*/
-
-                ///* Test 2D AFFINE
-
-                warps = Alignment.inverseCompositionKeypointsCpImgs(im1, im2,
-                        new double[][]{{1, 0, perturb}, {0, 1, perturb}}, maxIter, eps,
-                        yXKeypoints, hX, hY, Alignment.Type.AFFINE_2D);
-                System.out.printf("2D AFFINE (sub-section image copies)):\n  nIter=%d\n%s\n",
-                        warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
-
-                warps = Alignment.inverseCompositionKeypointsCpImgs2DAffinePre2DTrans(
-                        im1, im2, maxIter, eps, yXKeypoints, hX, hY);
-                System.out.printf("2D trans + 2D affine (sub-section image copies):\n  nIter=%d,\n%s\n",
-                        warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
-
-                warps = Alignment.inverseCompositionKeypoints(im1, im2,
-                        new double[][]{{1, 0, perturb}, {0, 1, perturb}}, maxIter, eps,
-                        yXKeypoints, hX, hY, Alignment.Type.AFFINE_2D);
-                System.out.printf("2D AFFINE (image windows)):\n  nIter=%d\n%s\n",
-                        warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
-
-                warps = Alignment.inverseCompositionKeypoints2DAffinePre2DTrans(
-                        im1, im2, maxIter, eps, yXKeypoints, hX, hY);
-                System.out.printf("2D trans + 2D affine (image windows):\n  nIter=%d,\n%s\n",
-                        warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
-
-                System.out.flush();
-
-                //assertEquals(iTest, (int)Math.round(pInit[0][2]));
-                //assertEquals(iTest, (int)Math.round(pInit[1][2]));
-                //*/
-
-                /*
-                 e.g. a first pass through
-                 Alignment.inverseCompositionKeypointsCpImgs(im1, im2, pInit, maxIter, eps, yXKeypoints, patchHalfWidth, Type.AFFINE_2D);
-                    resulting in
-                         0.53, 0.47, -3.57
-                         0.47, 0.53, -3.57
-                         0.00, 0.00, 1.00
-                 is not a feasible combination of th and sh_x, sh_y for scale in x and y = 1
-                     [ sh_x * sin(th)   sh_x * cos(th) ]  = [ 0.53  0,47 ]
-                     [ sh_y * cos(th)  -sh_y * sin(th)  ]    [0.47   0.53 ]
-                 */
-            }
-        }
-
     }
 
     private GreyscaleImage makeGSImg(double[][] im) {

@@ -2,7 +2,6 @@ package algorithms.imageProcessing.transform;
 
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.Kernel1DHelper;
-import algorithms.imageProcessing.StructureTensorD;
 import algorithms.matrix.MatrixUtil;
 import no.uib.cipr.matrix.NotConvergedException;
 
@@ -10,10 +9,27 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
- * various 2D alignment methods.
+    various 2D alignment methods.
 
+ see AlignmentTest for various tests and methods to help choose which Alignment method(s) to use and
+ a couple of ways to build keypoints.
 
-     One could use a pyramidal approach (a wrapper around invocations of this method) to find the solution with
+ AlignmentTest shows use of a PhaseCongruency algorithm to smooth out the extremely variable or extremely textured
+ details in images, like plant leafs and brick surfaces, etc. before making keypoint lists.
+
+ AlignmentTest shows use of ORB corners to make keypoint lists:
+         <pre>
+         ORB orb1 = new ORB(gsImg, nPoints);
+         orb1.overrideToNotCreateDescriptors();
+         orb1.overrideToUseSingleScale();
+         //orb1.overrideToCreateCurvaturePoints();
+         orb1.overrideToAlsoCreate1stDerivKeypoints();
+         orb1.detectAndExtract();
+         List<PairInt> kp1 = orb1.getAllKeyPoints();
+        </pre>
+
+     One could use a pyramidal approach to image down-sampling to handle the geometrical scale ratios between template
+ and image (a wrapper around invocations of these method) to find the solution with
      the smallest re-projection error over all scales.
 
      <pre>
@@ -70,9 +86,11 @@ public class Alignment {
     protected static double[] kernel = new double[]{0, 1, -1};
 
     /*
-   2D affine alignment.  Note that this method operates over the entire image, which might not be the best strategy for
-   2D-affine calculations.  Instead, one might prefer to use keypoints chosen by Harris response function etc.
-   and use the method inverseCompositionKeypointsCpImgs(...) with those keypoints.
+   solve for the 2D affine alignment that moves the template to the matching location in the image.
+
+   Note that this method operates over the entire image and might not produce the best results.
+   There are other methods in this class to calculate the 2D affine of features using a keypoint list
+   and window dimensions, and/or after a 2D translation estimate.
 
    <pre>
    reference:
@@ -81,7 +99,7 @@ public class Alignment {
    "Lucas-Kanade 20 Years On: A Unifying Framework: Part 1"
    </pre>
     @param template
-    * @param image
+    @param image
     @param pInit the initial projection matrix of size [2 rows X 3 columns].
      It should be composed of { {1 + affine[0][0], affine[0][1], transX},
                                  {affine[1][0], 1 + affine[1][1], transY}}.
@@ -104,8 +122,7 @@ public class Alignment {
     }
 
     /** find the x and y translations that best align the template to the image.
-    Alternatively, one could use keypoints chosen by Harris response function etc. along with
-     inverseCompositionKeypoints(...)
+
    <pre>
    reference:
    Figure 4 of
@@ -146,18 +163,13 @@ public class Alignment {
     /*
     2D alignment over full images.
     Note that for type 2D affine alignment, this might not be the best strategy.
-    Instead, one might prefer to use keypoints chosen by Harris response function etc.
-   and for 2D affine use the method inverseCompositionKeypointsCpImgs(...) with those keypoints,
-   else for 2D translation use inverseCompositionKeypoints(...)
+    Instead, one might prefer to use keypoints and/or a 2D translation followed by 2D affine calculation.
 
     <pre>
     reference2:
         Figure 4 of
         Baker & Matthews, 2016, CMU-RI-TR-02-16
         "Lucas-Kanade 20 Years On: A Unifying Framework: Part 1"
-
-    the warp update change is adapted from Bouguet, "Pyramidal Implementation of the Affine Kanade Feature Tracker
-    Descriptions of the Algorithm"
     </pre>
      @param template
      * @param image
@@ -252,9 +264,7 @@ public class Alignment {
             } else {
                 // update the warp
                 if (type.equals(Type.AFFINE_2D)) {
-                    // as suggested by Bouguet, use the forward composition warp update instead:
-                    update2DAffFCWarp(warp, deltaP);
-                    //updateWarp2DAffIC(warp, deltaP);
+                    update2DAffWarp(warp, deltaP);
                 } else if (type.equals(Type.TRANSLATION_2D)) {
                     update2DTransICWarp(warp, deltaP);
                 }
@@ -285,17 +295,15 @@ public class Alignment {
     /*
    2D alignment for a single keypoint whose coordinates are x, y.   The calculations
    are performed within a window with hX half width in the x dimension and hY half width in the y dimension.
-    Note that for type 2D affine alignment, this might not be the best strategy, but instead,
-    one might prefer to use the method inverseCompositionKeypointsCpImgs(...) .
+
+   Note that for type 2D affine alignment, one might prefer to use one of the wrapper methods which
+   calculates a 2D translation first and then calculates 2D affine with that initialization.
 
    <pre>
    reference2:
        Figure 4 of
        Baker & Matthews, 2016, CMU-RI-TR-02-16
        "Lucas-Kanade 20 Years On: A Unifying Framework: Part 1"
-
-   the warp update change is adapted from Bouguet, "Pyramidal Implementation of the Affine Kanade Feature Tracker
-   Descriptions of the Algorithm"
    </pre>
     @param template
     * @param image
@@ -398,9 +406,7 @@ public class Alignment {
             } else {
                 // update the warp
                 if (type.equals(Type.AFFINE_2D)) {
-                    // as suggested by Bouguet, use the forward composition warp update instead:
-                    update2DAffFCWarp(warp, deltaP);
-                    //updateWarp2DAffIC(warp, deltaP);
+                    update2DAffWarp(warp, deltaP);
                 } else if (type.equals(Type.TRANSLATION_2D)) {
                     update2DTransICWarp(warp, deltaP);
                 }
@@ -431,8 +437,7 @@ public class Alignment {
     /**
      * 2D alignment method for each keypoint in windows of half widths hX and hY.
      * NOTE that internally, this method copies the window sections into images of those dimensions to calculate the
-     * warps.  For 2D translation, the alternative method inverseComposition2DTranslationKeypoints() produces
-     * slightly better results and has better performance.
+     * warps.
      *
      * @param template
      * @param image
@@ -467,7 +472,6 @@ public class Alignment {
      * 2D alignment method for each keypoint in windows of half widths hX and hY.
      * NOTE that internally, the method operates on windows in the full images rather than copying the windows
      * to smaller images as is done in inverseCompositionKeypointsCpImgs.
-     * For 2D translation warps, this method provides slightly better results.
      * @param template
      * @param image
      * @param xYInit
@@ -500,9 +504,6 @@ public class Alignment {
      2D alignment method for each keypoint in windows of half widths hX and hY.
      * NOTE that internally, this method copies the window sections into images of those dimensions to calculate the
      * warps.
-     * For 2D translation, the alternative method inverseComposition2DTranslationKeypoints() produces
-     * slightly better results and has better performance.
-     * For 2D affine warps, one should prefer this method.
      *
      * @param template
      * @param image
@@ -571,8 +572,8 @@ public class Alignment {
     /**
      2D AFFINE alignment method for each keypoint in windows of half widths hX and hY.
      * NOTE that internally, this method copies the window sections into images of those dimensions to calculate the
-     * warps.  Also, not that the warp is prefixed by an image-wide optical flow calculation
-     * in order to initialize the projection matrix.
+     * warps.  Also note that the 2D translation over the whole images is first calculated
+     * and used to initialize the projection matrix which has affine and translation terms.
      *
      * @param template
      * @param image
@@ -641,9 +642,6 @@ public class Alignment {
      * NOTE that internally, the method operates on windows in the full images rather than copying the windows
      * to smaller images as is done in inverseCompositionKeypointsCpImgs.
 
-     For 2D translation, one would prefer this method to the alternative method inverseCompositionKeypointsCpImgs(...).
-     For 2D affine warps, one should prefer inverseCompositionKeypointsCpImgs(...) to this method.
-     *
      * @param template
      * @param image
      @param pInit the initial projection matrix of size [2 rows X 3 columns].
@@ -1098,7 +1096,7 @@ public class Alignment {
         }
     }
 
-    private static void update2DAffFCWarp(double[][] warp, double[] deltaP)  {
+    private static void update2DAffWarp(double[][] warp, double[] deltaP)  {
 
         // for affine, Bouguet uses forward composition w = w * w(delta)
         // instead of composition w = w * w(delta)^-1 from Baker-Matthews.
@@ -1106,6 +1104,8 @@ public class Alignment {
         // rarely right results (possibly are same to first order?).
         // will use the Baker-Matthew's paper's inverse compositional update
         // (future proofing for when have improved gradient windows here, etc.)
+        // Bouguet reference is "Pyramidal Implementation of the Affine Kanade Feature Tracker
+        //    Descriptions of the Algorithm"
 
         double[][] params = new double[][]{
                 {1+deltaP[0], deltaP[2], deltaP[4]},
@@ -1150,23 +1150,4 @@ public class Alignment {
         return true;
     }
 
-    protected static double[][] strictColumnDiff(double[][] a) {
-        double[][] b = new double[a.length][a[0].length];
-        for (int i = 0; i < a.length; ++i) {
-            for (int j = 1; j < b.length; ++j) {
-                b[i][j] = a[i][j] - a[i][j-1];
-            }
-        }
-        return b;
-    }
-
-    protected static double[][] strictRowDiff(double[][] a) {
-        double[][] b = new double[a.length][a[0].length];
-        for (int i =1; i < a.length; ++i) {
-            for (int j = 0; j < b.length; ++j) {
-                b[i][j] = a[i][j] - a[i-1][j];
-            }
-        }
-        return b;
-    }
 }
