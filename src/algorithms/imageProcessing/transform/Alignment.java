@@ -82,9 +82,10 @@ public class Alignment {
    </pre>
     @param template
     * @param image
-    * @param pInit the projection matrix for a homogenous coordinate.
-    pInit should be size [2 rows X 3 columns] and a good initial estimate.
-    pInit is multiplied by [x, y, 1]^T to apply warp to point [x, y, 1].
+    @param pInit the initial projection matrix of size [2 rows X 3 columns].
+     It should be composed of { {1 + affine[0][0], affine[0][1], transX},
+                                 {affine[1][0], 1 + affine[1][1], transY}}.
+                                 e.g. {{1,0,0},{0,1,0}}
     @param maxIter the maximum number of iterations to perform
     * @throws NotConvergedException
     * @throws IOException
@@ -160,9 +161,10 @@ public class Alignment {
     </pre>
      @param template
      * @param image
-     * @param pInit the projection matrix for a homogenous coordinate.
-     pInit should be size [2 rows X 3 columns] and a good initial estimate.
-     pInit is multiplied by [x, y, 1]^T to apply warp to point [x, y, 1].
+     @param pInit the initial projection matrix of size [2 rows X 3 columns].
+     It should be composed of { {1 + affine[0][0], affine[0][1], transX},
+                                 {affine[1][0], 1 + affine[1][1], transY}}.
+                                 e.g. {{1,0,0},{0,1,0}}
      @param maxIter the maximum number of iterations to perform
      * @throws NotConvergedException
      * @throws IOException
@@ -198,6 +200,7 @@ public class Alignment {
         //double[][] gTY = gT.getDX();
         //gTX = strictColumnDiff(template);
         //gTY = strictRowDiff(template);
+
         ImageProcessor imageProcessor = new ImageProcessor();
         double[][] gTX = MatrixUtil.copy(template);
         double[][] gTY = MatrixUtil.copy(template);
@@ -246,10 +249,6 @@ public class Alignment {
 
             if (nIter == 0) {
                 warp = init2DTranslationWarp(pInit);
-                if (type.equals(Type.AFFINE_2D)) {
-                    warp[0][0] += 1;
-                    warp[1][1] += 1;
-                }
             } else {
                 // update the warp
                 if (type.equals(Type.AFFINE_2D)) {
@@ -306,9 +305,10 @@ public class Alignment {
     include the possible warped point.
     @param hY the half width in y dimension of a window around y to use in calculations.  This half width must be large enough to
     include the possible warped point.
-    * @param pInit the projection matrix for a homogenous coordinate.
-    pInit should be size [2 rows X 3 columns] and a good initial estimate.
-    pInit is multiplied by [x, y, 1]^T to apply warp to point [x, y, 1].
+    @param pInit the initial projection matrix of size [2 rows X 3 columns].
+     It should be composed of { {1 + affine[0][0], affine[0][1], transX},
+                                 {affine[1][0], 1 + affine[1][1], transY}}.
+                                 e.g. {{1,0,0},{0,1,0}}
     @param maxIter the maximum number of iterations to perform
     * @throws NotConvergedException
     * @throws IOException
@@ -395,10 +395,6 @@ public class Alignment {
 
             if (nIter == 0) {
                 warp = init2DTranslationWarp(pInit);
-                if (type.equals(Type.AFFINE_2D)) {
-                    warp[0][0] += 1;
-                    warp[1][1] += 1;
-                }
             } else {
                 // update the warp
                 if (type.equals(Type.AFFINE_2D)) {
@@ -510,7 +506,10 @@ public class Alignment {
      *
      * @param template
      * @param image
-     * @param pInit
+     @param pInit the initial projection matrix of size [2 rows X 3 columns].
+     It should be composed of { {1 + affine[0][0], affine[0][1], transX},
+     {affine[1][0], 1 + affine[1][1], transY}}.
+     e.g. {{1,0,0},{0,1,0}}
      * @param maxIter
      * @param eps
      * @param yXKeypoints a 2-D array of size [nKeypoints x 2] of keypoints to calculate affine warp at.
@@ -647,7 +646,10 @@ public class Alignment {
      *
      * @param template
      * @param image
-     * @param pInit
+     @param pInit the initial projection matrix of size [2 rows X 3 columns].
+     It should be composed of { {1 + affine[0][0], affine[0][1], transX},
+     {affine[1][0], 1 + affine[1][1], transY}}.
+     e.g. {{1,0,0},{0,1,0}}
      * @param maxIter
      * @param eps
      * @param yXKeypoints a 2-D array of size [nKeypoints x 2] of keypoints to calculate affine warp at.

@@ -568,7 +568,7 @@ public class OpticalFlowTest extends TestCase {
             hY = 2;
         }
 
-        int nPatches = Math.min(m,n) - 2*Math.min(hX, hY)-1;
+        int nPatches = m*n;
         if (nPatches < 1) return null;
         int[][] yXPatches = new int[nPatches][];
 
@@ -647,7 +647,7 @@ public class OpticalFlowTest extends TestCase {
             hY = 2;
         }
 
-        int nPatches = Math.min(m,n) - 2*Math.min(hX, hY)-1;
+        int nPatches = m*n;
         if (nPatches < 1) return null;
         int[][] yXPatches = new int[nPatches][];
 
@@ -756,7 +756,7 @@ public class OpticalFlowTest extends TestCase {
             hY = 2;
         }
 
-        int nPatches = Math.min(m,n) - 2*Math.min(hX, hY)-1;
+        int nPatches = m*n;
         if (nPatches < 1) return null;
         int[][] yXPatches = new int[nPatches][];
 
@@ -821,7 +821,7 @@ public class OpticalFlowTest extends TestCase {
         int nPoints = m;
 
         //for (int gImg = 0; gImg < 4; ++gImg) {
-        for (int iTest = 1; iTest < (m/3); ++iTest) {
+        for (int iTest = 0; iTest < 3/*(m/3)*/; ++iTest) {
 
             String gTitle = null;
             Images images = null;
@@ -943,7 +943,7 @@ public class OpticalFlowTest extends TestCase {
                 errSSD = Alignment.inverseCompositional2DTranslation(im1, im2, xYInit, maxIter, eps);
                 System.out.printf("2D trans (whole image):\n  nIter=%d\n  %s\n",
                         (int) Math.round(errSSD[1]), FormatArray.toString(xYInit, "%.2f"));
-
+                //*/
                 xYInit = new double[]{perturb, perturb};
                 warps = Alignment.inverseComposition2DTranslationKeypointsCpImgs(im1, im2, xYInit, maxIter, eps,
                         yXKeypoints, hX, hY, Alignment.Type.TRANSLATION_2D);
@@ -952,6 +952,7 @@ public class OpticalFlowTest extends TestCase {
                 //assertEquals(iTest, (int)Math.round(warps.warps[chk][0][2]));
                 //assertEquals(iTest, (int)Math.round(warps.warps[chk][1][2]));
 
+                ///*
                 xYInit = new double[]{perturb, perturb};
                 warps = Alignment.inverseComposition2DTranslationKeypoints(im1, im2, xYInit, maxIter, eps,
                         yXKeypoints, hX, hY, Alignment.Type.TRANSLATION_2D);
@@ -960,7 +961,6 @@ public class OpticalFlowTest extends TestCase {
 
                 //assertEquals(iTest, (int)Math.round(warps.warps[chk][0][2]));
                 //assertEquals(iTest, (int)Math.round(warps.warps[chk][1][2]));
-
                 //*/
 
                 ///* Test 2D AFFINE
