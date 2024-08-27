@@ -548,6 +548,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
 
     public void applySobelX(float[][] input) {
 
+        //0.5f, 0.0f, -0.5f
         float[] kernel = Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive();
 
         /*
@@ -561,6 +562,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
     }
     public void applySobelX(double[][] input) {
 
+        //0.5f, 0.0f, -0.5f
         double[] kernel = MiscMath0.convertFloatToDouble(Gaussian1DFirstDeriv.getBinomialKernelSigmaZeroPointFive());
 
         /*

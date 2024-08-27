@@ -88,7 +88,7 @@ public class StructureTensor {
         // switch X and Y sobel operations to match scipy (column major to row major or vice versa)
 
         // NOTE: may need to revisit this
-        float norm = 4.f;//(0.707f * (float)Math.sqrt(2. * Math.PI));
+        float norm = 0.5f;//(0.707f * (float)Math.sqrt(2. * Math.PI));
         
         float[][] gX = imageProcessor.copy(image);
         imageProcessor.applySobelX(gX);
@@ -97,7 +97,10 @@ public class StructureTensor {
         float[][] gY = imageProcessor.copy(image);
         imageProcessor.applySobelY(gY);
         MatrixUtil.multiply(gY, norm);
-        
+
+        dX = gX;
+        dY = gY;
+
         // --- create structure tensors ----
         float[] kernel = (sigma > 0) ? Gaussian1D.getKernel(sigma) : null;
         
@@ -120,10 +123,7 @@ public class StructureTensor {
         }
         
         if (create2ndDerivs) {
-            
-            dX = gX;
-            dY = gY;
-            
+
             // for curvature, need d/dy(dy) and d/dx(dx)
             kernel = (sigma > 0) ?
                 Gaussian1DFirstDeriv.getKernel(sigma) :
@@ -138,9 +138,7 @@ public class StructureTensor {
             imageProcessor.applyKernel1D(d2Y, kernel, false);
         
         } else {
-            dX = null;
             d2X = null;
-            dY = null;
             d2Y = null;
         }
     }

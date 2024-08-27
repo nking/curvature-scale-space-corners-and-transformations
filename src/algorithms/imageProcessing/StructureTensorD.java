@@ -105,7 +105,10 @@ public class StructureTensorD {
         double[][] gY = imageProcessor.copy(image);
         imageProcessor.applySobelY(gY);
         MatrixUtil.multiply(gY, norm);
-        
+
+        dX = gX;
+        dY = gY;
+
         // --- create structure tensors ----
         double[] kernel = (sigma > 0) ? MiscMath0.convertFloatToDouble(Gaussian1D.getKernel(sigma)) : null;
         
@@ -126,9 +129,6 @@ public class StructureTensorD {
         if (kernel != null) {
             imageProcessor.applyKernelTwo1Ds(dXdY, kernel);
         }
-
-        dX = gX;
-        dY = gY;
 
         if (create2ndDerivs) {
 
