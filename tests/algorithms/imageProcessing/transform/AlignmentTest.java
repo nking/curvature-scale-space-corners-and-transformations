@@ -30,7 +30,7 @@ import java.util.*;
  */
 public class AlignmentTest extends TestCase {
 
-    boolean printDebug = true;
+    boolean printDebug = false;
 
     public AlignmentTest() {
     }
