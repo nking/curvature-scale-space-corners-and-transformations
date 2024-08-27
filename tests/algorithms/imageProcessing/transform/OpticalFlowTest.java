@@ -821,7 +821,7 @@ public class OpticalFlowTest extends TestCase {
         int nPoints = m;
 
         //for (int gImg = 0; gImg < 4; ++gImg) {
-        for (int iTest = 0; iTest < 3/*(m/3)*/; ++iTest) {
+        for (int iTest = 0; iTest < (m/3); ++iTest) {
 
             String gTitle = null;
             Images images = null;

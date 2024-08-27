@@ -226,7 +226,7 @@ public class Alignment {
         //G must be invertible.  the template image must have gradient info in x and y at each point of evaluation
         //   for the affine transformation.  for that reason, need to perform the affine algorithm over patches
         double[][] invHessianTmplt = MatrixUtil.inverse(hessianTmplt);
-        if (Double.isNaN(invHessianTmplt[0][0])) {
+        if (Double.isNaN(invHessianTmplt[0][0]) || Double.isInfinite(invHessianTmplt[0][0])) {
             invHessianTmplt = MatrixUtil.pseudoinverseRankDeficient(hessianTmplt);
         }
 
@@ -372,7 +372,7 @@ public class Alignment {
         //G must be invertible.  the template image must have gradient info in x and y at each point of evaluation
         //   for the affine transformation.  for that reason, need to perform the affine algorithm over patches
         double[][] invHessianTmplt = MatrixUtil.inverse(hessianTmplt);//MatrixUtil.pseudoinverseFullRowRank(hessianTmplt);
-        if (Double.isNaN(invHessianTmplt[0][0])) {
+        if (Double.isNaN(invHessianTmplt[0][0]) || Double.isInfinite(invHessianTmplt[0][0])) {
             invHessianTmplt = MatrixUtil.pseudoinverseRankDeficient(hessianTmplt);
         }
 
