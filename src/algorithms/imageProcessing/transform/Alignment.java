@@ -3,6 +3,7 @@ package algorithms.imageProcessing.transform;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.imageProcessing.Kernel1DHelper;
 import algorithms.matrix.MatrixUtil;
+import algorithms.util.FormatArray;
 import no.uib.cipr.matrix.NotConvergedException;
 
 import java.io.IOException;
@@ -601,6 +602,15 @@ public class Alignment {
         double[] xYInit = new double[2];
         double[] errSSD = Alignment.inverseCompositional2DTranslation(template, image, xYInit, maxIter, eps);
 
+        Warps xyTrans = null;
+        if (Math.abs(xYInit[0]) > hX || Math.abs(xYInit[1]) > hY) {
+            Arrays.fill(xYInit, 0);
+            // not feasible to detect an offset greater than window half-width or half-length without scale or shear
+            xyTrans = Alignment.inverseComposition2DTranslationKeypoints(template, image, xYInit, maxIter, eps,
+                    yXKeypoints, hX, hY, Alignment.Type.TRANSLATION_2D);
+            Alignment.improveEstimatesUsingAllWarps(xyTrans, template, image, yXKeypoints, hX, hY);
+        }
+
         Warps warps = new Warps();
         warps.warps = new double[nKeypoints][][];
         double ssd = 0;
@@ -618,10 +628,12 @@ public class Alignment {
             double[][] tImg = MatrixUtil.copySubMatrix(template, y - hY, y + hY, x - hX, x + hX);
             double[][] iImg = MatrixUtil.copySubMatrix(image, y - hY, y + hY, x - hX, x + hX);
 
-            double[][] _pInit = new double[][]{
-                    {1, 0, xYInit[0]},
-                    {0, 1, xYInit[1]}
-            };
+            double[][] _pInit;
+            if (xyTrans != null) {
+                _pInit = new double[][]{{1, 0, xyTrans.warps[i][0][2]}, {0, 1, xyTrans.warps[i][1][2]}};
+            } else {
+                _pInit = new double[][]{ {1, 0, xYInit[0]},{0, 1, xYInit[1]}};
+            }
             errSSD = Alignment.inverseCompositional(tImg, iImg, _pInit, maxIter,
                     Type.AFFINE_2D, eps);
             maxOfNIters = (int)Math.max(maxOfNIters, Math.round(errSSD[1]));
@@ -709,6 +721,17 @@ public class Alignment {
         double[] xYInit = new double[2];
         double[] errSSD = Alignment.inverseCompositional2DTranslation(template, image, xYInit, maxIter, eps);
 
+        Warps xyTrans = null;
+        if (Math.abs(xYInit[0]) > hX || Math.abs(xYInit[1]) > hY) {
+            Arrays.fill(xYInit, 0);
+            // not feasible to detect an offset greater than window half-width or half-length without scale or shear
+            xyTrans = Alignment.inverseComposition2DTranslationKeypoints(template, image, xYInit, maxIter, eps,
+                    yXKeypoints, hX, hY, Alignment.Type.TRANSLATION_2D);
+            Alignment.improveEstimatesUsingAllWarps(xyTrans, template, image, yXKeypoints, hX, hY);
+        }
+
+        //System.out.printf("flow=%s\n", FormatArray.toString(xYInit, "%.3f"));
+
         int nKeypoints = yXKeypoints.length;
 
         Warps warps = new Warps();
@@ -720,10 +743,12 @@ public class Alignment {
             y = yXKeypoints[i][0];
             x = yXKeypoints[i][1];
 
-            double[][] _pInit = new double[][]{
-                    {1, 0, xYInit[0]},
-                    {0, 1, xYInit[1]}
-            };
+            double[][] _pInit;
+            if (xyTrans != null) {
+                _pInit = new double[][]{{1, 0, xyTrans.warps[i][0][2]}, {0, 1, xyTrans.warps[i][1][2]}};
+            } else {
+                _pInit = new double[][]{ {1, 0, xYInit[0]},{0, 1, xYInit[1]}};
+            }
             errSSD = Alignment.inverseCompositional(template, image, x, y, hX, hY, _pInit, maxIter,
                     Type.AFFINE_2D, eps);
 
@@ -1079,6 +1104,63 @@ public class Alignment {
         return new double[]{nP, errSSD};
     }
 
+    private static double[] reprojectionError(int lp, double[][] image, double[][] t,
+        double[][] warp, int beginX, int endX, int beginY, int endY) {
+
+        if (lp < 1) {
+            throw new IllegalArgumentException("lp must be >= 1.  usually 1 or 2 is used");
+        }
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        // steepX and steepY are filled by
+        // x=idx%width, y=idx/width
+        // idx=x*width + y
+
+        int nP = 0;
+
+        double[] xy2;
+        double[] xy = new double[]{0,0,1};
+        double v2, diff=0;
+        double[] pS;
+        double err = 0;
+        for (int y = beginY, idxT =0; y <= endY; ++y) {
+            for (int x = beginX; x <= endX; ++x, ++idxT) {
+                xy[0] = x;
+                xy[1] = y;
+                xy2 = MatrixUtil.multiplyMatrixByColumnVector(warp, xy);
+
+                // roundoff
+                xy2[0] = Math.round(xy2[0] * 1E2)/1E2;
+                xy2[1] = Math.round(xy2[1] * 1E2)/1E2;
+
+                if (xy2[0] < beginX || Math.ceil(xy2[0]) > endX || xy2[1] < beginY || Math.ceil(xy2[1]) > endY) {
+                    continue;
+                }
+                // method expecting col major data so reverse the coords:
+                v2 = imageProcessor.biLinearInterpolation(image, xy2[1], xy2[0]);
+
+                // error image is T(x) - I(w(x;p)) - T(x)
+                diff = t[y][x] - v2;
+
+                err += Math.pow(diff, lp);
+
+                ++nP;
+            }
+        }
+        err /= nP;
+        if (lp > 1) {
+            err = Math.pow(err, 1. / lp);
+        }
+
+
+        //System.out.printf("errorSSD=%.3f\n", err);
+        if (nP == 0) {
+            return new double[]{nP, Double.MAX_VALUE};
+        }
+        return new double[]{nP, err};
+    }
+
     private static double[][] inverseWParam2DTrans(double[] deltaP) throws NotConvergedException {
         return new double[][]{
                 {1, 0, -deltaP[0]},
@@ -1131,6 +1213,56 @@ public class Alignment {
         for (int i = 0; i < warp.length; ++i) {
             System.arraycopy(tmp[i], 0, warp[i], 0, tmp[i].length);
         }
+    }
+
+    /**
+     * applies all warps to each keypoint and uses the warp giving the smallest re-projection error (using lp=1
+     * and abs value comparisons).  A feasibility conditional is used also, but may need to be
+     * revised for different use cases.  This one makes an assumption that scale is the most important contributor
+     * to warp[0][0] and warp[1][1] and then discards a warp if the translation in x / warp[0][0] .gt. hX
+     * or translation in y / warp[1][1] .gt. hY. ... The feasibility conditional ignores shear.
+     *
+     * @param warps
+     * @param im1
+     * @param im2
+     * @param yXKeypoints
+     * @param hX
+     * @param hY
+     */
+    public static void improveEstimatesUsingAllWarps(Warps warps, double[][] im1, double[][] im2,
+                                                         int[][] yXKeypoints, final int hX, final int hY) {
+
+        int y, x;
+        for (int i = 0; i < yXKeypoints.length; ++i) {
+            y = yXKeypoints[i][0];
+            x = yXKeypoints[i][1];
+
+            double[] ssds = new double[yXKeypoints.length];
+            int ii = 0;
+            //TODO: consider other constraints that could add here
+            double[][] bestWarp = null;
+            double bestSSD = Double.POSITIVE_INFINITY;
+            for (double[][] warp : warps.warps) {
+                // check feasibility.
+                // cannot have detected a translation larger than the window
+                // TODO: revisit this... only true if ignore shear
+                if (Math.abs(warp[0][2]/warp[0][0]) > hX || Math.abs(warp[1][2]/warp[1][1]) > hY) {
+                    continue;
+                }
+                double[] npErr = reprojectionError(1, im1, im2, warp, x-hX, x+hX, y-hY, y+hY);
+                if (Math.abs(npErr[1]) < Math.abs(bestSSD)) {
+                    bestWarp = warp;
+                    bestSSD = npErr[1];
+                }
+                ssds[ii++] = npErr[1];
+            }
+            if (bestWarp != null) {
+                for (int j = 0; j < bestWarp.length; ++j) {
+                    System.arraycopy(bestWarp[j], 0, warps.warps[i][j], 0, bestWarp[j].length);
+                }
+            } // TODO: handle the else.  if decide to return nulls, should document it
+        }
+
     }
 
     private static boolean areTheSame(double[][] a, double[][] b, double tol) {

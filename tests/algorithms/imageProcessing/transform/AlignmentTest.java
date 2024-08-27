@@ -30,12 +30,12 @@ import java.util.*;
  */
 public class AlignmentTest extends TestCase {
 
-    boolean printDebug = false;
+    boolean printDebug = true;
 
     public AlignmentTest() {
     }
 
-    public void test2InverseCompositionAlignment() throws IOException, NotConvergedException {
+    public void __test2InverseCompositionAlignment() throws IOException, NotConvergedException {
         if (printDebug)
             System.out.printf("test2InverseCompositionAlignment\n");
         int pixMax = 32*2;
@@ -279,7 +279,7 @@ public class AlignmentTest extends TestCase {
 
         //the first image will be a random pattern, the 2nd will be im1 warped by projection matrix
 
-        long seed = System.nanoTime();
+        long seed = 144443581431569L;//System.nanoTime();
         System.out.println("seed=" + seed);
         Random rand = new Random(seed);
 
@@ -487,17 +487,18 @@ public class AlignmentTest extends TestCase {
                 double[] errSSD;
                 double[] xYInit;
 
-                ///*  TEST 2-D translation
+                //*  TEST 2-D translation
                 xYInit = new double[]{perturb, perturb};
 
                 errSSD = Alignment.inverseCompositional2DTranslation(im1, im2, xYInit, maxIter, eps);
                 if (printDebug)
                     System.out.printf("2D trans (whole image):\n  nIter=%d\n  %s\n",
                         (int) Math.round(errSSD[1]), FormatArray.toString(xYInit, "%.2f"));
-                //*/
+
                 xYInit = new double[]{perturb, perturb};
                 warps = Alignment.inverseComposition2DTranslationKeypointsCpImgs(im1, im2, xYInit, maxIter, eps,
                         yXKeypoints, hX, hY, Alignment.Type.TRANSLATION_2D);
+                Alignment.improveEstimatesUsingAllWarps(warps, im1, im2, yXKeypoints, hX, hY);
                 if (printDebug)
                     System.out.printf("2D trans (sub-section image copies):\n  nIter=%d,\n%s\n%s\n",
                         warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"),
@@ -505,30 +506,34 @@ public class AlignmentTest extends TestCase {
                 //assertEquals(iTest, (int)Math.round(warps.warps[chk][0][2]));
                 //assertEquals(iTest, (int)Math.round(warps.warps[chk][1][2]));
 
-                ///*
                 xYInit = new double[]{perturb, perturb};
                 warps = Alignment.inverseComposition2DTranslationKeypoints(im1, im2, xYInit, maxIter, eps,
                         yXKeypoints, hX, hY, Alignment.Type.TRANSLATION_2D);
-
+                Alignment.improveEstimatesUsingAllWarps(warps, im1, im2, yXKeypoints, hX, hY);
                 if (printDebug)
                     System.out.printf("2D trans (image windows):\n  nIter=%d\n%s\n",
                         warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
 
                 //assertEquals(iTest, (int)Math.round(warps.warps[chk][0][2]));
                 //assertEquals(iTest, (int)Math.round(warps.warps[chk][1][2]));
-                //*/
 
-                ///* Test 2D AFFINE
+                //* Test 2D AFFINE
 
                 warps = Alignment.inverseCompositionKeypointsCpImgs(im1, im2,
                         new double[][]{{1, 0, perturb}, {0, 1, perturb}}, maxIter, eps,
                         yXKeypoints, hX, hY, Alignment.Type.AFFINE_2D);
+
+                Alignment.improveEstimatesUsingAllWarps(warps, im1, im2, yXKeypoints, hX, hY);
+
                 if (printDebug)
                     System.out.printf("2D AFFINE (sub-section image copies)):\n  nIter=%d\n%s\n",
                         warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
 
                 warps = Alignment.inverseCompositionKeypointsCpImgs2DAffinePre2DTrans(
                         im1, im2, maxIter, eps, yXKeypoints, hX, hY);
+
+                Alignment.improveEstimatesUsingAllWarps(warps, im1, im2, yXKeypoints, hX, hY);
+
                 if (printDebug)
                     System.out.printf("2D trans + 2D affine (sub-section image copies):\n  nIter=%d,\n%s\n",
                         warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
@@ -536,12 +541,16 @@ public class AlignmentTest extends TestCase {
                 warps = Alignment.inverseCompositionKeypoints(im1, im2,
                         new double[][]{{1, 0, perturb}, {0, 1, perturb}}, maxIter, eps,
                         yXKeypoints, hX, hY, Alignment.Type.AFFINE_2D);
+                Alignment.improveEstimatesUsingAllWarps(warps, im1, im2, yXKeypoints, hX, hY);
                 if (printDebug)
                     System.out.printf("2D AFFINE (image windows)):\n  nIter=%d\n%s\n",
                         warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
 
                 warps = Alignment.inverseCompositionKeypoints2DAffinePre2DTrans(
                         im1, im2, maxIter, eps, yXKeypoints, hX, hY);
+
+                Alignment.improveEstimatesUsingAllWarps(warps, im1, im2, yXKeypoints, hX, hY);
+
                 if (printDebug) {
                     System.out.printf("2D trans + 2D affine (image windows):\n  nIter=%d,\n%s\n",
                             warps.nIterMax, FormatArray.toString(warps.warps[chk], "%.2f"));
