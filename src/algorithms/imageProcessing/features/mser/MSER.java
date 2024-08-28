@@ -4,6 +4,9 @@ import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.VeryLongBitString;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,7 +69,7 @@ thread needs to have its own MSER class instance.
 * the greyscale level increases to pass the maximum value of 255.
 * 
 * processing involves comparison of an accumulated region to 
-* it's parent and child where the comparison is the fractional 
+* its parent and child where the comparison is the fractional
 * difference in the areas (to determine whether the current
 * region is a minimum in a small sample of the growth rate).
 * 
@@ -263,6 +266,7 @@ public class MSER {
         //       consider the new pixel and its grey-level and go to 3.
         int x, y, neighborPixel;
         boolean s3;
+
         while (true) {
 
             x = curPixel % width;
@@ -326,6 +330,7 @@ public class MSER {
                             priority = curLevel;
                         }
                         curPixel = neighborPixel;
+
                         curEdge = 0;
                         curLevel = neighborLevel;
 
@@ -388,7 +393,32 @@ public class MSER {
                 return;
             }
 
-            int sz = boundaryPixels[priority].size();  
+            int sz = boundaryPixels[priority].size();
+
+            //NLK: added handling for case where boundaryPixels is completely empty
+            //---------------------
+            int tmp = priority;
+            while ( tmp >= 0 && boundaryPixels[tmp].isEmpty()) {
+                sz = boundaryPixels[tmp--].size();
+            }
+            if (sz == 0) {
+                // all boundary pixels are empty, so increment curPixel and continue
+                // using line 291 of above for choosing next pixel, even if _eight_ is false.  it assumes all neighbors processed
+                curPixel = curPixel + width + 1;
+                if (curPixel >= width*height) {
+                    //precess regions and end?
+                    regionStack.get(regionStack.size() - 1)
+                            .detect(delta_, (int)(minArea_ * width * height),
+                                    (int)(maxArea_ * width * height),
+                                    maxVariation_, minDiversity_, regions);
+                    return;
+                }
+                priority = 256;
+                curLevel = bits[curPixel];
+                continue;
+            }
+            // ---------------
+
             int highestPriorityBP = boundaryPixels[priority].removeAt(sz - 1);
             if (boundaryPixels[priority].isEmpty()) {
                 boundaryPixelsIdx.clearBit(priority);
@@ -459,7 +489,7 @@ public class MSER {
                 regionStack.get(regionStack.size() - 1).level_) {
 
                 // NOTE, this slight change in methods used by Charles Dubout results
-                // in the history of top being added to new node correclty
+                // in the history of top being added to new node correctly
                 // without additional logic
                 regionStack.add(new Region(newPixelGreyLevel, pixel));
             
