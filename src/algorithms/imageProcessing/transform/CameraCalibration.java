@@ -8,6 +8,7 @@ import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.misc.MiscMath;
 import algorithms.misc.MiscMath0;
 import algorithms.misc.PolynomialRootSolver;
+import algorithms.statistics.Standardization;
 import algorithms.util.FormatArray;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -355,23 +356,27 @@ public class CameraCalibration {
      * this is also in sect 2.4 of camera calibration book by zhang
      * as homography between a model plane and its image (in camera calibration w/ 2d objects: plane based techniques).
      *
-     * @param coordsI holds the image coordinates in pixels of features present in image i
+     * @param coordsI holds the image coordinates in pixels of features present in image i as format [3 X nPoints].
+     *                Only the first 2 dimensions are used, so if the 3rd dimension (z axis) is present, it is
+     *                the responsibility of the invoker to have normalized the 1st 2 dimensions by the 3rd.
      * @param coordsW holds the world coordinates of features present in image 1 corresponding
-               to the same features and order of coordsI_i
+               to the same features and order of coordsI_i as format [3 X nPoints].
+     *                Only the first 2 dimensions are used, so if the 3rd dimension (z axis) is present, it is
+     *                the responsibility of the invoker to have normalized the 1st 2 dimensions by the 3rd.
      * @return the homography, projection matrix
      */
     public static double[][] solveForHomography(double[][] coordsI, double[][] coordsW, boolean useNormConditioning)
             throws NotConvergedException {
         
-        if (coordsI.length != 3) {
-            throw new IllegalArgumentException("coordsI must have 3 rows.");
+        if (coordsI.length < 2 || coordsI.length > 3) {
+            throw new IllegalArgumentException("coordsI must have 2 or 3 rows.");
         }
-        if (coordsW.length != 3) {
-            throw new IllegalArgumentException("coordsW must have 3 rows.");
+        if (coordsW.length < 2 || coordsW.length > 3) {
+            throw new IllegalArgumentException("coordsW must have 2 or 3 rows.");
         }
         int n = coordsI[0].length;
         if (coordsW[0].length != n) {
-            throw new IllegalArgumentException("coordsW must have same number of rows as coordsI.");
+            throw new IllegalArgumentException("coordsW must have same number of columns as coordsI.");
         }
         
         /*
@@ -399,9 +404,14 @@ public class CameraCalibration {
         double[][] tI = null;
         double[][] tW = null;
         if (useNormConditioning) {
-            coordsI = MatrixUtil.copy(coordsI);
-            coordsW = MatrixUtil.copy(coordsW);
+            coordsI = MatrixUtil.copySubMatrix(coordsI, 0, 1, 0, coordsI[0].length-1);
+            coordsW = MatrixUtil.copySubMatrix(coordsW, 0, 1, 0, coordsW[0].length-1);
+
+            //coordsI = MatrixUtil.copy(coordsI);
+            //coordsW = MatrixUtil.copy(coordsW);
+
             tI = EpipolarNormalizationHelper.unitStandardNormalize(coordsI);
+
             tW = EpipolarNormalizationHelper.unitStandardNormalize(coordsW);
         }
 
@@ -422,10 +432,33 @@ public class CameraCalibration {
             //ell[2*i + 1] = new double[]{0, 0, 0, X, Y, 1, v*X, v*Y, v};
         }
 
-        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(MatrixUtil.createATransposedTimesA(ell));
-        
+        double[][] lTl = MatrixUtil.createATransposedTimesA(ell);
+        int rank = MatrixUtil.rank(lTl);
+        SVD svd = SVD.factorize(new DenseMatrix(lTl));
+        double[][] vT = MatrixUtil.convertToRowMajor(svd.getVt());
+
         // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
-        double[] xOrth = svd.vT[svd.vT.length - 1];
+        // but if lTl rank was < 9, there may be nan rows at end of VT, so find last eigenvalue > machine tolerance for 0 and use
+        // it (or take last non Nan row...)
+        double[] xOrth = null;
+        if (rank == 9) {
+            xOrth = vT[vT.length - 1];
+        } else {
+            for (int row = vT.length - 1; row >= 0; row--) {
+                if (vT[row][8] == 0.) continue;
+                boolean allReal = true;
+                for (int col = 0; col < 9; ++col) {
+                    if (Double.isNaN(vT[row][col]) || Double.isInfinite(vT[row][col])) {
+                        allReal = false;
+                        break;
+                    }
+                }
+                if (allReal) {
+                    xOrth = vT[row];
+                    break;
+                }
+            }
+        }
         MatrixUtil.multiply(xOrth, 1./xOrth[xOrth.length - 1]);
         //h00, h01, h02, h10, h11, h12, h20,h21,h22
 

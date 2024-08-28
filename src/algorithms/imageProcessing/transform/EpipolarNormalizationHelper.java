@@ -62,10 +62,11 @@ public class EpipolarNormalizationHelper {
      *     and T2 is the transformation matrix from points x2.
      *
      * </pre>
-     * @param x matrix of data in format [3 X nPoints] where row 0 are the
+     * @param x matrix of data in format [2 or 3 X nPoints] where row 0 are the
      *          'x-axis' coordinates, row 1 are the 'y-axis' coordinates,
-     *          and row 3 are the 'z-axis' coordinates which are expected
-     *          to be all '1' (= homogenous coordinates).
+     *          and if row 3 is present it is the 'z-axis' coordinates which are expected
+     *          to be all '1' (= homogenous coordinates), i.e. row x[2] is not used here.
+     *
      *
      * @return transformation matrix used to normalize x.
      <pre>
@@ -75,49 +76,55 @@ public class EpipolarNormalizationHelper {
     </pre>
      */
     public static double[][] unitStandardNormalize(double[][] x) {
-        if (x.length != 3 && x.length != 4) {
-            throw new IllegalArgumentException("x.length must be 3 or 4");
-        }
+
         int n = x[0].length;
 
-        int nd = x.length - 1;
+        double[] rowMeans = MatrixUtil.rowMeans(x);
 
-        double[] mS = new double[2*nd];
-
-        int i;
-        int j;
-        for (i = 0; i < n; ++i) {
-            for (j = 0; j < nd; ++j) {
-                mS[j] += x[j][i];
+        int col;
+        int row;
+        for (row = 0; row < 2; ++row) {
+            for (col = 0; col < n; ++col) {
+                x[row][col] -= rowMeans[row];
             }
         }
 
-        for (j = 0; j < nd; ++j) {
-            mS[j] /= n;
-        }
-
-        double d;
-        for (i = 0; i < n; ++i) {
-            for (j = 0; j < nd; ++j) {
-                d = (x[j][i] - mS[j]);
-                mS[j + nd] += (d * d);
+        double[] stdevs = new double[2];
+        for (row = 0; row < 2; ++row) {
+            for (col = 0; col < n; ++col) {
+                // difference from mean 0
+                stdevs[row] += (x[row][col]*x[row][col]);
             }
         }
-        for (j = nd; j < 2*nd; ++j) {
-            mS[j] = Math.sqrt(mS[j]/(n - 1.0));
+        for (row = 0; row < 2; ++row) {
+            stdevs[row] = Math.sqrt(stdevs[row]/(n-1.));
+            if (stdevs[row] == 0.0) {
+                System.out.println("WARNING: standard deviation of row " + row
+                        + " was 0, so consider using another normalization " +
+                        "method like min-max instead");
+            }
         }
 
-        double[][] t = new double[x.length][x.length];
-        for (i = 0; i < nd; ++i) {
-            t[i][i] = 1. / mS[nd];
-            t[i][t[i].length - 1] = -mS[i] / mS[nd+i];
+        for (row = 0; row < 2; ++row) {
+            for (col = 0; col < n; ++col) {
+                if (stdevs[row] > 0) {
+                    x[row][col] /= stdevs[row];
+                }
+            }
         }
-        t[x.length - 1][x.length - 1] = 1;
 
-        double[][] xyN = MatrixUtil.multiply(t, x);
-        for (i = 0; i < x.length; ++i) {
-            System.arraycopy(xyN[i], 0, x[i], 0, xyN[i].length);
+        double[][] t = new double[3][3];
+        for (row = 0; row < 2; ++row) {
+            if (stdevs[row] == 0.) {
+                t[row][row] = 1.;
+                t[row][2] = -rowMeans[row];
+            } else {
+                t[row][row] = 1. / stdevs[row];
+                t[row][2] = -rowMeans[row] / stdevs[row];
+            }
         }
+        t[2][2] = 1;
+
         return t;
     }
 
