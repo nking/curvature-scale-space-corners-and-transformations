@@ -409,14 +409,12 @@ public class MSER {
                 } else if (!eight_ && (y > 0)) {
                     curPixel = curPixel - width;
                 } else {
-                    if (curPixel >= width * height) {
-                        //precess regions and end?
-                        regionStack.get(regionStack.size() - 1)
-                                .detect(delta_, (int) (minArea_ * width * height),
-                                        (int) (maxArea_ * width * height),
-                                        maxVariation_, minDiversity_, regions);
-                        return;
-                    }
+                    //precess regions and end?
+                    regionStack.get(regionStack.size() - 1)
+                            .detect(delta_, (int) (minArea_ * width * height),
+                                    (int) (maxArea_ * width * height),
+                                    maxVariation_, minDiversity_, regions);
+                    return;
                 }
                 priority = 256;
                 curLevel = bits[curPixel];
