@@ -76,7 +76,7 @@ public class Gaussian1DTest extends TestCase {
                 x[i] = i + (mu - halfWidthInPixels);
             }
             
-            System.out.println("sigma=" + sigma);
+            //System.out.println("sigma=" + sigma);
             
             float yMin = MiscMath.findMin(gb);
             if (yMin > 0) {
@@ -270,7 +270,7 @@ public class Gaussian1DTest extends TestCase {
     @Test
     public void testCheckAllKernels() throws IOException {
         
-        System.out.println("testCheckAllKernels");
+        //System.out.println("testCheckAllKernels");
                 
         PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();
         
@@ -287,7 +287,7 @@ public class Gaussian1DTest extends TestCase {
                 xb[i] = i + (mu - halfWidthInPixels);
             }
          
-            System.out.println("sigma=" + sigma);
+            //System.out.println("sigma=" + sigma);
             
             float yMin = MiscMath.findMin(gb);
             if (yMin > 0) {
@@ -398,7 +398,7 @@ public class Gaussian1DTest extends TestCase {
             }
             
             double area = GaussianHelperForTests.areaUnderTheCurve(xb, gb);
-if (sigma.ordinal() == SIGMA.TWO.ordinal()) {
+/*if (sigma.ordinal() == SIGMA.TWO.ordinal()) {
     for (int i = 0; i < gb.length; i++) {
         float gs = gb[i];
         if (Math.abs(gs) < 1E-3) {
@@ -408,7 +408,7 @@ if (sigma.ordinal() == SIGMA.TWO.ordinal()) {
         }
     }
     System.out.println("");
-}          
+} */
             plotter.addPlot(xMin, xMax, yMin, yMax, xb, gb, null, null,
                     "gaussSecondDeriv(sigma=" + sigma.toString() + " area="
                     + area +")");
@@ -425,7 +425,7 @@ if (sigma.ordinal() == SIGMA.TWO.ordinal()) {
     @Test
     public void testGetKernels() throws IOException {
         
-        System.out.println("testGetKernels");
+        //System.out.println("testGetKernels");
                 
         SIGMA sigma = SIGMA.ONE;
 
@@ -477,8 +477,8 @@ if (sigma.ordinal() == SIGMA.TWO.ordinal()) {
             float expectedFWHM = (float)(SIGMA.getValue(sigma) * 2.f * 
                 Math.sqrt(2*Math.log(2)));
             
-            System.out.println("sigma=" + SIGMA.getValue(sigma) +
-                " FWHM=" + FWHM + " expected=" + expectedFWHM + " eps=" + eps);
+            //System.out.println("sigma=" + SIGMA.getValue(sigma) +
+            //    " FWHM=" + FWHM + " expected=" + expectedFWHM + " eps=" + eps);
             
             assertTrue(Math.abs(expectedFWHM - FWHM) < eps);
             
@@ -490,7 +490,7 @@ if (sigma.ordinal() == SIGMA.TWO.ordinal()) {
     @Test
     public void testGetKernel() throws IOException {
         
-        System.out.println("testGetKernel");
+        //System.out.println("testGetKernel");
         
         float t = 0;
         
@@ -530,7 +530,7 @@ if (sigma.ordinal() == SIGMA.TWO.ordinal()) {
         
         String filePath = plotter.writeFile();
         
-        System.out.println(filePath);
+        //System.out.println(filePath);
         
         assertTrue(Math.abs(sum - 1) < 0.1);
         
@@ -576,7 +576,7 @@ if (sigma.ordinal() == SIGMA.TWO.ordinal()) {
         
         filePath = plotter.writeFile2();
         
-        System.out.println(filePath);
+        //System.out.println(filePath);
         
         assertTrue(Math.abs(sum) < 0.1);
         
@@ -616,7 +616,7 @@ if (sigma.ordinal() == SIGMA.TWO.ordinal()) {
         
         filePath = plotter.writeFile3();
         
-        System.out.println(filePath);
+       // System.out.println(filePath);
                 
         assertTrue(Math.abs(sum) < 0.1);
         
@@ -627,7 +627,7 @@ if (sigma.ordinal() == SIGMA.TWO.ordinal()) {
     @Test
     public void testGetKernel2() throws IOException {
         
-        System.out.println("testGetKernel2");
+        //System.out.println("testGetKernel2");
                 
         SIGMA sigma = SIGMA.ONE;
                         
@@ -655,7 +655,7 @@ if (sigma.ordinal() == SIGMA.TWO.ordinal()) {
         
         String filePath = plotter.writeFile();
         
-        System.out.println(filePath);
+        //System.out.println(filePath);
         
         assertTrue(Math.abs(sum - 1) < 0.1);
         
@@ -692,7 +692,7 @@ if (sigma.ordinal() == SIGMA.TWO.ordinal()) {
         
         filePath = plotter.writeFile2();
         
-        System.out.println(filePath);
+       // System.out.println(filePath);
         
         assertTrue(x[h] == 0);
         assertTrue(gfd[h] == 0);
@@ -730,7 +730,7 @@ if (sigma.ordinal() == SIGMA.TWO.ordinal()) {
         
         filePath = plotter.writeFile3();
         
-        System.out.println(filePath);
+        //System.out.println(filePath);
        
         assertTrue(Math.abs(sum) < 0.1);
         
@@ -744,7 +744,7 @@ if (sigma.ordinal() == SIGMA.TWO.ordinal()) {
     @Test
     public void testGetHalfKernelUsingBinomialFilter() throws IOException {
         
-        System.out.println("testGetHalfKernelUsingBinomialFilter");
+        //System.out.println("testGetHalfKernelUsingBinomialFilter");
                 
         double[] halfKernel = Gaussian1D.getHalfKernelUsingBinomialFilterSigmaOne();
         

@@ -198,7 +198,7 @@ public class CannyEdgeColorAdaptiveTest extends TestCase {
             int w = img.getWidth();
             int h = img.getHeight();
         
-            System.out.println("file=" + fileName1Root);
+            //System.out.println("file=" + fileName1Root);
             
             CannyEdgeColorAdaptive canny2 = new CannyEdgeColorAdaptive();
             canny2.overrideToNotUseLineThinner();
