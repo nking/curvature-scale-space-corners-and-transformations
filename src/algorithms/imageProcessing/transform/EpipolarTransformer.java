@@ -1525,8 +1525,17 @@ public class EpipolarTransformer {
         }
 
         double[][] t = new double[3][];
-        t[0] = new double[]{1./mS[2],       0,     -mS[0]/mS[2]};
-        t[1] = new double[]{0,           1./mS[3], -mS[1]/mS[3]};
+        for (int row = 0; row < 2; ++row) {
+            if (mS[row + 2] == 0.) {
+                // std is 0 for row
+                System.out.println("WARNING: standard deviation of row " + row
+                        + " was 0, so consider using another normalization " +
+                        "method like min-max instead");
+                t[row] = new double[]{1., 0, -mS[row]};
+            } else {
+                t[row] = new double[]{1. / mS[row + 2], 0, -mS[row] / mS[row + 2]};
+            }
+        }
         t[2] = new double[]{0,           0,           1};
 
         double[] chk = MatrixUtil.multiplyMatrixByColumnVector(t, MatrixUtil.extractColumn(xy, 0));
@@ -1552,6 +1561,11 @@ public class EpipolarTransformer {
     protected static NormalizationTransformations createScaleTranslationMatrices(
         double scale,
         double centroidX, double centroidY) {
+
+        if (scale == 0.) {
+            System.out.println("WARNING: scale == 0.  Changing scale to 1.0 for matrix transformations.");
+            scale = 1.0;
+        }
         
         /*
         scale, rotate, then translate.
@@ -1600,7 +1614,7 @@ public class EpipolarTransformer {
             T = |  0  1/s  0 | * | 0  1  -yc |
                 |  0    0  1 |   | 0  0   1  |
         */
-        
+
         double[][] t = new double[3][];
         t[0] = new double[]{1./scale,       0,     -centroidX/scale};
         t[1] = new double[]{0,           1./scale, -centroidY/scale};
