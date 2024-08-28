@@ -403,15 +403,20 @@ public class MSER {
             }
             if (sz == 0) {
                 // all boundary pixels are empty, so increment curPixel and continue
-                // using line 291 of above for choosing next pixel, even if _eight_ is false.  it assumes all neighbors processed
-                curPixel = curPixel + width + 1;
-                if (curPixel >= width*height) {
-                    //precess regions and end?
-                    regionStack.get(regionStack.size() - 1)
-                            .detect(delta_, (int)(minArea_ * width * height),
-                                    (int)(maxArea_ * width * height),
-                                    maxVariation_, minDiversity_, regions);
-                    return;
+                // using line 291 or line 298 above for choosing next pixel,
+                if (eight_ && (x < width - 1) && (y < height - 1)) {
+                    curPixel = curPixel + width + 1;
+                } else if (!eight_ && (y > 0)) {
+                    curPixel = curPixel - width;
+                } else {
+                    if (curPixel >= width * height) {
+                        //precess regions and end?
+                        regionStack.get(regionStack.size() - 1)
+                                .detect(delta_, (int) (minArea_ * width * height),
+                                        (int) (maxArea_ * width * height),
+                                        maxVariation_, minDiversity_, regions);
+                        return;
+                    }
                 }
                 priority = 256;
                 curLevel = bits[curPixel];
