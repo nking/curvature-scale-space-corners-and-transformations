@@ -8,10 +8,7 @@ import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
 MSER.java and Region.java are java ports of the C++ MSER
@@ -270,14 +267,17 @@ public class MSER {
         int x, y, neighborPixel;
         boolean s3;
 
-        Set<PairInt> debugXY = new HashSet<>();
+        LinkedHashSet<Integer> debugXY = new LinkedHashSet<>();
+        for (int pix = 0; pix < width*height; ++pix) {
+            debugXY.add(pix);
+        }
 
         while (true) {
 
             x = curPixel % width;
             y = curPixel / width;
 
-            debugXY.add(new PairInt(x, y));
+            debugXY.remove(curPixel);
 
             s3 = false;
 
@@ -306,8 +306,7 @@ public class MSER {
                     }
                 }
 
-                if (neighborPixel != curPixel
-                    && accessible.isNotSet(neighborPixel)) {
+                if (neighborPixel != curPixel && accessible.isNotSet(neighborPixel)) {
 
                     int neighborLevel = bits[neighborPixel];
                     accessible.setBit(neighborPixel);
@@ -392,8 +391,7 @@ public class MSER {
             //    previous, go to 4.
             if (priority == 256) {
 
-                regionStack.get(regionStack.size() - 1)
-                    .detect(delta_, (int)(minArea_ * width * height),
+                regionStack.get(regionStack.size() - 1).detect(delta_, (int)(minArea_ * width * height),
                         (int)(maxArea_ * width * height),
                         maxVariation_, minDiversity_, regions);
 
@@ -413,9 +411,9 @@ public class MSER {
                 int prevPixel = curPixel;
 
                 // using code under line 288 above for choosing next pixel,
-                PairInt notVisited = nextCurPixel(eight_, curPixel, height, width, debugXY);
+                int notVisited = nextCurPixel(eight_, curPixel, height, width, debugXY);
 
-                if (notVisited == null) {
+                if (notVisited == -1) {
                     //precess regions and end?
                     regionStack.get(regionStack.size() - 1)
                             .detect(delta_, (int) (minArea_ * width * height),
@@ -423,7 +421,7 @@ public class MSER {
                                     maxVariation_, minDiversity_, regions);
                     return;
                 }
-                curPixel = notVisited.getY() * width + notVisited.getX();
+                curPixel = notVisited;
 
                 if (priority == 255 || accessible.getNSetBits() == bits.length) {
                     priority = 256;
@@ -488,49 +486,50 @@ public class MSER {
         }// end outer while loop
     }
 
-    private PairInt nextCurPixel(boolean eight, int curPixel, int height, int width, Set<PairInt> debugXY) {
-        int nXY = width*height;
-        if (debugXY.size() == nXY) {
-            return null;
+    // debugXY contains unvisited pixels
+    private int nextCurPixel(boolean eight, int curPixel, int height, int width, LinkedHashSet<Integer> debugXY) {
+        if(debugXY.isEmpty()) {
+            return -1;
         }
+        int nXY = width*height;
+
         int x = curPixel % width;
         int y = curPixel / width;
         int pix = -1;
-        PairInt p;
         if (eight) {
+            // eight neighbor model
             for (int i = 0; i < 8; ++i) {
                 pix = -1;
                 switch (i) {
                     case 0:
-                        if ((x < width - 1) && (y < height - 1)) pix = curPixel + width + 1;
-                        break;
-                    case 1:
-                        if (y < height - 1) pix = curPixel + width;
-                        break;
-                    case 2:
-                        if ((x > 0) && (y < height - 1)) pix = curPixel + width - 1;
-                        break;
-                    case 3:
-                        if (x > 0) pix = curPixel - 1;
-                        break;
-                    case 4:
-                        if ((x > 0) && (y > 0)) pix = curPixel - width - 1;
-                        break;
-                    case 5:
-                        if (y > 0) pix = curPixel - width;
-                        break;
-                    case 6:
-                        if ((x < width - 1) && (y > 0)) pix = curPixel - width + 1;
-                        break;
-                    case 7:
                         if (x < width - 1) pix = curPixel + 1;
                         break;
+                    case 1:
+                        if ((x < width - 1) && (y > 0)) pix = curPixel - width + 1;
+                        break;
+                    case 2:
+                        if (y > 0) pix = curPixel - width;
+                        break;
+                    case 3:
+                        if ((x > 0) && (y > 0)) pix = curPixel - width - 1;
+                        break;
+                    case 4:
+                        if (x > 0) pix = curPixel - 1;
+                        break;
+                    case 5:
+                        if ((x > 0) && (y < height - 1)) pix = curPixel + width - 1;
+                        break;
+                    case 6:
+                        if (y < height - 1) pix = curPixel + width;
+                        break;
+                    case 7:
+                        if ((x < width - 1) && (y < height - 1)) pix = curPixel + width + 1;
+                        break;
                     default:
-                        return null;
+                        return -1;
                 }
                 if (pix == -1) continue;
-                p = new PairInt(pix % width, pix / width);
-                if (!debugXY.contains(p)) return p;
+                if (debugXY.contains(pix)) return pix;
             }
         } else {
             // 4 neighbor model
@@ -538,31 +537,26 @@ public class MSER {
                 pix = -1;
                 switch (i) {
                     case 0:
-                        if (y > 0) pix = curPixel - width;
-                        break;
-                    case 1:
-                        if (x > 0) pix = curPixel - 1;
-                        break;
-                    case 2:
-                        if  (y < height - 1) pix = curPixel + width;
-                        break;
-                    case 3:
                         if (x < width - 1) pix = curPixel + 1;
                         break;
+                    case 1:
+                        if  (y < height - 1) pix = curPixel + width;
+                        break;
+                    case 2:
+                        if (x > 0) pix = curPixel - 1;
+                        break;
+                    case 3:
+                        if (y > 0) pix = curPixel - width;
+                        break;
                     default:
-                        return null;
+                        return -1;
                 }
                 if (pix == -1) continue;
-                p = new PairInt(pix % width, pix / width);
-                if (!debugXY.contains(p)) return p;
+                if (debugXY.contains(pix)) return pix;
             }
         }
         // hackish way to proceed: pick smallest pixValue not in debugXY
-        for (pix = 0; pix < nXY; ++pix) {
-            p = new PairInt(pix % width, pix / width);
-            if (!debugXY.contains(p)) return p;
-        }
-        return null;
+        return debugXY.iterator().next();
     }
 
     private void processStack(int newPixelGreyLevel, int pixel,
@@ -846,6 +840,8 @@ public class MSER {
             minDiversity, false);
 
         List<Region> regions = new ArrayList<Region>();
+
+        greyscale = Arrays.copyOf(greyscale, greyscale.length);
    
         // Invert the pixel values
         for (int i = 0; i < width * height; ++i) {
@@ -916,6 +912,7 @@ public class MSER {
         mser8.operator(greyscale, width, height, regions.get(0));
    
         // Invert the pixel values
+        greyscale = Arrays.copyOf(greyscale, greyscale.length);
         for (int i = 0; i < width * height; ++i) {
             greyscale[i] = ~greyscale[i];
             if (greyscale[i] < 0) {

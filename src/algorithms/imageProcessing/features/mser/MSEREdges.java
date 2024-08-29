@@ -2309,11 +2309,11 @@ public class MSEREdges {
                 //       that is one off from image border, a fake edge
                 //       is added to the values and those fake edges are
                 //       negative numbers starting at -1
-                TIntObjectMap<TIntList> umEPIdxMap
-                    = findEndpoints(segment, mpIdxMap,
-                        clrImg.getWidth(), clrImg.getHeight());
+                TIntObjectMap<TIntList> umEPIdxMap = findEndpoints(segment, mpIdxMap, clrImg.getWidth(), clrImg.getHeight());
 
-                assert (!umEPIdxMap.isEmpty());
+                if (umEPIdxMap.isEmpty()) {
+                    continue;
+                }
 
                 // for any 2 entries in umEPIdxMap
                 //   if the set difference operation results in 2 edge

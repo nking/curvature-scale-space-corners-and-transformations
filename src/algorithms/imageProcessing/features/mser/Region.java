@@ -181,9 +181,7 @@ public class Region {
         // Find the last parent with level not higher than level + delta
         Region parent = this;
 
-        while (parent.parent_ != null
-            && (parent.parent_.level_ <= (level_ + delta))) {
-
+        while (parent.parent_ != null && (parent.parent_.level_ <= (level_ + delta))) {
             parent = parent.parent_;
         }
 
@@ -240,13 +238,11 @@ public class Region {
 
         Region parent = this;
 
-        while ((parent.parent_ != null)
-            && (parent.parent_.area_ < minParentArea)) {
+        while ((parent.parent_ != null) && (parent.parent_.area_ < minParentArea)) {
 
             parent = parent.parent_;
 
-            if (parent.stable_
-                && (parent.variation_ <= variation_)) {
+            if (parent.stable_ && (parent.variation_ <= variation_)) {
                 stable_ = false;
                 break;
             }

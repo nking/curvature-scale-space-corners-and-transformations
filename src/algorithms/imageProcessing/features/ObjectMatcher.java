@@ -461,7 +461,9 @@ public class ObjectMatcher {
             //regions = mser.findRegions(gsImg, thrGs);
             // now using both pos and neg:
             int[] gsA = MSER.readIntoArray(gsImg);
+            System.out.println("GS POS:");
             regions.add(mser.findRegionsPos(gsA, gsImg.getWidth(), gsImg.getHeight(), thrGs));
+            System.out.println("GS NEG:");
             regions.add(mser.findRegionsNeg(gsA, gsImg.getWidth(), gsImg.getHeight(), thrGs));
         }
         
@@ -482,7 +484,9 @@ public class ObjectMatcher {
             //regionsT = mser.findRegions(luvTheta, thrPt);
             // now reading pos and neg
             int[] ptA = MSER.readIntoArray(luvTheta);
+            System.out.println("PT POS:");
             regionsT.add(mser.findRegionsPos(ptA, luvTheta.getWidth(), luvTheta.getHeight(), thrPt));
+            System.out.println("PT NEG:");
             regionsT.add(mser.findRegionsNeg(ptA, luvTheta.getWidth(), luvTheta.getHeight(), thrPt));
         
             int[] xyCen = new int[2];
@@ -507,7 +511,7 @@ public class ObjectMatcher {
             }
         }
 
-        /*
+        ///*
         if (debug){
             long ts = MiscDebug.getCurrentTimeFormatted();
             int[] xyCen = new int[2];
@@ -545,7 +549,7 @@ public class ObjectMatcher {
                 MiscDebug.writeImage(imCp, debugLabel + "__regions_pt_"+ type + "_" + ts);
             }
         }
-        */
+        //*/
  
         List<Region> combined = new ArrayList<Region>();
         
