@@ -42,11 +42,15 @@ public class EpipolarNormalizationHelper {
          */
 
     /**
-     * given data points x, perform unit standard normalization to modify
+     * given homogenous coordinate data x in row major format [nDimension X nPoints],
+     * perform unit standard normalization to modify
      * x to have mean = 0 and standard deviation = 1.
-     * the transformation matrix is returned.
+     * Note that the last row of x is assumed to be '1's and is not modified.
+     * Note also that if the stdev of the zero mean subtracted data is 0 for any row, a scale
+     * factor of 1 is used for it and a warning is printed to stdout.
+     * the transformation matrix internally already used on x, is returned.
      * <pre>
-     *     the transformation matrix
+     *     e.g. the transformation matrix for [3 X nPoint] input x:
      *     double[][] t = new double[3][];
      *         t[0] = new double[]{1./scale,       0,     -centroidX/scale};
      *         t[1] = new double[]{0,           1./scale, -centroidY/scale};
@@ -62,14 +66,14 @@ public class EpipolarNormalizationHelper {
      *     and T2 is the transformation matrix from points x2.
      *
      * </pre>
-     * @param x matrix of data in format [2 or 3 X nPoints] where row 0 are the
-     *          'x-axis' coordinates, row 1 are the 'y-axis' coordinates,
-     *          and if row 3 is present it is the 'z-axis' coordinates which are expected
-     *          to be all '1' (= homogenous coordinates), i.e. row x[2] is not used here.
+     * @param x matrix of homogenous coordinate data in format [nDimension X nPoints] where row 0 has the
+     *          'x-axis' coordinates, row 1 has the 'y-axis' coordinates,
+     *          and if row 3 is present it is the 'z-axis' coordinates.
+     *          The last row of data is assumed to be 1's and is not modified nor included in the output results.
      *
-     *
-     * @return transformation matrix used to normalize x.
+     * @return transformation matrix internally used to normalize x.
      <pre>
+    e.g. for x input [3 X nPoints]:
     t[0] = new double[]{1./scale,       0,     -centroidX/scale};
     t[1] = new double[]{0,           1./scale, -centroidY/scale};
     t[2] = new double[]{0,           0,           1};
@@ -78,25 +82,26 @@ public class EpipolarNormalizationHelper {
     public static double[][] unitStandardNormalize(double[][] x) {
 
         int n = x[0].length;
+        int nd = x.length - 1;
 
         double[] rowMeans = MatrixUtil.rowMeans(x);
 
         int col;
         int row;
-        for (row = 0; row < 2; ++row) {
+        for (row = 0; row < nd; ++row) {
             for (col = 0; col < n; ++col) {
                 x[row][col] -= rowMeans[row];
             }
         }
 
-        double[] stdevs = new double[2];
-        for (row = 0; row < 2; ++row) {
+        double[] stdevs = new double[nd];
+        for (row = 0; row < nd; ++row) {
             for (col = 0; col < n; ++col) {
                 // difference from mean 0
                 stdevs[row] += (x[row][col]*x[row][col]);
             }
         }
-        for (row = 0; row < 2; ++row) {
+        for (row = 0; row < nd; ++row) {
             stdevs[row] = Math.sqrt(stdevs[row]/(n-1.));
             if (stdevs[row] == 0.0) {
                 System.out.println("WARNING: standard deviation of row " + row
@@ -105,7 +110,7 @@ public class EpipolarNormalizationHelper {
             }
         }
 
-        for (row = 0; row < 2; ++row) {
+        for (row = 0; row < nd; ++row) {
             for (col = 0; col < n; ++col) {
                 if (stdevs[row] > 0) {
                     x[row][col] /= stdevs[row];
@@ -113,17 +118,17 @@ public class EpipolarNormalizationHelper {
             }
         }
 
-        double[][] t = new double[3][3];
-        for (row = 0; row < 2; ++row) {
+        double[][] t = new double[x.length][x.length];
+        for (row = 0; row < nd; ++row) {
             if (stdevs[row] == 0.) {
                 t[row][row] = 1.;
-                t[row][2] = -rowMeans[row];
+                t[row][nd] = -rowMeans[row];
             } else {
                 t[row][row] = 1. / stdevs[row];
-                t[row][2] = -rowMeans[row] / stdevs[row];
+                t[row][nd] = -rowMeans[row] / stdevs[row];
             }
         }
-        t[2][2] = 1;
+        t[nd][nd] = 1;
 
         return t;
     }

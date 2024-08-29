@@ -111,6 +111,7 @@ public class CorrespondenceMaker {
 
         ORB.Descriptors d1 = orb1.getAllDescriptors();
         Descriptors d2 = orb2.getAllDescriptors();
+        //[3Xn]
         double[][] xKP1 = orb1.getAllKeyPointsHomogenous();
         double[][] xKP2 = orb2.getAllKeyPointsHomogenous();
 

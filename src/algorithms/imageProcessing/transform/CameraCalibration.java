@@ -404,11 +404,8 @@ public class CameraCalibration {
         double[][] tI = null;
         double[][] tW = null;
         if (useNormConditioning) {
-            coordsI = MatrixUtil.copySubMatrix(coordsI, 0, 1, 0, coordsI[0].length-1);
-            coordsW = MatrixUtil.copySubMatrix(coordsW, 0, 1, 0, coordsW[0].length-1);
-
-            //coordsI = MatrixUtil.copy(coordsI);
-            //coordsW = MatrixUtil.copy(coordsW);
+            coordsI = MatrixUtil.copy(coordsI);
+            coordsW = MatrixUtil.copy(coordsW);
 
             tI = EpipolarNormalizationHelper.unitStandardNormalize(coordsI);
 
