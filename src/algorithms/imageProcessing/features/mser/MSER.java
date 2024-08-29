@@ -2,13 +2,16 @@ package algorithms.imageProcessing.features.mser;
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.VeryLongBitString;
+import algorithms.util.PairInt;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
 MSER.java and Region.java are java ports of the C++ MSER
@@ -267,10 +270,14 @@ public class MSER {
         int x, y, neighborPixel;
         boolean s3;
 
+        Set<PairInt> debugXY = new HashSet<>();
+
         while (true) {
 
             x = curPixel % width;
             y = curPixel / width;
+
+            debugXY.add(new PairInt(x, y));
 
             s3 = false;
 
@@ -403,12 +410,12 @@ public class MSER {
             }
             if (sz == 0) {
                 // all boundary pixels are empty, so increment curPixel and continue
-                // using line 291 or line 298 above for choosing next pixel,
-                if (eight_ && (x < width - 1) && (y < height - 1)) {
-                    curPixel = curPixel + width + 1;
-                } else if (!eight_ && (y > 0)) {
-                    curPixel = curPixel - width;
-                } else {
+                int prevPixel = curPixel;
+
+                // using code under line 288 above for choosing next pixel,
+                PairInt notVisited = nextCurPixel(eight_, curPixel, height, width, debugXY);
+
+                if (notVisited == null) {
                     //precess regions and end?
                     regionStack.get(regionStack.size() - 1)
                             .detect(delta_, (int) (minArea_ * width * height),
@@ -416,8 +423,17 @@ public class MSER {
                                     maxVariation_, minDiversity_, regions);
                     return;
                 }
-                priority = 256;
+                curPixel = notVisited.getY() * width + notVisited.getX();
+
+                if (priority == 255 || accessible.getNSetBits() == bits.length) {
+                    priority = 256;
+                } else {
+                    priority = 255;
+                }
                 curLevel = bits[curPixel];
+
+                processStack(curLevel, prevPixel, regionStack);
+
                 continue;
             }
             // ---------------
@@ -470,6 +486,83 @@ public class MSER {
                 System.out.println(r.toString());
             }*/
         }// end outer while loop
+    }
+
+    private PairInt nextCurPixel(boolean eight, int curPixel, int height, int width, Set<PairInt> debugXY) {
+        int nXY = width*height;
+        if (debugXY.size() == nXY) {
+            return null;
+        }
+        int x = curPixel % width;
+        int y = curPixel / width;
+        int pix = -1;
+        PairInt p;
+        if (eight) {
+            for (int i = 0; i < 8; ++i) {
+                pix = -1;
+                switch (i) {
+                    case 0:
+                        if ((x < width - 1) && (y < height - 1)) pix = curPixel + width + 1;
+                        break;
+                    case 1:
+                        if (y < height - 1) pix = curPixel + width;
+                        break;
+                    case 2:
+                        if ((x > 0) && (y < height - 1)) pix = curPixel + width - 1;
+                        break;
+                    case 3:
+                        if (x > 0) pix = curPixel - 1;
+                        break;
+                    case 4:
+                        if ((x > 0) && (y > 0)) pix = curPixel - width - 1;
+                        break;
+                    case 5:
+                        if (y > 0) pix = curPixel - width;
+                        break;
+                    case 6:
+                        if ((x < width - 1) && (y > 0)) pix = curPixel - width + 1;
+                        break;
+                    case 7:
+                        if (x < width - 1) pix = curPixel + 1;
+                        break;
+                    default:
+                        return null;
+                }
+                if (pix == -1) continue;
+                p = new PairInt(pix % width, pix / width);
+                if (!debugXY.contains(p)) return p;
+            }
+        } else {
+            // 4 neighbor model
+            for (int i = 0; i < 4; ++i) {
+                pix = -1;
+                switch (i) {
+                    case 0:
+                        if (y > 0) pix = curPixel - width;
+                        break;
+                    case 1:
+                        if (x > 0) pix = curPixel - 1;
+                        break;
+                    case 2:
+                        if  (y < height - 1) pix = curPixel + width;
+                        break;
+                    case 3:
+                        if (x < width - 1) pix = curPixel + 1;
+                        break;
+                    default:
+                        return null;
+                }
+                if (pix == -1) continue;
+                p = new PairInt(pix % width, pix / width);
+                if (!debugXY.contains(p)) return p;
+            }
+        }
+        // hackish way to proceed: pick smallest pixValue not in debugXY
+        for (pix = 0; pix < nXY; ++pix) {
+            p = new PairInt(pix % width, pix / width);
+            if (!debugXY.contains(p)) return p;
+        }
+        return null;
     }
 
     private void processStack(int newPixelGreyLevel, int pixel,
