@@ -84,6 +84,8 @@ public class StructureTensorTest extends TestCase {
             """
         
         */
+        // their filters not normalized by factor of 8, so divide expected by 8 for each Ax, Ay factor...
+        float normCorrection = 1.f/8.f;
         float[][] expectedAxx = new float[5][];
         expectedAxx[0] = new float[]{0.f,  0.f,  0.f,  0.f,  0.f};
         expectedAxx[1] = new float[]{0.f,  1.f,  0.f,  1.f,  0.f};
@@ -91,6 +93,7 @@ public class StructureTensorTest extends TestCase {
         expectedAxx[3] = new float[]{0.f,  1.f,  0.f,  1.f,  0.f};
         expectedAxx[4] = new float[]{0.f,  0.f,  0.f,  0.f,  0.f};
         expectedAxx = MatrixUtil.transpose(expectedAxx); // transpose to row-major
+        MatrixUtil.multiply(expectedAxx, normCorrection*normCorrection);
 
         float[][] expectedAxy = new float[5][];
         expectedAxy[0] = new float[]{0.f,  0.f,  0.f,  0.f,  0.f};
@@ -98,6 +101,7 @@ public class StructureTensorTest extends TestCase {
         expectedAxy[2] = new float[]{0.f,  0.f,  0.f,  0.f,  0.f};
         expectedAxy[3] = new float[]{0.f,  -1.f,  0.f,  1.f,  0.f};
         expectedAxy[4] = new float[]{0.f,  0.f,  0.f,  0.f,  0.f};
+        MatrixUtil.multiply(expectedAxy, normCorrection*normCorrection);
 
         float[][] expectedAyy = new float[5][];
         expectedAyy[0] = new float[]{0.f,  0.f,  0.f,  0.f,  0.f};
@@ -105,6 +109,7 @@ public class StructureTensorTest extends TestCase {
         expectedAyy[2] = new float[]{0.f,  4.f,  0.f,  4.f,  0.f};
         expectedAyy[3] = new float[]{0.f,  1.f,  0.f,  1.f,  0.f};
         expectedAyy[4] = new float[]{0.f,  0.f,  0.f,  0.f,  0.f};
+        MatrixUtil.multiply(expectedAyy, normCorrection*normCorrection);
 
         int sz = 5;
                 
@@ -116,9 +121,7 @@ public class StructureTensorTest extends TestCase {
 
         StructureTensor tensor = new StructureTensor(img, 
             0.f, true);
-        
-        float norm = 4.f;
-        
+
         float[][] Axx = tensor.getDXSquared();
         float[][] Ayy = tensor.getDYSquared();
         float[][] Axy = tensor.getDXDY();

@@ -87,8 +87,7 @@ public class StructureTensor {
 
         // switch X and Y sobel operations to match scipy (column major to row major or vice versa)
 
-        // NOTE: may need to revisit this
-        float norm = 0.5f;//(0.707f * (float)Math.sqrt(2. * Math.PI));
+        float norm = 0.5f;
         
         float[][] gX = imageProcessor.copy(image);
         imageProcessor.applySobelX(gX);
