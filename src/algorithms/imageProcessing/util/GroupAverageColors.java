@@ -85,6 +85,25 @@ public class GroupAverageColors {
         this.avgCIEA = lab[1];
         this.avgCIEB = lab[2];
     }
+
+    public GroupAverageColors(Image img) {
+
+        CIEChromaticity cieC = new CIEChromaticity();
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+
+        int[] avgRGB = imageProcessor.getAverageRGB(img);
+
+        this.rAvg = avgRGB[0];
+        this.gAvg = avgRGB[1];
+        this.bAvg = avgRGB[2];
+
+        float[] lab = cieC.rgbToCIELAB(avgRGB[0], avgRGB[1], avgRGB[2]);
+
+        this.avgCIEL = lab[0];
+        this.avgCIEA = lab[1];
+        this.avgCIEB = lab[2];
+    }
     
     public GroupAverageColors(Image img, Collection<PairInt> a) {
         

@@ -33,6 +33,23 @@ public enum CMODE {
         }
     }
 
+    public static CMODE determineColorMode(ImageExt img) {
+
+        GroupAverageColors clrs = new GroupAverageColors(img);
+
+        int limit1 = 150;
+        int limit2 = 55;
+        if (clrs.getR() >= limit1 && clrs.getG() >= limit1 &&
+                clrs.getB() >= limit1) {
+            return CMODE.WHITE;
+        } else if (clrs.getR() <= limit2 && clrs.getG() <= limit2 &&
+                clrs.getB() <= limit2) {
+            return CMODE.BLACK;
+        } else {
+            return CMODE.OTHER;
+        }
+    }
+
     public static CMODE determinePolarThetaMode(GreyscaleImage luvTheta, 
         Collection<PairInt> points) {
     
@@ -42,6 +59,25 @@ public enum CMODE {
         }
         avg /= (double)points.size();
         
+        int limit1 = 220;
+        int limit2 = 25;
+        if (avg >= limit1) {
+            return CMODE.WHITE;
+        } else if (avg <= limit2) {
+            return CMODE.BLACK;
+        } else {
+            return CMODE.OTHER;
+        }
+    }
+
+    public static CMODE determinePolarThetaMode(GreyscaleImage luvTheta) {
+
+        double avg = 0;
+        for (int p = 0; p < luvTheta.getNPixels(); ++p) {
+            avg += luvTheta.getValue(p);
+        }
+        avg /= (double)luvTheta.getNPixels();
+
         int limit1 = 220;
         int limit2 = 25;
         if (avg >= limit1) {

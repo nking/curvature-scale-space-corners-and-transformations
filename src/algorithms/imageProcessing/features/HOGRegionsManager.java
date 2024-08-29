@@ -443,6 +443,13 @@ public class HOGRegionsManager {
         float scale, HOGRegionsManager hogMgs, GreyscaleImage gsImgScaled, 
         GreyscaleImage ptImgScaled) {
 
+        int n = regionPointsMapNotScaled.size();
+
+        if (n == 0) {
+            System.out.println("Warning, regionPointsMapNotScaled is empty");
+            return;
+        }
+
         TIntObjectMap<Canonicalizer.CRegion> cRegionMapReference 
             = hogMgs.getRegionIndexRegions();
         
@@ -460,15 +467,12 @@ public class HOGRegionsManager {
         
         Canonicalizer cn = new Canonicalizer();
         
-        TIntObjectIterator<Canonicalizer.RegionPoints> iter 
-            = regionPointsMapNotScaled.iterator();
-        
-        int n = regionPointsMapNotScaled.size();
-        
         int ts = MiscDebug.getCurrentTimeFormatted();
         
         int count = 0;
-        
+
+        TIntObjectIterator<Canonicalizer.RegionPoints> iter = regionPointsMapNotScaled.iterator();
+
         for (int i = 0; i < n; ++i) {
             iter.advance();
             

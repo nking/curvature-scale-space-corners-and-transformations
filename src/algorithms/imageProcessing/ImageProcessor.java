@@ -3792,6 +3792,23 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
         return new int[]{rSum, gSum, bSum};
     }
 
+    public int[] getAverageRGB(Image img) {
+
+        int rSum = 0;
+        int gSum = 0;
+        int bSum = 0;
+        for (int p = 0; p < img.nPixels; ++p) {
+            rSum += img.getR(p);
+            gSum += img.getG(p);
+            bSum += img.getB(p);
+        }
+        rSum /= img.nPixels;
+        gSum /= img.nPixels;
+        bSum /= img.nPixels;
+
+        return new int[]{rSum, gSum, bSum};
+    }
+
     /**
      * NOTE: needs testing...invoker should trim for image bounds
      * where needed.
