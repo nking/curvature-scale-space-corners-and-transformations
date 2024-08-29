@@ -77,8 +77,7 @@ public class ObjectMatcher {
 
         Set<PairInt> shape0Trimmed = new HashSet<PairInt>();
         for (PairInt p : shape0) {
-            PairInt p2 = new PairInt(p.getX() - img0Trim.getXOffset(),
-                p.getY() - img0Trim.getYOffset());
+            PairInt p2 = new PairInt(p.getX() - img0Trim.getXOffset(),p.getY() - img0Trim.getYOffset());
             shape0Trimmed.add(p2);
         }
 
@@ -117,7 +116,7 @@ public class ObjectMatcher {
         GreyscaleImage gsImg0 = img0Trimmed.copyToGreyscale2();
         GreyscaleImage gsImg1 = img1.copyToGreyscale2();
         
-        boolean fewerMSER = true;
+        boolean fewerMSER = false;//true;
        
         GreyscaleImage tmp00 = gsImg0.copyImage();
         imageProcessor.enhanceContrast(tmp00, 4);
@@ -128,7 +127,8 @@ public class ObjectMatcher {
         List<Region> regionsComb0 = createCombinedMSERRegions(
             tmp00, tmp01,
             //gsImg0, luvTheta0, 
-            clrMode, ptMode, fewerMSER, settings.getDebugLabel() + "_0_");
+            clrMode, ptMode,
+            Threshold.LESS_SENSITIVE, Threshold.LESS_SENSITIVE, settings.getDebugLabel() + "_0_");
 
         int[] xy = new int[2];
         //remove all regions with centers outside of shape0 points
@@ -141,7 +141,7 @@ public class ObjectMatcher {
             }
         }
 
-        fewerMSER = false;
+        fewerMSER = true;
         
         GreyscaleImage tmp10 = gsImg1.copyImage();
         imageProcessor.enhanceContrast(tmp10, 4);
@@ -155,14 +155,21 @@ public class ObjectMatcher {
             
             //MiscDebug.writeImage(tmp00, "_gs_enhanced_0_");
             //MiscDebug.writeImage(tmp01, "_luv_enhanced_0_");
-            //MiscDebug.writeImage(tmp10, "_gs_enhanced_1_");
+            MiscDebug.writeImage(tmp10, "_gs_enhanced_1_");
             //MiscDebug.writeImage(tmp11, "_luv_enhanced_1_");
         }
+
+        CMODE clrMode1 = CMODE.determineColorMode(img1);
+        CMODE ptMode1 = CMODE.determinePolarThetaMode(luvTheta1);
         
         List<Region> regionsComb1 = createCombinedMSERRegions(
             tmp10, tmp11,
-            //gsImg1, luvTheta1, 
-            clrMode, ptMode, fewerMSER, settings.getDebugLabel() + "_1_");
+            //gsImg1, luvTheta1,
+            //CMODE.determineColorMode(img1),
+            //CMODE.determinePolarThetaMode(luvTheta1),
+            clrMode, ptMode,
+            Threshold.DEFAULT, Threshold.LESS_SENSITIVE,
+            settings.getDebugLabel() + "_1_");
                 
         int critSep = 1;//5;
         Canonicalizer.filterBySpatialProximity(critSep, regionsComb0, 
@@ -425,21 +432,12 @@ public class ObjectMatcher {
 
     private List<Region> createCombinedMSERRegions(GreyscaleImage gsImg,
         GreyscaleImage luvTheta, CMODE clrMode, CMODE ptMode,
-        boolean fewerMSER, String debugLabel) {
+        Threshold thrGs, Threshold thrPt, String debugLabel) {
 
         MSER mser = new MSER();
 
         List<List<Region>> regionsT = new ArrayList<List<Region>>();
         List<List<Region>> regions = new ArrayList<List<Region>>();
-        Threshold thrGs;
-        Threshold thrPt;
-        if (fewerMSER) {
-            thrGs = Threshold.LEAST_SENSITIVE;
-            thrPt = Threshold.LESS_SENSITIVE;
-        } else {
-            thrGs = Threshold.SLIGHTLY_LESS_SENSITIVE;
-            thrPt = Threshold.DEFAULT;
-        }
         
         if (debug) {
             System.out.println(debugLabel + "  clrMode=" + clrMode.name() 
@@ -459,7 +457,12 @@ public class ObjectMatcher {
             regions.add(list);
             regions.add(new ArrayList<Region>());
         } else {
-            regions = mser.findRegions(gsImg, thrGs);
+            // was using:
+            //regions = mser.findRegions(gsImg, thrGs);
+            // now using both pos and neg:
+            int[] gsA = MSER.readIntoArray(gsImg);
+            regions.add(mser.findRegionsPos(gsA, gsImg.getWidth(), gsImg.getHeight(), thrGs));
+            regions.add(mser.findRegionsNeg(gsA, gsImg.getWidth(), gsImg.getHeight(), thrGs));
         }
         
         if (ptMode.equals(CMODE.WHITE)) {
@@ -475,7 +478,12 @@ public class ObjectMatcher {
             regionsT.add(list);
             regionsT.add(new ArrayList<Region>());
         } else {
-            regionsT = mser.findRegions(luvTheta, thrPt);
+            // was using
+            //regionsT = mser.findRegions(luvTheta, thrPt);
+            // now reading pos and neg
+            int[] ptA = MSER.readIntoArray(luvTheta);
+            regionsT.add(mser.findRegionsPos(ptA, luvTheta.getWidth(), luvTheta.getHeight(), thrPt));
+            regionsT.add(mser.findRegionsNeg(ptA, luvTheta.getWidth(), luvTheta.getHeight(), thrPt));
         
             int[] xyCen = new int[2];
             
@@ -498,7 +506,7 @@ public class ObjectMatcher {
                 }
             }
         }
-        
+
         /*
         if (debug){
             long ts = MiscDebug.getCurrentTimeFormatted();
@@ -514,13 +522,13 @@ public class ObjectMatcher {
                     r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
                     ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
                         1, 255, 0, 0);
-                    
+
                     //r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
                     //System.out.println("r=" + r.toString() + " " + Arrays.toString(xyCen));
                 }
                 MiscDebug.writeImage(imCp, debugLabel + "__regions_gs_"+ type + "_" + ts);
             }
-            
+
             for (int type = 0; type < 2; ++type) {
                 imCp = luvTheta.copyToColorGreyscale();
                 int n9 = regionsT.get(type).size();
@@ -531,7 +539,7 @@ public class ObjectMatcher {
                     r.calculateXYCentroid(xyCen, imCp.getWidth(), imCp.getHeight());
                     ImageIOHelper.addPointToImage(xyCen[0], xyCen[1], imCp,
                         1, 255, 0, 0);
-                    //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1] 
+                    //System.out.println(type + " xy=" + xyCen[0] + "," + xyCen[1]
                     //    + " variation=" + r.getVariation());
                 }
                 MiscDebug.writeImage(imCp, debugLabel + "__regions_pt_"+ type + "_" + ts);

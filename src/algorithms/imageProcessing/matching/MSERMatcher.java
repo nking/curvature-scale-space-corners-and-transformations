@@ -144,10 +144,13 @@ public class MSERMatcher {
             
             hogsMgr0.populateRegionsIfNeeded(
                 regionPoints0, scale0, hogsMgr0, gsI0, ptI0);
+
+            if (regions0.isEmpty()) {
+                continue;
+            }
             
             int nr0 = regions0.size();
-            assert(nr0 > 0);
-            
+
             FixedSizeSortedVector<Obj> bestPerOctave =
                 //new FixedSizeSortedVector<Obj>(2, Obj.class);
                 new FixedSizeSortedVector<Obj>(1, Obj.class);
@@ -167,16 +170,18 @@ public class MSERMatcher {
                 TIntObjectMap<CRegion> regions1 = cRegionsList1.get(pyrIdx1);
                 
                 // instantiate and cache hogs0 if doesn't exist
-                // instantiate and cache hogs0 if doesn't exist
-                HOGRegionsManager hogsMgr1 = getOrCreate(hogsMap1, regions1, 
+                HOGRegionsManager hogsMgr1 = getOrCreate(hogsMap1, regions1,
                     w1_i, h1_i, pyrIdx1);
             
                 hogsMgr1.populateRegionsIfNeeded(
                     regionPoints1, scale1, hogsMgr1, gsI1, ptI1);
-                
+
+                if (regions1.isEmpty()) {
+                    continue;
+                }
+
                 int nr1 = regions1.size();
-                assert(nr1 > 0);
-                 
+
                 TIntObjectIterator<CRegion> iter0 = regions0.iterator();
                 for (int i0 = 0; i0 < nr0; ++i0) {
                     
