@@ -212,7 +212,7 @@ public class CameraCalibrationTest extends TestCase {
         use estimateCamera3D to recover the intrinsic and extrinsic matrices
         */
 
-        long seed = 12345l;//System.nanoTime();
+        long seed = System.nanoTime();
         System.out.println("seed=" + seed);
         Random rand = new Random(seed);
 

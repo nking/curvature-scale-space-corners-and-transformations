@@ -342,37 +342,105 @@ public class CameraPoseTest extends TestCase {
 
     public void testRandom() throws Exception {
 
-        //DEBUG
-        {
-            // from chap 2 of Camera Calibration book, chapter by Zhang (add reference)
-            //https://people.cs.rutgers.edu/~elgammal/classes/cs534/lectures/CameraCalibration-book-chapter.pdf
-            double[][] p = new double[][]{
-                    {7.025659E-1, -2.861189E-2, -5.377696E-1, 6.24189E1},
-                    {2.077632E-1, 1.265804, 1.591456E-1, 1.075646E1},
-                    {4.634764E-4, -5.282382E-5, 4.255347E-4, 1}
-            };
-            double[][] expectedKIntr = new double[][]{
-                    {1380.12, 0, 246.52},
-                    {0, 2032.57, 243.68},
-                    {0, 0, 1}
-            };
-            double[] expectedRom = new double[]{-0.08573, -0.99438, 0.0621};
-            double[][] expectedRot = Rotation.createRotationFromUnitLengthAngleAxis(expectedRom, 47.7*Math.PI/180.);
-            double[] expectedT = new double[]{-211.28, -106.06, 1583.75};
-            /*
-            [0.6754157514983702, 0.07380618479382034, 0.7337335414536662]
-            [-0.018055997202522985, 0.9963349883554182, -0.08360037739679924]
-            [-0.7372151949959936, 0.04321677014823319, 0.6742735113225491]
-             */
-            Camera.CameraPoseParameters c = CameraPose.calculatePoseFromP(p);
-            double fs = MatrixUtil.frobeniusNorm(
-                    MatrixUtil.pointwiseSubtract(expectedKIntr, c.getIntrinsicParameters().getIntrinsic()));
+        // ======== first checking calculatePoseFromP with Zhang data example ================
 
-            double[] _r = Rotation.extractRotationAxisFromZXY(c.getExtrinsicParameters().getRotation());
-            double[][] diffR = Rotation.procrustesAlgorithmForRotation(expectedRot, c.getExtrinsicParameters().getRotation());
-            double[] scaleDiffT = MatrixUtil.pointwiseDivision(expectedT, c.getExtrinsicParameters().getTranslation());
+        // from chap 2 of Camera Calibration book, chapter by Zhang (add reference)
+        //https://people.cs.rutgers.edu/~elgammal/classes/cs534/lectures/CameraCalibration-book-chapter.pdf
+        double[][] p = new double[][]{
+                {7.025659E-1, -2.861189E-2, -5.377696E-1, 6.24189E1},
+                {2.077632E-1, 1.265804, 1.591456E-1, 1.075646E1},
+                {4.634764E-4, -5.282382E-5, 4.255347E-4, 1}
+        };
 
+        // wide angle: f <= 35 mm
+        // telephoto: f > 35mm
+        // K in terms of
+        // focal lengths in units of mm in positions[0][0] and [1][1]
+        // and the optical center in units of pixel coordinates in [0][2] and [1][2]
+        // position [0][1] holds the pixel skew if any.
+        //  there is skew when the camera sensor is not perpendicular to optical axis.
+        double[][] K = new double[][]{
+                {1380.12, 0, 246.52},
+                {0, 2032.57, 243.68},
+                {0, 0, 1}
+        };
+
+        // angle between 2 image axes is 90 degrees
+        // aspect ratio of the pixels = alpha/beta = 0.679
+        // rotation axis: (almost vertical)
+        double[] expectedRom = new double[]{-0.08573, -0.99438, 0.0621};
+        double[][] expectedRot = Rotation.createRotationFromUnitLengthAngleAxis(expectedRom,
+                -47.7*Math.PI/180.);
+
+        /*
+        expected rotation:
+        [0.6750834808562537, -0.018079003106068848, -0.7375197919525242]
+        [0.07388502469134674, 0.9963303528698166, 0.043206840623514806]
+        [0.7340322179586962, -0.08365989240369291, 0.6739419302889822]
+         */
+
+        // t in mm = 1.5m from camera in WCS
+        double[] expectedT = new double[]{-211.28, -106.06, 1583.75};
+
+        // camera projection matrix P is defined in
+        //     z*x = P*X
+        //         = K*[R|T]*X
+        //  where z is the distance to the object from the camera
+        // Zhang alters his example P to move z from the RHS to the LHS:
+        //      (K/z) * [R | T]
+        double[][] reproducingP =
+            MatrixUtil.multiply(
+                new double[][] {
+                {K[0][0]/expectedT[2], K[0][1]/expectedT[2], K[0][2]/expectedT[2]},
+                {K[1][0]/expectedT[2], K[1][1]/expectedT[2], K[1][2]/expectedT[2]},
+                {K[2][0]/expectedT[2], K[2][1]/expectedT[2], K[2][2]/expectedT[2]}},
+
+                 new double[][] {
+                         {expectedRot[0][0], expectedRot[0][1], expectedRot[0][2], expectedT[0]},
+                         {expectedRot[1][0], expectedRot[1][1], expectedRot[1][2], expectedT[1]},
+                         {expectedRot[2][0], expectedRot[2][1], expectedRot[2][2], expectedT[2]}
+                 }
+        );
+
+        Camera.CameraPoseParameters c = CameraPose.calculatePoseFromP(p);
+        double fs = MatrixUtil.frobeniusNorm(
+                MatrixUtil.pointwiseSubtract(K, c.getIntrinsicParameters().getIntrinsic()));
+
+        double[] r = Rotation.extractRotationAxisFromZXY(c.getExtrinsicParameters().getRotation());
+        // should be identity matrix if same:
+        double[][] diffR = Rotation.procrustesAlgorithmForRotation(expectedRot, c.getExtrinsicParameters().getRotation());
+        double fsR = MatrixUtil.frobeniusNorm( MatrixUtil.pointwiseSubtract(
+                diffR, MatrixUtil.createIdentityMatrix(3)));
+
+        double[] diffT = MatrixUtil.subtract(expectedT, c.getExtrinsicParameters().getTranslation());
+
+        assertTrue(fs < 1);
+        assertTrue(fsR < 1);
+
+        // taking a look at P composed from K instead of K/z gives even better matches to his example params (excepting p)
+        double[][] pNotDivByZ = new double[3][4];
+        for (int ii = 0; ii < 3; ++ii) {
+            System.arraycopy(expectedRot[ii], 0, pNotDivByZ[ii], 0, 3);
+            pNotDivByZ[ii][3] = expectedT[ii];
         }
+        pNotDivByZ = MatrixUtil.multiply(K, pNotDivByZ);
+
+        Camera.CameraPoseParameters _c = CameraPose.calculatePoseFromP(pNotDivByZ);
+        double _fs = MatrixUtil.frobeniusNorm(
+                MatrixUtil.pointwiseSubtract(K, _c.getIntrinsicParameters().getIntrinsic()));
+
+        double[] _r = Rotation.extractRotationAxisFromZXY(_c.getExtrinsicParameters().getRotation());
+        // should be identity matrix if same:
+        double[][] _diffR = Rotation.procrustesAlgorithmForRotation(expectedRot, _c.getExtrinsicParameters().getRotation());
+        double _fsR = MatrixUtil.frobeniusNorm( MatrixUtil.pointwiseSubtract(
+                _diffR, MatrixUtil.createIdentityMatrix(3)));
+
+        double[] _diffT = MatrixUtil.subtract(expectedT, _c.getExtrinsicParameters().getTranslation());
+
+        assertTrue(_fs < 1);
+        assertTrue(_fsR < 1);
+        assertTrue(MatrixUtil.lPSum(_diffT, 2) < 1);
+
         // generate a set of features for an image
         // create a camera intrinsic matrix K,
         // motion w.r.t. image and scene, rotation R, and translation t
@@ -380,6 +448,7 @@ public class CameraPoseTest extends TestCase {
         // test that can recover the projection matrix
 
         /*
+        TODO: write tests for other K matrices:
         smartphones K intr from Wu, Chen, &Chen "Visual Positioning Indoors: Human Eyes vs SmartPhone Cameras"
         Table 1
         Model  Xiaomi 5 Huawei P9 Samsung Note5 Lenovo Tango iPhone 7P
@@ -387,96 +456,64 @@ public class CameraPoseTest extends TestCase {
           fy    3832.273 3096.611 4046.466 3851.217 3289.17
           ox    1844.276 1482.911 2587.339 1492.329 1991.804
           oy    2226.916 1982.791 1556.018 2692.189 1491.939
-
          */
 
-        long seed = 1722221408169L;//System.currentTimeMillis();
+        long seed = System.currentTimeMillis();
         System.out.println("seed=" + seed);
         Random rand = new Random(seed);
 
         int nTests = 100;
         int zInit = 1;
-        //double[][] rot0 = MatrixUtil.createIdentityMatrix(3);
-        //double[] t0 = new double[]{0,0,zInit};
         double[][] x;
-        double[][] K;
-        double[][] R;
-        double[] t = new double[3];
-        t[2] = 1;
-        double[][] P = new double[3][4];
         double[][] XW;
-        // range of XW coords in x and y:
-        int XWI = 0;
-        int XWF = 1000;
+
         for (int i = 0; i < nTests; ++i) {
 
             int nP = 100 + rand.nextInt(200);
 
             // image size [400 x 650]
-            XW = randomPoints3D(rand, 4000, nP);
-            //TODO: handle no rotation or no translation.  haven't coded that into method yet.
-            R = randomRotation(rand);
-            t = randomTranslation(rand);
-
-            // wide angle: f <= 35 mm
-            // telephoto: f > 35mm
-            K = new double[][]{
-                        {3831.011, 0, 1844.276},
-                        {0, 3832.273, 2226.916},
-                        {0, 0, 1}
-                };
-
-            System.arraycopy(R[0], 0, P[0], 0,3);
-            System.arraycopy(R[1], 0, P[1], 0, 3);
-            System.arraycopy(R[2], 0, P[2], 0, 3);
-            P[0][3] = t[0];
-            P[1][3] = t[1];
-            P[2][3] = t[2];
-
-            P = MatrixUtil.multiply(K, P);
+            XW = randomPoints3D(rand, new int[]{211, 106, -1584}, nP);
 
             // x = P * X
-            x = MatrixUtil.multiply(P, XW);
+            x = MatrixUtil.multiply(p, XW);
             normalize(x);
 
-            int np2 = filter(x, XW);
-            x = MatrixUtil.copySubMatrix(x, 0, x.length-1, 0, np2-1);
-            XW = MatrixUtil.copySubMatrix(XW, 0, XW.length-1, 0, np2-1);
+            //int np2 = filter(x, XW);
+            //x = MatrixUtil.copySubMatrix(x, 0, x.length-1, 0, x[0].length-1);
+            //XW = MatrixUtil.copySubMatrix(XW, 0, XW.length-1, 0, XW[0].length-1);
 
             XW = MatrixUtil.copySubMatrix(XW, 0, 2, 0, XW[0].length - 1);
-            normalize(XW);
 
-            Camera.CameraPoseParameters result;
-            try {
-                result = CameraPose.calculatePoseFromXXW(x, XW);
-            } catch (Exception e) {
-                continue;
-            }
+            Camera.CameraPoseParameters result = CameraPose.calculatePoseFromXXW(x, XW);
 
             double[][] resultR = result.getExtrinsicParameters().getRotation();
             double[] resultT = result.getExtrinsicParameters().getTranslation();
-            MatrixUtil.multiply(resultT, 1./resultT[resultT.length - 1]);
             double[][] resultK = result.getIntrinsicParameters().getIntrinsic();
             double resultLambda = result.getIntrinsicParameters().getLambda();
 
-            double[][] diffR = Rotation.procrustesAlgorithmForRotation(R, resultR);
-            double[] diffT = MatrixUtil.subtract(t, resultT);
+            diffR = Rotation.procrustesAlgorithmForRotation(expectedRot, result.getExtrinsicParameters().getRotation());
+            fsR = MatrixUtil.frobeniusNorm( MatrixUtil.pointwiseSubtract(
+                    diffR, MatrixUtil.createIdentityMatrix(3)));
+
+            diffT = MatrixUtil.subtract(expectedT, resultT);
             double[][] diffK = MatrixUtil.pointwiseSubtract(K, resultK);
             double diffRSum = MatrixUtil.frobeniusNorm(diffR);
             double diffTSum = MatrixUtil.lPSum(diffT, 2);
             double diffKSum = MatrixUtil.frobeniusNorm(diffK);
 
+            //TODO: need to generate 3 images at least for this
+            /*
             boolean useR24 = false;
-            Camera.CameraMatrices ms = CameraCalibration.estimateCameraPlanar(np2, x, XW, useR24);
+            Camera.CameraMatrices ms = CameraCalibration.estimateCameraPlanar(x[0].length, x, XW, useR24);
 
-            double[][] diffR2 = Rotation.procrustesAlgorithmForRotation(R, ms.getExtrinsics().get(0).getRotation());
-            double[] diffT2 = MatrixUtil.subtract(t, ms.getExtrinsics().get(0).getTranslation());
+            double[][] diffR2 = Rotation.procrustesAlgorithmForRotation(expectedRot, ms.getExtrinsics().get(0).getRotation());
+            double[] diffT2 = MatrixUtil.subtract(expectedT, ms.getExtrinsics().get(0).getTranslation());
             double[][] diffK2 = MatrixUtil.pointwiseSubtract(K, ms.getIntrinsics().getIntrinsic());
             double diffRSum2 = MatrixUtil.frobeniusNorm(diffR2);
             double diffTSum2 = MatrixUtil.lPSum(diffT2, 2);
             double diffKSum2 = MatrixUtil.frobeniusNorm(diffK2);
 
-            int _t = 1;
+            */
         }
 
     }
@@ -524,12 +561,17 @@ public class CameraPoseTest extends TestCase {
         return t;
     }
 
-    private double[][] randomPoints3D(Random rand, int range, int n) {
+    private double[][] randomPoints3D(Random rand, int[] xyzC, int n) {
         double[][] x = new double[4][n];
         Arrays.fill(x[3], 1);
+        double r;
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < 3; ++j) {
-                x[j][i] = rand.nextInt(range);
+                r = rand.nextInt(Math.abs(xyzC[j]) / 10);
+                if (rand.nextBoolean()) {
+                    r *= -1;
+                }
+                x[j][i] = xyzC[j] + r;
             }
         }
         return x;
