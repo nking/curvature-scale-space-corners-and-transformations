@@ -1180,6 +1180,11 @@ public class Alignment {
 
     private static void update2DAffWarp(double[][] warp, double[] deltaP)  {
 
+        /*
+        from Baker-Matthews "...20 years on Lucas-Kinade... Part 4",
+        W(x;p) composition W(x; deltap) is interpreted as a simple binlinear combination of the parameters of
+         the 2 matrices.
+        */
         // for affine, Bouguet uses forward composition w = w * w(delta)
         // instead of composition w = w * w(delta)^-1 from Baker-Matthews.
         // it gives similarly wrong results for test data, and similarly

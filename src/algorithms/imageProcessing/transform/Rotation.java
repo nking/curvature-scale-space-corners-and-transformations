@@ -1213,7 +1213,7 @@ public class Rotation {
      * @param x2 another set of measurements having same center as x1, that is,
      * there is no translation between them, only rotation.
      * the expected format is nData X nDimensions.
-     * @return
+     * @return difference in rotation between x2 and x1.  this will be ~ the identity matrix for no difference.
      * @throws no.uib.cipr.matrix.NotConvergedException
     */
     public static double[][] procrustesAlgorithmForRotation(double[][] x1, double[][] x2) 
@@ -1226,7 +1226,12 @@ public class Rotation {
         // minimize || x1 - x2*Q ||_F
         //    subject to Q^T * Q = I_P
         double[][] c = MatrixUtil.multiply(MatrixUtil.transpose(x2), x1);
-        MatrixUtil.SVDProducts svdC = MatrixUtil.performSVD(c);
+        MatrixUtil.SVDProducts svdC = null;
+        try {
+            svdC = MatrixUtil.performSVD(c);
+        } catch (NotConvergedException e) {
+            int t = 2;
+        }
         double[][] q = MatrixUtil.multiply(svdC.u, svdC.vT);
         return q;
     }
