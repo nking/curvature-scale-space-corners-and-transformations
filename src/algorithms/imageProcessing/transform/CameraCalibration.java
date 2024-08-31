@@ -361,7 +361,7 @@ public class CameraCalibration {
      * this is also in sect 2.4 of camera calibration book by zhang
      * as homography between a model plane and its image (in camera calibration w/ 2d objects: plane based techniques).
      *
-     * @see CameraPose.calculatePFromXXW()
+     * see CameraPose.calculatePFromXXW()
      *
      * @param coordsI holds the image coordinates in pixels of features present in image i as format [3 X nPoints].
      *                Only the first 2 dimensions are used, so if the 3rd dimension (z axis) is present, it is
@@ -854,8 +854,192 @@ public class CameraCalibration {
         }
 
         //Vb = 0 and b = [B11, B12, B22, B13, B23, B33]^T
+        SVDProducts svd = MatrixUtil.performSVD(MatrixUtil.createATransposedTimesA(v));
+
+        if (svd.rank < 6) {
+            System.out.printf("warning, rank < 6 for the design matrix of planar scene and image points\n");
+        }
+        // vT is 6X6.  last row in vT is the eigenvector for the smallest eigenvalue for full rank
+        // it's the solution for the right null space.   there are problems when rank < 6
+        double[] b = svd.vT[5];
+
+        double[][] kIntr = null;
+        double[][] B = new double[][]{{b[0], b[1], b[3]}, {b[1], b[2], b[4]}, {b[3], b[4], b[5]}};
+        if (true) {
+            boolean isPD = MatrixUtil.isPositiveDefinite(B);
+            B = MatrixUtil.nearestPositiveSemidefiniteToA(B, 1E-9);
+            DenseCholesky chol = new DenseCholesky(B.length, false);
+            chol = chol.factor(new LowerSPDDenseMatrix(new DenseMatrix(B)));
+            LowerTriangDenseMatrix _cholL = chol.getL();
+            double[][] cholL = Matrices.getArray(_cholL);
+            double[][] cholLT = MatrixUtil.transpose(cholL);
+            kIntr = MatrixUtil.inverse(cholLT);
+            MatrixUtil.multiply(kIntr, cholL[2][2]);
+        } else {
+
+            //       0    1    2    3    4    5
+            //b = [B11, B12, B22, B13, B23, B33]^T
+            log.log(LEVEL, String.format("b=%s\n", FormatArray.toString(b, "%.3e")));
+            double B11 = b[0];
+            double B12 = b[1];
+            double B22 = b[2];
+            double B13 = b[3];
+            double B23 = b[4];
+            double B33 = b[5];
+            //Zhang 99 Appendix B; Ma et al. 2003 eqn (26)
+            double v0 = (B12 * B13 - B11 * B23) / (B11 * B22 - B12 * B12);
+            double lambda = B33 - ((B13 * B13 + v0 * (B12 * B13 - B11 * B23)) / B11);
+            double alpha = Math.sqrt(lambda / B11);
+            double beta = Math.sqrt(lambda * B11 / (B11 * B22 - B12 * B12));
+            double gamma = -B12 * alpha * alpha * beta / lambda;
+            double u0 = (gamma * v0 / beta) - (B13 * alpha * alpha / lambda);
+            //u0 = (gamma*v0/alpha) - (B13*alpha*alpha/lambda);
+
+            log.log(LEVEL, String.format("v0=%.4e (exp=220.866)\n", v0));
+            log.log(LEVEL, String.format("lambda=%.4e\n", lambda));
+            log.log(LEVEL, String.format("alpha=%.4e\n", alpha));
+            log.log(LEVEL, String.format("beta=%.4e\n", beta));
+            log.log(LEVEL, String.format("gamma=%.4e\n", gamma));
+            log.log(LEVEL, String.format("u0=%.4e\n", u0));
+
+            kIntr = Camera.createIntrinsicCameraMatrix(
+                    alpha, beta, u0, v0, gamma);
+        }
+
+        //B = lambda * K^-T * K  [3X3] = [3X3]*[3X3]
+        //K^T*K^-1*B = lambda
+        double[][] kTKInvB = MatrixUtil.multiply(MatrixUtil.multiply(MatrixUtil.transpose(kIntr),
+                MatrixUtil.inverse(kIntr)), B);
+
+        double lambda1_1 = 1./MatrixUtil.lPSum(MatrixUtil.extractColumn(kTKInvB, 0), 2);
+        double lambda1_2 = 1./MatrixUtil.lPSum(MatrixUtil.extractColumn(kTKInvB, 1), 2);
+        // or mean or median or column 0 and column 1
+
+        CameraIntrinsicParameters intrinsics = new CameraIntrinsicParameters();
+        intrinsics.setIntrinsic(kIntr);
+        intrinsics.setLambda1(lambda1_1);
+        intrinsics.setLambda2(lambda1_2);
+
+        return intrinsics;
+    }
+
+    /**
+     * estimate the camera intrinsic parameters from the image homographies.
+     * @param h H as (3*NImages)x3 homography, projection matrices
+    where each image homography is stacked row-wise
+     * @return the camera intrinsic parameters.
+     */
+    static CameraIntrinsicParameters _solveForIntrinsicPlanar(double[][] h) throws NotConvergedException {
+
+        if (h[0].length != 3) {
+            throw new IllegalArgumentException("h must have 3 columns");
+        }
+        int nImages = h.length/3;
+        if (nImages < 3) {
+            throw new IllegalArgumentException("we need at least 3 images for the planar solution");
+        }
+
+        log.log(LEVEL, "h=\n%s\n", FormatArray.toString(h, "%.3e"));
+
+        // Section 6.3 of Ma et al. 2003
+
+        /*
+          H =   [ h11 h12 h13 ]
+                [ h21 h22 h23 ]
+                [ h31 h32 h33 ]
+          H^T = [ h11 h21 h31 ]
+                [ h12 h22 h32 ]
+                [ h13 h23 h33 ]
+
+        Let h_i be the ith column vector of H:
+              h_i = [h_i_1]^T = [h_i_1  h_i_2  h_i_3]
+                    [h_i_2]
+                    [h_i_3]
+
+        - for each H:
+                    form a matrix V_i_j out of the first 2 columns of each H matrix
+                    and stack them by rows, into a matrix called V
+              - perform SVD(V) to get right singular vector of V associated with the smallest singular value
+                as the solution to b.
+              - b holds the contents of the upper right triangle of B
+                where B = A^-T * A^-1 known as the absolute conic.
+              - the intrinsic parameters are extracted from combinations of the solved
+                for B and other coefficients.
+
+        b = [B11, B12, B22, B13, B23, B33]^T
+        */
+
+        int n = h.length/3;
+
+        // 2*nImages X 6
+        double[][] v = new double[2*n][6];
+        double[] v22 = new double[6];
+        double h11, h12, h13, h21, h22, h23;
+        //Vij = [hi1*hj1, hi1*hj2 + hi2*hj1, hi2*hj2, hi3*hj1 + hi1*hj3, hi3*hj2 + hi2*hj3, hi3*hj3]T
+        for (int i = 0; i < n; ++i) {
+            // h_i is the ith column vector of H
+            // h11 = column 0 of h, first element: h[0][0]
+            // h12 = column 0 of h, 2nd element:   h[1][0]
+            // h13 = column 0 of h, 3rd element:   h[2][0]
+            // h21 = column 1 of h, first element: h[0][1]
+            // h22 = column 1 of h, 2nd element:   h[1][1]
+            // h23 = column 1 of h, 3rd element:   h[2][1]
+            h11 = h[0+3*i][0]; h12 = h[1+3*i][0]; h13 = h[2+3*i][0];
+            h21 = h[0+3*i][1]; h22 = h[1+3*i][1]; h23 = h[2+3*i][1];
+
+            //h11 = h[0+3*i][0]; h12 = h[0+3*i][1]; h13 = h[0+3*i][2];
+            //h21 = h[1+3*i][0]; h22 = h[1+3*i][1]; h23 = h[1+3*i][2];
+
+            //V12 = [h11*h21, h11*h22 + h12*h21, h12*h22, h13*h21 + h11*h23,
+            //       h13*h22 + h12*h23, h13*h23]T
+            v[2*i] = new double[]{
+                    h11*h21, h11*h22 + h12*h21, h12*h22, h13*h21 + h11*h23,
+                    h13*h22 + h12*h23, h13*h23
+            };
+
+            //V11 = [
+            // h11*h11 ,
+            // h11*h12 + h12*h11,
+            // h12*h12,
+            // h13*h11 + h11*h13,
+            // h13*h12 + h12*h13,
+            // h13*h13]T
+            // 2nd row is V11 - V12
+            /*v[2*i + 1] = new double[]{
+                h11*h11           - v[2*i][0],
+                h11*h12 + h12*h11 - v[2*i][1],
+                h12*h12           - v[2*i][2],
+                h13*h11 + h11*h13 - v[2*i][3],
+                h13*h12 + h12*h13 - v[2*i][4],
+                h13*h13           - v[2*i][5]
+            };*/
+
+            //Vij = [hi1*hj1, hi1*hj2 + hi2*hj1, hi2*hj2, hi3*hj1 + hi1*hj3, hi3*hj2 + hi2*hj3, hi3*hj3]T
+            v22[0] = h21*h21;
+            v22[1] = h21*h22 + h22*h21;
+            v22[2] = h22*h22;
+            v22[3] = h23*h21 + h21*h23;
+            v22[4] = h23*h22 + h22*h23;
+            v22[5] = h23*h23;
+
+            // v11 - v22; Zhang 99 eqn(8)
+            v[2*i + 1] = new double[]{
+                    h11*h11           - v22[0],
+                    h11*h12 + h12*h11 - v22[1],
+                    h12*h12           - v22[2],
+                    h13*h11 + h11*h13 - v22[3],
+                    h13*h12 + h12*h13 - v22[4],
+                    h13*h13           - v22[5]
+            };
+
+        }
+
+        //Vb = 0 and b = [B11, B12, B22, B13, B23, B33]^T
         SVDProducts svd = MatrixUtil.performSVD(v);
 
+        if (svd.rank < 6) {
+            System.out.printf("warning, rank < 6 for the design matrix of planar scene and image points\n");
+        }
         // vT is 6X6.  last row in vT is the eigenvector for the smallest eigenvalue for full rank
         // it's the solution for the right null space.   there are problems when rank < 6
         double[] b = svd.vT[svd.rank-1];

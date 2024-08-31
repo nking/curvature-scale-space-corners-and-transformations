@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.Format;
 import java.util.Arrays;
 import no.uib.cipr.matrix.NotConvergedException;
 
@@ -28,6 +29,9 @@ public class Zhang98Data {
     
     public static String ZHANGDIR = "zhang1998";
     protected final static String sep = System.getProperty("file.separator");
+
+    protected static final int mImages = 5;
+    protected static final int nFeatures = 256;
 
     /**
      * get the 256 corners of the checkerboard in world reference frame.
@@ -60,8 +64,6 @@ public class Zhang98Data {
      */
     public static double[][] getObservedFeaturesInAllImages() throws IOException {
         
-        int mImages = 5;
-        int nFeatures = 256;
         double[][] uv = MatrixUtil.zeros(3, nFeatures*mImages);
         double[][] uvi;
         int i, j;
@@ -126,9 +128,7 @@ public class Zhang98Data {
     }
     
     private static double[][] readFile(BufferedReader in) throws IOException {
-        
-        int nFeatures = 256;
-        
+
         // 3 dimensions, 4*64 features 
         double[][] a = MatrixUtil.zeros(3, nFeatures);
         Arrays.fill(a[2], 1.);
@@ -362,9 +362,9 @@ public class Zhang98Data {
     public static double[][] getFeaturesProjectedToAllCameraFramesEqn2() throws IOException {
         double[][] coordsI = getObservedFeaturesInAllImages();
         double[][] coordsW = getFeatureWCS();
-        int nFeatures = coordsW[0].length;
-        int mImages = coordsI[0].length/nFeatures;
-             
+        //int nFeatures = coordsW[0].length;
+        //int mImages = coordsI[0].length/nFeatures;
+
         int i, j, k;
         
         double[][] h = MatrixUtil.zeros(3, 3);
@@ -437,8 +437,8 @@ public class Zhang98Data {
     public static double[][] getFeaturesProjectedToAllImageFrames() throws IOException {
         double[][] coordsWCN = getFeaturesProjectedToAllCameraFrames();
         double[][] coordsW = getFeatureWCS();
-        int nFeatures = coordsW[0].length;
-        int mImages = coordsWCN[0].length/nFeatures;
+        //int nFeatures = coordsW[0].length;
+        //int mImages = coordsWCN[0].length/nFeatures;
         
         boolean useR2R4 = true;
         double[] rd = getRadialDistortionR2R4();
@@ -479,8 +479,8 @@ public class Zhang98Data {
         double[][] coordsWCN = getFeaturesProjectedToAllCameraFramesEqn2();
         double[][] coordsW = getFeatureWCS();
         
-        int nFeatures = coordsW[0].length;
-        int mImages = coordsWCN[0].length/nFeatures;
+        //int nFeatures = coordsW[0].length;
+        //int mImages = coordsWCN[0].length/nFeatures;
         
         boolean useR2R4 = true;
         double[] rd = getRadialDistortionR2R4();
@@ -647,4 +647,5 @@ public class Zhang98Data {
 
         return P;
     }
+
 }

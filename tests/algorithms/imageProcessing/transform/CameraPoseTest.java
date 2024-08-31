@@ -376,6 +376,13 @@ public class CameraPoseTest extends TestCase {
         double[][] expectedRot = Rotation.createRotationFromUnitLengthAngleAxis(expectedRAxis,
                 rotAboutAxis, passive);
 
+        //double[] tZYX = Rotation.extractThetaFromZYX(expectedRot);
+        double[] thetaXYZ = Rotation.extractThetaFromXYZ(expectedRot);
+        //System.out.printf("THETAS ZYX : %s\n", FormatArray.toString(tZYX, "%.4f"));
+        //System.out.printf("THETAS XYZ : %s\n", FormatArray.toString(tXYZ, "%.4f"));
+        // XYZ    -0.0640, -0.8289, 0.0267 x,y,z in radians = -3.66692989, -47.49247164,   1.52979731 in degrees
+        //double[][] _rch = Rotation.createRotationXYZ(tXYZ);
+
         /*
         expected rotation:
         [0.6750834808562537, -0.018079003106068848, -0.7375197919525242]
@@ -410,7 +417,6 @@ public class CameraPoseTest extends TestCase {
         double fs = MatrixUtil.frobeniusNorm(
                 MatrixUtil.pointwiseSubtract(K, c.getIntrinsicParameters().getIntrinsic()));
 
-        double[] r = Rotation.extractRotationAxisFromZXY(c.getExtrinsicParameters().getRotation());
         // should be identity matrix if same:
         double[][] diffR = Rotation.procrustesAlgorithmForRotation(expectedRot, c.getExtrinsicParameters().getRotation());
         double fsR = MatrixUtil.frobeniusNorm( MatrixUtil.pointwiseSubtract(
@@ -504,65 +510,6 @@ public class CameraPoseTest extends TestCase {
             double diffTSum = MatrixUtil.lPSum(diffT, 2);
             double diffKSum = MatrixUtil.frobeniusNorm(diffK);
 
-            //=============== ================ ==================== ===============
-            // generate 3 sets of same camera views of WCS and format the data for planar camera method input
-
-            /*
-
-            estimate the angles and offsets to move a camera to see the scene
-
-            // the rotation axis is essentially the y-axis.
-            //    rotation cc about the y-axis (pitch)
-            // translate camera in x and small rotation
-            double[][] expectedRot2 = Rotation.createRotationFromUnitLengthAngleAxis(expectedRAxis,
-                    rotAboutAxis*0.99, passive);
-            double[] expectedT2 = Arrays.copyOf(expectedT, expectedT.length);
-            for (int j = 0; j < expectedT2.length; ++j) {
-                expectedT2[j] -= 10;
-            }
-            double[][] p2 = new double[3][4];
-            for (int ii = 0; ii < 3; ++ii) {
-                System.arraycopy(expectedRot2[ii], 0, p2[ii], 0, 3);
-                p2[ii][3] = expectedT2[ii];
-            }
-            p2 = MatrixUtil.multiply(K, p2);
-
-            double[][] expectedRot3 = Rotation.createRotationFromUnitLengthAngleAxis(expectedRAxis,
-                    rotAboutAxis*0.98, passive);
-            double[] expectedT3 = Arrays.copyOf(expectedT, expectedT.length);
-            for (int j = 0; j < expectedT3.length; ++j) {
-                expectedT3[j] -= 10;
-            }
-            double[][] p3 = new double[3][4];
-            for (int ii = 0; ii < 3; ++ii) {
-                System.arraycopy(expectedRot3[ii], 0, p3[ii], 0, 3);
-                p3[ii][3] = expectedT3[ii];
-            }
-            p3 = MatrixUtil.multiply(K, p3);
-
-            double[][] x1 = MatrixUtil.multiply(pNotDivByZ, XW0);
-            normalize(x1);
-            double[][] x2 = MatrixUtil.multiply(p2, XW0);
-            normalize(x2);
-            double[][] x3 = MatrixUtil.multiply(p3, XW0);
-            normalize(x3);
-            double[][] xAll = new double[3][x[0].length * 3];
-            for (int ii = 0; ii < 3; ++ii) {
-                System.arraycopy(x1[ii], 0, xAll[ii], 0, x1[ii].length);
-                System.arraycopy(x2[ii], 0, xAll[ii], x1[ii].length, x1[ii].length);
-                System.arraycopy(x3[ii], 0, xAll[ii], 2*x1[ii].length, x1[ii].length);
-            }
-
-            boolean useR24 = false;
-            Camera.CameraMatrices ms = CameraCalibration.estimateCameraPlanar(x[0].length, xAll, XW, useR24);
-
-            double[][] diffR2 = Rotation.procrustesAlgorithmForRotation(expectedRot, ms.getExtrinsics().get(0).getRotation());
-            double[] diffT2 = MatrixUtil.subtract(expectedT, ms.getExtrinsics().get(0).getTranslation());
-            double[][] diffK2 = MatrixUtil.pointwiseSubtract(K, ms.getIntrinsics().getIntrinsic());
-            double diffTSum2 = MatrixUtil.lPSum(diffT2, 2);
-            double diffKSum2 = MatrixUtil.frobeniusNorm(diffK2);
-
-             */
 
         }
 
