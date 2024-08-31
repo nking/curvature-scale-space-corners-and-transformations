@@ -29,22 +29,34 @@ import no.uib.cipr.matrix.SVD;
  </pre>
  * This Rotation.java class uses "active" rotations of vectors counterclockwise in a right-handed 
  * coordinate system (y counterclockwise from x) by pre-multiplication 
- * (R on the left). If any one of these is changed (such as rotating axes 
+ * (R on the left).
+ * If any one of these is changed (such as rotating axes
  * instead of vectors, a "passive" transformation), then the inverse of the
  * example matrix should be used, which coincides with its transpose.
  * e.g. (A*B*C)^-1 = (C^-1) * (B^-1) * (A^-1).
- * 
- * from: "Tutorial: Consistent Representations of and Conversions Between 3D Rotations"
-   by Rowenhorst, Rollett, Rohrer, Groeber, Jackson, Konijnenberg, and De Graef.
-   Modelling Simulation Mater. Sci. Eng.
- * A rotation can be viewed as operating on the object, which is the 
- * active interpretation, or operating on the reference frame, which is the 
- * passive interpretation. 
- * An active rotation transforms object coordinates to new coordinates in the 
- * same reference frame; for the passive interpretation, the initial and final 
- * reference frames are different.
- * 
- * 
+ *
+ Regarding active and passive rotations from
+ Zanetti, "Rotations, Transformations, Left Quaternions, Right Quaternions?"
+     active rotations:
+ the orientation can be expressed as rotation from a current observation (inertial)
+ reference frame orientation to current spacecraft (body fixed frame)  orientation.
+ The rotation is what is needed to take the observation inertial reference frame into
+ the spacecraft (body fixed) reference frame.
+ This is the historical system used.
+ It is used in translational dynamics.
+ Its used when we are observing an object we are not controlling.
+
+     passive rotations:
+ perspective is from being in the spacecraft (body fixed frame) and it sees the
+ observing inertial frame moving with the opposite rotation.
+ passive rotations are used when the direction of successive rotations is known in
+ the body-fixed frame and when describing the motion of an object we are controlling.
+ This is convenient for attitude kinematics where the angular velocity of
+ the spacecraft is more readily avail in the body-fixed frame using Euler eqn
+ of rotational dynamics because the inertial matrix is constant in the body frame.
+ passive system is often used aerospace and medical contexts.
+ The Space Shuttle software used left-hand quaternion system.
+
  * <b><ul>RIGHT HAND SYSTEM</ul></b>
  * The equations below use a right hand system.
  * The right hand system is consistent with methods in physics, engineering,
@@ -330,7 +342,8 @@ public class Rotation {
       |      0    1      0 |
       | -sin ψ    0  cos ψ |
       </pre>
-     * @param angle angle of rotation about y-axis (pitch) in units of radians.
+     * @param angle angle of rotation about y-axis (pitch) in units of radians.  Euler notation
+     *              uses the right-hand rule for rotations.
      * @return 
     */
     public static double[][] createPitchRotationMatrix(double angle) {
@@ -473,12 +486,12 @@ public class Rotation {
         double[] n2 = MatrixUtil.normalizeL2(v2);
         double angle = -Math.acos(n1[0]*n2[0] + n1[1]*n2[1] + n1[2]*n2[2]);
         double[] axis = MatrixUtil.crossProduct(n1, n2);
-        double[][] r = Rotation.createRodriguesFormulaRotationMatrix(axis);
+        double[][] r = Rotation.createRodriguesFormulaRotationMatrix(axis, false);
         return r;
     }
     
     /**
-     * given axis as an array of rotations about x, y, and z, calculate the 
+     * given v as an array of rotations about x, y, and z, calculate the
      * rotation matrix.  
      * essentially, excepting a small angle correction:
      *     R^⊤ = cosθ*I + sinθ*[v]_× + (1−cosθ)*v*v^⊤
@@ -486,9 +499,9 @@ public class Rotation {
      * NOTE: if computing the partial derivative of Rotation elsewhere, 
      * can use d(R(ω)*v)/d(ω^T) = -[v]_x (see Equation (2.35) of Szeliski 2010).
      * Also note that a + sign in front of the sinθ term is used for the
-     * passive system of rotations and these are used in
-     * dynamics, mathematics, and computer science, etc.  A - sign 
-     * in front of the sinθ term is used in aerospace engineering and medicine
+     * active system of rotations and these are used in
+     * dynamics, mathematics, and computer science, etc.  A negative sign
+     * in front of the sinθ term is used in passive systems as in aerospace engineering and medicine
      * as the later use the "left hand rule" for coordinate axes.
      * <pre>
      * references:
@@ -496,137 +509,14 @@ public class Rotation {
      *    Szeliski 2010 draft "Computer Vision: Algorithms and Applications"
      *    Rodriguez’s formula (Ayache 1989)
      * </pre>
-     * @param axis [1x3] array of axis of rotations about x, y, and z
+     * @param v [1x3] array of v of rotations about x, y, and z
+     * @param passive if true rotation terms are for the perspective from the reference system of the object in rotation,
+     *  that is the passive system (often used when controlling an object), else if false is the active system.
+     *The active system is from the perspective of an observer's reference frame watching the rotating object, hence the
+     *  rotation is what is needed to transform the observers systems to the rotating object's system.
      * @return rotation matrix [3X3]
      */
-    public static double[][] createRodriguesFormulaRotationMatrix(double[] axis) {
-        if (axis.length != 3) {
-            throw new IllegalArgumentException("axis length must be 3");
-        }
-        
-        /*
-        https://github.com/robEllenberg/comps-plugins/blob/master/python/rodrigues.py
-        
-        Copyright (c) 2010 Carnegie Mellon University and Intel Corporation
-        #   Author: Dmitry Berenson <dberenso@cs.cmu.edu>
-        #
-        #   Redistribution and use in source and binary forms, with or without
-        #   modification, are permitted provided that the following conditions are met:
-        #
-        #     * Redistributions of source code must retain the above copyright
-        #       notice, this list of conditions and the following disclaimer.
-        #     * Redistributions in binary form must reproduce the above copyright
-        #       notice, this list of conditions and the following disclaimer in the
-        #       documentation and/or other materials provided with the distribution.
-        #     * Neither the name of Intel Corporation nor Carnegie Mellon University,
-        #       nor the names of their contributors, may be used to endorse or
-        #       promote products derived from this software without specific prior
-        #       written permission.
-        #
-        #   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-        #   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-        #   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-        #   ARE DISCLAIMED. IN NO EVENT SHALL INTEL CORPORATION OR CARNEGIE MELLON
-        #   UNIVERSITY BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-        #   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-        #   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-        #   OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-        #   WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-        #   OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
-        #   ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-        # -*- coding: utf-8 -*-
-        '''Rodrigues formula
-        Input: 1x3 array of rotations about x, y, and z
-        Output: 3x3 rotation matrix'''
-        from numpy import array,mat,sin,cos,dot,eye
-        from numpy.linalg import norm
-
-        def rodrigues(r):
-            def S(n):
-                Sn = array([[0,-n[2],n[1]],[n[2],0,-n[0]],[-n[1],n[0],0]])
-                return Sn
-            theta = norm(r)
-            if theta > 1e-30:
-                n = r/theta
-                Sn = S(n)
-                R = eye(3) + sin(theta)*Sn + (1-cos(theta))*dot(Sn,Sn)
-            else:
-                Sr = S(r)
-                theta2 = theta**2
-                R = eye(3) + (1-theta2/6.)*Sr + (.5-theta2/24.)*dot(Sr,Sr)
-            return mat(R)        
-        */
-        
-        double theta = MatrixUtil.lPSum(axis, 2);
-        
-        double[][] tmp1, tmp2;
-        
-        if (theta > 1e-30) {
-            
-            double[] n = Arrays.copyOf(axis, axis.length);
-            MatrixUtil.multiply(n, 1./theta);
-            // [3X3]
-            double[][] sn = MatrixUtil.skewSymmetric(n);
-            
-            //R = eye(3) + sin(theta)*Sn + (1-cos(theta))*dot(Sn,Sn)
-            tmp1 = MatrixUtil.copy(sn);
-            //[3X3]
-            MatrixUtil.multiply(tmp1, Math.sin(theta));
-            
-            //[3X3]
-            tmp2 = MatrixUtil.multiply(sn, sn);
-            MatrixUtil.multiply(tmp2, 1. - Math.cos(theta));
-
-        } else {
-            
-            double[][] sr = MatrixUtil.skewSymmetric(axis);
-            double theta2 = theta*theta;
-            
-            //R = eye(3) + (1-theta2/6.)*Sr + (.5-theta2/24.)*dot(Sr,Sr)
-            tmp1 = MatrixUtil.copy(sr);
-            MatrixUtil.multiply(tmp1, (1. - theta2)/6.);
-          
-            tmp2 = MatrixUtil.multiply(sr, sr);
-            MatrixUtil.multiply(tmp2, 0.5 - theta2/24.);
-            
-        }
-        
-        double[][] r = MatrixUtil.createIdentityMatrix(3);
-        
-        int j;
-        for (int i = 0; i < tmp1.length; ++i) {
-            for (j = 0; j < tmp1[i].length; ++j) {
-                r[i][j] += (tmp1[i][j] + tmp2[i][j]);
-            }
-        }
-        
-        return r;
-    }
-
-    /**
-     * given v as an array of rotations about x, y, and z, calculate the 
-     * transpose of the rotation matrix.
-     * It is the same as the rodrigues rotation matrix without transposition, 
-     * except that the sign in front of the sine term is negatvie.
-     * R^⊤ = cosθ*I − sinθ*[v]_× + (1−cosθ)*v*v^⊤
-     *     
-     * <pre>
-     * references:
-     *    Dmitry Berenson https://github.com/robEllenberg/comps-plugins/blob/master/python/rodrigues.py
-     *    Szeliski 2010 draft "Computer Vision: Algorithms and Applications"
-     *    Rodriguez’s formula (Ayache 1989)
-     * 
-     *    Metrics for 3D Rotations: Comparison and Analysis.
-     *    Huynh 2009.
-     *    J Math Imaging Vis (2009) 35: 155–164 DOI 10.1007/s10851-009-0161-2
-     *    https://www.cs.cmu.edu/~cga/dynopt/readings/Rmetric.pdf
-     *    (note that Huynh uses Hamilton quaternions.)
-     * </pre>
-     * @param v [1x3] array of rotations about x, y, and z
-     * @return rotation matrix [3X3]
-     */
-    public static double[][] createRodriguesFormulaRotationMatrixTranspose(double[] v) {
+    public static double[][] createRodriguesFormulaRotationMatrix(double[] v, boolean passive) {
         if (v.length != 3) {
             throw new IllegalArgumentException("v length must be 3");
         }
@@ -699,13 +589,16 @@ public class Rotation {
             //R = eye(3) + sin(theta)*Sn + (1-cos(theta))*dot(Sn,Sn)
             tmp1 = MatrixUtil.copy(sn);
             //[3X3]
-            MatrixUtil.multiply(tmp1, Math.sin(theta));
+            double sa = Math.sin(theta);
+            if (passive) {
+                sa *= -1;
+            }
+            MatrixUtil.multiply(tmp1, sa);
             
             //[3X3]
             tmp2 = MatrixUtil.multiply(sn, sn);
             MatrixUtil.multiply(tmp2, 1. - Math.cos(theta));
-            
-            
+
         } else {
             
             double[][] sr = MatrixUtil.skewSymmetric(v);
@@ -725,10 +618,146 @@ public class Rotation {
         int j;
         for (int i = 0; i < tmp1.length; ++i) {
             for (j = 0; j < tmp1[i].length; ++j) {
-                r[i][j] += (-tmp1[i][j] + tmp2[i][j]);
+                r[i][j] += (tmp1[i][j] + tmp2[i][j]);
             }
         }
         
+        return r;
+    }
+
+    /**
+     * given v as an array of rotations about x, y, and z, calculate the 
+     * transpose of the rotation matrix.
+     * It is the same as the rodrigues rotation matrix without transposition, 
+     * except that the sign in front of the sine term is negatvie.
+     * R^⊤ = cosθ*I − sinθ*[v]_× + (1−cosθ)*v*v^⊤
+     *     
+     * <pre>
+     * references:
+     *    Dmitry Berenson https://github.com/robEllenberg/comps-plugins/blob/master/python/rodrigues.py
+     *    Szeliski 2010 draft "Computer Vision: Algorithms and Applications"
+     *    Rodriguez’s formula (Ayache 1989)
+     * 
+     *    Metrics for 3D Rotations: Comparison and Analysis.
+     *    Huynh 2009.
+     *    J Math Imaging Vis (2009) 35: 155–164 DOI 10.1007/s10851-009-0161-2
+     *    https://www.cs.cmu.edu/~cga/dynopt/readings/Rmetric.pdf
+     *    (note that Huynh uses Hamilton quaternions.)
+     * </pre>
+     * @param v [1x3] array of rotations about x, y, and z
+     @param passive if true rotation terms are for the perspective from the reference system of the object in rotation,
+     *  that is the passive system (often used when controlling an object), else if false is the active system.
+     *The active system is from the perspective of an observer's reference frame watching the rotating object, hence the
+     *  rotation is what is needed to transform the observers systems to the rotating object's system.
+     * @return rotation matrix [3X3]
+     */
+    public static double[][] createRodriguesFormulaRotationMatrixTranspose(double[] v, boolean passive) {
+        if (v.length != 3) {
+            throw new IllegalArgumentException("v length must be 3");
+        }
+
+        /*
+        https://github.com/robEllenberg/comps-plugins/blob/master/python/rodrigues.py
+
+        Copyright (c) 2010 Carnegie Mellon University and Intel Corporation
+        #   Author: Dmitry Berenson <dberenso@cs.cmu.edu>
+        #
+        #   Redistribution and use in source and binary forms, with or without
+        #   modification, are permitted provided that the following conditions are met:
+        #
+        #     * Redistributions of source code must retain the above copyright
+        #       notice, this list of conditions and the following disclaimer.
+        #     * Redistributions in binary form must reproduce the above copyright
+        #       notice, this list of conditions and the following disclaimer in the
+        #       documentation and/or other materials provided with the distribution.
+        #     * Neither the name of Intel Corporation nor Carnegie Mellon University,
+        #       nor the names of their contributors, may be used to endorse or
+        #       promote products derived from this software without specific prior
+        #       written permission.
+        #
+        #   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+        #   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+        #   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+        #   ARE DISCLAIMED. IN NO EVENT SHALL INTEL CORPORATION OR CARNEGIE MELLON
+        #   UNIVERSITY BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+        #   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+        #   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+        #   OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+        #   WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+        #   OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+        #   ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+        # -*- coding: utf-8 -*-
+        '''Rodrigues formula
+        Input: 1x3 array of rotations about x, y, and z
+        Output: 3x3 rotation matrix'''
+        from numpy import array,mat,sin,cos,dot,eye
+        from numpy.linalg import norm
+
+        def rodrigues(r):
+            def S(n):
+                Sn = array([[0,-n[2],n[1]],[n[2],0,-n[0]],[-n[1],n[0],0]])
+                return Sn
+            theta = norm(r)
+            if theta > 1e-30:
+                n = r/theta
+                Sn = S(n)
+                R = eye(3) + sin(theta)*Sn + (1-cos(theta))*dot(Sn,Sn)
+            else:
+                Sr = S(r)
+                theta2 = theta**2
+                R = eye(3) + (1-theta2/6.)*Sr + (.5-theta2/24.)*dot(Sr,Sr)
+            return mat(R)
+        */
+
+        double theta = MatrixUtil.lPSum(v, 2);
+
+        double[][] tmp1, tmp2;
+
+        if (theta > 1e-30) {
+
+            double[] n = Arrays.copyOf(v, v.length);
+            MatrixUtil.multiply(n, 1./theta);
+            // [3X3]
+            double[][] sn = MatrixUtil.skewSymmetric(n);
+
+            //R = eye(3) + sin(theta)*Sn + (1-cos(theta))*dot(Sn,Sn)
+            tmp1 = MatrixUtil.copy(sn);
+            //[3X3]
+            double sa = Math.sin(theta);
+            if (passive) {
+                sa *= -1;
+            }
+            MatrixUtil.multiply(tmp1, sa);
+
+            //[3X3]
+            tmp2 = MatrixUtil.multiply(sn, sn);
+            MatrixUtil.multiply(tmp2, 1. - Math.cos(theta));
+
+
+        } else {
+
+            double[][] sr = MatrixUtil.skewSymmetric(v);
+            double theta2 = theta*theta;
+
+            //R = eye(3) + (1-theta2/6.)*Sr + (.5-theta2/24.)*dot(Sr,Sr)
+            tmp1 = MatrixUtil.copy(sr);
+            MatrixUtil.multiply(tmp1, (1. - theta2)/6.);
+
+            tmp2 = MatrixUtil.multiply(sr, sr);
+            MatrixUtil.multiply(tmp2, 0.5 - theta2/24.);
+
+        }
+
+        double[][] r = MatrixUtil.createIdentityMatrix(3);
+
+        int j;
+        for (int i = 0; i < tmp1.length; ++i) {
+            for (j = 0; j < tmp1[i].length; ++j) {
+                r[i][j] += (-tmp1[i][j] + tmp2[i][j]);
+            }
+        }
+
         return r;
     }
 
@@ -2532,16 +2561,25 @@ public class Rotation {
     q^T*q = q_1^2 + q_2^2 + q_3^2 + q_4^2.
     </pre>
      * @param unitLengthAxis    
-     * @param angle    
+     * @param angle angle of rotation in right-hand system, that is, positive rotations are counter-clockwise around axis.
+     * @oaram passive if true rotation terms are for the perspective from the reference system of the object in rotation,
+     * that is the passive system (often used when controlling an object), else if false is the active system.
+     * The active system is from the perspective of an observer's reference frame watching the rotating object, hence the
+     * rotation is what is needed to transform the observers systems to the rotating object's system.
      * @return     
     */
-    public static double[][] createRotationFromUnitLengthAngleAxis(double[] unitLengthAxis, double angle) {
+    public static double[][] createRotationFromUnitLengthAngleAxis(double[] unitLengthAxis, double angle,
+    boolean passive) {
         
         double ca = Math.cos(angle);
         double oneMinusCa = 1. - ca;
         double sa = Math.sin(angle);
+        if (passive) {
+            sa += -1;
+        }
         double[][] eye = MatrixUtil.createIdentityMatrix(3);
         double[][] skewA = MatrixUtil.skewSymmetric(unitLengthAxis);
+
         double[][] aaT = MatrixUtil.outerProduct(unitLengthAxis, unitLengthAxis);
         
         double[][] c = MatrixUtil.zeros(3, 3);
@@ -2549,7 +2587,7 @@ public class Rotation {
         int i, j;
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 3; ++j) {
-                c[i][j] = ca*eye[i][j] + oneMinusCa*aaT[i][j] - sa*skewA[i][j];
+                c[i][j] = ca*eye[i][j] + oneMinusCa*aaT[i][j] + sa*skewA[i][j];
             }
         }
         return c;

@@ -1119,13 +1119,15 @@ public class CameraPose {
             throw new IllegalArgumentException("T.length should be 3");
         }
 
+        boolean passive = false;
+
         //[R, dRdom] = rodrigues(om);
         Rotation.RodriguesRotation rRot = Rotation.createRodriguesRotationMatrixBouguet(om);
         double[][] r;
         if (useBouguetForRodrigues) {
             r = rRot.r;
         } else {
-            r = Rotation.createRodriguesFormulaRotationMatrix(om);
+            r = Rotation.createRodriguesFormulaRotationMatrix(om, passive);
         }
 
         //[m,n] = size(X);
@@ -1317,12 +1319,14 @@ public class CameraPose {
         System.out.printf("bouguet refine iter=%d\n", iter);
         //%fprintf(1,'\n');
 
+        boolean passive = false;
+
         //Rckk = rodrigues(omckk);
         double[][] r;
         if (useBouguetsRodrigues) {
             r = Rotation.createRodriguesRotationMatrixBouguet(omckk).r;
         } else {
-            r = Rotation.createRodriguesFormulaRotationMatrix(omckk);
+            r = Rotation.createRodriguesFormulaRotationMatrix(omckk, passive);
         }
 
         //can return [omckk,Tckk,Rckk,JJ]
@@ -1489,6 +1493,8 @@ public class CameraPose {
             omckk = Rotation.extractRodriguesRotationVector(RRR);
         }
 
+        boolean passive = false;
+
         //%omckk = rodrigues([H(:,1:2) cross(H(:,1),H(:,2))]);
         //Rckk = rodrigues(omckk);
         double[][] Rckk;
@@ -1496,7 +1502,7 @@ public class CameraPose {
             Rotation.RodriguesRotation rRot2 = Rotation.createRodriguesRotationMatrixBouguet(omckk);
             Rckk = rRot2.r;
         } else {
-            Rckk = Rotation.createRodriguesFormulaRotationMatrix(omckk);
+            Rckk = Rotation.createRodriguesFormulaRotationMatrix(omckk, passive);
         }
 
         //Tckk = H(:,3);
@@ -1519,7 +1525,7 @@ public class CameraPose {
         } else {
             omckk = Rotation.extractRodriguesRotationVector(Rckk);
             // this should be the same.  TODO: follow up on simplifying this method w.o. losing accuracy though
-            Rckk = Rotation.createRodriguesFormulaRotationMatrix(omckk);
+            Rckk = Rotation.createRodriguesFormulaRotationMatrix(omckk, passive);
         }
 
         return new CameraExtrinsicParameters(Rckk, omckk, Tckk);
@@ -1652,6 +1658,8 @@ public class CameraPose {
         double norm1 = MatrixUtil.lPSum(MatrixUtil.stack(Rckk), 2);
         double sc = norm0/norm1;
 
+        boolean passive = false;
+
         //Tckk = V(10:12,12)/sc;
         double[] Tckk = Arrays.copyOfRange(orth, 9, 12);
         MatrixUtil.multiply(Tckk, 1./sc);
@@ -1663,7 +1671,7 @@ public class CameraPose {
             Rckk = Rotation.createRodriguesRotationMatrixBouguet(omckk).r;
         } else {
             omckk = Rotation.extractRodriguesRotationVector(Rckk);
-            Rckk = Rotation.createRodriguesFormulaRotationMatrix(omckk);
+            Rckk = Rotation.createRodriguesFormulaRotationMatrix(omckk, passive);
         }
 
         return new CameraExtrinsicParameters(Rckk, omckk, Tckk);

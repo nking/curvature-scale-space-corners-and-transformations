@@ -1415,11 +1415,13 @@ public class BundleAdjustment {
         double[] xWCI = new double[3];
         double[] xWII;
 
+        boolean passive = false;
+
         double[][] rotM;
         if (useBouguetForRodrigues) {
-            rotM = Rotation.createRodriguesFormulaRotationMatrix(om);
+            rotM = Rotation.createRodriguesFormulaRotationMatrix(om, passive);
         } else {
-            rotM = Rotation.createRodriguesFormulaRotationMatrix(om);
+            rotM = Rotation.createRodriguesFormulaRotationMatrix(om, passive);
         }
 
         double[] rotAux = new double[3];
@@ -1867,6 +1869,8 @@ public class BundleAdjustment {
         
         BlockMatrixIsometric m = new BlockMatrixIsometric(MatrixUtil.zeros(3, 3*mImages), 3, 3);
 
+        boolean passive = false;
+
         Rotation.RodriguesRotation rr;
         int i;
         for (i = 0; i < mImages; ++i) {
@@ -1874,7 +1878,7 @@ public class BundleAdjustment {
                 rr = Rotation.createRodriguesRotationMatrixBouguet(extrRVecs[i]);
                 m.setBlock(rr.r, 0, i);
             } else {
-                m.setBlock(Rotation.createRodriguesFormulaRotationMatrix(extrRVecs[i]), 0, i);
+                m.setBlock(Rotation.createRodriguesFormulaRotationMatrix(extrRVecs[i], passive), 0, i);
             }
 
             // SO3 still?

@@ -57,7 +57,7 @@ public class CameraCalibration {
     public static final double eps = 1e-7;
     public static final double eps2 = 1e-5;
     
-    private static final Level LEVEL = Level.FINEST;
+    private static final Level LEVEL = Level.INFO;//Level.FINEST;
     private static final Logger log;
     static {
         log = Logger.getLogger(CameraCalibration.class.getSimpleName());
@@ -77,7 +77,7 @@ public class CameraCalibration {
      </pre>
      * @param n n is the number of points in each image which is the
               same for all images.  n is number of features.
-     * @param coordsI  holds the image coordinates in pixels of
+     * @param coordsI  holds the homogeneous image coordinates in pixels of
                features present in all images ordered in the same
                manner and paired with features in coordsW.
                It is a 2-dimensional double array of format
@@ -88,7 +88,12 @@ public class CameraCalibration {
                columns are the features presented in the same order in each image.
                In Table 1 of Ma, Chen, & Moore 2003 "Camera Calibration"
                these are the (u_d, v_d) pairs.
-     * @param coordsW holds the world coordinates of features, ordered
+    <pre>
+    e.g. coordsI = [ [xim1[0], xim1[1], ...xim1[n-1], xim2[0], xim2[1],...xim2[n-1],..., ]
+                    [yim1[0], yim1[1], ...yim1[n-1], yim2[0], yim2[1],...yim2[n-1],...]
+                    [1, 1, ...1, 1, 1,...1,...]]
+    </pre>
+     * @param coordsW holds the homogeneous world coordinates of features, ordered
                by the same features in the images.
                the first row is the X coordinates, the second row
                is the Y coordinates, and the third row is 1's 
@@ -356,6 +361,8 @@ public class CameraCalibration {
      * this is also in sect 2.4 of camera calibration book by zhang
      * as homography between a model plane and its image (in camera calibration w/ 2d objects: plane based techniques).
      *
+     * @see CameraPose.calculatePFromXXW()
+     *
      * @param coordsI holds the image coordinates in pixels of features present in image i as format [3 X nPoints].
      *                Only the first 2 dimensions are used, so if the 3rd dimension (z axis) is present, it is
      *                the responsibility of the invoker to have normalized the 1st 2 dimensions by the 3rd.
@@ -406,9 +413,7 @@ public class CameraCalibration {
         if (useNormConditioning) {
             coordsI = MatrixUtil.copy(coordsI);
             coordsW = MatrixUtil.copy(coordsW);
-
             tI = EpipolarNormalizationHelper.unitStandardNormalize(coordsI);
-
             tW = EpipolarNormalizationHelper.unitStandardNormalize(coordsW);
         }
 
@@ -429,47 +434,21 @@ public class CameraCalibration {
             //ell[2*i + 1] = new double[]{0, 0, 0, X, Y, 1, v*X, v*Y, v};
         }
 
-        double[][] lTl = MatrixUtil.createATransposedTimesA(ell);
-        int rank = MatrixUtil.rank(lTl);
-        SVD svd = SVD.factorize(new DenseMatrix(lTl));
-        double[][] vT = MatrixUtil.convertToRowMajor(svd.getVt());
+        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(ell);
 
         // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
-        // but if lTl rank was < 9, there may be nan rows at end of VT, so find last eigenvalue > machine tolerance for 0 and use
-        // it (or take last non Nan row...)
-        double[] xOrth = null;
-        if (rank == 9) {
-            xOrth = vT[vT.length - 1];
-        } else {
-            for (int row = vT.length - 1; row >= 0; row--) {
-                if (vT[row][8] == 0.) continue;
-                boolean allReal = true;
-                for (int col = 0; col < 9; ++col) {
-                    if (Double.isNaN(vT[row][col]) || Double.isInfinite(vT[row][col])) {
-                        allReal = false;
-                        break;
-                    }
-                }
-                if (allReal) {
-                    xOrth = vT[row];
-                    break;
-                }
-            }
-        }
-        MatrixUtil.multiply(xOrth, 1./xOrth[xOrth.length - 1]);
+        double[] xOrth = svd.vT[svd.vT.length - 1];
+
         //h00, h01, h02, h10, h11, h12, h20,h21,h22
 
         double[][] h = new double[3][3];
         for (int i = 0; i < 3; i++) {
-            h[i] = new double[3];
-            h[i][0] = xOrth[(i * 3) + 0];
-            h[i][1] = xOrth[(i * 3) + 1];
-            h[i][2] = xOrth[(i * 3) + 2];
+            System.arraycopy(xOrth, (i * 3), h[i], 0, 3);
         }
 
         if (useNormConditioning) {
-            double[][] tIInv = EpipolarNormalizationHelper.inverseT(tI);
-            h = MatrixUtil.multiply(tIInv, MatrixUtil.multiply(h, tW));
+            h = MatrixUtil.multiply(EpipolarNormalizationHelper.inverseT(tI), h);
+            h = MatrixUtil.multiply(h, tW);
         }
 
         return h;
@@ -778,9 +757,9 @@ public class CameraCalibration {
         if (nImages < 3) {
             throw new IllegalArgumentException("we need at least 3 images for the planar solution");
         }
-        
+
         log.log(LEVEL, "h=\n%s\n", FormatArray.toString(h, "%.3e"));
-        
+
         // Section 6.3 of Ma et al. 2003
         
         /*
@@ -807,188 +786,118 @@ public class CameraCalibration {
                 for B and other coefficients.
         
         b = [B11, B12, B22, B13, B23, B33]^T
-
-        in detail:
-           A = fx g   ox
-               0  fy  oy
-               0  0   1
-
-        A^-1
-             | 1/fx   -g/(fx*fy)   -ox/fx + g*oy/(fx*fy) |
-           = | 0       1/fy        -oy/fy                |
-             | 0       0           1                     |
-
-        A^-1^T
-             | 1/fx                     0         0
-           = | -g/(fx*fy)               1/fy      1
-             | -ox/fx + g*oy/(fx*fy)    -oy/fy    1
-
-        h1 = h11
-             h21
-             h31
-
-        h2 = h12
-             h22
-             h32
-
-        orth constraints for r2 dot r3 = 0
-        (1) h1^T * A^-1^T  * A^-1 * h2 = 0
-            [1x3] * [3x3] * [3x1] = [1x3]*[3x1] = [1x1]
-        (2) h1^T * A^-1^T  * A^-1 * h1 = h2^T * A^-1^T  * A^-1 * h2
-
-        A^-1^T  * A^-1 =
-            | 1/fx                     0         0 ]     | 1/fx   -g/(fx*fy)   -ox/fx + g*oy/(fx*fy) ]
-            | -g/(fx*fy)               1/fy      1 ]  *  | 0       1/fy        -oy/fy                ]
-            | -ox/fx + g*oy/(fx*fy)   -oy/fy     1 ]     [ 0       1            1                    ]
-
-         = [1/(fx*fx)                         -g/(fx*fx*fy)                                           -ox/(fx*fx) + g*oy/(fx*fx*fy)
-           [-g/(fx*fx*fy)                     g*g/(fx*fx*fy*fy) + (1/(fy*fy))
-           [-ox/(fx*fx) + g*oy/(fx*fx*fy)
-              where _aa32=_aa32=(-ox/fx + g*oy/(fx*fy))*(-g/(fx*fy)) + -oy/(fy*fy) + 1
-                               = ox*g/(fx*fx*fy) - g*g*oy/(fx*fx*fy*fy) - oy/(fy*fy) + 1
-                               = ( (g*ox*fy) - g*g*oy - fx*fx*oy + fx*fx*fy*fy) /(fx*fx*fy*fy)
-                    _aa33 = (-ox/fx + g*oy/(fx*fy))*(-ox/fx + g*oy/(fx*fy)) - oy*oy/(fy*fy) + 1
-                          = (ox*ox/(fx*fx)) - 2*(g*ox*oy/(fx*fx*fy)) + (g*g*oy*oy/(fx*fx*fy*fy)) - oy*oy/(fy*fy) + 1
-                          = (ox*ox*fx*fx - 2*g*ox*oy*fy + g*g*oy*oy - oy*oy*fx*fx + fx*fx*fy*fy) / (fx*fx*fy*fy)
-        = _aa11  _aa12  _aa13
-          _aa21  _aa22  _aa23
-          _aa31  _aa32  _aa33
-
-        instead of following the zhang et al which multiplies by h2 first, will start from multiplication by h1^T
-        first, same result.
-        (1) h1^T * A^-1^T  * A^-1 * h2 = 0
-
-        [h11 h21 h31] * _aa * h12
-                              h22
-                              h32
-        0 = [(h11*_aa11 + h21*_aa21 + h31*_a31)   (h11*_aa12 + h21*_aa22 + h31*_a32)  (h11*_aa13 + h21*_aa23 + h31*_a33)]
-          * h12
-            h22
-            h32
-        0 =  [h12*(h11*_aa11 + h21*_aa21 + h31*_a31)
-            + h22*(h11*_aa12 + h21*_aa22 + h31*_a32)
-            + h32*(h11*_aa13 + h21*_aa23 + h31*_a33)]
-
-        use DLT to construct companion matrix to _aa for the coefficients of _aa as a stacked matrix
-
-        (2) h1^T * A^-1^T  * A^-1 * h1 = h2^T * A^-1^T  * A^-1 * h2
-
-        0 = [h11*(h11*_aa11 + h21*_aa21 + h31*_a31)
-            + h21*(h11*_aa12 + h21*_aa22 + h31*_a32)
-            + h31*(h11*_aa13 + h21*_aa23 + h31*_a33)]
-
-        - [h12*(h12*_aa11 + h22*_aa21 + h32*_a31)
-            + h22*(h12*_aa12 + h22*_aa22 + h32*_a32)
-            + h32*(h12*_aa13 + h22*_aa23 + h32*_a33)]
         */
 
         int n = h.length/3;
 
+        // 2*nImages X 6
         double[][] v = new double[2*n][6];
-        // by symmetry of A^-T*A-1, we only have 6 parameters instead of 9
-
-        double h11, h12, h21, h22, h31, h32;//, h13, h23, h33;
+        double[] v22 = new double[6];
+        double h11, h12, h13, h21, h22, h23;
+        //Vij = [hi1*hj1, hi1*hj2 + hi2*hj1, hi2*hj2, hi3*hj1 + hi1*hj3, hi3*hj2 + hi2*hj3, hi3*hj3]T
         for (int i = 0; i < n; ++i) {
-            h11 = h[0 + 3 * i][0];
-            h12 = h[0 + 3 * i][1];
-            //h13 = h[0 + 3 * i][2];
-            h21 = h[1 + 3 * i][0];
-            h22 = h[1 + 3 * i][1];
-            //h23 = h[1 + 3 * i][2];
-            h31 = h[2 + 3 * i][0];
-            h32 = h[2 + 3 * i][1];
-            //h33 = h[2 + 3 * i][2];
+            // h_i is the ith column vector of H
+            // h11 = column 0 of h, first element: h[0][0]
+            // h12 = column 0 of h, 2nd element:   h[1][0]
+            // h13 = column 0 of h, 3rd element:   h[2][0]
+            // h21 = column 1 of h, first element: h[0][1]
+            // h22 = column 1 of h, 2nd element:   h[1][1]
+            // h23 = column 1 of h, 3rd element:   h[2][1]
+            h11 = h[0+3*i][0]; h12 = h[1+3*i][0]; h13 = h[2+3*i][0];
+            h21 = h[0+3*i][1]; h22 = h[1+3*i][1]; h23 = h[2+3*i][1];
 
-            /*
-            //_aa11, (_aa12 + _aa21)/2, _aa22, (_aa31 + _aa13)/2., (_aa32 + _aa23)/2., _aa33
-            [h12*(h11*_aa11 + h21*_aa21 + h31*_a31)
-            + h22*(h11*_aa12 + h21*_aa22 + h31*_a32)
-            + h32*(h11*_aa13 + h21*_aa23 + h31*_a33)]
-             */
+            //h11 = h[0+3*i][0]; h12 = h[0+3*i][1]; h13 = h[0+3*i][2];
+            //h21 = h[1+3*i][0]; h22 = h[1+3*i][1]; h23 = h[1+3*i][2];
+
+            //V12 = [h11*h21, h11*h22 + h12*h21, h12*h22, h13*h21 + h11*h23,
+            //       h13*h22 + h12*h23, h13*h23]T
             v[2*i] = new double[]{
-                    h12*h11,  //_aa11
-                    (h12*h21 + h22*h11), //(_aa12 + _aa21)/2
-                    h22*h21,                //_aa22
-                    (h32*h11 + h12*h31), //(_aa31 + _aa13)/2.
-                    (h32*h21 + h22*h31), //(_aa32 + _aa23)/2.
-                    h32*h31   //_aa33
+                    h11*h21, h11*h22 + h12*h21, h12*h22, h13*h21 + h11*h23,
+                    h13*h22 + h12*h23, h13*h23
             };
 
-            //_aa11, (_aa12 + _aa21)/2, _aa22, (_aa31 + _aa13)/2., (_aa32 + _aa23)/2., _aa33
-            /*
-            [h11*(h11*_aa11 + h21*_aa21 + h31*_a31)
-            + h21*(h11*_aa12 + h21*_aa22 + h31*_a32)
-            + h31*(h11*_aa13 + h21*_aa23 + h31*_a33)]
+            //V11 = [
+            // h11*h11 ,
+            // h11*h12 + h12*h11,
+            // h12*h12,
+            // h13*h11 + h11*h13,
+            // h13*h12 + h12*h13,
+            // h13*h13]T
+            // 2nd row is V11 - V12
+            /*v[2*i + 1] = new double[]{
+                h11*h11           - v[2*i][0],
+                h11*h12 + h12*h11 - v[2*i][1],
+                h12*h12           - v[2*i][2],
+                h13*h11 + h11*h13 - v[2*i][3],
+                h13*h12 + h12*h13 - v[2*i][4],
+                h13*h13           - v[2*i][5]
+            };*/
 
-        - [h12*(h12*_aa11 + h22*_aa21 + h32*_a31)
-            + h22*(h12*_aa12 + h22*_aa22 + h32*_a32)
-            + h32*(h12*_aa13 + h22*_aa23 + h32*_a33)]
-             */
+            //Vij = [hi1*hj1, hi1*hj2 + hi2*hj1, hi2*hj2, hi3*hj1 + hi1*hj3, hi3*hj2 + hi2*hj3, hi3*hj3]T
+            v22[0] = h21*h21;
+            v22[1] = h21*h22 + h22*h21;
+            v22[2] = h22*h22;
+            v22[3] = h23*h21 + h21*h23;
+            v22[4] = h23*h22 + h22*h23;
+            v22[5] = h23*h23;
 
+            // v11 - v22; Zhang 99 eqn(8)
             v[2*i + 1] = new double[]{
-                    h11*h11 - h12*h12, //_aa11
-                    //((h11*h21 + h21*h11)/2.) - ((h12*h22 - h22*h12)/2.), //(_aa12 + _aa21)/2
-                    h11*h21 - h12*h22 - h22*h12, //(_aa12 + _aa21)/2
-                    h21*h21 - h22*h22, //_aa22
-                    //((h31*h11 + h11*h31)/2.) - ((h32*h12 + h12*h32)/2.), //(_aa31 + _aa13)/2.
-                    h31*h11 - h32*h12, //(_aa31 + _aa13)/2.
-                    //((h31*h21 + h21*h31)/2.) - ((h32*h22 + h22*h32)/2.), //(_aa32 + _aa23)/2
-                    h31*h21 - h32*h22, //(_aa32 + _aa23)/2
-                    h31*h31 - h32*h32//_aa33
+                    h11*h11           - v22[0],
+                    h11*h12 + h12*h11 - v22[1],
+                    h12*h12           - v22[2],
+                    h13*h11 + h11*h13 - v22[3],
+                    h13*h12 + h12*h13 - v22[4],
+                    h13*h13           - v22[5]
             };
+
         }
 
-        /*
-        with v as is, there are problems extracting variables below and these are for cases with rotation and translation
-        present.
-
-        TODO: if the extraction of variable still fails after this conditioning,
-        consider setting gamma = 0 (assume square pixels), then re-extract the parameters using that assumption
-
-        TODO: if still have unsolvable cases that have rotation and translation, consider finding th best sample of
-        size 3 among the homographies using RANSAC and some assumptions about best
-         */
-
-        //Vb = 0 solves for null space and b = [B11, B12, B22, B13, B23, B33]^T
-        v = MatrixUtil.createATransposedTimesA(v);
+        //Vb = 0 and b = [B11, B12, B22, B13, B23, B33]^T
         SVDProducts svd = MatrixUtil.performSVD(v);
 
-        // vT is 6x6.  last row in vT is the eigenvector for the smallest eigenvalue
-        double[] b = svd.vT[svd.vT.length - 1];
-        boolean m1 = false;
-        if (b[0] < 0 && b[2] < 0 && b[5] < 0) {
-            MatrixUtil.multiply(b, -1);
-            m1 = true;
-        }
+        // vT is 6X6.  last row in vT is the eigenvector for the smallest eigenvalue for full rank
+        // it's the solution for the right null space.   there are problems when rank < 6
+        double[] b = svd.vT[svd.rank-1];
 
-        // from Ma 2003 "Camera Calibration": Note that B is symmetric.
-        // b = [B11, B12, B22, B13, B23, B33]T .
-
+        /*
+        this isnt necessary, but could be used:
         // B is symmetric
-        double[][] B = new double[][]{ {b[0],b[1],b[3]}, {b[1],b[2],b[4]}, {b[3],b[4],b[5]}};
+            double[][] B = new double[][]{{b[0], b[1], b[3]}, {b[1], b[2], b[4]}, {b[3], b[4], b[5]}};
 
-        boolean isPD = MatrixUtil.isPositiveDefinite(B);
-        if (!isPD && !m1) {
-            MatrixUtil.multiply(b, -1);
-            m1 = true;
-            isPD = MatrixUtil.isPositiveDefinite(B);
-        }
-        if (!isPD) {
-            B = MatrixUtil.nearestPositiveSemidefiniteToA(B, 1E-9);
-            int _t1 = 1;
-        }
+            boolean isPD = MatrixUtil.isPositiveDefinite(B);
+            if (!isPD && !m1) {
+                MatrixUtil.multiply(b, -1);
+                m1 = true;
+                isPD = MatrixUtil.isPositiveDefinite(B);
+            }
+            if (!isPD) {
+                B = MatrixUtil.nearestPositiveSemidefiniteToA(B, 1E-9);
+                int _t1 = 1;
+            }
 
-        // use cholesky decomposition
-        // L = Solve(L · L^T = B)
-        // A = (L^-1)^T * L[2][2]
-        // where A is kIntr
-        DenseCholesky chol = new DenseCholesky(B.length, false);
-        chol = chol.factor(new LowerSPDDenseMatrix(new DenseMatrix(B)));
-        LowerTriangDenseMatrix _cholL = chol.getL();
-        double[][] cholL = Matrices.getArray(_cholL);
-        double[][] cholLT = MatrixUtil.transpose(cholL);
-        double[][] kIntr0 = MatrixUtil.inverse(cholLT);
-        MatrixUtil.multiply(kIntr0, cholL[2][2]);
+            // use cholesky decomposition
+            // L = Solve(L · L^T = B)
+            // A = (L^-1)^T * L[2][2]
+            // where A is kIntr
+            DenseCholesky chol = new DenseCholesky(B.length, false);
+            chol = chol.factor(new LowerSPDDenseMatrix(new DenseMatrix(B)));
+            LowerTriangDenseMatrix _cholL = chol.getL();
+            double[][] cholL = Matrices.getArray(_cholL);
+            double[][] cholLT = MatrixUtil.transpose(cholL);
+            double[][] kIntr0 = MatrixUtil.inverse(cholLT);
+            MatrixUtil.multiply(kIntr0, cholL[2][2]);
+
+            //       0    1    2    3    4    5
+            //b = [B11, B12, B22, B13, B23, B33]^T
+            log.log(LEVEL, String.format("b=%s\n", FormatArray.toString(b, "%.3e")));
+            double B11 = b[0];
+            double B12 = b[1];
+            double B22 = b[2];
+            double B13 = b[3];
+            double B23 = b[4];
+            double B33 = b[5];
+         */
 
         //       0    1    2    3    4    5
         //b = [B11, B12, B22, B13, B23, B33]^T
@@ -999,27 +908,14 @@ public class CameraCalibration {
         double B13 = b[3];
         double B23 = b[4];
         double B33 = b[5];
-
-        /*
-                             parameters in B coefficients
-        B11                  a
-        B12                  a, b, g
-        B13                  a, b, g, u, v
-        B22                  a, b, g
-        B23                  a, b, g, u, v
-        B33                  a, b, g, u, v
-        */
-
         //Zhang 99 Appendix B; Ma et al. 2003 eqn (26)
         double v0 = (B12*B13 - B11*B23)/(B11*B22 - B12*B12);
-
-        // u0 and v0 must be >= 0.  presumably cannot have a negative camera center
-        double _tmp = ((B13*B13 + v0*(B12*B13 - B11*B23))/B11);
         double lambda = B33 - ((B13*B13 + v0*(B12*B13 - B11*B23))/B11);
         double alpha = Math.sqrt(lambda/B11);
         double beta = Math.sqrt( lambda*B11 / (B11*B22 - B12*B12) );
         double gamma = -B12*alpha*alpha*beta / lambda;
         double u0 = (gamma*v0/beta) - (B13*alpha*alpha/lambda);
+        //u0 = (gamma*v0/alpha) - (B13*alpha*alpha/lambda);
 
         log.log(LEVEL, String.format("v0=%.4e (exp=220.866)\n", v0));
         log.log(LEVEL, String.format("lambda=%.4e\n", lambda));
@@ -1027,81 +923,28 @@ public class CameraCalibration {
         log.log(LEVEL, String.format("beta=%.4e\n", beta));
         log.log(LEVEL, String.format("gamma=%.4e\n", gamma));
         log.log(LEVEL, String.format("u0=%.4e\n", u0));
-        
+
         double[][] kIntr = Camera.createIntrinsicCameraMatrix(
-            alpha, beta, u0, v0, gamma);
+                alpha, beta, u0, v0, gamma);
 
-        //DEBUG  if any are NAN, extract with assumption gamma = 0
-        boolean foundSoln = true;
-        for (int _i = 0; _i < kIntr.length; ++_i) {
-            for (int _j = 0; _j < kIntr[_i].length; ++_j) {
-                if (Double.isNaN(kIntr[_i][_j])) {
-                    foundSoln = false;
-                    break;
-                }
-            }
-        }
+        //B = lambda * K^-T * K  [3X3] = [3X3]*[3X3]
+        //K^T*K^-1*B = lambda
+        double[][] B = new double[][]{
+                {B11, B12, B13},
+                {B12, B22, B23},
+                {B13, B23, B33}
+        };
+        double[][] kTKInvB = MatrixUtil.multiply(MatrixUtil.multiply(MatrixUtil.transpose(kIntr),
+                MatrixUtil.inverse(kIntr)), B);
 
-        if (!foundSoln) {
-            /*
-            assume gamma = 0                parameters
-            B11 = 1/(a*a)                           a
-            B12 = B21 = 0
-            B13 = B31 = -u/(a*a)                    a,    u
-            B22 = 1/(b*b)                              b
-            B23 = B32 = -v/(b*b)                       b,    v
-            B33 = (-u*u/(a*a)) + (v*v/(b*b)) + 1    a, b, u, v
+        double lambda1_1 = 1./MatrixUtil.lPSum(MatrixUtil.extractColumn(kTKInvB, 0), 2);
+        double lambda1_2 = 1./MatrixUtil.lPSum(MatrixUtil.extractColumn(kTKInvB, 1), 2);
+        // or mean or median or column 0 and column 1
 
-            solve for v using B23 and B33 at least
-                B13*B13/B11 + B33 + v*B23 = 1
-                v = (1 - B13*B13/B11 + B33) / B23
-                else v = - B23/B22
-            solve for u:
-                B23*B23/B22 - B33 = (u*u/(a*a)) - 1
-                B23*B23/B22 - B33 = -u*B13 - 1
-                u*B13 = -1 - B23*B23/B22 + B33
-                u = (B33 - 1 -  B23*B23/B22)/B13
-                else u = -B13/B11
-
-            solve for 'a' using B11, B13, and B33 at least
-                we have u and v now.
-                B33 = (-u*u/(a*a)) + (v*v/(b*b)) + 1
-                B33 = -u*u/(a*a)) + (v*v)*B22 + 1
-                B33 - (v*v)*B22 - 1 = -u*u/(a*a))
-                a * a = -u*u / (B33 - (v*v)*B22 - 1)
-             solve for 'b' using 'a', 'b' and 'u'
-                B33 = (-u*u/(a*a)) + (v*v/(b*b)) + 1
-                b*b = v*v / (B33 + (u*u/(a*a)) - 1)
-             */
-            gamma = 0;
-            v0 = (1 - B13*B13/B11 + B33) / B23;
-            if (v0 < 0) {
-                v0 = -B23/B22;
-                if (v0 < 0) {
-                    throw new IllegalStateException("v0 should be positive.  valid solution not found");
-                }
-            }
-            u0 = (B33 - 1 -  B23*B23/B22) / B13;
-            if (u0 < 0) {
-                u0 = -B13/B11;
-                if (u0 < 0) {
-                    throw new IllegalStateException("u0 should be positive.  valid solution not found");
-                }
-            }
-            alpha = Math.sqrt(-u0*u0 / (B33 - (v0*v0)*B22 - 1));
-            if (Double.isNaN(alpha)) {
-                throw new IllegalStateException("alpha is NaN.  valid solution not found");
-            }
-            beta = Math.sqrt(v0*v0 / (B33 + (u0*u0/(alpha*alpha)) - 1));
-            if (Double.isNaN(beta)) {
-                throw new IllegalStateException("beat is NaN.  valid solution not found");
-            }
-            kIntr = Camera.createIntrinsicCameraMatrix(
-                    alpha, beta, u0, v0, gamma);
-        }
-            
         CameraIntrinsicParameters intrinsics = new CameraIntrinsicParameters();
-        intrinsics.setIntrinsic(kIntr0);
+        intrinsics.setIntrinsic(kIntr);
+        intrinsics.setLambda1(lambda1_1);
+        intrinsics.setLambda2(lambda1_2);
 
         return intrinsics;
     }
@@ -1159,14 +1002,14 @@ public class CameraCalibration {
         double[] t = MatrixUtil.multiplyMatrixByColumnVector(aInv, h3);
         
         //λ = 1/||(A^−1)*(h1)||_2 = 1/||(A^−1)*(h2)||_2
-        double lambda = 1./sumOfSquares(r1);
-        double lambda2 = 1./sumOfSquares(r2);
+        double lambda1_1 = 1./MatrixUtil.lPSum(r1, 2);
+        double lambda1_2 = 1./MatrixUtil.lPSum(r2, 2);
         //double scaleFactor = 2./(Math.sqrt(sumOfSquares(h1)) + Math.sqrt(sumOfSquares(h1)));
-        log.log(LEVEL, String.format("lambda1=%.3e, lambda2=%.3e\n", lambda, lambda2));
+        log.log(LEVEL, String.format("lambda1=%.3e, lambda2=%.3e\n", lambda1_1, lambda1_2));
 
-        MatrixUtil.multiply(r1, lambda);
-        MatrixUtil.multiply(r2, lambda);
-        MatrixUtil.multiply(t, lambda);
+        MatrixUtil.multiply(r1, lambda1_1);
+        MatrixUtil.multiply(r2, lambda1_1);
+        MatrixUtil.multiply(t, lambda1_1);
 
         double[] r3 = MatrixUtil.crossProduct(r1, r2);
         // r1, r2, and r3 are columns of R
@@ -2041,14 +1884,6 @@ public class CameraCalibration {
         }
                 
         return corrected;
-    }
-
-    private static double sumOfSquares(double[] m) {
-        double sum = 0;
-        for (int i = 0; i < m.length; ++i) {
-            sum += (m[i]*m[i]);
-        }
-        return sum;
     }
 
     /**

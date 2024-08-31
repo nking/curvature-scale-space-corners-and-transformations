@@ -21,9 +21,10 @@ public class RotationTest extends TestCase {
     public void testRodriguesFormula() {
         
         //from http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example.html
-        
+
+        boolean passive = false;
         double[] axis = new double[]{-1.451113, -1.827059, -0.179105};
-        double[][] r = Rotation.createRodriguesFormulaRotationMatrix(axis);
+        double[][] r = Rotation.createRodriguesFormulaRotationMatrix(axis, passive);
         
         double[][] expected = new double[3][3];
         expected[0] = new double[]{-0.043583, 0.875946, -0.480436};
@@ -125,7 +126,8 @@ public class RotationTest extends TestCase {
         double[][] k2Intr = Camera.createIntrinsicCameraMatrix(536.7, 326.5, 249.3);
         double[][] k1ExtrRot = MatrixUtil.createIdentityMatrix(3);
         double[] k1ExtrTrans = new double[]{0, 0, 0};
-        double[][] k2ExtrRot = Rotation.createRodriguesFormulaRotationMatrix(new double[]{0.00611, 0.00409, -0.00359});
+        double[][] k2ExtrRot = Rotation.createRodriguesFormulaRotationMatrix(
+                new double[]{0.00611, 0.00409, -0.00359}, false);
         double[] k2ExtrTrans = new double[]{-99.85, 0.82, 0.44};
         System.out.printf("k1ExtrRot\n=%s\n", FormatArray.toString(k1ExtrRot, "%.3e"));
         System.out.printf("k1ExtrTrans\n=%s\n\n", FormatArray.toString(k1ExtrTrans, "%.3e"));
@@ -252,7 +254,7 @@ public class RotationTest extends TestCase {
         
         double m0ZYX1 = MatrixUtil.lPSum(a0ZYX1, 2);
         double m0ZYX2 = MatrixUtil.lPSum(a0ZYX2, 2);
-        double[][] r0FromA0ZYX1 = Rotation.createRodriguesFormulaRotationMatrix(a0ZYX1);
+        double[][] r0FromA0ZYX1 = Rotation.createRodriguesFormulaRotationMatrix(a0ZYX1, false);
         
         double[] q0AABarfootZYX1 = Rotation.createUnitLengthQuaternionBarfoot(a0ZYX1, m0ZYX1);
         double[] q0AABarfootZYX2 = Rotation.createUnitLengthQuaternionBarfoot(a0ZYX2, m0ZYX2);
@@ -469,7 +471,8 @@ public class RotationTest extends TestCase {
         double gain = norm1/norm2;
         System.out.printf("norm1=%.4e, norm2=%.4e, gain=%.4e\n", norm1, norm2, gain);
 
-        double[][] Rcompare = Rotation.createRodriguesFormulaRotationMatrix(om);
+        boolean passive = false;
+        double[][] Rcompare = Rotation.createRodriguesFormulaRotationMatrix(om, passive);
         double[] omCompare = Rotation.extractRodriguesRotationVector(R1);
         double dCompare = distanceBetween(R1, Rcompare);
         double norm = MatrixUtil.spectralNorm(MatrixUtil.pointwiseSubtract(R1, Rcompare));
@@ -580,7 +583,7 @@ public class RotationTest extends TestCase {
         }
         om = MatrixUtil.normalizeL2(omu);
         MatrixUtil.multiply(om, Math.PI);
-        double[][] _R = Rotation.createRodriguesFormulaRotationMatrix(om);
+        double[][] _R = Rotation.createRodriguesFormulaRotationMatrix(om, false);
         Rotation.RodriguesRotation rRot7 = Rotation.createRodriguesRotationMatrixBouguet(om);
         R = rRot7.r;
         System.out.printf("R(om) = \n%s\n", FormatArray.toString(R, "%.4e"));
@@ -597,7 +600,7 @@ public class RotationTest extends TestCase {
         System.out.printf("R(om2) = \n%s\n",
                 FormatArray.toString(Rotation.createRodriguesRotationMatrixBouguet(om2).r, "%.4e"));
         System.out.printf("R(_om2) existing = \n%s\n",
-                FormatArray.toString(Rotation.createRodriguesFormulaRotationMatrix(_om2), "%.4e"));
+                FormatArray.toString(Rotation.createRodriguesFormulaRotationMatrix(_om2, false), "%.4e"));
 
         //=======
         /*
@@ -721,5 +724,27 @@ public class RotationTest extends TestCase {
 
         double d12 = Rotation.distanceUsingRigidBodyDisplacements(r1, r2, false);
 
+    }
+
+    public void testCreateRotationFromUnitLengthAngleAxis() {
+        double[] axis;
+        double angle;
+        double[][] rot, rotXYZ;
+
+        axis = new double[]{0, 1, 0};
+        angle = 35.*(Math.PI/180.);
+        // passive = true for left-hand system, CW rotation
+        //         = false for right-hand system, CCW rotation
+        rot = Rotation.createRotationFromUnitLengthAngleAxis(axis, angle, false);
+
+        // uses right-hand rule
+        rotXYZ = Rotation.createRotationXYZ(new double[]{0, angle, 0});
+
+        for (int row = 0; row < rot.length; ++row) {
+            for (int col = 0; col < rot[row].length; ++col) {
+                assertTrue(Math.abs(rot[row][col] - rotXYZ[row][col]) < 1E-7);
+            }
+        }
+        int t = 2;
     }
 }

@@ -703,7 +703,8 @@ public class Camera {
         private double[][] intrinsic;
         private double[] radialDistortionCoeffs;
         private boolean useR2R4;
-        private double lambda;
+        private double lambda1;
+        private double lambda2;
         
         public CameraIntrinsicParameters(double[][] k) {
             this.intrinsic = k;
@@ -748,17 +749,31 @@ public class Camera {
         }
 
         /**
-         * @return the lambda the scale factor used in projection
+         * @return the lambda1 estimate of the scale factor used in projection
          */
-        public double getLambda() {
-            return lambda;
+        public double getLambda1() {
+            return lambda1;
         }
 
         /**
-         * @param lambda the lambda to set for scale factor of projection
+         * @return the lambda2 estimate of the scale factor used in projection
          */
-        public void setLambda(double lambda) {
-            this.lambda = lambda;
+        public double getLambda2() {
+            return lambda2;
+        }
+
+        /**
+         * @param lambda the lambda1 estimated scale factor of projection
+         */
+        public void setLambda1(double lambda) {
+            this.lambda1 = lambda;
+        }
+
+        /**
+         * @param lambda the lambda2 estimated scale factor of projection
+         */
+        public void setLambda2(double lambda) {
+            this.lambda2 = lambda;
         }
 
         public double[] getRadialDistortionCoeffs() {

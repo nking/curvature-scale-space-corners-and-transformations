@@ -193,6 +193,7 @@ public class BundleAdjustmentTest extends TestCase {
         log.log(LEVEL, String.format("kRadial0=[%.3e, %.3e], kRadial1=[%.3e, %.3e],  kRadial expected=[%.3e, %.3e]\n",
             kRadial[0], kRadial[1], kRadial2[0], kRadial2[1], k1E, k2E));
 
+        boolean passive = false;
 
         Camera.CameraExtrinsicParameters[] refined = new Camera.CameraExtrinsicParameters[nImages];
         for (i = 0; i < nImages; ++i) {
@@ -208,7 +209,7 @@ public class BundleAdjustmentTest extends TestCase {
             double[][] cCalibRot = init.getRotation();
             double[][] bouguetRefinedRot = refined[i].getRotation();
             double[][] expectedRot = Zhang98Data.getRotation(i + 1);
-            double[][] bARefinedRot = Rotation.createRodriguesFormulaRotationMatrix(extrRotVecs[i]);
+            double[][] bARefinedRot = Rotation.createRodriguesFormulaRotationMatrix(extrRotVecs[i], passive);
 
             System.out.printf("%d) rotation:\n  rot0=\n%s\n  rot refined (BA)=\n%s\n   rot refined (bouguet)=\n%s\n  rot expected=\n%s\n",
                     i,

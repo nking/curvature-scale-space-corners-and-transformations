@@ -426,8 +426,10 @@ public class PlanarHomographyTest extends TestCase {
             assertTrue(Math.abs(checkNC1[1] - nC1Norm[1]) < 1E-7);
             assertTrue(Math.abs(checkNC1[2] - nC1Norm[2]) < 1E-7);
 
+            boolean passive = false;
+
             // using the rodrigues formula was faster but a little less accurate:
-        double[][] r2 = Rotation.createRodriguesFormulaRotationMatrix(axisWCSC1);
+        double[][] r2 = Rotation.createRodriguesFormulaRotationMatrix(axisWCSC1, passive);
         System.out.printf("r*v=\n%s\n", FormatArray.toString(
                 MatrixUtil.multiplyMatrixByColumnVector(r2, nPNorm),
                 "%.4e"

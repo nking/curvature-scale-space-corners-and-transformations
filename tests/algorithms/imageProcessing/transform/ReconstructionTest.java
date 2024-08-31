@@ -212,9 +212,10 @@ public class ReconstructionTest extends TestCase {
         //expected om = 0.00611, 0.00489, -0.00359   +- 0.0027, 0.00308, 0.00029
         //expected t = -99.84929, 0.82221, 0.43647   +- 0.142, 0.11352, 0.49773
 
+        boolean passive = false;
         double[] r2LeftToRightVec = Arrays.copyOf(r2RightRelToLeftVec, r2RightRelToLeftVec.length);
         MatrixUtil.multiply(r2LeftToRightVec, -1);
-        double[][] r2LeftToRight = Rotation.createRodriguesFormulaRotationMatrix(r2LeftToRightVec);
+        double[][] r2LeftToRight = Rotation.createRodriguesFormulaRotationMatrix(r2LeftToRightVec, passive);
         int i, j;
         {//DEBUG
             System.out.printf("r2Left=\n%s\n", FormatArray.toString(r2Left, "%.3e"));
@@ -618,10 +619,12 @@ public class ReconstructionTest extends TestCase {
         double[][] k1Intr = Camera.createIntrinsicCameraMatrix(533.5, 341.6, 235.2);
         double[][] k2Intr = Camera.createIntrinsicCameraMatrix(536.6, 326.3, 250.1);
 
+        boolean passive = false;
+
         double[][] k1ExtrRot = MatrixUtil.createIdentityMatrix(3);
         double[] k1ExtrTrans = new double[]{0, 0, 0};
         double[][] k2ExtrRot = Rotation.createRodriguesFormulaRotationMatrix(
-                new double[]{0.00611, 0.00409, -0.00359});
+                new double[]{0.00611, 0.00409, -0.00359}, passive);
         double[] k2ExtrTrans = new double[]{-99.85, 0.82, 0.44};
 
         double[] thetas = new double[3];
@@ -871,9 +874,11 @@ public class ReconstructionTest extends TestCase {
         
         double[][] k1ExtrRot = MatrixUtil.createIdentityMatrix(3);
         double[] k1ExtrTrans = new double[]{0, 0, 0};
-        
+
+        boolean passive = false;
+
         double[][] k2ExtrRot = Rotation.createRodriguesFormulaRotationMatrix(
-            new double[]{0.00611, 0.00409, -0.00359});
+            new double[]{0.00611, 0.00409, -0.00359}, passive);
         double[] k2ExtrTrans = new double[]{-99.85, 0.82, 0.44};
         //double[] k2ExtrTransRev = Arrays.copyOf(k2ExtrTrans, k2ExtrTrans.length);
         //MatrixUtil.multiply(k2ExtrTransRev, -1);
