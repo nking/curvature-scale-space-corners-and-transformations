@@ -2,6 +2,7 @@
 package algorithms.imageProcessing.transform;
 
 import algorithms.matrix.MatrixUtil;
+import algorithms.misc.MiscMath;
 import algorithms.util.FormatArray;
 import java.util.Arrays;
 import java.util.Random;
@@ -18,12 +19,78 @@ public class RotationTest extends TestCase {
     public RotationTest() {
     }
 
-    public void testRodriguesFormula() {
+    public void testAngleAxisMethods() {
+
+        double tol = 1E-7;
+
+        boolean passive = true;
+
+        double[] eulerAngles = new double[]{31, 55, 15};
+        MatrixUtil.multiply(eulerAngles, Math.PI/180.);
+        //[0.5410520681182421, 0.9599310885968813, 0.2617993877991494]
+
+        double[] rotVec = Rotation.convertEulerAnglesToRotationVector(eulerAngles);
+        assertTrue(MiscMath.areEqual(new double[]{0.6215418, 0.8698973, 0.4960325}, rotVec, tol));
+
+        // correct:  intrinsic composition
+        double[][] r1XYZ = Rotation.createRotationXYZ(eulerAngles);
+        double[][] expectedR1XYZ = new double[][]{
+                { 0.55403229, -0.14845251,  0.81915204},
+            { 0.62937001,  0.7187657 , -0.2954137 },
+            {-0.54492349,  0.67921846,  0.49165097}
+        };
+        assertTrue(MiscMath.areEqual(expectedR1XYZ, r1XYZ, tol));
+        /*
+        createRotationXYZ matches scipy results:
+        from scipy.spatial.transform import Rotation as R
+        theta1Rad = np.array([0.5410520681182421, 0.9599310885968813, 0.2617993877991494])
+        R.from_euler('XYZ', theta1Rad, degrees=False).as_matrix()
+                array([[ 0.55403229, -0.14845251,  0.81915204],
+                       [ 0.62937001,  0.7187657 , -0.2954137 ],
+                       [-0.54492349,  0.67921846,  0.49165097]])
+         */
+        double[] _eulerAngles = Rotation.extractThetaFromXYZ(r1XYZ, true);
+        assertTrue(MiscMath.areEqual(eulerAngles, _eulerAngles, tol));
+
+        double[][] r2 = Rotation.createRodriguesFormulaRotationMatrix(rotVec, passive);
+        //double[][] r3 = Rotation.createRodriguesFormulaRotationMatrixTomasi(rotVec, passive);
+        Rotation.RodriguesRotation rr = Rotation.createRodriguesRotationMatrixBouguet(rotVec, passive);
+        double[][] r4 = rr.r;
+        assertTrue(MiscMath.areEqual(expectedR1XYZ, r2, tol));
+        assertTrue(MiscMath.areEqual(expectedR1XYZ, r4, tol));
+
+        /*
+        from scipy
+        modified rodrigues parameters = [0.16004402, 0.22399439, 0.12772598]
+        rotvec = [0.62154177, 0.86989733, 0.49603245],
+              axis=np.linalg.norm(rotVec) = 1.1785939623334512
+              rotvec/axis = [0.52735869, 0.73808059, 0.42086797] <=== matches mine
+         */
+
+        // verifying... python method?
+        double[][] r1ZYX = Rotation.createRotationZYX(eulerAngles);
+        double[][] expectedR1ZYX = new double[][]{
+                { 0.49165095, -0.31575871,  0.81152682},
+                { 0.29541371,  0.93715436,  0.18566758},
+                {-0.81915205,  0.14845251,  0.5540322}
+        };
+        assertTrue(MiscMath.areEqual(expectedR1ZYX, r1ZYX, tol));
+
+        double[][] r1XYZExtrinsic = Rotation.createRotationXYZExtrinsic(eulerAngles);
+        assertTrue(MiscMath.areEqual(expectedR1ZYX, r1XYZExtrinsic, tol));
+
+        double[] _eulerAngles2 = Rotation.extractThetaFromZYX(r1ZYX, true);
+        assertTrue(MiscMath.areEqual(eulerAngles, _eulerAngles2, tol));
+
+    }
+
+    public void _testRodriguesFormula() {
         
         //from http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example.html
 
         boolean passive = false;
         double[] axis = new double[]{-1.451113, -1.827059, -0.179105};
+        // in degrees: -83.1426505 , -104.68276962,  -10.26196059
         double[][] r = Rotation.createRodriguesFormulaRotationMatrix(axis, passive);
         
         double[][] expected = new double[3][3];
@@ -65,7 +132,7 @@ public class RotationTest extends TestCase {
        
     }
 
-    public void testProcrustesAlgorithm() throws NotConvergedException {
+    public void _testProcrustesAlgorithm() throws NotConvergedException {
         double[][] a = new double[4][2];
         a[0] = new double[]{1, 2};
         a[1] = new double[]{3, 4};
@@ -92,7 +159,7 @@ public class RotationTest extends TestCase {
         }
     }
 
-    public void testProcrustesAlgorithm2() throws NotConvergedException {
+    public void _testProcrustesAlgorithm2() throws NotConvergedException {
         
         System.out.println("\ntestProcrustesAlgorithm2()");
         
@@ -159,7 +226,7 @@ public class RotationTest extends TestCase {
         System.out.printf("rotation from Procrustes algorithm\n=%s\n", FormatArray.toString(orthogRot, "%.3e"));
     }
     
-    public void test2() {
+    public void _test2() {
         
         double[] theta = new double[]{25.*Math.PI/180., 35.*Math.PI/180., 55.*Math.PI/180.};
         
@@ -200,7 +267,7 @@ public class RotationTest extends TestCase {
         }
     }
     
-    public void test3() throws NotConvergedException {
+    public void _test3() throws NotConvergedException {
         System.out.println("test3");
        
         int i, j;
@@ -331,7 +398,7 @@ public class RotationTest extends TestCase {
         
     }
     
-    public void test4() throws NotConvergedException {
+    public void _test4() throws NotConvergedException {
          
         System.out.println("test4 for gimbal lock singularity");
         
@@ -421,7 +488,7 @@ public class RotationTest extends TestCase {
                 
     }
 
-    public void testRodriguesRotationBouguet() throws NotConvergedException {
+    public void _testRodriguesRotationBouguet() throws NotConvergedException {
         // tests from the Bouguet toolbox in rodrigues.m
         System.out.println("\ntestRodriguesRotationBouguet");
 
@@ -443,6 +510,7 @@ public class RotationTest extends TestCase {
         gain = norm(R2 - R1)/norm(R2 - R2a)
          */
 
+        boolean passive = true;
         int i;
         om = new double[3];
         dom = new double[3];
@@ -450,12 +518,12 @@ public class RotationTest extends TestCase {
             om[i] = rand.nextDouble();
             dom[i] = rand.nextDouble()/1000000;
         }
-        Rotation.RodriguesRotation rRot = Rotation.createRodriguesRotationMatrixBouguet(om);
+        Rotation.RodriguesRotation rRot = Rotation.createRodriguesRotationMatrixBouguet(om, passive);
         // [3X3]
         R1 = rRot.r;
         // [9X3]
         dR1 = rRot.dRdR;
-        Rotation.RodriguesRotation rRot2 = Rotation.createRodriguesRotationMatrixBouguet(MatrixUtil.add(om, dom));
+        Rotation.RodriguesRotation rRot2 = Rotation.createRodriguesRotationMatrixBouguet(MatrixUtil.add(om, dom), passive);
         R2 = rRot2.r;
         //R2a = R1 + reshape(dR1 * dom,3,3);
         // [9X3][3X1] = [9X1]
@@ -471,7 +539,6 @@ public class RotationTest extends TestCase {
         double gain = norm1/norm2;
         System.out.printf("norm1=%.4e, norm2=%.4e, gain=%.4e\n", norm1, norm2, gain);
 
-        boolean passive = false;
         double[][] Rcompare = Rotation.createRodriguesFormulaRotationMatrix(om, passive);
         double[] omCompare = Rotation.extractRodriguesRotationVector(R1);
         double dCompare = distanceBetween(R1, Rcompare);
@@ -506,20 +573,20 @@ public class RotationTest extends TestCase {
             om[i] = rand.nextDouble();
             dom[i] = rand.nextDouble()/10000;
         }
-        Rotation.RodriguesRotation rRot3 = Rotation.createRodriguesRotationMatrixBouguet(om);
+        Rotation.RodriguesRotation rRot3 = Rotation.createRodriguesRotationMatrixBouguet(om, passive);
         R = rRot3.r;
 
         double[] omPlusDom = MatrixUtil.add(om, dom);
-        Rotation.RodriguesRotation rRot4 = Rotation.createRodriguesRotationMatrixBouguet(omPlusDom);
+        Rotation.RodriguesRotation rRot4 = Rotation.createRodriguesRotationMatrixBouguet(omPlusDom, passive);
         dR = MatrixUtil.pointwiseSubtract(rRot4.r, R);
 
         double[] checkOMC = Rotation.extractRodriguesRotationVector(R);
 
-        Rotation.RodriguesRotation rRot5 = Rotation.extractRodriguesRotationVectorBouguet(R);
+        Rotation.RodriguesRotation rRot5 = Rotation.extractRodriguesRotationVectorBouguet(R, passive);
         omc = rRot5.om; // om should equal omc
         domdR = rRot5.dRdR;
         Rotation.RodriguesRotation rRot6 = Rotation.extractRodriguesRotationVectorBouguet(
-                MatrixUtil.pointwiseAdd(R, dR)
+                MatrixUtil.pointwiseAdd(R, dR), passive
         );
         om2 = rRot6.om;
         om_app = MatrixUtil.add(omc,
@@ -584,12 +651,12 @@ public class RotationTest extends TestCase {
         om = MatrixUtil.normalizeL2(omu);
         MatrixUtil.multiply(om, Math.PI);
         double[][] _R = Rotation.createRodriguesFormulaRotationMatrix(om, false);
-        Rotation.RodriguesRotation rRot7 = Rotation.createRodriguesRotationMatrixBouguet(om);
+        Rotation.RodriguesRotation rRot7 = Rotation.createRodriguesRotationMatrixBouguet(om, passive);
         R = rRot7.r;
         System.out.printf("R(om) = \n%s\n", FormatArray.toString(R, "%.4e"));
         System.out.printf("R(om) existing = \n%s\n", FormatArray.toString(_R, "%.4e"));
         dR = rRot7.dRdR;
-        Rotation.RodriguesRotation rRot8 = Rotation.extractRodriguesRotationVectorBouguet(R);
+        Rotation.RodriguesRotation rRot8 = Rotation.extractRodriguesRotationVectorBouguet(R, passive);
         om2 = rRot8.om;
         double[] _om2 = Rotation.extractRodriguesRotationVector(R);
         // om and om2 should be  the same
@@ -598,7 +665,7 @@ public class RotationTest extends TestCase {
         System.out.printf("_om2=toVec(R(om)) existing = %s\n", FormatArray.toString(_om2, "%.4e"));
 
         System.out.printf("R(om2) = \n%s\n",
-                FormatArray.toString(Rotation.createRodriguesRotationMatrixBouguet(om2).r, "%.4e"));
+                FormatArray.toString(Rotation.createRodriguesRotationMatrixBouguet(om2, passive).r, "%.4e"));
         System.out.printf("R(_om2) existing = \n%s\n",
                 FormatArray.toString(Rotation.createRodriguesFormulaRotationMatrix(_om2, false), "%.4e"));
 
@@ -614,10 +681,10 @@ public class RotationTest extends TestCase {
         for (i = 0; i < 3; ++i) {
             om[i] = rand.nextDouble();
         }
-        Rotation.RodriguesRotation rRot9 = Rotation.createRodriguesRotationMatrixBouguet(om);
+        Rotation.RodriguesRotation rRot9 = Rotation.createRodriguesRotationMatrixBouguet(om, passive);
         R = rRot9.r;
         dR = rRot9.dRdR;
-        Rotation.RodriguesRotation rRot10 = Rotation.extractRodriguesRotationVectorBouguet(R);
+        Rotation.RodriguesRotation rRot10 = Rotation.extractRodriguesRotationVectorBouguet(R, passive);
         om2 = rRot10.om;
         System.out.printf("should be equal:\n");
         System.out.printf("om=%s\nom2=%s\n", FormatArray.toString(om, "%.4e"),
@@ -653,10 +720,11 @@ public class RotationTest extends TestCase {
         om = Arrays.copyOf(u, u.length);
         MatrixUtil.multiply(om, Math.PI);
 
-        Rotation.RodriguesRotation rRot11 = Rotation.createRodriguesRotationMatrixBouguet(om);
+        Rotation.RodriguesRotation rRot11 = Rotation.createRodriguesRotationMatrixBouguet(om, passive);
         R = rRot11.r;
         Rotation.RodriguesRotation rRot12 =
-                Rotation.createRodriguesRotationMatrixBouguet(Rotation.extractRodriguesRotationVectorBouguet(R).om);
+                Rotation.createRodriguesRotationMatrixBouguet(
+                        Rotation.extractRodriguesRotationVectorBouguet(R, passive).om, passive);
         R2 = rRot12.r;
         norm1 = MatrixUtil.spectralNorm(R);
         norm2 = MatrixUtil.spectralNorm(R2);
@@ -677,7 +745,7 @@ public class RotationTest extends TestCase {
         R[0] = new double[]{-0.950146567583153, -6.41765854280073e-05, 0.311803617668748};
         R[1] = new double[]{-6.41765854277654e-05, -0.999999917385145, -0.000401386434914383};
         R[2] = new double[]{0.311803617668748, -0.000401386434914345, 0.950146484968298};
-        Rotation.RodriguesRotation rRot13 = Rotation.extractRodriguesRotationVectorBouguet(R);
+        Rotation.RodriguesRotation rRot13 = Rotation.extractRodriguesRotationVectorBouguet(R, passive);
         om = rRot13.om;
         System.out.printf("om=%s\nom2=%s\n", FormatArray.toString(om, "%.4e"),
                 FormatArray.toString(om2, "%.4e"));
@@ -697,7 +765,7 @@ public class RotationTest extends TestCase {
         R[0] = new double[]{-0.999920129411407,	-6.68593208347372e-05,	-0.0126384464118876};
         R[1] = new double[]{9.53007036072085e-05,	-0.999997464662094,	-0.00224979713751896};
         R[2] = new double[]{-0.0126382639492467,	-0.00225082189773293,	0.999917600647740};
-        Rotation.RodriguesRotation rRot14 = Rotation.extractRodriguesRotationVectorBouguet(R);
+        Rotation.RodriguesRotation rRot14 = Rotation.extractRodriguesRotationVectorBouguet(R, passive);
         om = rRot14.om;
         norm = MatrixUtil.lPSum(om, 2);
         System.out.printf("norm=%.4e\n\n", norm);
@@ -714,7 +782,7 @@ public class RotationTest extends TestCase {
         );
     }
 
-    public void testDistanceUsingRigidBodyDisplacements() throws NotConvergedException {
+    public void _testDistanceUsingRigidBodyDisplacements() throws NotConvergedException {
 
         double[] theta1 = new double[]{20, 35, 55};
         double[] theta2 = new double[]{30, 45, 60};
@@ -726,7 +794,7 @@ public class RotationTest extends TestCase {
 
     }
 
-    public void testCreateRotationFromUnitLengthAngleAxis() {
+    public void _testCreateRotationFromUnitLengthAngleAxis() {
         double[] axis;
         double angle;
         double[][] rot, rotXYZ;

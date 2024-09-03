@@ -27,38 +27,37 @@ import no.uib.cipr.matrix.SVD;
        the origin and is perpendicular to nˆ.  NOTE: nˆ is determined by
        the right hand rule.
  </pre>
- * This Rotation.java class uses "active" rotations of vectors counterclockwise in a right-handed 
+ * This Rotation.java class uses "passive" rotations of vectors counterclockwise in a right-handed
  * coordinate system (y counterclockwise from x) by pre-multiplication 
  * (R on the left).
  * If any one of these is changed (such as rotating axes
- * instead of vectors, a "passive" transformation), then the inverse of the
+ * instead of vectors, a "active" transformation), then the inverse of the
  * example matrix should be used, which coincides with its transpose.
  * e.g. (A*B*C)^-1 = (C^-1) * (B^-1) * (A^-1).
- *
- Regarding active and passive rotations from
- Zanetti, "Rotations, Transformations, Left Quaternions, Right Quaternions?"
-     active rotations:
- the orientation can be expressed as rotation from a current observation (inertial)
- reference frame orientation to current spacecraft (body fixed frame)  orientation.
- The rotation is what is needed to take the observation inertial reference frame into
- the spacecraft (body fixed) reference frame.
- This is the historical system used.
- It is used in translational dynamics.
- Its used when we are observing an object we are not controlling.
 
-     passive rotations:
- perspective is from being in the spacecraft (body fixed frame) and it sees the
- observing inertial frame moving with the opposite rotation.
- passive rotations are used when the direction of successive rotations is known in
- the body-fixed frame and when describing the motion of an object we are controlling.
- This is convenient for attitude kinematics where the angular velocity of
- the spacecraft is more readily avail in the body-fixed frame using Euler eqn
- of rotational dynamics because the inertial matrix is constant in the body frame.
- passive system is often used aerospace and medical contexts.
- The Space Shuttle software used left-hand quaternion system.
+ see wikipedia article "Active and Passive Transformations"
+
+ active rotations (a.k.a. alibi transformations):
+     the reference frame stays fixed and the object of interest moves. The rotation is of the object being described.
+     These are clockwise rotations (left hand system) of the object of interest about the fixed reference system origin .
+     active rotations are the historical system used.
+
+ passive rotations (a.k.a. alias transformations):
+     the reference frame (coordinate system) is rotated and the object of interest stays fixed.
+     These are counterclockwise rotations (right hand system) of the reference frame about its own
+     origin while the object of interest says fixed.
+     An example use is that from the perspective of being inside a plane - the inertial reference frame appears to move
+     with the opposite rotation.  This system is used when we are describing the motion of the object we are in and
+     controlling.
+
+ an active rotation R(theta) is equivalent to the passive rotation R(-theta) which is R^T.
+
+ active transformations are often used for multiple maneuvers of a body.
+
 
  * <b><ul>RIGHT HAND SYSTEM</ul></b>
- * The equations below use a right hand system.
+ * The equations in this section use a right hand system (== passive transformations, CCW rotations of the object while
+ * reference frame is fixed).
  * The right hand system is consistent with methods in physics, engineering,
  * and computer science in general.  The <b>Hamilton quaternion</b> is consistent
  * with the right hand system and has format [scalar vector].
@@ -83,42 +82,66 @@ import no.uib.cipr.matrix.SVD;
  Quaternions can be derived from the axis/angle representation through the 
  formula q = (v, w) = (sin(theta)*n_hat,cos(theta)),
  where n_hat and theta are the rotation axis and angle.
- 
-cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
-            | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
-            | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
-            |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ | 
- 
-two ways that the skew matrix are expressed are transposed from one another:
- 
- [v]_x = |  0  -z   y |   this one is used in MatrixUtil.skewSymmetric()
+
+ passive, CCW rotations (right hand system) of the reference frame about its own
+ origin while the object of interest says fixed.
+     rotation about z-axis (yaw):    about the y-axis (pitch):     about x-axis (roll):
+                | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |
+                | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |
+                |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |
+     Note that in the java methods below, the documentation should specify whether active or passive are used.
+
+
+ The skew symmetric matrix (implemented in MatrixUtil.skewSymmetric(), is:
+ [v]_x = |  0  -z   y |
          |  z   0  -x |
          | -y   x   0 |
-         
- [v]_x = |  0   z  -y | 
+
+ Its opposite is the anti-symmetric matrix and is equal to -1 * skewSymmetric:
+ [[v]] = |  0   z  -y |
          | -z   0   x |
          |  y  -x   0 |
+
+ From Shuster we have properties of the skew symmetric matrix (as -1 * anti-sym matrix [[v]]).
+ <pre>
+ let [u]_x be the skew symmetric of u and [v]_x be the skew-symmetric of v.
+     where u and v are column vectors.
+
+     -[u]_x * v = [v]_x * u
+
+     -[u]_x * u = 0
+
+     [u]_x = [ -[u]_x ]^T
+
+     -[u]_x * -[v]_x = (u dot v) * I + v * u^T where '*' is matrix multiplication as usual.
+     [u]_x * [v]_x = (u dot v) * I + v * u^T
+
+     [u]_x * [v]_x - [v]_x * [u]_x = v * u^T - u*v^T = [u cross v]]_x
+
+     u * v^T * -[w]_x + -[w]_x * v * u^T = -[u cross (v cross w)]_x
+           where the later, triple cross product is used in making the Fundamental Matrix
+           of photogrammetry, for example.
+            implemented in MatrixUtil.tripleProduct() using a shorter form from Boas.
+ </pre>
  
- * Eigen, ROS, and Google Ceres use Hamilton convention.
+ * Eigen, ROS, and Google Ceres use Hamilton convention (active, LH, CCW rotations of object in fixed reference frame).
 *  Also  Wolfram Mathematica, Matlab’s aerospace(!) and robotics toolbox, 
 *  Boost, GNU Octave, NASA’s SPICE.
 
-Note that Shuster 1993 use rotation matrices that are transposed from the standard
- in createRotationZYX():
-    
+Note that Shuster 1993 use the active, LH, CW rotations of the object while reference frame is fixed.
         about z-axis (yaw):           about the y-axis (pitch):    about x-axis (roll): 
             | cos φ    sin φ    0 |    |  cos ψ    0 -sin ψ |      |    1       0       0 |  
             |-sin φ    cos φ    0 |    |      0    1      0 |      |    0   cos θ   sin θ |  
-            |     0        0    1 |    |  sin ψ    0  cos ψ |      |    0  -sin θ   cos θ | 
-            * 
-    The Shuster transposed matrices are not used in this java class.
-    
+            |     0        0    1 |    |  sin ψ    0  cos ψ |      |    0  -sin θ   cos θ |
+ Note that in the java methods below, the documentation should specify whether active or passive are used.
+
+
  <pre>
- Some references in the "right hand system":
+ Some references in the right hand systems:
  
  "Euler Angles and Quaternions and Transformations", NASA Mission Planning
   and Analysis Division, 1977, Shuttle Program.
-  
+
   Szeleski 2010
   
   Shuster 1993, "A Survey of Attitude Representations"
@@ -151,7 +174,9 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
      with the positive direction forward, the y-axis dimension has
     the positive direction rightward, and"
   
-  <pre> 
+  <pre>
+
+ Rotations about the same axis are additive.
  
 * Regarding rotation axes and perspectives:
 *     https://en.wikipedia.org/wiki/Rotation_matrix#Ambiguities
@@ -208,7 +233,7 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
                                            0  0  1
                                            0 -1  0
       
-   terms used describing axes of rotation, attitute or orientation:
+   terms used describing axes of rotation, attitude or orientation:
         heading, attitude, bank,
         pitch, yaw, roll,
         pan, tilt, roll
@@ -221,7 +246,7 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
                       = (I - nˆ*nˆ^T)*v
    can rotate v by 90 degrees using the cross product:
       nˆ cross v = [nˆ]_x * v
-      where [nˆ]_x is the skewsymmetric matrix of nˆ
+      where [nˆ]_x is the skew-symmetric matrix of nˆ
 
    can rotate v by 180 degrees:
       nˆ cross (nˆ cross v) = ([nˆ]_x)^2 * v = -v_perpendicular
@@ -233,6 +258,8 @@ Note that Shuster 1993 use rotation matrices that are transposed from the standa
  * TODO: add a method to extract the quaternion rotation from a 4X4 rotation matrix.
  * see Barfoot et al.
  * see http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
+ *
+ * TODO: add slerp
  *
  * <pre>
   also note that for optimization of rotation :
@@ -250,9 +277,14 @@ public class Rotation {
 
     /**
      * calculate R(angle_z, angle_y, angle_x) = R_x(angle_x)*R_y(angle_y)*R_z(angle_z).
-     * NOTE: this is not the normal convention.  You might want to use
-     * createRotationZYX().
+     * The internal composition follows passive (right hand), CCW rotations
+     * with order of operations ((R(X) * R(Y)) * R(Z)), that is left to right,
+     * intrinsic composition.
+     *
+     * If the context is aeronautical, you may want to use createRotationZYX instead.
+     *
      * <pre>
+     This method uses a passive (right-hand) rotation system with CCW (=CC) rotations.
        cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
             | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
             | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
@@ -264,19 +296,40 @@ public class Rotation {
      * @return 
      */
     public static double[][] createRotationXYZ(double angleX, double angleY, double angleZ) {
-        
-        double[][] rotX = Rotation.createRollRotationMatrix(angleX);
-        double[][] rotY = Rotation.createPitchRotationMatrix(angleY);
-        double[][] rotZ = Rotation.createYawRotationMatrix(angleZ);
-        
-        double[][] r = MatrixUtil.multiply(rotX, rotY);
-        r = MatrixUtil.multiply(r, rotZ);
-        
+        double[][] rX = Rotation.createRollRotationMatrix(angleX);
+        double[][] rY = Rotation.createPitchRotationMatrix(angleY);
+        double[][] rZ = Rotation.createYawRotationMatrix(angleZ);
+
+        return MatrixUtil.multiply(MatrixUtil.multiply(rX, rY), rZ);
+    }
+
+    public static double[][] createRotationXYZ(double angleX, double angleY, double angleZ, boolean passive) {
+        double[][] r = createRotationXYZ(angleX, angleY, angleZ);
+        if (!passive) return MatrixUtil.transpose(r);
         return r;
+    }
+
+    /**
+     * calculate R(angle_z, angle_y, angle_x) = R_x(angle_x)*R_y(angle_y)*R_z(angle_z).
+     * The internal composition follows passive (right hand), CCW rotations
+     * with order of operations using EXTRINSIC composition.
+     *
+     * <pre>
+     This method uses a passive (right-hand) rotation system with CCW (=CC) rotations.
+     cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):
+     | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |
+     | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |
+     |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |
+     </pre>
+     * @param thetas angles of rotation
+     * @return
+     */
+    public static double[][] createRotationXYZExtrinsic(double[] thetas) {
+        return createRotationZYX(thetas);
     }
     
     /**
-     * create matrix for rotation about the X-axis, a.k.a. roll.
+     * create matrix for rotation about the X-axis, a.k.a. roll in passive system (right-hand system, CCW).
        <pre>
        about x-axis (roll):       
        |    1       0       0 |  
@@ -301,9 +354,16 @@ public class Rotation {
         
         return rot;
     }
+
+    public static double[][] createRollRotationMatrix(double angle, boolean passive) {
+        double[][] r = createRollRotationMatrix(angle);
+        if (!passive) r = MatrixUtil.transpose(r);
+        return r;
+    }
     
     /**
      * create matrix for rotation about the X-axis, a.k.a. roll.
+     * This method uses a passive (right-hand) rotation system with CCW (=CC) rotations.
        <pre>
        about x-axis (roll):       
        |    1       0       0 |  
@@ -335,7 +395,7 @@ public class Rotation {
     }        
     
     /**
-    create matrix for rotation about the Y-axis, a.k.a. pitch.
+    create matrix for rotation about the Y-axis, a.k.a. pitch in passive system (right-hand, CCW).
       <pre>
       about the y-axis (pitch):
       |  cos ψ    0  sin ψ |
@@ -361,9 +421,16 @@ public class Rotation {
         
         return rot;
     }
+
+    public static double[][] createPitchRotationMatrix(double angle, boolean passive) {
+        double[][] r = createPitchRotationMatrix(angle);
+        if (!passive) return MatrixUtil.transpose(r);
+        return r;
+    }
     
     /**
     create matrix for rotation about the Y-axis, a.k.a. pitch.
+     This method uses a passive (right-hand) rotation system with CCW (=CC) rotations.
       <pre>
       about the y-axis (pitch):
       |  cos ψ    0  sin ψ |
@@ -395,7 +462,7 @@ public class Rotation {
     }
     
     /**
-    create matrix for rotation about the Z-axis, a.k.a. yaw.
+    create matrix for rotation about the Z-axis, a.k.a. yaw in passive system (right-hand system, CCW).
       <pre>
         about z-axis (yaw):          
             | cos φ   -sin φ    0 | 
@@ -420,9 +487,16 @@ public class Rotation {
         
         return rot;
     }
+
+    public static double[][] createYawRotationMatrix(double angle, boolean passive) {
+        double[][] r = createYawRotationMatrix(angle);
+        if (!passive) r = MatrixUtil.transpose(r);
+        return r;
+    }
     
     /**
     create matrix for rotation about the Z-axis, a.k.a. yaw.
+     This method uses a passive (right-hand) rotation system with CCW (=CC) rotations.
       <pre>
         about z-axis (yaw):          
             | cos φ   -sin φ    0 | 
@@ -475,7 +549,7 @@ public class Rotation {
     }
 
     /**
-     * calculate the rotation needed to tranform direction v1 to direction v2 using
+     * calculate the rotation needed to transform direction v1 to direction v2 using
      * Rodrigues formula.
      * @param v1
      * @param v2
@@ -489,13 +563,208 @@ public class Rotation {
         double[][] r = Rotation.createRodriguesFormulaRotationMatrix(axis, false);
         return r;
     }
+
+    /**
+     * create a rotation matrix using the rotation vector
+     <pre>
+     reference:
+     Tomasi "Vector Representation of Rotations"
+     </pre>
+     * @param v rotation vector expressed in radians
+     * @param passive if true, uses passive right hand counter-clockwise system, else uses active left-hand
+     *                clockwise transformations system.
+     * @return
+     */
+    public static double[][] createRodriguesFormulaRotationMatrixTomasi(double[] v, boolean passive) {
+        if (v.length != 3) {
+            throw new IllegalArgumentException("v length must be 3");
+        }
+        for (int i = 0; i < v.length; ++i) {
+            if (v[i] > Math.PI) {
+                throw new IllegalArgumentException("rotations must be < pi");
+            }
+            if (v[i] < 0) {
+                throw new IllegalArgumentException("rotations must be positive");
+            }
+        }
+
+        /*
+        disjoint valid regions:
+            (1) ||r|| < pi
+            (2) ||r||==pi && r[0] > 0
+            (3) ||r||==pi && r[0] == 0 && r[1] > 0
+            (4) r = [0 0 pi]
+         */
+
+        double theta = MatrixUtil.lPSum(v, 2);
+
+        if (theta == 0) {
+            return MatrixUtil.createIdentityMatrix(3);
+        }
+
+        // u is unit vector of axis of rotation
+        double[] u = Arrays.copyOf(v, v.length);
+        MatrixUtil.multiply(u, 1./theta);
+
+        //passive, rh:
+        // R = I*cos(theta) + (1 - cos(theta)) * u * u^T + [u]_x * sin(theta)
+        //   where u = v / ||v|| and theta = ||v|
+
+        double cosTh = Math.cos(theta);
+        double[][] eyeC = new double[][] {{cosTh, 0, 0}, {0, cosTh, 0}, {0, 0, cosTh}};
+        double[][] uuT = MatrixUtil.outerProduct(u, u);
+        MatrixUtil.multiply(uuT, 1 - cosTh);
+        double[][] skewUsinTh = MatrixUtil.skewSymmetric(u);
+        MatrixUtil.multiply(skewUsinTh, Math.sin(theta));
+
+        if (!passive) {
+            MatrixUtil.multiply(skewUsinTh, -1);
+        }
+
+        double[][] r = MatrixUtil.pointwiseAdd(eyeC, MatrixUtil.pointwiseAdd(uuT, skewUsinTh));
+
+        return r;
+    }
+
+    /**
+     * extract rotation vector give the rotation matrix
+     <pre>
+     reference:
+     Tomasi "Vector Representation of Rotations"
+     </pre>
+     * @param r rotation matrix
+     * @param passive if true, uses passive right hand counter-clockwise system, else uses active left-hand
+     *                clockwise transformations system.
+     * @return
+     */
+    public static double[] extractRodriguesFormulaRotationVectorTomasi(double[][] r, boolean passive) {
+        if (r.length != 3 || r[0].length != 3) {
+            throw new IllegalArgumentException("r must be [3 X 3]");
+        }
+
+        double[][] rT = MatrixUtil.transpose(r);
+
+        double detR = MatrixUtil.determinant(r);
+        detR = Math.round(detR*1E11)/1E11;
+        assert(Math.abs(detR - 1) < 1E-7);
+
+        double[][] a = MatrixUtil.pointwiseSubtract(r, rT);
+        MatrixUtil.multiply(a, 0.5);
+
+        double[] rho = new double[]{a[2][1], a[0][2], a[1][0]};
+
+        // sin (theta)
+        double s = MatrixUtil.lPSum(rho, 2);
+
+        // cos (theta)
+        double c = (MatrixUtil.trace(r) - 1)/2.;
+
+        if (s < 1E-11 && Math.abs(c - 1) < 1E-11) {
+            return new double[3];
+        } else if (s < 1E-11 && Math.abs(c + 1) < 1E-11) {
+            // let v = any non-zero column of R+I. presumably, cannot all be 0s, but 2 entries can be
+            double[] v = new double[3];
+            int nZs = 0;
+            for (int col = 0; col < 3; ++col) {
+                nZs = 0;
+                for (int row = 0; row < 3; ++row) {
+                    v[row] = (col == row) ? 1 + r[row][col] : r[row][col];
+                    if (Math.abs(v[row]) < 1E-11) {
+                        ++nZs;
+                    }
+                }
+                if (nZs < 3) {
+                    break;
+                }
+            }
+            if (nZs == 3) {
+                throw new IllegalArgumentException("not a proper rotation matrix?");
+            }
+            // u = v/||v||
+            double[] u = Arrays.copyOf(v, v.length);
+            MatrixUtil.multiply(u, 1./MatrixUtil.lPSum(u, 2));
+            // r = S_1/2 ( u * pi )
+            double[] arg = Arrays.copyOf(u, u.length);
+            MatrixUtil.multiply(arg, Math.PI);
+            double[] rVec = Arrays.copyOf(arg, arg.length);
+            if (((Math.abs(arg[0]) < 1E-11 && Math.abs(arg[1]) < 1E-11 && arg[2] < 0)  ||
+                 (Math.abs(arg[0]) < 1E-11 && arg[1] < 0) || (arg[0] < 0))
+                    && ((MatrixUtil.lPSum(arg, 2) - Math.PI) < 1E-11)) {
+                    MatrixUtil.multiply(rVec, -1);
+            }
+            return rVec;
+        } else {
+            // sin(theta) != 0
+            // u = rho/||rho||
+            /*
+            x>0: arctan(y/x)
+            x<0: pi + arctan(y/x)
+            x==0 && y>0: pi/2
+            x==0 && y < 0: -pi/2
+
+             */
+            double[] u = Arrays.copyOf(rho, rho.length);
+            MatrixUtil.multiply(u, MatrixUtil.lPSum(u, 2));
+
+            // atan(s,c) tomasi
+            double theta;
+            if (s > 0) {
+                theta = Math.atan(s/c);
+            } else if (s < 0) {
+                theta = Math.PI + Math.atan(s/c);
+            } else if (Math.abs(s) < 1E-11 && c > 0) {
+                theta = Math.PI/2;
+            } else if (Math.abs(s) < 1E-11 && c < 0) {
+                theta = -Math.PI / 2;
+            } else if (Math.abs(s) < 1E-11 && Math.abs(c) < 1E-11) {
+                throw new IllegalArgumentException("error in rotation matrix?");
+            } else {
+                theta = Math.atan(s/c);
+            }
+
+            double[] rVec = Arrays.copyOf(u, u.length);
+            MatrixUtil.multiply(rVec, theta);
+            return rVec;
+        }
+    }
+
+    public static double convertRotationVectorToAngleAxis(double[] thetas, double[] outRAxis) {
+        double theta = MatrixUtil.lPSum(thetas, 2);
+        for (int i = 0; i < thetas.length; ++i) {
+            outRAxis[i] = thetas[i]/theta;
+        }
+        return theta;
+    }
+
+    public static double[] convertAngleAxisToRotationVector(double[] axis, double angle) {
+        double[] rVec = Arrays.copyOf(axis, axis.length);
+        MatrixUtil.multiply(rVec, angle);
+        return rVec;
+    }
+
+    /**
+     * convert the euler angles to angle axis representation.
+     * NOTE that the resulting vector is the angle axis times the angle, so you can calculate:
+     <pre>
+     angle = ||result||
+     and
+     axis = result//angle
+     </pre>
+     *
+     * @param euler euler angles for [x, y, z]
+     * @return
+     */
+    public static double[] convertEulerAnglesToRotationVector(double[] euler) {
+        double[][] r = createRotationXYZ(euler);
+        return Rotation.extractRodriguesRotationVector(r);
+    }
     
     /**
      * given v as an array of rotations about x, y, and z, calculate the
      * rotation matrix.  
      * essentially, excepting a small angle correction:
      *     R^⊤ = cosθ*I + sinθ*[v]_× + (1−cosθ)*v*v^⊤
-     * 
+     *
      * NOTE: if computing the partial derivative of Rotation elsewhere, 
      * can use d(R(ω)*v)/d(ω^T) = -[v]_x (see Equation (2.35) of Szeliski 2010).
      * Also note that a + sign in front of the sinθ term is used for the
@@ -510,148 +779,10 @@ public class Rotation {
      *    Rodriguez’s formula (Ayache 1989)
      * </pre>
      * @param v [1x3] array of v of rotations about x, y, and z
-     * @param passive if true rotation terms are for the perspective from the reference system of the object in rotation,
-     *  that is the passive system (often used when controlling an object), else if false is the active system.
-     *The active system is from the perspective of an observer's reference frame watching the rotating object, hence the
-     *  rotation is what is needed to transform the observers systems to the rotating object's system.
+     * @param passive if true uses passive right-hand system of CCW rotation, else uses active left-hand CW rotations
      * @return rotation matrix [3X3]
      */
     public static double[][] createRodriguesFormulaRotationMatrix(double[] v, boolean passive) {
-        if (v.length != 3) {
-            throw new IllegalArgumentException("v length must be 3");
-        }
-        
-        /*
-        https://github.com/robEllenberg/comps-plugins/blob/master/python/rodrigues.py
-        
-        Copyright (c) 2010 Carnegie Mellon University and Intel Corporation
-        #   Author: Dmitry Berenson <dberenso@cs.cmu.edu>
-        #
-        #   Redistribution and use in source and binary forms, with or without
-        #   modification, are permitted provided that the following conditions are met:
-        #
-        #     * Redistributions of source code must retain the above copyright
-        #       notice, this list of conditions and the following disclaimer.
-        #     * Redistributions in binary form must reproduce the above copyright
-        #       notice, this list of conditions and the following disclaimer in the
-        #       documentation and/or other materials provided with the distribution.
-        #     * Neither the name of Intel Corporation nor Carnegie Mellon University,
-        #       nor the names of their contributors, may be used to endorse or
-        #       promote products derived from this software without specific prior
-        #       written permission.
-        #
-        #   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-        #   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-        #   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-        #   ARE DISCLAIMED. IN NO EVENT SHALL INTEL CORPORATION OR CARNEGIE MELLON
-        #   UNIVERSITY BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-        #   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-        #   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-        #   OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-        #   WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-        #   OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
-        #   ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-        # -*- coding: utf-8 -*-
-        '''Rodrigues formula
-        Input: 1x3 array of rotations about x, y, and z
-        Output: 3x3 rotation matrix'''
-        from numpy import array,mat,sin,cos,dot,eye
-        from numpy.linalg import norm
-
-        def rodrigues(r):
-            def S(n):
-                Sn = array([[0,-n[2],n[1]],[n[2],0,-n[0]],[-n[1],n[0],0]])
-                return Sn
-            theta = norm(r)
-            if theta > 1e-30:
-                n = r/theta
-                Sn = S(n)
-                R = eye(3) + sin(theta)*Sn + (1-cos(theta))*dot(Sn,Sn)
-            else:
-                Sr = S(r)
-                theta2 = theta**2
-                R = eye(3) + (1-theta2/6.)*Sr + (.5-theta2/24.)*dot(Sr,Sr)
-            return mat(R)        
-        */
-        
-        double theta = MatrixUtil.lPSum(v, 2);
-        
-        double[][] tmp1, tmp2;
-        
-        if (theta > 1e-30) {
-            
-            double[] n = Arrays.copyOf(v, v.length);
-            MatrixUtil.multiply(n, 1./theta);
-            // [3X3]
-            double[][] sn = MatrixUtil.skewSymmetric(n);
-            
-            //R = eye(3) + sin(theta)*Sn + (1-cos(theta))*dot(Sn,Sn)
-            tmp1 = MatrixUtil.copy(sn);
-            //[3X3]
-            double sa = Math.sin(theta);
-            if (passive) {
-                sa *= -1;
-            }
-            MatrixUtil.multiply(tmp1, sa);
-            
-            //[3X3]
-            tmp2 = MatrixUtil.multiply(sn, sn);
-            MatrixUtil.multiply(tmp2, 1. - Math.cos(theta));
-
-        } else {
-            
-            double[][] sr = MatrixUtil.skewSymmetric(v);
-            double theta2 = theta*theta;
-            
-            //R = eye(3) + (1-theta2/6.)*Sr + (.5-theta2/24.)*dot(Sr,Sr)
-            tmp1 = MatrixUtil.copy(sr);
-            MatrixUtil.multiply(tmp1, (1. - theta2)/6.);
-          
-            tmp2 = MatrixUtil.multiply(sr, sr);
-            MatrixUtil.multiply(tmp2, 0.5 - theta2/24.);
-            
-        }
-        
-        double[][] r = MatrixUtil.createIdentityMatrix(3);
-        
-        int j;
-        for (int i = 0; i < tmp1.length; ++i) {
-            for (j = 0; j < tmp1[i].length; ++j) {
-                r[i][j] += (tmp1[i][j] + tmp2[i][j]);
-            }
-        }
-        
-        return r;
-    }
-
-    /**
-     * given v as an array of rotations about x, y, and z, calculate the 
-     * transpose of the rotation matrix.
-     * It is the same as the rodrigues rotation matrix without transposition, 
-     * except that the sign in front of the sine term is negatvie.
-     * R^⊤ = cosθ*I − sinθ*[v]_× + (1−cosθ)*v*v^⊤
-     *     
-     * <pre>
-     * references:
-     *    Dmitry Berenson https://github.com/robEllenberg/comps-plugins/blob/master/python/rodrigues.py
-     *    Szeliski 2010 draft "Computer Vision: Algorithms and Applications"
-     *    Rodriguez’s formula (Ayache 1989)
-     * 
-     *    Metrics for 3D Rotations: Comparison and Analysis.
-     *    Huynh 2009.
-     *    J Math Imaging Vis (2009) 35: 155–164 DOI 10.1007/s10851-009-0161-2
-     *    https://www.cs.cmu.edu/~cga/dynopt/readings/Rmetric.pdf
-     *    (note that Huynh uses Hamilton quaternions.)
-     * </pre>
-     * @param v [1x3] array of rotations about x, y, and z
-     @param passive if true rotation terms are for the perspective from the reference system of the object in rotation,
-     *  that is the passive system (often used when controlling an object), else if false is the active system.
-     *The active system is from the perspective of an observer's reference frame watching the rotating object, hence the
-     *  rotation is what is needed to transform the observers systems to the rotating object's system.
-     * @return rotation matrix [3X3]
-     */
-    public static double[][] createRodriguesFormulaRotationMatrixTranspose(double[] v, boolean passive) {
         if (v.length != 3) {
             throw new IllegalArgumentException("v length must be 3");
         }
@@ -725,7 +856,7 @@ public class Rotation {
             tmp1 = MatrixUtil.copy(sn);
             //[3X3]
             double sa = Math.sin(theta);
-            if (passive) {
+            if (!passive) {
                 sa *= -1;
             }
             MatrixUtil.multiply(tmp1, sa);
@@ -733,7 +864,6 @@ public class Rotation {
             //[3X3]
             tmp2 = MatrixUtil.multiply(sn, sn);
             MatrixUtil.multiply(tmp2, 1. - Math.cos(theta));
-
 
         } else {
 
@@ -754,15 +884,14 @@ public class Rotation {
         int j;
         for (int i = 0; i < tmp1.length; ++i) {
             for (j = 0; j < tmp1[i].length; ++j) {
-                r[i][j] += (-tmp1[i][j] + tmp2[i][j]);
+                r[i][j] += (tmp1[i][j] + tmp2[i][j]);
             }
         }
 
         return r;
     }
 
-    public static class RodriguesRotation
-    {
+    public static class RodriguesRotation {
         /**
          * [3X3]
          */
@@ -783,6 +912,7 @@ public class Rotation {
     /**
      * calculate the Rodrigues rotation vector from the given rotation matrix.
      * The method is ported from github repositories holding the Bouguet Matlab Toolbox code, rodrigues.m.
+     *
      *      <pre>
      *      The Bouguet toolbox webpage is currently at http://robots.stanford.edu/cs223b04/JeanYvesCalib/
      *      and states that the source code is freely available.
@@ -800,7 +930,8 @@ public class Rotation {
      * @param in [3X3] rotation matrix
      * @return
      */
-    public static RodriguesRotation extractRodriguesRotationVectorBouguet(final double[][] in) throws NotConvergedException {
+    public static RodriguesRotation extractRodriguesRotationVectorBouguet(double[][] in,
+                                                                          boolean passive) throws NotConvergedException {
 
         //[m,n] = size(in);
         int m = in.length;
@@ -808,6 +939,10 @@ public class Rotation {
 
         if (m != 3 || n != 3) {
             throw new IllegalArgumentException("in dimensions must be 3 X 3");
+        }
+
+        if (!passive) {
+            in = MatrixUtil.transpose(in);
         }
 
         final double eps = 2.2204e-16;
@@ -1035,6 +1170,9 @@ public class Rotation {
     /**
      * calculate the rotation matrix given the Rodrigues rotation vector.
      * The method is ported from github repositories holding the Bouguet Matlab Toolbox code, rodrigues.m.
+     *
+     * this is using passive transformations.
+     *
      *      <pre>
      *      The Bouguet toolbox webpage is currently at http://robots.stanford.edu/cs223b04/JeanYvesCalib/
      *      and states that the source code is freely available.
@@ -1052,10 +1190,15 @@ public class Rotation {
      * @param in [3X1] rotation vector
      * @return
      */
-    public static RodriguesRotation createRodriguesRotationMatrixBouguet(final double[] in) {
+    public static RodriguesRotation createRodriguesRotationMatrixBouguet(double[] in, boolean passive) {
 
         if (in.length != 3) {
             throw new IllegalArgumentException("in length must be 3");
+        }
+
+        if (!passive) {
+            in = Arrays.copyOf(in, in.length);
+            MatrixUtil.multiply(in, -1);
         }
 
         final double eps = 2.2204e-16;
@@ -1255,12 +1398,8 @@ public class Rotation {
         // minimize || x1 - x2*Q ||_F
         //    subject to Q^T * Q = I_P
         double[][] c = MatrixUtil.multiply(MatrixUtil.transpose(x2), x1);
-        MatrixUtil.SVDProducts svdC = null;
-        try {
-            svdC = MatrixUtil.performSVD(c);
-        } catch (NotConvergedException e) {
-            int t = 2;
-        }
+        MatrixUtil.SVDProducts svdC = MatrixUtil.performSVD(c);
+
         double[][] q = MatrixUtil.multiply(svdC.u, svdC.vT);
         return q;
     }
@@ -1277,7 +1416,9 @@ public class Rotation {
      lecture notes of Gordon Wetzstein at Stanford University,
      EE 267 Virtual Reality, "Course Notes: 6-DOF Pose Tracking with the VRduino",
      https://stanford.edu/class/ee267/notes/ee267_notes_tracking.pdf
-     
+
+     It uses the passive, right-hand, CCW transformations system.
+
      </pre>
      * @param r  rotation matrix assumed
      * to be a result of R_yxz = R_z(theta_z)  * R_x(theta_x) * R_y(theta_y).
@@ -1296,7 +1437,8 @@ public class Rotation {
     
     /**
      * extract euler rotation angles from a rotation matrix which has been built following
-     * the convention of R_xyz =  R(theta_Z) * R(theta_Y) * R(theta_X).
+     * the convention of R_xyz =  R(theta_Z) * R(theta_Y) * R(theta_X)
+     * This method uses a passive (right-hand) rotation system with CCW (=CC) rotations.
      * @param r
      * @return array of theta_x, theta_y, theta_z
      * which, respectively have ranges [0, 2*pi], [0, pi], and [0, 2*pi]
@@ -1309,10 +1451,17 @@ public class Rotation {
         extractThetaFromZYX(r, out);
         return out;
     }
+
+    public static double[] extractThetaFromZYX(double[][] r, boolean passive) {
+        double[] thetas = extractThetaFromZYX(r);
+        if (!passive) MatrixUtil.multiply(thetas, -1);
+        return thetas;
+    }
     
     /**
      * extract euler rotation angles from a rotation matrix which has been built following
      * the convention of R(theta_Z) * R(theta_Y) * R(theta_X).
+     * This method uses a passive (right-hand) rotation system with CCW (=CC) rotations.
      * @param r
      * @param out output variable to hold theta_x, theta_y, and theta_z,
      * which, respectively have ranges [0, 2*pi], [0, pi], and [0, 2*pi]
@@ -1455,14 +1604,15 @@ public class Rotation {
             }
         }
         
-        out[0] = thetaX;
+        out[0] = thetaZ;//thetaX;
         out[1] = thetaY;
-        out[2] = thetaZ;                        
+        out[2] = thetaX;//thetaZ;
     }
     
     /**
      * extract euler rotation angles from a rotation matrix which has been built following
      * the convention of R_X(theta_X) * R_Y(theta_Y) * R_Z(theta_Z).
+     * This method uses a passive (right-hand) rotation system with CCW (=CC) rotations.
      * @param r
      * @return euler angles extracted from the rotation matrix under assumption
      * that the rotation matrix was constructed with multiplication order
@@ -1477,10 +1627,20 @@ public class Rotation {
         extractThetaFromXYZ(r, out);
         return out;
     }
+
+    public static double[] extractThetaFromXYZ(double[][] r, boolean passive) {
+        if (r.length != 3 || r[0].length != 3) {
+            throw new IllegalArgumentException("r must be 3x3");
+        }
+        double[] thetas = extractThetaFromXYZ(r);
+        if (!passive) MatrixUtil.multiply(thetas, -1);
+        return thetas;
+    }
     
     /**
      * extract euler rotation angles from a rotation matrix which has been built following
      * the convention of R_X(theta_X) * R_Y(theta_Y) * R_Z(theta_Z).
+     * This method uses a passive (right-hand) rotation system with CCW (=CC) rotations.
      * @param r
      * @param out output array of size 3 used to place euler angles extracted 
      * from the rotation matrix under assumption
@@ -1491,8 +1651,8 @@ public class Rotation {
         if (r.length != 3 || r[0].length != 3) {
             throw new IllegalArgumentException("r must be 3x3");
         }
-        /*        
-        using euler angles
+        /*
+        using euler angles and passive (RH) system
           cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
             | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
             | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
@@ -1563,6 +1723,7 @@ public class Rotation {
      lecture notes of Pradit Mittrapiyanuruk at Perdue University,
      ECE 661 Robot Vision Laboratory,
      https://engineering.purdue.edu/kak/computervision/ECE661_Fall2012/homework/hw5_LM_handout.pdf
+     TODO: document whether this is using passive or active transformations.
      </pre>
      * @param r rotation matrix
      * @return Rodriques vector.  the axis and angle representation from this
@@ -1573,6 +1734,7 @@ public class Rotation {
         if (r.length != 3 || r[0].length != 3) {
             throw new IllegalArgumentException("r must be 3x3");
         }
+
         double det = MatrixUtil.determinant(r);
         // numerical precision
         det = Math.round(det * 1E11)/1E11;
@@ -1655,7 +1817,7 @@ public class Rotation {
      * convert the euler rotation angles to the Rodrigues vector (angle and axis)
      * with an expectation that the rotation matrix in between is created by
      * the multiplication order R_z*R_y_R_x.
-
+     It uses the passive, right-hand, CCW transformations system.
      * @param eulerAngles euler rotation angles as double[]{x, y, z}
      * @return Rodriques vector.  the axis and angle representation from this
      * can be constructed as angle of rotation = r_vec/||r_vec|| and angle = ||r_vec||
@@ -1665,7 +1827,7 @@ public class Rotation {
         if (eulerAngles.length != 3) {
             throw new IllegalArgumentException("eulerAngles.length must be 3");
         }
-        
+
         double[][] r = createRotationZYX(eulerAngles);
         
         double[] w = extractRodriguesRotationVector(r);
@@ -1699,9 +1861,9 @@ public class Rotation {
      * @param r1 a 3X3 rotation matrix
      * @param r2 a 3X3 rotation matrix
      * @param useFrobenius if true, uses Frobenius norm internally, else uses the spectral norm.
-     * @return return the distance defined as ∥ I − r1 * r2 ∥_F if useFrobenious is true.
+     * @return return the distance defined as ∥ I − r1 * r2 ∥_F if useFrobenius is true.
      * In that case the distance is within the range [0, 2sqrt(2)].
-     * If useFrobenious is false, the result is spectralNorm(I − r1 * r2) which results in a distance in the range [0, 2].
+     * If useFrobenius is false, the result is spectralNorm(I − r1 * r2) which results in a distance in the range [0, 2].
      */
     public static double distanceUsingRigidBodyDisplacements(double[][] r1, double[][] r2, boolean useFrobenius) throws NotConvergedException {
 
@@ -1721,7 +1883,7 @@ public class Rotation {
     }
     
     /*
-    calculate the distance measure between 2 euclidean transformations of the
+    calculate the distance measure between 2 Euclidean transformations of the
     given quaternions, using vector inner product.
     <pre>
     eqn (20) of J Math Imaging Vis (2009) 35: 155–164 DOI 10.1007/s10851-009-0161-2
@@ -1913,7 +2075,8 @@ public class Rotation {
      This method's results are consistent with Shuster 1993.
      * The method follows Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
-     * 
+     *
+      * TODO: document passive or active
      * eqn (12):
      * 
      *  R = q^+ * q^(-1)^⨁ = q^(-1)^⨁ * q^+ = q^(⨁)^T * q^+
@@ -1929,7 +2092,7 @@ public class Rotation {
     public static double[][] createRotationMatrixFromQuaternion4(double[] quaternion) {
         if (quaternion.length != 4) {
             throw new IllegalArgumentException("quaternion must be length 4");
-        }        
+        }
         double[][] lhc = quaternionLefthandCompoundOperator(quaternion);
         double[][] rhcT = quaternionRighthandCompoundOperator(quaternion);
         rhcT = MatrixUtil.transpose(rhcT);
@@ -2018,6 +2181,8 @@ public class Rotation {
      * the constraint afterwards (i.e., constraint restoration is built in)."
      * 
      * </pre>
+      *
+      * TODO: document passive or active
      * @param euler euler angles
      * @param dEuler perturbation to apply to the euler angles
      * @return resulting perturbed rotation matrix
@@ -2058,6 +2223,8 @@ public class Rotation {
      * the constraint afterwards (i.e., constraint restoration is built in).
      * 
      * </pre>
+     *
+     * TODO: document passive or active
      * @return 
      */
     public static double[][] applySingularitySafeRotationVectorPerturbation(
@@ -2069,7 +2236,9 @@ public class Rotation {
             throw new IllegalArgumentException("rotation must be [3X3]");
         }
 
-        RodriguesRotation dRR = Rotation.createRodriguesRotationMatrixBouguet(dRVector);
+        boolean passive = true;
+
+        RodriguesRotation dRR = Rotation.createRodriguesRotationMatrixBouguet(dRVector, passive);
 
         // this result should be orthonormal
         double[][] result = MatrixUtil.multiply(dRR.r, rotation);
@@ -2113,6 +2282,7 @@ public class Rotation {
      * though the sign conventions of the sine terms are different
      * 
      * </pre>
+     * TODO: document passive or active
      * @param theta euler angles as representation of rotation matrix
      * @return [3X3]
      */
@@ -2158,6 +2328,8 @@ public class Rotation {
      * though the matrices are transposed from these.
      * 
      * </pre>
+     *
+     * TODO: document passive or active
      * @param theta euler angles as representation of rotation matrix
      * @param output 
      */
@@ -2165,7 +2337,7 @@ public class Rotation {
         if (theta.length != 3) {
             throw new IllegalArgumentException("theta length must be 3");
         }
-        
+
         /*
          C_gamma(theta[2]) * C_beta(theta[1]) * [1, 0, 0]^T
         
@@ -2201,8 +2373,10 @@ public class Rotation {
     }
     
     /**
-     * calculate  R_xyz = R_z(theta_z)*R_y(theta_y)*R_x(theta_x)
-     * ,
+     * calculate  R_xyz = R_z(theta_z)*R_y(theta_y)*R_x(theta_x).
+     * This method uses a passive (right-hand) rotation system with CCW (=CC) rotations.
+     * This method uses "intrinsic" composition.
+     *
      * that is, given an array of rotation angles, return the rotation matrix
      * as the rotations for z, y, x multiplied in that order.
      * 
@@ -2239,21 +2413,37 @@ public class Rotation {
         if (thetas.length != 3) {
             throw new IllegalArgumentException("thetas must be length 3");
         }
-        
-        double[][] rZ = Rotation.createYawRotationMatrix(thetas[2]);
-        
-        double[][] rX = Rotation.createRollRotationMatrix(thetas[0]);
-        
+        double[][] rZ = Rotation.createYawRotationMatrix(thetas[0]);
         double[][] rY = Rotation.createPitchRotationMatrix(thetas[1]);
-        
-        double[][] r = MatrixUtil.multiply(rZ, MatrixUtil.multiply(rY, rX));
-        
-        return r;
+        double[][] rX = Rotation.createRollRotationMatrix(thetas[2]);
+
+        return MatrixUtil.multiply(MatrixUtil.multiply(rZ, rY), rX);
+    }
+
+    public static double[][] createRotationZYXExtrinsic(double thetaX, double thetaY, double thetaZ) {
+        return  MatrixUtil.transpose(createRotationXYZ(-thetaX, -thetaY, -thetaZ));
+        /*
+        same as
+        double[][] rX = Rotation.createRollRotationMatrix(angleX);
+        double[][] rY = Rotation.createPitchRotationMatrix(angleY);
+        double[][] rZ = Rotation.createYawRotationMatrix(angleZ);
+
+        return MatrixUtil.multiply(MatrixUtil.multiply(rZ, rY), rX);
+         */
+    }
+
+    public static double[][] createRotationZYX(double[] thetas, boolean passive) {
+        if (!passive) {
+            thetas = Arrays.copyOf(thetas, thetas.length);
+            MatrixUtil.multiply(thetas, -1);
+        }
+        return createRotationZYX(thetas);
     }
     
     /**
      * given an array of euler rotation angles, return the rotation matrix
      * as the rotations for z, y, x multiplied in that order.
+     * This method uses a passive (right-hand) rotation system with CCW (=CC) rotations.
      * <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
@@ -2275,24 +2465,34 @@ public class Rotation {
         if (thetas.length != 3) {
             throw new IllegalArgumentException("thetas must be length 3");
         }
+
+        //ZYX = transpose of xyz(-1*thetas)
         
         double[][] rZ = aa.a3X3;
-        Rotation.createYawRotationMatrix(thetas[2], rZ);
+        Rotation.createYawRotationMatrix(thetas[0], rZ);
         
         double[][] rY = aa.b3X3;
         Rotation.createPitchRotationMatrix(thetas[1], rY);
         
         double[][] rX = aa.c3X3;
-        Rotation.createRollRotationMatrix(thetas[0], rX);
-        
-        double[][] rZY = aa.d3X3;
-        MatrixUtil.multiply(rZ, rY, rZY);
-        MatrixUtil.multiply(rZY, rX, out);        
+        Rotation.createRollRotationMatrix(thetas[2], rX);
+
+        MatrixUtil.multiply(MatrixUtil.multiply(rZ, rY), rX, out);
+    }
+
+    public static void createRotationZYX(double[] thetas, AuxiliaryArrays aa, double[][] out, boolean passive) {
+        if (!passive) {
+            thetas = Arrays.copyOf(thetas, thetas.length);
+            MatrixUtil.multiply(thetas, -1);
+        }
+        createRotationZYX(thetas, aa, out);
     }
     
     /**
      * calculate  the Hamilton quaternion which would be extracted from the
      * rotation matrix created by R_xyz = R_z(theta_z)*R_y(theta_y)*R_z(theta_z).
+     * Note that the Hamilton quaternion is consistent with a right-hand passive system and so are the
+     * Euler equations it uses.
      * 
      * from https://en.wikipedia.org/wiki/Davenport_chained_rotations
      * "Any extrinsic rotation is equivalent to an intrinsic rotation by the 
@@ -2338,6 +2538,9 @@ public class Rotation {
         if (thetas.length != 3) {
             throw new IllegalArgumentException("thetas must be length 3");
         }
+
+        // this uses passive (RH, CCW) transformations
+
         double x2 = thetas[0]/2;
         double y2 = thetas[1]/2;
         double z2 = thetas[2]/2;
@@ -2354,7 +2557,9 @@ public class Rotation {
     /**
      * calculate  the Hamilton quaternion which would be extracted from the
      * rotation matrix created by R_xyz = R_z(theta_z)*R_y(theta_y)*R_z(theta_z).
-     * 
+     *
+     * This method uses a passive (right-hand) rotation system with CCW (=CC) rotations.
+     *
      * from https://en.wikipedia.org/wiki/Davenport_chained_rotations
      * "Any extrinsic rotation is equivalent to an intrinsic rotation by the 
      * same angles but with inverted order of elemental rotations, and vice 
@@ -2451,13 +2656,13 @@ public class Rotation {
     /**
      * given an array of euler rotation angles, return the rotation matrix
      * as the rotations for x, y, z multiplied in that order.
-     * 
-     TODO: consider whether this should be using the Shuster equations
-     as R_xyz = R_x(theta_x)*R_y(theta_y)*R_z(theta_z) which is transposed
-     from the Z*Y*X operation.
+     * The method uses intrinsic composition of passive transitions.
+     R_xyz = R_x(theta_x)*R_y(theta_y)*R_z(theta_z).
+     Intrinsic operations operate on the coordinate system successively to make a final rotation for the object of interest.
+
+     (Extrinsic operations in contrast perform rotations on the World Coordinate System.
       <pre>
-      
-      where  
+      where
        cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
             | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
             | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
@@ -2474,23 +2679,22 @@ public class Rotation {
          
       </pre>
       
-     @param thetas euler rotation angles
+     @param thetas euler rotation angles in units of radians
      @return 
     */
     public static double[][] createRotationXYZ(double[] thetas) {
         if (thetas.length != 3) {
             throw new IllegalArgumentException("thetas must be length 3");
         }
-        
-        double[][] rZ = Rotation.createYawRotationMatrix(thetas[2]);
-        
-        double[][] rX = Rotation.createRollRotationMatrix(thetas[0]);
-        
-        double[][] rY = Rotation.createPitchRotationMatrix(thetas[1]);
-        
-        double[][] r = MatrixUtil.multiply(rX, MatrixUtil.multiply(rY, rZ));
-        
-        return r;
+        return createRotationXYZ(thetas[0], thetas[1], thetas[2]);
+    }
+
+    public static double[][] createRotationXYZ(double[] thetas, boolean passive) {
+        if (!passive) {
+            thetas = Arrays.copyOf(thetas, thetas.length);
+            MatrixUtil.multiply(thetas, -1);
+        }
+        return createRotationXYZ(thetas);
     }
     
     /*
@@ -2562,10 +2766,8 @@ public class Rotation {
     </pre>
      * @param unitLengthAxis    
      * @param angle angle of rotation in right-hand system, that is, positive rotations are counter-clockwise around axis.
-     * @oaram passive if true rotation terms are for the perspective from the reference system of the object in rotation,
-     * that is the passive system (often used when controlling an object), else if false is the active system.
-     * The active system is from the perspective of an observer's reference frame watching the rotating object, hence the
-     * rotation is what is needed to transform the observers systems to the rotating object's system.
+     * @oaram passive if true else active
+     *
      * @return     
     */
     public static double[][] createRotationFromUnitLengthAngleAxis(double[] unitLengthAxis, double angle,
