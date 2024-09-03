@@ -33,6 +33,8 @@ public class CameraPoseTest extends TestCase {
         System.out.println("testCalculatePoseUsingDLT");
         // see testresources/zhang1998/README.txt
 
+        boolean passive = true;
+
         // they use f(r) = 1 + k1*r + k2*r^2:
         boolean useR2R4 = false;
 
@@ -118,7 +120,7 @@ public class CameraPoseTest extends TestCase {
             boolean useBouguetForRodrigues = false;
             //double[] om = qHamiltonE;
             //double[] om = qBarfootE;
-            double[] om = Rotation.extractRodriguesRotationVectorBouguet(expectedR).om;
+            double[] om = Rotation.extractRodriguesRotationVectorBouguet(expectedR, passive).om;
             CameraPose.ProjectedPoints xBou = CameraPose.bouguetProjectPoints2(
                     xW, om, expectedT, expectedIntr, useBouguetForRodrigues);
 
@@ -352,7 +354,7 @@ public class CameraPoseTest extends TestCase {
                 {4.634764E-4, -5.282382E-5, 4.255347E-4, 1}
         };
 
-        boolean passive = false;
+        boolean passive = true;//false;
         double rotAboutAxis= 47.7*Math.PI/180.;
 
         // wide angle: f <= 35 mm
@@ -372,16 +374,19 @@ public class CameraPoseTest extends TestCase {
         // aspect ratio of the pixels = alpha/beta = 0.679
         // rotation axis: (almost vertical)
         double[] expectedRAxis = new double[]{-0.08573, -0.99438, 0.0621};
+        double[] expectedThetaXYZ = Rotation.convertAngleAxisToRotationVector(expectedRAxis, rotAboutAxis);
 
         double[][] expectedRot = Rotation.createRotationFromUnitLengthAngleAxis(expectedRAxis,
                 rotAboutAxis, passive);
+        double[][] expectedRot2 = Rotation.createRodriguesFormulaRotationMatrixTomasi(expectedThetaXYZ, passive);
+        double[] _thetaXYZ2 = Rotation.extractRodriguesFormulaRotationVectorTomasi(expectedRot2, passive);
+        double[] _thetaXYZ3 = Rotation.extractThetaFromXYZ(expectedRot2);
 
         //double[] tZYX = Rotation.extractThetaFromZYX(expectedRot);
         double[] thetaXYZ = Rotation.extractThetaFromXYZ(expectedRot);
-        //System.out.printf("THETAS ZYX : %s\n", FormatArray.toString(tZYX, "%.4f"));
-        //System.out.printf("THETAS XYZ : %s\n", FormatArray.toString(tXYZ, "%.4f"));
-        // XYZ    -0.0640, -0.8289, 0.0267 x,y,z in radians = -3.66692989, -47.49247164,   1.52979731 in degrees
-        //double[][] _rch = Rotation.createRotationXYZ(tXYZ);
+        double[] thetaDeg = Arrays.copyOf(thetaXYZ, thetaXYZ.length);
+        MatrixUtil.multiply(thetaDeg, 180./Math.PI);
+        double[][] _rot = Rotation.createRotationXYZ(thetaXYZ, passive);
 
         /*
         expected rotation:
@@ -499,7 +504,6 @@ public class CameraPoseTest extends TestCase {
             double[][] resultR = result.getExtrinsicParameters().getRotation();
             double[] resultT = result.getExtrinsicParameters().getTranslation();
             double[][] resultK = result.getIntrinsicParameters().getIntrinsic();
-            double resultLambda1 = result.getIntrinsicParameters().getLambda1();
 
             diffR = Rotation.procrustesAlgorithmForRotation(expectedRot, result.getExtrinsicParameters().getRotation());
             fsR = MatrixUtil.frobeniusNorm( MatrixUtil.pointwiseSubtract(
@@ -510,6 +514,7 @@ public class CameraPoseTest extends TestCase {
             double diffTSum = MatrixUtil.lPSum(diffT, 2);
             double diffKSum = MatrixUtil.frobeniusNorm(diffK);
 
+            double resultLambda1 = result.getIntrinsicParameters().getLambda1();
 
         }
 

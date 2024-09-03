@@ -125,6 +125,8 @@ public class CameraCalibration {
         }
 
         //TODO: add optimization steps consider using PNP solve for pose
+
+        boolean passive = true;
         
         int i;
 
@@ -152,7 +154,7 @@ public class CameraCalibration {
 
             CameraExtrinsicParameters extr = solveForExtrinsic(kIntr, hI);
 
-            double[] om = Rotation.extractRodriguesRotationVectorBouguet(extr.getRotation()).om;
+            double[] om = Rotation.extractRodriguesRotationVectorBouguet(extr.getRotation(), passive).om;
 
             extrinsics.add(new CameraExtrinsicParameters(extr.getRotation(), om,
                     extr.getTranslation()));
@@ -230,6 +232,8 @@ public class CameraCalibration {
             throw new IllegalArgumentException("coordsW must have 3 rows.");
         }
 
+        boolean passive = true;
+
         int i;
 
         List<CameraExtrinsicParameters> extrinsics = new ArrayList<>();
@@ -242,7 +246,8 @@ public class CameraCalibration {
 
             k = MatrixUtil.pointwiseAdd(k, pose.getIntrinsicParameters().getIntrinsic());
 
-            double[] om = Rotation.extractRodriguesRotationVectorBouguet(pose.getExtrinsicParameters().getRotation()).om;
+            double[] om = Rotation.extractRodriguesRotationVectorBouguet(pose.getExtrinsicParameters().getRotation(),
+                    passive).om;
 
             extrinsics.add(new CameraExtrinsicParameters(pose.getExtrinsicParameters().getRotation(), om,
                     pose.getExtrinsicParameters().getTranslation()));
@@ -361,7 +366,7 @@ public class CameraCalibration {
      * this is also in sect 2.4 of camera calibration book by zhang
      * as homography between a model plane and its image (in camera calibration w/ 2d objects: plane based techniques).
      *
-     * see CameraPose.calculatePFromXXW()
+     * see also CameraPose.calculatePFromXXW(...)
      *
      * @param coordsI holds the image coordinates in pixels of features present in image i as format [3 X nPoints].
      *                Only the first 2 dimensions are used, so if the 3rd dimension (z axis) is present, it is
@@ -448,6 +453,92 @@ public class CameraCalibration {
 
         if (useNormConditioning) {
             h = MatrixUtil.multiply(EpipolarNormalizationHelper.inverseT(tI), h);
+            h = MatrixUtil.multiply(h, tW);
+        }
+
+        return h;
+    }
+
+    /**
+     * for a given set of feature coordinates in image reference frame and in
+     * world coordinate system, calculates the homography following the
+     * algorithm in Wetzstein "EE 267 Virtual Reality
+     * Course Notes: 6-DOF Pose Tracking with the VRduino".
+     *
+     * This algorithm uses a passive right-hand transformation system.
+     * It flips the z-coordinate system so that observer is in the origin looking down the negative z axis towards
+     * the moving object.  The algorithm also sets h[2][2] to 1 in solving for pose.
+     *
+     * @param coordsC holds the feature coordinates in camera reference frame image i as format [3 X nPoints].
+     *                Only the first 2 dimensions are used, so if the 3rd dimension (z axis) is present, it is
+     *                the responsibility of the invoker to have normalized the 1st 2 dimensions by the 3rd.
+     *                Note that the method should work similarly if input is feature coordinates in image frame instead,
+     *                but the -z should be considered afterward when using the homography.
+     * @param coordsW holds the world coordinates of features present in image 1 corresponding
+    to the same features and order of coordsC_i as format [3 X nPoints].
+     *                Only the first 2 dimensions are used, so if the 3rd dimension (z axis) is present, it is
+     *                the responsibility of the invoker to have normalized the 1st 2 dimensions by the 3rd.
+     * @return the homography, projection matrix
+     */
+    public static double[][] solveFor8PointHomography(double[][] coordsC, double[][] coordsW, boolean useNormConditioning)
+            throws NotConvergedException {
+
+        if (coordsC.length < 2 || coordsC.length > 3) {
+            throw new IllegalArgumentException("coordsC must have 2 or 3 rows.");
+        }
+        if (coordsW.length < 2 || coordsW.length > 3) {
+            throw new IllegalArgumentException("coordsW must have 2 or 3 rows.");
+        }
+        int n = coordsC[0].length;
+        if (coordsW[0].length != n) {
+            throw new IllegalArgumentException("coordsW must have same number of columns as coordsC.");
+        }
+
+        /*
+          H =   [ h11 h12 h13 ]
+                [ h21 h22 h23 ]
+                [ h31 h32 h33 ]
+          H^T = [ h11 h21 h31 ]
+                [ h12 h22 h32 ]
+                [ h13 h23 h33 ]
+        */
+
+        double[][] tC = null;
+        double[][] tW = null;
+        if (useNormConditioning) {
+            coordsC = MatrixUtil.copy(coordsC);
+            coordsW = MatrixUtil.copy(coordsW);
+            tC = EpipolarNormalizationHelper.unitStandardNormalize(coordsC);
+            tW = EpipolarNormalizationHelper.unitStandardNormalize(coordsW);
+        }
+
+        // 2*n X 9
+        double u, v, X, Y;
+        double[][] ell = new double[2*n][8];
+        for (int i = 0; i < n; ++i) {
+            u = coordsC[0][i];
+            v = coordsC[1][i];
+            X = coordsW[0][i];
+            Y = coordsW[1][i];
+            ell[2*i]     = new double[]{X, Y, 1, 0, 0, 0, -u*X, -u*Y};
+            ell[2*i + 1] = new double[]{0, 0, 0, X, Y, 1, -v*X, -v*Y};
+        }
+
+        MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(ell);
+
+        // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
+        double[] xOrth = svd.vT[svd.vT.length - 1];
+
+        //h00, h01, h02, h10, h11, h12, h20,h21,h22
+
+        double[][] h = new double[3][3];
+        for (int i = 0; i < 3; i++) {
+            System.arraycopy(xOrth, (i * 3), h[i], 0, 3);
+        }
+        h[2][2] = 1;
+
+        if (useNormConditioning) {
+            h = MatrixUtil.multiply(EpipolarNormalizationHelper.inverseT(tC), h);
             h = MatrixUtil.multiply(h, tW);
         }
 
@@ -1139,11 +1230,11 @@ public class CameraCalibration {
      * @param kIntr camera intrinsic parameters
      * @param h homography for the projection for an image. at least 5 points should have been used
      *          to generate h.
-     * @return 
+     * @return
      */
     static Camera.CameraExtrinsicParameters solveForExtrinsic(
-        CameraIntrinsicParameters kIntr, double[][] h) throws NotConvergedException {
-        
+            CameraIntrinsicParameters kIntr, double[][] h) throws NotConvergedException {
+
         // notes from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
         // homogeneous repr of a point is x_vec = (x, y, 1)^T
         // equation f a line is ell = a*x + b*y + c = 0;
@@ -1164,19 +1255,21 @@ public class CameraCalibration {
         //              fits the data exactly
         //          (2) SVD(A).s[5] >=0, and n > 5, then the value is the goodness of fit
         //          (3) n < 5, the conic is undetermined and requires other means to solve.
-        //        
-        
+        //
+
         // points at infinity, a.k.a. ideal points, have the form (x, y, 0)^T
         // the line at infinity is (0, 0, 1)^T.
 
+        boolean passive = true;
+
         double[][] aInv = Camera.createIntrinsicCameraMatrixInverse(kIntr.getIntrinsic());// K^-1
-        
+
         //h_i is the ith column vector of H
         //r1 = λ * A^−1 * h1
         //r2 = λ * A^−1 * h2
         //r3 = r1×r2
         // t = λ * A^−1 * h3
-        
+
         double[] h1 = MatrixUtil.extractColumn(h, 0);
         double[] h2 = MatrixUtil.extractColumn(h, 1);
         double[] h3 = MatrixUtil.extractColumn(h, 2);
@@ -1184,7 +1277,7 @@ public class CameraCalibration {
         double[] r1 = MatrixUtil.multiplyMatrixByColumnVector(aInv, h1);
         double[] r2 = MatrixUtil.multiplyMatrixByColumnVector(aInv, h2);
         double[] t = MatrixUtil.multiplyMatrixByColumnVector(aInv, h3);
-        
+
         //λ = 1/||(A^−1)*(h1)||_2 = 1/||(A^−1)*(h2)||_2
         double lambda1_1 = 1./MatrixUtil.lPSum(r1, 2);
         double lambda1_2 = 1./MatrixUtil.lPSum(r2, 2);
@@ -1215,7 +1308,93 @@ public class CameraCalibration {
         CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();
         kExtr.setRotation(r);
         kExtr.setTranslation(t);
-        kExtr.setRodriguesVector(Rotation.extractRodriguesRotationVectorBouguet(r).om);
+        kExtr.setRodriguesVector(Rotation.extractRodriguesRotationVectorBouguet(r, passive).om);
+
+        return kExtr;
+    }
+
+    /**
+     calculate the camera rotation and translation given camera coordinates and world coordinates
+     of features.
+     Note that coordsC = (intrinsicCamera)^-1 * coordsI where coordsI are the feature coordinates in
+     the image frame in units of pixels.
+     * following Wetzstein "EE 267 Virtual Reality
+     *      * Course Notes: 6-DOF Pose Tracking with the VRduino"
+     * estimate the extrinsic parameters from the features given positions in camera coordinates
+     * and WCS real world coordinates.
+     *
+     * The pose results can be improved by following it with use of non-linear Levenberg-Marquardt or
+     * other optimization method. see Appendix A of Wetzstein reference.
+     *
+     * Also, one can follow with radial distortion corrections.
+     *
+     * @param coordsC holds the feature coordinates in camera reference frame image i as format [3 X nPoints].
+     *                Only the first 2 dimensions are used, so if the 3rd dimension (z axis) is present, it is
+     *                the responsibility of the invoker to have normalized the 1st 2 dimensions by the 3rd.
+     *                Note that the method should work similarly if input is feature coordinates in image frame instead,
+     *                but the -z should be considered afterward when using the homography.
+     * @param coordsW holds the world coordinates of features present in image 1 corresponding
+    to the same features and order of coordsC_i as format [3 X nPoints].
+     *                Only the first 2 dimensions are used, so if the 3rd dimension (z axis) is present, it is
+     *                the responsibility of the invoker to have normalized the 1st 2 dimensions by the 3rd.
+     * @return the pose, that is camera rotation and translation
+     * @return 
+     */
+    static Camera.CameraExtrinsicParameters solveForExtrinsicPlanarWetzstein(
+        double[][] coordsC, double[][] coordsW) throws NotConvergedException {
+
+        boolean passive = true;
+
+        boolean useNormConditioning = false;
+        double[][] h = solveFor8PointHomography(coordsC, coordsW, useNormConditioning);
+        
+        double[] h1 = MatrixUtil.extractColumn(h, 0);
+        double[] h2 = MatrixUtil.extractColumn(h, 1);
+        double[] h3 = MatrixUtil.extractColumn(h, 2);
+
+        double lambda1 = MatrixUtil.lPSum(h1, 2);
+        double lambda2 = MatrixUtil.lPSum(h2, 2);
+        double lambda = 2./(lambda1 + lambda2);
+        //double scaleFactor = 2./(Math.sqrt(sumOfSquares(h1)) + Math.sqrt(sumOfSquares(h1)));
+        log.log(LEVEL, String.format("lambda1=%.3e, lambda2=%.3e, lambda=%.3e\n", lambda1, lambda2, lambda));
+
+        double[] t = new double[] {lambda * h[0][2], lambda * h[1][2], -lambda};
+
+        double[] r1 = Arrays.copyOf(h1, h1.length);
+        MatrixUtil.multiply(r1, 1./lambda1);
+
+        // r1 orthogonal to r2:
+        double r1DotH2 = MatrixUtil.dot(r1, h2);
+        double[] r2 = new double[] {
+                h2[0] - (r1[0] * r1DotH2),
+                h2[1] - (r1[1] * r1DotH2),
+                -h2[2] - (r1[2] * r1DotH2)
+        };
+
+        // r3 orthogonal to r1 and r2:
+        double[] r3 = MatrixUtil.crossProduct(r1, r2);
+        // r1, r2, and r3 are columns of R
+        double[][] r = MatrixUtil.zeros(3, 3);
+        for (int row = 0; row < 3; ++row) {
+            r[row][0] = r1[row];
+            r[row][1] = r2[row];
+            r[row][2] = r3[row];
+        }
+
+        //TODO: consider converting the rotation matrix to a quaternion or Euler angles (eqns 39, 37)
+
+        // further orthonormalization of r:
+        SVDProducts svd = MatrixUtil.performSVD(r);
+        r = MatrixUtil.multiply(svd.u, svd.vT);
+
+        double detR = MatrixUtil.determinant(r);
+        detR = Math.round(detR*1E11)/1E11;
+        assert(Math.abs(detR - 1) < 1E-7);
+
+        CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();
+        kExtr.setRotation(r);
+        kExtr.setTranslation(t);
+        kExtr.setRodriguesVector(Rotation.extractRodriguesRotationVectorBouguet(r, passive).om);
 
         return kExtr;
     }

@@ -1869,13 +1869,13 @@ public class BundleAdjustment {
         
         BlockMatrixIsometric m = new BlockMatrixIsometric(MatrixUtil.zeros(3, 3*mImages), 3, 3);
 
-        boolean passive = false;
+        boolean passive = true;
 
         Rotation.RodriguesRotation rr;
         int i;
         for (i = 0; i < mImages; ++i) {
             if (useBouguetForRodrigues) {
-                rr = Rotation.createRodriguesRotationMatrixBouguet(extrRVecs[i]);
+                rr = Rotation.createRodriguesRotationMatrixBouguet(extrRVecs[i], passive);
                 m.setBlock(rr.r, 0, i);
             } else {
                 m.setBlock(Rotation.createRodriguesFormulaRotationMatrix(extrRVecs[i], passive), 0, i);

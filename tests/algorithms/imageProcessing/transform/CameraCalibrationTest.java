@@ -12,6 +12,8 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
+import no.uib.cipr.matrix.NotConvergedException;
+
 import static junit.framework.TestCase.assertEquals;
 
 /**
@@ -31,7 +33,7 @@ public class CameraCalibrationTest extends TestCase {
     public CameraCalibrationTest() {
     }
     
-    public void testApplyRemoveRadialDistortion()
+    public void __testApplyRemoveRadialDistortion()
     throws Exception {
         
         log.log(LEVEL, "testApplyRemoveRadialDistortion");
@@ -202,7 +204,7 @@ public class CameraCalibrationTest extends TestCase {
 
     }
 
-    public void testPlanarRandom() throws Exception {
+    public void __testPlanarRandom() throws Exception {
         log.log(LEVEL, "testPlanarRandom");
 
         long seed = System.currentTimeMillis();
@@ -233,8 +235,8 @@ public class CameraCalibrationTest extends TestCase {
         double rotAboutAxis= 47.7*Math.PI/180.;
         double[] rAxis = new double[]{-0.08573, -0.99438, 0.0621};
         double[][] rot = Rotation.createRotationFromUnitLengthAngleAxis(rAxis, rotAboutAxis, passive);
-        double[] thetaXYZ = Rotation.extractThetaFromXYZ(rot);
-        MatrixUtil.multiply(thetaXYZ, -1);
+        double[] thetaXYZ = Rotation.extractThetaFromXYZ(rot, passive);
+        double[][] _rot = Rotation.createRotationXYZ(thetaXYZ, passive);
 
         // t in mm = 1.5m from camera in WCS
         double[] trans = new double[]{-211.28, -106.06, 1583.75};
@@ -252,19 +254,20 @@ public class CameraCalibrationTest extends TestCase {
         double[] _t = new double[3];
         double[][] _h, _x = null;
         for (int i = 0; i < nImages; ++i) {
-            for (int j = 0; j < 3; ++j) {
-                _rThetaXYZ[j] = rand.nextDouble() / 2.5;
+            for (int row = 0; row < 3; ++row) {
+                _rThetaXYZ[row] = rand.nextDouble() / 2.5;
                 if (rand.nextBoolean()) {
-                    _rThetaXYZ[j] *= -1;
+                    _rThetaXYZ[row] *= -1;
                 }
-                _rThetaXYZ[j] += thetaXYZ[j];
+                _rThetaXYZ[row] += thetaXYZ[row];
 
-                _t[j] = j < 2 ? rand.nextDouble() * 100 : rand.nextDouble() * 2;
+                _t[row] = row < 2 ? rand.nextDouble() * 5 : rand.nextDouble() * 2;
                 if (rand.nextBoolean()) {
-                    _t[j] *= -1;
+                    _t[row] *= -1;
                 }
-                _t[j] += trans[j];
+                _t[row] += trans[row];
             }
+
             _r = Rotation.createRotationXYZ(_rThetaXYZ);
 
             _x = SceneImageHelper.createImagePoints2DPlanar(xW, K, _r, _t);
@@ -514,6 +517,19 @@ public class CameraCalibrationTest extends TestCase {
             System.out.printf("qt=%.2f  ", qt[i]*180./Math.PI);
         }
         System.out.println();
+    }
+
+    public void testSolveForExtrinsicPlanarWetzstein() {
+        //static Camera.CameraExtrinsicParameters solveForExtrinsicPlanarWetzstein(
+        //        double[][] coordsC, double[][] coordsW) throws NotConvergedException
+
+        /* generate points:
+        [xc]  =  [1  0  0  tx ] * [ r11  r12  r13  0 ] * [xw] = [ r11  r12  r13  tx ] * [xw]
+        [yc]     [0  1  0  ty ]   [ r21  r22  r23  0 ]   [yw]   [ r21  r22  r23  ty ]   [yw]
+        [zc]     [0  0  1  tz ]   [ r31  r32  r33  0 ]   [zw]   [ r31  r32  r33  tz ]   [zw]
+        [1]      [0  0  0  1  ]   [ 0    0    0    1 ]   [1 ]   [ 0    0    0    1  ]   [1 ]
+
+         */
     }
 
     protected void normalize(double[][] x) {

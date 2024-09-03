@@ -2495,5 +2495,43 @@ public class MiscMath {
             MiscMath.setHashValue(list, lastIdx[0], hash);
         }
     }
+
+    /**
+     * if a and b are same size and ae element-wise equal within tol, returns true, else false
+     * @param a array a to compare with b
+     * @param b array b to oompare with a
+     * @param tol the amount that abs(a[i] - b[i]) must be less than or equal to be considered equal.
+     * @return true if a and b are element-wise equal within tol, else false
+     */
+    public static boolean areEqual(double[][] a, double[][] b, double tol) {
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i = 0; i < a.length; ++i) {
+            if (!areEqual(a[i], b[i], tol)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * if a and b are same length and ae element-wise equal within tol, returns true, else false
+     * @param a array a to compare with b
+     * @param b array b to oompare with a
+     * @param tol the amount that abs(a[i] - b[i]) must be less than or equal to be considered equal.
+     * @return true if a and b are element-wise equal within tol, else false
+     */
+    public static boolean areEqual(double[] a, double[] b, double tol) {
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i = 0; i < a.length; ++i) {
+            if (Math.abs(a[i] - b[i]) > tol) {
+                return false;
+            }
+        }
+        return true;
+    }
     
 }

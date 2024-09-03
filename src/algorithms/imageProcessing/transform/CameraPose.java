@@ -81,6 +81,7 @@ public class CameraPose {
      This method returns case (2) translation in the CameraExtrinsics field and assumes that x are given
      in image coordinates.
 
+     see also CameraCalibration.solveForHomography(...)
      </pre>
      * @param x the image coordinates of the features in pixels in format 3 X N where
      * 3 is for x, y, 1 rows, and N columns is the number of features.  At least 6 features are needed.
@@ -1119,10 +1120,10 @@ public class CameraPose {
             throw new IllegalArgumentException("T.length should be 3");
         }
 
-        boolean passive = false;
+        boolean passive = true;
 
         //[R, dRdom] = rodrigues(om);
-        Rotation.RodriguesRotation rRot = Rotation.createRodriguesRotationMatrixBouguet(om);
+        Rotation.RodriguesRotation rRot = Rotation.createRodriguesRotationMatrixBouguet(om, passive);
         double[][] r;
         if (useBouguetForRodrigues) {
             r = rRot.r;
@@ -1319,12 +1320,12 @@ public class CameraPose {
         System.out.printf("bouguet refine iter=%d\n", iter);
         //%fprintf(1,'\n');
 
-        boolean passive = false;
+        boolean passive = true;
 
         //Rckk = rodrigues(omckk);
         double[][] r;
         if (useBouguetsRodrigues) {
-            r = Rotation.createRodriguesRotationMatrixBouguet(omckk).r;
+            r = Rotation.createRodriguesRotationMatrixBouguet(omckk, passive).r;
         } else {
             r = Rotation.createRodriguesFormulaRotationMatrix(omckk, passive);
         }
@@ -1360,6 +1361,8 @@ public class CameraPose {
         if (X.length != 2 && X.length != 3 && X.length != 4) {
             throw new IllegalArgumentException("X length must be 2, 3, or 4");
         }
+
+        boolean passive = true;
 
         int i, j;
 
@@ -1487,19 +1490,17 @@ public class CameraPose {
         //omckk = rodrigues(RRR);
         double[] omckk;
         if (useBouguetForRodrigues) {
-            Rotation.RodriguesRotation rRot = Rotation.extractRodriguesRotationVectorBouguet(RRR);
+            Rotation.RodriguesRotation rRot = Rotation.extractRodriguesRotationVectorBouguet(RRR, passive);
             omckk = rRot.om;
         } else {
             omckk = Rotation.extractRodriguesRotationVector(RRR);
         }
 
-        boolean passive = false;
-
         //%omckk = rodrigues([H(:,1:2) cross(H(:,1),H(:,2))]);
         //Rckk = rodrigues(omckk);
         double[][] Rckk;
         if (useBouguetForRodrigues) {
-            Rotation.RodriguesRotation rRot2 = Rotation.createRodriguesRotationMatrixBouguet(omckk);
+            Rotation.RodriguesRotation rRot2 = Rotation.createRodriguesRotationMatrixBouguet(omckk, passive);
             Rckk = rRot2.r;
         } else {
             Rckk = Rotation.createRodriguesFormulaRotationMatrix(omckk, passive);
@@ -1519,9 +1520,9 @@ public class CameraPose {
         Rckk = MatrixUtil.multiply(Rckk, Rtransform);
         //omckk = rodrigues(Rckk);
         if (useBouguetForRodrigues) {
-            omckk = Rotation.extractRodriguesRotationVectorBouguet(Rckk).om;
+            omckk = Rotation.extractRodriguesRotationVectorBouguet(Rckk, passive).om;
             //Rckk = rodrigues(omckk);
-            Rckk = Rotation.createRodriguesRotationMatrixBouguet(omckk).r;
+            Rckk = Rotation.createRodriguesRotationMatrixBouguet(omckk, passive).r;
         } else {
             omckk = Rotation.extractRodriguesRotationVector(Rckk);
             // this should be the same.  TODO: follow up on simplifying this method w.o. losing accuracy though
@@ -1658,7 +1659,7 @@ public class CameraPose {
         double norm1 = MatrixUtil.lPSum(MatrixUtil.stack(Rckk), 2);
         double sc = norm0/norm1;
 
-        boolean passive = false;
+        boolean passive = true;
 
         //Tckk = V(10:12,12)/sc;
         double[] Tckk = Arrays.copyOfRange(orth, 9, 12);
@@ -1666,9 +1667,9 @@ public class CameraPose {
         //omckk = rodrigues(Rckk);
         double[] omckk;
         if (useBouguetForRodrigues) {
-            omckk = Rotation.extractRodriguesRotationVectorBouguet(Rckk).om;
+            omckk = Rotation.extractRodriguesRotationVectorBouguet(Rckk, passive).om;
             //Rckk = rodrigues(omckk);
-            Rckk = Rotation.createRodriguesRotationMatrixBouguet(omckk).r;
+            Rckk = Rotation.createRodriguesRotationMatrixBouguet(omckk, passive).r;
         } else {
             omckk = Rotation.extractRodriguesRotationVector(Rckk);
             Rckk = Rotation.createRodriguesFormulaRotationMatrix(omckk, passive);
