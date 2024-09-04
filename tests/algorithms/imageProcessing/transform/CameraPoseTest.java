@@ -71,7 +71,7 @@ public class CameraPoseTest extends TestCase {
             double[] expectedT = Arrays.copyOf(Zhang98Data.getTranslation(i), 3);
             MatrixUtil.multiply(expectedT, 1./expectedT[2]);
 
-            double[] qHamiltonE = Rotation.createHamiltonQuaternionZYX(Rotation.extractThetaFromZYX(expectedR));
+            double[] qHamiltonE = Rotation.createHamiltonQuaternion(Rotation.extractThetaFromZYX(expectedR));
             double[] qBarfootE = Rotation.convertHamiltonToBarfootQuaternion(qHamiltonE);
 
             // avg is -0.2946225
@@ -174,7 +174,7 @@ public class CameraPoseTest extends TestCase {
             rTE[i-1] = Arrays.copyOf(rTE[i-1], rTE[i-1].length);
             MatrixUtil.multiply(rTE[i-1], 180./Math.PI);
 
-            double[] qHamilton = Rotation.createHamiltonQuaternionZYX(Rotation.extractThetaFromZYX(extr.getRotation()));
+            double[] qHamilton = Rotation.createHamiltonQuaternion(Rotation.extractThetaFromZYX(extr.getRotation()));
             double[] qBarfoot = Rotation.convertHamiltonToBarfootQuaternion(qHamilton);
             double distR0 = Rotation.distanceBetweenQuaternions(qBarfootE, qBarfoot);
 
@@ -355,7 +355,7 @@ public class CameraPoseTest extends TestCase {
         };
 
         boolean passive = true;//false;
-        double rotAboutAxis= 47.7*Math.PI/180.;
+        double angle = 47.7*Math.PI/180.;
 
         // wide angle: f <= 35 mm
         // telephoto: f > 35mm
@@ -373,20 +373,13 @@ public class CameraPoseTest extends TestCase {
         // angle between 2 image axes is 90 degrees
         // aspect ratio of the pixels = alpha/beta = 0.679
         // rotation axis: (almost vertical)
-        double[] expectedRAxis = new double[]{-0.08573, -0.99438, 0.0621};
-        double[] expectedThetaXYZ = Rotation.convertAngleAxisToRotationVector(expectedRAxis, rotAboutAxis);
+        double[] axis = new double[]{-0.08573, -0.99438, 0.0621};
+        double[] rotVec = Rotation.convertAngleAxisToRotationVector(axis, angle);
 
-        double[][] expectedRot = Rotation.createRotationFromUnitLengthAngleAxis(expectedRAxis,
-                rotAboutAxis, passive);
-        double[][] expectedRot2 = Rotation.createRodriguesFormulaRotationMatrixTomasi(expectedThetaXYZ, passive);
-        double[] _thetaXYZ2 = Rotation.extractRodriguesFormulaRotationVectorTomasi(expectedRot2, passive);
-        double[] _thetaXYZ3 = Rotation.extractThetaFromXYZ(expectedRot2);
-
-        //double[] tZYX = Rotation.extractThetaFromZYX(expectedRot);
-        double[] thetaXYZ = Rotation.extractThetaFromXYZ(expectedRot);
-        double[] thetaDeg = Arrays.copyOf(thetaXYZ, thetaXYZ.length);
-        MatrixUtil.multiply(thetaDeg, 180./Math.PI);
-        double[][] _rot = Rotation.createRotationXYZ(thetaXYZ, passive);
+        double[][] rot = Rotation.createRodriguesFormulaRotationMatrix(rotVec, passive);
+        double[] eulerAngles = Rotation.extractThetaFromXYZ(rot);
+        double[] eulerAnglesDegrees = Arrays.copyOf(eulerAngles, eulerAngles.length);
+        MatrixUtil.multiply(eulerAnglesDegrees, 180./Math.PI);
 
         /*
         expected rotation:
@@ -396,7 +389,8 @@ public class CameraPoseTest extends TestCase {
          */
 
         // t in mm = 1.5m from camera in WCS
-        double[] expectedT = new double[]{-211.28, -106.06, 1583.75};
+        double[] translation = new double[]{-211.28, -106.06, 1583.75};
+        double tZ = translation[2];
 
         // camera projection matrix P is defined in
         //     z*x = P*X
@@ -407,14 +401,14 @@ public class CameraPoseTest extends TestCase {
         double[][] reproducingP =
             MatrixUtil.multiply(
                 new double[][] {
-                {K[0][0]/expectedT[2], K[0][1]/expectedT[2], K[0][2]/expectedT[2]},
-                {K[1][0]/expectedT[2], K[1][1]/expectedT[2], K[1][2]/expectedT[2]},
-                {K[2][0]/expectedT[2], K[2][1]/expectedT[2], K[2][2]/expectedT[2]}},
+                {K[0][0]/tZ, K[0][1]/tZ, K[0][2]/tZ},
+                {K[1][0]/tZ, K[1][1]/tZ, K[1][2]/tZ},
+                {K[2][0]/tZ, K[2][1]/tZ, K[2][2]/tZ}},
 
                  new double[][] {
-                         {expectedRot[0][0], expectedRot[0][1], expectedRot[0][2], expectedT[0]},
-                         {expectedRot[1][0], expectedRot[1][1], expectedRot[1][2], expectedT[1]},
-                         {expectedRot[2][0], expectedRot[2][1], expectedRot[2][2], expectedT[2]}
+                         {rot[0][0], rot[0][1], rot[0][2], translation[0]},
+                         {rot[1][0], rot[1][1], rot[1][2], translation[1]},
+                         {rot[2][0], rot[2][1], rot[2][2], translation[2]}
                  }
         );
 
@@ -423,11 +417,11 @@ public class CameraPoseTest extends TestCase {
                 MatrixUtil.pointwiseSubtract(K, c.getIntrinsicParameters().getIntrinsic()));
 
         // should be identity matrix if same:
-        double[][] diffR = Rotation.procrustesAlgorithmForRotation(expectedRot, c.getExtrinsicParameters().getRotation());
+        double[][] diffR = Rotation.procrustesAlgorithmForRotation(rot, c.getExtrinsicParameters().getRotation());
         double fsR = MatrixUtil.frobeniusNorm( MatrixUtil.pointwiseSubtract(
                 diffR, MatrixUtil.createIdentityMatrix(3)));
 
-        double[] diffT = MatrixUtil.subtract(expectedT, c.getExtrinsicParameters().getTranslation());
+        double[] diffT = MatrixUtil.subtract(translation, c.getExtrinsicParameters().getTranslation());
 
         assertTrue(fs < 1);
         assertTrue(fsR < 1);
@@ -435,8 +429,8 @@ public class CameraPoseTest extends TestCase {
         // taking a look at P composed from K instead of K/z gives even better matches to his example params (excepting p)
         double[][] pNotDivByZ = new double[3][4];
         for (int ii = 0; ii < 3; ++ii) {
-            System.arraycopy(expectedRot[ii], 0, pNotDivByZ[ii], 0, 3);
-            pNotDivByZ[ii][3] = expectedT[ii];
+            System.arraycopy(rot[ii], 0, pNotDivByZ[ii], 0, 3);
+            pNotDivByZ[ii][3] = translation[ii];
         }
         pNotDivByZ = MatrixUtil.multiply(K, pNotDivByZ);
 
@@ -446,11 +440,11 @@ public class CameraPoseTest extends TestCase {
 
         double[] _r = Rotation.extractRotationAxisFromZXY(_c.getExtrinsicParameters().getRotation());
         // should be identity matrix if same:
-        double[][] _diffR = Rotation.procrustesAlgorithmForRotation(expectedRot, _c.getExtrinsicParameters().getRotation());
+        double[][] _diffR = Rotation.procrustesAlgorithmForRotation(rot, _c.getExtrinsicParameters().getRotation());
         double _fsR = MatrixUtil.frobeniusNorm( MatrixUtil.pointwiseSubtract(
                 _diffR, MatrixUtil.createIdentityMatrix(3)));
 
-        double[] _diffT = MatrixUtil.subtract(expectedT, _c.getExtrinsicParameters().getTranslation());
+        double[] _diffT = MatrixUtil.subtract(translation, _c.getExtrinsicParameters().getTranslation());
 
         assertTrue(_fs < 1);
         assertTrue(_fsR < 1);
@@ -505,11 +499,11 @@ public class CameraPoseTest extends TestCase {
             double[] resultT = result.getExtrinsicParameters().getTranslation();
             double[][] resultK = result.getIntrinsicParameters().getIntrinsic();
 
-            diffR = Rotation.procrustesAlgorithmForRotation(expectedRot, result.getExtrinsicParameters().getRotation());
+            diffR = Rotation.procrustesAlgorithmForRotation(rot, result.getExtrinsicParameters().getRotation());
             fsR = MatrixUtil.frobeniusNorm( MatrixUtil.pointwiseSubtract(
                     diffR, MatrixUtil.createIdentityMatrix(3)));
 
-            diffT = MatrixUtil.subtract(expectedT, resultT);
+            diffT = MatrixUtil.subtract(translation, resultT);
             double[][] diffK = MatrixUtil.pointwiseSubtract(K, resultK);
             double diffTSum = MatrixUtil.lPSum(diffT, 2);
             double diffKSum = MatrixUtil.frobeniusNorm(diffK);

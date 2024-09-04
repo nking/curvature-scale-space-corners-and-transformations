@@ -1,18 +1,14 @@
 package algorithms;
 
-import algorithms.imageProcessing.transform.Camera;
 import algorithms.imageProcessing.transform.Rotation;
 import algorithms.matrix.MatrixUtil;
-import algorithms.misc.Complex;
 import algorithms.misc.MiscMath0;
-import algorithms.statistics.Standardization;
 import algorithms.statistics.UnivariateNormalDistribution;
 import algorithms.imageProcessing.transform.CameraCalibration;
 import algorithms.util.FormatArray;
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.NotConvergedException;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -412,7 +408,7 @@ public class PlanarHomographyTest extends TestCase {
         double[] nC1Norm = new double[]{0, 0, 1};
         double thetaWCSC1 = -Math.acos(nPNorm[0]*nC1Norm[0] + nPNorm[1]*nC1Norm[1] + nPNorm[2]*nC1Norm[2]);
         double[] axisWCSC1 = MatrixUtil.crossProduct(nPNorm, nC1Norm);
-        double[] quatH = Rotation.createHamiltonQuaternionZYX(thetaWCSC1, axisWCSC1);
+        double[] quatH = Rotation.createHamiltonQuaternion(thetaWCSC1, axisWCSC1);
         double[] quatB = Rotation.convertHamiltonToBarfootQuaternion(quatH);
         double[][] rWCSC1 = Rotation.createRotationMatrixFromQuaternion4(quatB);
         rWCSC1 = MatrixUtil.copySubMatrix(rWCSC1, 0, 2, 0, 2);
