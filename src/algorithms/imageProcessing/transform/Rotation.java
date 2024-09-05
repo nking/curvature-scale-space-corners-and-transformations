@@ -65,10 +65,12 @@ import no.uib.cipr.matrix.SVD;
  *    define a quaternion as (qw, qx, qy, qz) where qw is a scalar and
  * [qx, qy, qz] is a vector.   That is the Hamilton Quaternion format.
  * 
- * In contrast, Barfoot et al. define a quaternion as (qx, qy, qz, qw).
+ * In contrast, Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized
+ * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.)
+ * define a quaternion as (qx, qy, qz, qw), scalar last.
  * One might need to transform some properties to quaternions and then modify 
  * the placement of the scalar term in order
- * to compare results with other "Hamilton" "Right hand" system results.
+ * to compare results with other "Hamilton" "Right hand" system results with scalar first format.
  * The Barfoot equations use active left-hand rule system and a "scalar last" format.
  *         
  <pre>
@@ -291,6 +293,57 @@ public class Rotation {
     public static enum EulerSequence {
         Seq123, Seq321
     };
+
+    public abstract static class RotationPerturbation {
+        /**
+         * dPhi is the rotation vector defined near eqn (26) of Barfoot et al.
+         * Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized
+         * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.)
+         */
+        double[] dPhi;
+
+        final EulerSequence seq;
+
+        public RotationPerturbation(double[] dPhi, EulerSequence seq) {
+            this.dPhi = dPhi;
+            this.seq = seq;
+        }
+        public abstract RotationPerturbation copy();
+    }
+    public static class RotationPerturbationMatrix extends RotationPerturbation{
+        /**
+         * the current updated rotation
+         */
+        double[][] rotation;
+        public RotationPerturbationMatrix(double[] dPhi, EulerSequence seq) {
+            super(dPhi, seq);
+        }
+        public RotationPerturbationMatrix(double[] dPhi, EulerSequence seq, double[][] rotation) {
+            super(dPhi, seq);
+            this.rotation = rotation;
+        }
+        public RotationPerturbationMatrix copy() {
+            return new RotationPerturbationMatrix(Arrays.copyOf(this.dPhi, dPhi.length), this.seq,
+                    MatrixUtil.copy(rotation));
+        }
+    }
+    public static class RotationPerturbationQuaternion extends RotationPerturbation{
+        /**
+         * the current updated quaternion
+         */
+        double[] quaternion;
+        public RotationPerturbationQuaternion(double[] dPhi, EulerSequence seq) {
+            super(dPhi, seq);
+        }
+        public RotationPerturbationQuaternion(double[] dPhi, EulerSequence seq, double[] quaternion) {
+            super(dPhi, seq);
+            this.quaternion = quaternion;
+        }
+        public RotationPerturbationQuaternion copy() {
+            return new RotationPerturbationQuaternion(Arrays.copyOf(this.dPhi, dPhi.length), this.seq,
+                    Arrays.copyOf(quaternion, quaternion.length));
+        }
+    }
 
     /**
      * calculate R(angle_z, angle_y, angle_x) = R_x(angle_x)*R_y(angle_y)*R_z(angle_z).
@@ -2453,45 +2506,6 @@ public class Rotation {
         
         return result;
     }
-    
-    /**
-     * apply a perturbation in the rotation vector to a rotation matrix.
-     * <pre>
-     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
-     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
-     * 
-     * eqn (31).
-     * "This update approach allows us to store and update the rotation as a 
-     * rotation matrix, thereby avoiding singularities and the need to restore 
-     * the constraint afterwards (i.e., constraint restoration is built in).
-     * 
-     * </pre>
-     *
-     * This method uses active (left-hand system) transformations.
-     * @return 
-     */
-    public static double[][] applySingularitySafeRotationVectorPerturbation(
-        double[] dRVector, double[][] rotation) {
-        if (dRVector.length != 3) {
-            throw new IllegalArgumentException("dRVector length must be 3");
-        }
-        if (rotation.length != 3 || rotation[0].length != 3) {
-            throw new IllegalArgumentException("rotation must be [3X3]");
-        }
-
-        boolean passive = false;
-
-        RodriguesRotation dRR = Rotation.createRotationRodriguesBouguet(dRVector, passive);
-
-        // this result should be orthonormal
-        double[][] result = MatrixUtil.multiply(dRR.r, rotation);
-
-        //NOTE: can compare to non-orthonormal results
-        // eqn (26)
-        //double[][] result2 = MatrixUtil.multiply(MatrixUtil.skewSymmetric(dRVector), rotation);
-
-        return result;
-    }
 
     /**
      * calculate S_theta which is the matrix relating angular velocity to 
@@ -3191,34 +3205,131 @@ public class Rotation {
 
     /**
      * Apply a perturbation dTheta to the rotation matrix represented by euler angles theta0
-     * and return the result as a quaternion in Barfoot format.
-     * The scalar is the last term.  The rotation transformations are active and intrinsic.
-     * <pre>
-     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
-     * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
-     * 
-     * eqn (49)
-     *    q(theta0 + perturbation) = q(dPhi)^⨁ * q(theta0)
-     *        where dPhi = S(theta0) * dTheta
-     * 
-     * "This update approach allows us to store and update the rotation as a 
-     * unit-length quaternion, thereby avoiding singularities and the need to 
-     * restore the constraint afterwards (i.e., constraint restoration is 
-     * built in)."
-     * 
-     * </pre>
+     * and return the result as a quaternion in Barfoot format or as a rotation matrix.  The result also contains
+     * dPhi, the rotation vector, which can be used as an updatable state structure for future
+     * use that avoids the need to extract euler angles from a rotation quaternion or matrix.
+     *
+     * The scalar is the last term in the quaternion.  The rotation transformations are active and intrinsic.
+     <pre>
+     from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized
+     rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+
+     rotation vector:
+         dPhi = S(theta0) * dTheta
+
+     eqn (29c)
+          C(thetaResult) ~ C(theta0 + dTheta) ~ (I_3 - [dPhi]_x) * C(theta0)
+
+     eqn (49)
+        q(thetaResult) = q(theta0 + perturbation) = q(dPhi)^⨁ * q(theta0)
+
+     "This update approach allows us to store and update the rotation as a
+     unit-length quaternion, thereby avoiding singularities and the need to
+     restore the constraint afterwards (i.e., constraint restoration is
+     built in)."
+
+     </pre>
      * @param theta0 euler rotation angles used to define the rotation matrix that will
      *              be perturbed by dTheta.
      *               In Barfoot paper eqn 26, this is theta with a bar over it.
      * @param dTheta the perturbation to apply to the rotation matrix as euler rotation angles
      * @param seq Euler sequence
-     * @return resulting quaternion from perturbation applied to quaternion 
-     * formed from theta0 euler angles.
+     * @param returnQuaternion if true, calculates the rotation quaternion and returns a datastructure holding it,
+     *                         else if false, calculates the rotation matrix and returns a datastructure holding it.
+     * @return a data structure holding the resulting rotation matrix or quaternion, the EulerSequence, and the
+     * updatable rotation vector dPhi.  This returned data structure can be used in the overloaded
+     * applySingularitySafeRotationPerturbation.
      */
-    public static double[] applySingularitySafeRotationPerturbation(double[] theta0, double[] dTheta, EulerSequence seq) {
+    public static RotationPerturbation applySingularitySafeRotationPerturbation(double[] theta0, double[] dTheta,
+        EulerSequence seq, boolean returnQuaternion) {
+
         if (theta0.length != 3) {
             throw new IllegalArgumentException("theta0 length must be 3");
         }
+        if (dTheta.length != 3) {
+            throw new IllegalArgumentException("theta0 must be length 3");
+        }
+
+        //let dPhi = S(theta0)*dTheta
+
+        //length 3
+        double[] dPhi = createRotationVectorBarfoot(theta0, dTheta, seq);
+
+        if (returnQuaternion) {
+
+            double[] _qDPhi = createQuaternionUnitLengthBarfoot(dPhi);
+
+            // eqn (48c), compare to _qDPhi
+            double[] qDPhi = Arrays.copyOf(dPhi, 4);
+            MatrixUtil.multiply(qDPhi, 0.5);
+            qDPhi[3] = 1;
+
+            double[][] qLH = quaternionLefthandCompoundOperator(qDPhi);
+
+            double[] qTheta = createQuaternionUnitLengthBarfoot(theta0);
+
+            double[] q2 = MatrixUtil.multiplyMatrixByColumnVector(qLH, qTheta);
+
+            RotationPerturbationQuaternion result = new RotationPerturbationQuaternion(dPhi, seq, q2);
+
+            return result;
+        }
+
+        // infinitesimally small rotation matrix for the perturbation
+        double[][] rPerturb = MatrixUtil.skewSymmetric(dPhi);
+        for (int i = 0; i < rPerturb.length; ++i) {
+            rPerturb[i][i] = 1. - rPerturb[i][i];
+        }
+
+        // for active transformations, we need -1*euler angles to use with euler rotation matrices that are intrinsic
+        double[] negTheta0 = Arrays.copyOf(theta0, theta0.length);
+        MatrixUtil.multiply(negTheta0, -1);
+
+        //from theta0 create r0
+        double[][] r0;
+        if (seq.equals(EulerSequence.Seq321)) {
+            r0 = createRotationZYX(negTheta0);
+        } else {
+            r0 = createRotationXYZ(negTheta0);
+        }
+
+        double[][] r2 = MatrixUtil.multiply(rPerturb, r0);
+
+        RotationPerturbationMatrix result = new RotationPerturbationMatrix(dPhi, seq, r2);
+
+        return result;
+    }
+
+    /**
+     * Apply a perturbation dTheta to the given rotation matrix or quaternion and return the updated perturbed data
+     * structure.
+     *
+     <pre>
+     from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized
+     rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
+
+     rotation vector:
+         dPhi = S(theta0) * dTheta
+
+     eqn (29c)
+          C(thetaResult) ~ C(theta0 + dTheta) ~ (I_3 - [dPhi]_x) * C(theta0)
+
+     eqn (49)
+        q(thetaResult) = q(theta0 + perturbation) = q(dPhi)^⨁ * q(theta0)
+
+     "This update approach allows us to store and update the rotation as a
+     unit-length quaternion, thereby avoiding singularities and the need to
+     restore the constraint afterwards (i.e., constraint restoration is
+     built in)."
+
+     </pre>
+     * @param state data structure holding the current state rotation matrix or quaternion, the EulerSequence, and the
+     * current state updatable rotation vector dPhi.
+     * @param dTheta the perturbation to apply to the rotation matrix as euler rotation angles
+     * @return a data structure holding the resulting rotation matrix or quaternion, the EulerSequence, and the
+     * updatable rotation vector dPhi.
+     */
+    public static RotationPerturbation applySingularitySafeRotationPerturbation(RotationPerturbation state, double[] dTheta) {
         if (dTheta.length != 3) {
             throw new IllegalArgumentException("theta0 must be length 3");
         }
@@ -3231,21 +3342,40 @@ public class Rotation {
          */
 
         //length 3
-        double[] dPhi = createRotationVectorBarfoot(theta0, dTheta, seq);
+        double[] dPhi = state.dPhi;
 
-        double[] qDPhi = createQuaternionUnitLengthBarfoot(dPhi);
+        if (state instanceof RotationPerturbationQuaternion) {
 
-        // eqn (48c), compare to dPhi
-        double[] _qDPhi = Arrays.copyOf(dPhi, 4);
-        MatrixUtil.multiply(_qDPhi, 0.5);
-        _qDPhi[3] = 1;
+            double[] _qDPhi = createQuaternionUnitLengthBarfoot(dPhi);
 
-        double[] qDTheta = createQuaternionUnitLengthBarfoot(dTheta);
-                
-        double[][] qLH = quaternionLefthandCompoundOperator(qDPhi);
+            // eqn (48c), compare to _qDPhi
+            double[] qDPhi = Arrays.copyOf(dPhi, 4);
+            MatrixUtil.multiply(qDPhi, 0.5);
+            qDPhi[3] = 1;
+            
+            double[][] qLH = quaternionLefthandCompoundOperator(qDPhi);
 
-        double[] result = MatrixUtil.multiplyMatrixByColumnVector(qLH, qDTheta);
-        
+            double[] qTheta = ((RotationPerturbationQuaternion) state).quaternion;
+
+            double[] q2 = MatrixUtil.multiplyMatrixByColumnVector(qLH, qTheta);
+
+            RotationPerturbationQuaternion result = new RotationPerturbationQuaternion(dPhi, state.seq, q2);
+
+            return result;
+        }
+
+        // infinitesimally small rotation matrix for the perturbation
+        double[][] rPerturb = MatrixUtil.skewSymmetric(dPhi);
+        for (int i = 0; i < rPerturb.length; ++i) {
+            rPerturb[i][i] = 1. - rPerturb[i][i];
+        }
+
+        double[][] r0 = ((RotationPerturbationMatrix)state).rotation;
+
+        double[][] r2 = MatrixUtil.multiply(rPerturb, r0);
+
+        RotationPerturbationMatrix result = new RotationPerturbationMatrix(dPhi, state.seq, r2);
+
         return result;
     }
 
@@ -3282,13 +3412,15 @@ public class Rotation {
      * built in)."
      *
      * </pre>
+     * NOTE: this method is not efficient, but is kept for use in tests.
+     *
      * @param rTheta the current rotation matrix.  note that it should have been formed using intrinsic active ZYX.
      * @param dTheta the perturbation to apply to the rotation matrix as euler rotation angles
      * must be small (cos ~ 1, sin ~ 0)
      * @return resulting quaternion from perturbation applied to quaternion
      * formed from theta euler angles.
      */
-    public static double[][] applySingularitySafeRotationPerturbation(double[][] rTheta, double[] dTheta,
+    protected static double[][] _applySingularitySafeRotationPerturbation(double[][] rTheta, double[] dTheta,
                                                                       EulerSequence seq) {
         if (dTheta.length != 3) {
             throw new IllegalArgumentException("dTheta length must be 3");
