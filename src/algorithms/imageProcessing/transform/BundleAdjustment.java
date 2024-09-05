@@ -1419,9 +1419,9 @@ public class BundleAdjustment {
 
         double[][] rotM;
         if (useBouguetForRodrigues) {
-            rotM = Rotation.createRodriguesFormulaRotationMatrix(om, passive);
+            rotM = Rotation.createRotationRodriguesFormula(om, passive);
         } else {
-            rotM = Rotation.createRodriguesFormulaRotationMatrix(om, passive);
+            rotM = Rotation.createRotationRodriguesFormula(om, passive);
         }
 
         double[] rotAux = new double[3];
@@ -1875,10 +1875,10 @@ public class BundleAdjustment {
         int i;
         for (i = 0; i < mImages; ++i) {
             if (useBouguetForRodrigues) {
-                rr = Rotation.createRodriguesRotationMatrixBouguet(extrRVecs[i], passive);
+                rr = Rotation.createRotationRodriguesBouguet(extrRVecs[i], passive);
                 m.setBlock(rr.r, 0, i);
             } else {
-                m.setBlock(Rotation.createRodriguesFormulaRotationMatrix(extrRVecs[i], passive), 0, i);
+                m.setBlock(Rotation.createRotationRodriguesFormula(extrRVecs[i], passive), 0, i);
             }
 
             // SO3 still?

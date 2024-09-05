@@ -8,7 +8,6 @@ import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.misc.MiscMath;
 import algorithms.misc.MiscMath0;
 import algorithms.misc.PolynomialRootSolver;
-import algorithms.statistics.Standardization;
 import algorithms.util.FormatArray;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -154,7 +153,7 @@ public class CameraCalibration {
 
             CameraExtrinsicParameters extr = solveForExtrinsic(kIntr, hI);
 
-            double[] om = Rotation.extractRodriguesRotationVectorBouguet(extr.getRotation(), passive).om;
+            double[] om = Rotation.extractRotationVectorRodriguesBouguet(extr.getRotation(), passive).om;
 
             extrinsics.add(new CameraExtrinsicParameters(extr.getRotation(), om,
                     extr.getTranslation()));
@@ -182,7 +181,7 @@ public class CameraCalibration {
     /**
      * estimate the intrinsic and extrinsic camera parameters.
      To refine the returned values, follow with PNP.solveForPose(...).
-     * The method uses double[] rVec = Rotation.extractRodriguesRotationVector(r);
+     * The method uses double[] rVec = Rotation.extractRotationVectorRodrigues(r);
      * to extract the included rotation vectors.
      * TODO: this method could be overloaded to use an indicator variable for a feature presence in
      * an image, etc.
@@ -246,7 +245,7 @@ public class CameraCalibration {
 
             k = MatrixUtil.pointwiseAdd(k, pose.getIntrinsicParameters().getIntrinsic());
 
-            double[] om = Rotation.extractRodriguesRotationVectorBouguet(pose.getExtrinsicParameters().getRotation(),
+            double[] om = Rotation.extractRotationVectorRodriguesBouguet(pose.getExtrinsicParameters().getRotation(),
                     passive).om;
 
             extrinsics.add(new CameraExtrinsicParameters(pose.getExtrinsicParameters().getRotation(), om,
@@ -1308,7 +1307,7 @@ public class CameraCalibration {
         CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();
         kExtr.setRotation(r);
         kExtr.setTranslation(t);
-        kExtr.setRodriguesVector(Rotation.extractRodriguesRotationVectorBouguet(r, passive).om);
+        kExtr.setRodriguesVector(Rotation.extractRotationVectorRodriguesBouguet(r, passive).om);
 
         return kExtr;
     }
@@ -1394,7 +1393,7 @@ public class CameraCalibration {
         CameraExtrinsicParameters kExtr = new Camera.CameraExtrinsicParameters();
         kExtr.setRotation(r);
         kExtr.setTranslation(t);
-        kExtr.setRodriguesVector(Rotation.extractRodriguesRotationVectorBouguet(r, passive).om);
+        kExtr.setRodriguesVector(Rotation.extractRotationVectorRodriguesBouguet(r, passive).om);
 
         return kExtr;
     }

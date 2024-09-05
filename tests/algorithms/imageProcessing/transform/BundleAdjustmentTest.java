@@ -209,7 +209,7 @@ public class BundleAdjustmentTest extends TestCase {
             double[][] cCalibRot = init.getRotation();
             double[][] bouguetRefinedRot = refined[i].getRotation();
             double[][] expectedRot = Zhang98Data.getRotation(i + 1);
-            double[][] bARefinedRot = Rotation.createRodriguesFormulaRotationMatrix(extrRotVecs[i], passive);
+            double[][] bARefinedRot = Rotation.createRotationRodriguesFormula(extrRotVecs[i], passive);
 
             System.out.printf("%d) rotation:\n  rot0=\n%s\n  rot refined (BA)=\n%s\n   rot refined (bouguet)=\n%s\n  rot expected=\n%s\n",
                     i,

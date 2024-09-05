@@ -906,7 +906,7 @@ public class PNP {
         double[] qUpdated = Rotation.applySingularitySafeRotationPerturbation(thetas, deltaTheta);
         
         // [4X4]
-        double[][] qR = Rotation.createRotationMatrixFromQuaternion4(qUpdated);
+        double[][] qR = Rotation.createRotationFromQuaternion4(qUpdated);
         qR = MatrixUtil.transpose(qR);
         
         // rotation is [0:2, 0:2] of qR  

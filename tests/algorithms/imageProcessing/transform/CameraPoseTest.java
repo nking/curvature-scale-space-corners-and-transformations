@@ -71,8 +71,12 @@ public class CameraPoseTest extends TestCase {
             double[] expectedT = Arrays.copyOf(Zhang98Data.getTranslation(i), 3);
             MatrixUtil.multiply(expectedT, 1./expectedT[2]);
 
-            double[] qHamiltonE = Rotation.createHamiltonQuaternion(Rotation.extractThetaFromZYX(expectedR));
-            double[] qBarfootE = Rotation.convertHamiltonToBarfootQuaternion(qHamiltonE);
+            double[] rotVector = Rotation.extractRotationVectorRodrigues(expectedR);
+            double[] axis = new double[3];
+            double angle = Rotation.createAngleAxisFromRotationVector(rotVector, axis);
+
+            double[] qHamiltonE = Rotation.createQuaternionUnitLengthHamilton(axis, angle);
+            double[] qBarfootE = Rotation.createQuaternionBarfootFromHamilton(qHamiltonE);
 
             // avg is -0.2946225
             double[] zMeanAndStd = null;
@@ -120,7 +124,7 @@ public class CameraPoseTest extends TestCase {
             boolean useBouguetForRodrigues = false;
             //double[] om = qHamiltonE;
             //double[] om = qBarfootE;
-            double[] om = Rotation.extractRodriguesRotationVectorBouguet(expectedR, passive).om;
+            double[] om = Rotation.extractRotationVectorRodriguesBouguet(expectedR, passive).om;
             CameraPose.ProjectedPoints xBou = CameraPose.bouguetProjectPoints2(
                     xW, om, expectedT, expectedIntr, useBouguetForRodrigues);
 
@@ -174,13 +178,8 @@ public class CameraPoseTest extends TestCase {
             rTE[i-1] = Arrays.copyOf(rTE[i-1], rTE[i-1].length);
             MatrixUtil.multiply(rTE[i-1], 180./Math.PI);
 
-            double[] qHamilton = Rotation.createHamiltonQuaternion(Rotation.extractThetaFromZYX(extr.getRotation()));
-            double[] qBarfoot = Rotation.convertHamiltonToBarfootQuaternion(qHamilton);
-            double distR0 = Rotation.distanceBetweenQuaternions(qBarfootE, qBarfoot);
-
             System.out.printf("%d) r=\n%s\n", i, FormatArray.toString(extr.getRotation(), "%.3e"));
             System.out.printf("    r expected=\n%s\n", FormatArray.toString(expectedR, "%.3e"));
-            System.out.printf("dist r     =%.3e\n", distR0);
             System.out.printf("%d) kIntr=\n%s\n", i, FormatArray.toString(intr.getIntrinsic(), "%.3e"));
             System.out.printf("    kIntr expected=\n%s\n", FormatArray.toString(expectedKIntr, "%.3e"));
             System.out.printf("%d) tc1=\n%s\n", i, FormatArray.toString(tc1, "%.3e"));
@@ -374,9 +373,9 @@ public class CameraPoseTest extends TestCase {
         // aspect ratio of the pixels = alpha/beta = 0.679
         // rotation axis: (almost vertical)
         double[] axis = new double[]{-0.08573, -0.99438, 0.0621};
-        double[] rotVec = Rotation.convertAngleAxisToRotationVector(axis, angle);
+        double[] rotVec = Rotation.createRotationVectorFromAngleAxis(axis, angle);
 
-        double[][] rot = Rotation.createRodriguesFormulaRotationMatrix(rotVec, passive);
+        double[][] rot = Rotation.createRotationRodriguesFormula(rotVec, passive);
         double[] eulerAngles = Rotation.extractThetaFromXYZ(rot);
         double[] eulerAnglesDegrees = Arrays.copyOf(eulerAngles, eulerAngles.length);
         MatrixUtil.multiply(eulerAnglesDegrees, 180./Math.PI);

@@ -408,9 +408,9 @@ public class PlanarHomographyTest extends TestCase {
         double[] nC1Norm = new double[]{0, 0, 1};
         double thetaWCSC1 = -Math.acos(nPNorm[0]*nC1Norm[0] + nPNorm[1]*nC1Norm[1] + nPNorm[2]*nC1Norm[2]);
         double[] axisWCSC1 = MatrixUtil.crossProduct(nPNorm, nC1Norm);
-        double[] quatH = Rotation.createHamiltonQuaternion(thetaWCSC1, axisWCSC1);
-        double[] quatB = Rotation.convertHamiltonToBarfootQuaternion(quatH);
-        double[][] rWCSC1 = Rotation.createRotationMatrixFromQuaternion4(quatB);
+        double[] quatH = Rotation.createQuaternionUnitLengthHamilton(axisWCSC1, thetaWCSC1);
+        double[] quatB = Rotation.createQuaternionBarfootFromHamilton(quatH);
+        double[][] rWCSC1 = Rotation.createRotationFromQuaternion4(quatB);
         rWCSC1 = MatrixUtil.copySubMatrix(rWCSC1, 0, 2, 0, 2);
         System.out.printf("r*v=\n%s\n", FormatArray.toString(
                 MatrixUtil.multiplyMatrixByColumnVector(rWCSC1, nPNorm),
@@ -425,7 +425,7 @@ public class PlanarHomographyTest extends TestCase {
             boolean passive = false;
 
             // using the rodrigues formula was faster but a little less accurate:
-        double[][] r2 = Rotation.createRodriguesFormulaRotationMatrix(axisWCSC1, passive);
+        double[][] r2 = Rotation.createRotationRodriguesFormula(axisWCSC1, passive);
         System.out.printf("r*v=\n%s\n", FormatArray.toString(
                 MatrixUtil.multiplyMatrixByColumnVector(r2, nPNorm),
                 "%.4e"

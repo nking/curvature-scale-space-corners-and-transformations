@@ -4,12 +4,10 @@ import algorithms.matrix.MatrixUtil;
 import algorithms.util.FormatArray;
 
 import java.io.IOException;
-import java.text.Normalizer;
 import java.util.*;
 
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.NotConvergedException;
-import org.junit.Test;
 
 /**
  *
@@ -61,7 +59,7 @@ public class TriangulationTest extends TestCase {
 
         boolean passive = false;
 
-        double[][] k2ExtrRot = Rotation.createRodriguesFormulaRotationMatrix(
+        double[][] k2ExtrRot = Rotation.createRotationRodriguesFormula(
             new double[]{0.00611, 0.00409, -0.00359}, passive);
         double[] k2ExtrTrans = new double[]{-99.85, 0.82, 0.44};
         

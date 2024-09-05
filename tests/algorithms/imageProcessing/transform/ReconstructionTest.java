@@ -63,8 +63,8 @@ public class ReconstructionTest extends TestCase {
         double[][] x2c = Camera.pixelToCameraCoordinates(x2, intr, radial, true);
         double[][] XW = Zhang98Data.getFeatureWCS();
 
-        double[] r1Vec = Rotation.extractRodriguesRotationVector(r1);
-        double[] r2Vec = Rotation.extractRodriguesRotationVector(r2);
+        double[] r1Vec = Rotation.extractRotationVectorRodrigues(r1);
+        double[] r2Vec = Rotation.extractRotationVectorRodrigues(r2);
         double[][] r1Transposed = MatrixUtil.transpose(r1);
         double[][] r1I = MatrixUtil.multiply(r1Transposed, r1);
         double[][] r2RelToR1 = MatrixUtil.multiply(r1Transposed, r2);
@@ -197,25 +197,25 @@ public class ReconstructionTest extends TestCase {
         double[][] r2RightOrthRelToLeft = MatrixUtil.multiply(r2LeftOrthTransposed, r2RightOrth);
 
         double[] t2Diff = MatrixUtil.subtract(t2Right, t2Left);
-        double[] r2LeftVec = Rotation.extractRodriguesRotationVector(r2Left);
-        double[] r2RightVec = Rotation.extractRodriguesRotationVector(r2Right);
-        double[] r2LeftOrthVec = Rotation.extractRodriguesRotationVector(r2LeftOrth);
-        double[] r2RightOrthVec = Rotation.extractRodriguesRotationVector(r2RightOrth);
-        double[] r2RightRelToLeftVec = Rotation.extractRodriguesRotationVector(r2RightRelToLeft);
+        double[] r2LeftVec = Rotation.extractRotationVectorRodrigues(r2Left);
+        double[] r2RightVec = Rotation.extractRotationVectorRodrigues(r2Right);
+        double[] r2LeftOrthVec = Rotation.extractRotationVectorRodrigues(r2LeftOrth);
+        double[] r2RightOrthVec = Rotation.extractRotationVectorRodrigues(r2RightOrth);
+        double[] r2RightRelToLeftVec = Rotation.extractRotationVectorRodrigues(r2RightRelToLeft);
 
-        double[] r2RightOrthRelToLeftVec = Rotation.extractRodriguesRotationVector(r2RightOrthRelToLeft);
-        double[] r2LeftIVec = Rotation.extractRodriguesRotationVector(r2LeftI);
+        double[] r2RightOrthRelToLeftVec = Rotation.extractRotationVectorRodrigues(r2RightOrthRelToLeft);
+        double[] r2LeftIVec = Rotation.extractRotationVectorRodrigues(r2LeftI);
         double[][] r2Direc = Rotation.rotationBetweenTwoDirections0(r2LeftVec, r2RightVec);
         double[][] r2OrthDirec = Rotation.rotationBetweenTwoDirections0(r2LeftOrthVec, r2RightOrthVec);
-        double[] r2DirecVec = Rotation.extractRodriguesRotationVector(r2Direc);
-        double[] r2OrthDirecVec = Rotation.extractRodriguesRotationVector(r2OrthDirec);
+        double[] r2DirecVec = Rotation.extractRotationVectorRodrigues(r2Direc);
+        double[] r2OrthDirecVec = Rotation.extractRotationVectorRodrigues(r2OrthDirec);
         //expected om = 0.00611, 0.00489, -0.00359   +- 0.0027, 0.00308, 0.00029
         //expected t = -99.84929, 0.82221, 0.43647   +- 0.142, 0.11352, 0.49773
 
         boolean passive = false;
         double[] r2LeftToRightVec = Arrays.copyOf(r2RightRelToLeftVec, r2RightRelToLeftVec.length);
         MatrixUtil.multiply(r2LeftToRightVec, -1);
-        double[][] r2LeftToRight = Rotation.createRodriguesFormulaRotationMatrix(r2LeftToRightVec, passive);
+        double[][] r2LeftToRight = Rotation.createRotationRodriguesFormula(r2LeftToRightVec, passive);
         int i, j;
         {//DEBUG
             System.out.printf("r2Left=\n%s\n", FormatArray.toString(r2Left, "%.3e"));
@@ -373,7 +373,7 @@ public class ReconstructionTest extends TestCase {
             System.out.printf("distR=%.3e\n", distR);
 
             double[][] rDiffFromDirec = Rotation.rotationBetweenTwoDirections0(
-                    Rotation.extractRodriguesRotationVector(r), r2DirecVec);
+                    Rotation.extractRotationVectorRodrigues(r), r2DirecVec);
             System.out.printf("rDiffFromDirec=\n%s\n", FormatArray.toString(rDiffFromDirec, "%.3e"));
             double[] degreesDiff = Rotation.extractThetaFromZYX(rDiffFromDirec);
             MatrixUtil.multiply(degreesDiff, 180./Math.PI);
@@ -595,7 +595,7 @@ public class ReconstructionTest extends TestCase {
         System.out.printf("rightToLeft=\n%s\n", FormatArray.toString(rightToLeft, "%.3e"));
 
         double[] thetasRightToLeft = Rotation.extractThetaFromZYX(rightToLeft);
-        double[] rVecRodr = Rotation.extractRodriguesRotationVector(leftTright);
+        double[] rVecRodr = Rotation.extractRotationVectorRodrigues(leftTright);
         double[] rAxis = Rotation.extractRotationAxisFromZXY(leftTright);
         System.out.printf("\nthetas (R to L)=%s\n", FormatArray.toString(thetasRightToLeft, "%.3e"));
         System.out.printf("thetas (L to R)=%s\n", FormatArray.toString(thetasLeftToRight, "%.3e"));
@@ -605,8 +605,8 @@ public class ReconstructionTest extends TestCase {
         System.out.printf("expect=%s\n\n", FormatArray.toString(new double[]{0.00669, 0.00452, -0.0035}, "%.3e"));
 
 
-        double[] rodriguesL1 = Rotation.extractRodriguesRotationVector(left1);
-        double[] rodriguesL2 = Rotation.extractRodriguesRotationVector(right1);
+        double[] rodriguesL1 = Rotation.extractRotationVectorRodrigues(left1);
+        double[] rodriguesL2 = Rotation.extractRotationVectorRodrigues(right1);
         // diffRodrigues ix [-0.0014421799439685579, -0.006811388962245868, 0.003946526358523994]
         double[] diffRodrigues = MatrixUtil.subtract(rodriguesL1, rodriguesL2);
         double[][] r120 = Rotation.rotationBetweenTwoDirections0(rodriguesL1, rodriguesL2);
@@ -623,7 +623,7 @@ public class ReconstructionTest extends TestCase {
 
         double[][] k1ExtrRot = MatrixUtil.createIdentityMatrix(3);
         double[] k1ExtrTrans = new double[]{0, 0, 0};
-        double[][] k2ExtrRot = Rotation.createRodriguesFormulaRotationMatrix(
+        double[][] k2ExtrRot = Rotation.createRotationRodriguesFormula(
                 new double[]{0.00611, 0.00409, -0.00359}, passive);
         double[] k2ExtrTrans = new double[]{-99.85, 0.82, 0.44};
 
@@ -877,7 +877,7 @@ public class ReconstructionTest extends TestCase {
 
         boolean passive = false;
 
-        double[][] k2ExtrRot = Rotation.createRodriguesFormulaRotationMatrix(
+        double[][] k2ExtrRot = Rotation.createRotationRodriguesFormula(
             new double[]{0.00611, 0.00409, -0.00359}, passive);
         double[] k2ExtrTrans = new double[]{-99.85, 0.82, 0.44};
         //double[] k2ExtrTransRev = Arrays.copyOf(k2ExtrTrans, k2ExtrTrans.length);
