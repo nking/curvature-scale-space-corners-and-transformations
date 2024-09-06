@@ -63,6 +63,74 @@ public class RotationTest extends TestCase {
         Rotation.extractThetaFromXYZActive(r, euler2);
 
         assertTrue(MiscMath.areEqual(eulerXYZ, euler2, 1E-5));
+
+        double[] axis = new double[3];
+        double angle = Rotation.createAngleAxisFromEulerAnglesXYZ(eulerXYZ, axis);
+        double[] rotVec = Rotation.createRotationVectorFromAngleAxis(axis, angle);
+        double[] eRV = new double[]{-0.34548961,  0.42746664,  1.25928115};
+        assertTrue(MiscMath.areEqual(eRV, rotVec, 1E-5));
+
+        double[] qB1 = Rotation.createQuaternionUnitLengthBarfootFromRotationVector(rotVec);
+        double[] qB2 = Rotation.createQuaternionUnitLengthBarfoot(angle, axis);
+        double[] qB3 = Rotation.createQuaternionUnitLengthBarfootFromEulerXYZ(eulerXYZ);
+
+        double[] eQ = new double[]{-0.1594735 ,  0.19731303,  0.58126776,  0.77315171};
+        assertTrue(MiscMath.areEqual(eQ, qB1, 1E-5));
+        assertTrue(MiscMath.areEqual(eQ, qB2, 1E-5));
+        assertTrue(MiscMath.areEqual(eQ, qB3, 1E-5));
+    }
+
+    public void testSequences() {
+
+        //from active perspective now:
+
+        double[] eulerXYZ = new double[]{-0.5, 0.12, 1.32};
+        double[] eulerZYX = new double[]{1.32, 0.12, -0.5};
+
+        double[] rotVecXYZ = Rotation.createRotationVectorFromEulerAngles(eulerXYZ, Rotation.EulerSequence.XYZ_ACTIVE);
+        //[0.5032547612511571, 0.23015806481528148, -1.3190236188603013]
+        // same as R.from_euler('XYZ', [+0.5, -0.12, -1.32]).as_rotvec()
+        double[] e = new double[]{0.50325476,  0.23015806, -1.31902362};
+        assertTrue(MiscMath.areEqual(e, rotVecXYZ, 1E-5));
+
+        double[] rotVecZYX = Rotation.createRotationVectorFromEulerAngles(eulerZYX, Rotation.EulerSequence.ZYX_ACTIVE);
+        //[-1.2592811528236525, -0.4274666442528654, 0.3454896074433141]
+        // same as R.from_euler('XYZ', [-1.32, -0.12, 0.5]).as_rotvec()
+        e = new double[]{-1.31902362,  0.23015806,  0.50325476};
+        assertTrue(MiscMath.areEqual(e, rotVecZYX, 1E-5));
+
+        /*
+        Barfoot is using active and intrinsic.
+
+        scipy library uses intrinsic and allows specification of active or passive, but the
+        input euler or rotation must match the sequence order.
+
+        Barfoot "1-2-3" and "alpha-beta-gamma" as names, refer to the passive Euler rotation sequence XYZ,
+        then Barfoot impl. converts the sequence to active by reversing the order and making the angles negative.
+        active A(a)*B(b)*C(c) == passive C(-c)*B(-b)*A(-a)
+
+        Barfoot examples use 2 different euler sequences, active XYZ and active ZYX.
+         */
+
+        double[] qBXYZActive = Rotation.createQuaternionBarfootFromRotationVector(rotVecXYZ,
+                Rotation.EulerSequence.XYZ_ACTIVE);
+        //[-0.2636069507418558, 0.06366132010060735, 0.5669163288230646, 0.7778589126296669]
+        /* this is similar to -1 * vector portion of R.from_rotvec(rotVecXYZ).as_quat()
+         scalar portions are similar but not same
+         here: array([-0.26360695,  0.06366132,  0.56691633,  0.77785891])
+         scipy: array([ 0.23071752,  0.10551613, -0.60470735,  0.75496013])
+         where scips: R.from_rotvec([0.50325476, 0.23015806, -1.31902362]).as_quat()
+         */
+
+        double[] qBZYXActive = Rotation.createQuaternionBarfootFromRotationVector(rotVecZYX,
+                Rotation.EulerSequence.ZYX_ACTIVE);
+        //[0.5374232236710791, 0.0699706093309076, -0.25880741233766974, 0.7995618273829274]
+        // this is similar to -1 *vector portion of R.from_rotvec(rotVecZYX).as_quat()
+        // scalar portions are similar but not same
+
+        //createQuaternionUnitLengthBarfootFromEuler(euler, seq)
+
+
     }
 
     public void testCreateRotationZYX() {
@@ -390,14 +458,10 @@ public class RotationTest extends TestCase {
 
         double[][] Rcompare = Rotation.createRotationRodriguesFormula(om, passive);
         double[] omCompare = Rotation.extractRotationVectorRodrigues(R1);
-        double dCompare = distanceBetween(R1, Rcompare);
         double norm = MatrixUtil.spectralNorm(MatrixUtil.pointwiseSubtract(R1, Rcompare));
         System.out.printf("bouguet R=\n%s\n", FormatArray.toString(R1, "%.4e"));
         System.out.printf("existing R=\n%s\n", FormatArray.toString(Rcompare, "%.4e"));
-        System.out.printf("dist between=%.4e, norm diffs=%.4e\n", dCompare, norm);
 
-        double d21 = distanceBetween(R2, R1);
-        double d2a = distanceBetween(R2, R2a);
         // d21 is similar to norm1, though maybe only for small angles
         // d2a is similar to norm2, ...
 
@@ -620,15 +684,5 @@ public class RotationTest extends TestCase {
         System.out.printf("norm=%.4e\n\n", norm);
     }
 
-    private double distanceBetween(double[][] r0, double[][] r1) {
-        return Rotation.distanceBetweenQuaternions(
-                Rotation.createQuaternionBarfootFromEulerAnglesXYZ(
-                        Rotation.extractThetaFromZYX(r0)
-                ),
-                Rotation.createQuaternionBarfootFromEulerAnglesXYZ(
-                        Rotation.extractThetaFromZYX(r1)
-                )
-        );
-    }
-
+    // impl distance between from barfoot
 }

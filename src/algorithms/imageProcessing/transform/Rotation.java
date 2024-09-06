@@ -279,6 +279,7 @@ Note that Shuster 1993 use the active, LH, CW rotations of the object while refe
 
  NOTE:
  extrinsic xyz == intrinsic ZYX
+ that is, extrinsic: A(a)*B(b)*C(c) == intrinsic C(c)*B(b)*A(a)
 
 
  * TODO: add a method to extract the quaternion rotation from a 4X4 rotation matrix.
@@ -632,7 +633,7 @@ public class Rotation {
         double[] n2 = MatrixUtil.normalizeL2(v2);
         double angle = -Math.acos(n1[0]*n2[0] + n1[1]*n2[1] + n1[2]*n2[2]);
         double[] axis = MatrixUtil.crossProduct(n1, n2);
-        //TODO: check the method createQuaternionUnitLengthBarfoot with results for quatB here
+        //TODO: check the method createQuaternionUnitLengthBarfootFromEulerXYZ with results for quatB here
         double[] quatH = Rotation.createQuaternionUnitLengthHamilton(axis, angle);
         double[] quatB = Rotation.createQuaternionBarfootFromHamilton(quatH);
         double[][] r = Rotation.createRotation4FromQuaternion(quatB);
@@ -682,9 +683,40 @@ public class Rotation {
      * @param euler euler angles for [x, y, z]
      * @return
      */
-    public static double[] createRotationVectorFromEulerAngles(double[] euler) {
+    public static double[] createRotationVectorFromEulerAnglesXYZ(double[] euler) {
         double[][] r = createRotationXYZ(euler[0], euler[1], euler[2]);
         return Rotation.extractRotationVectorRodrigues(r);
+    }
+
+    public static double[] createRotationVectorFromEulerAngles(double[] eulerXYZ, EulerSequence seq) {
+        double[][] r;
+        if (seq.equals(EulerSequence.XYZ_ACTIVE)) {
+            // active XYZ == passive ZYX w/ neg angles
+            r = createRotationZYX(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2], false);
+        } else {
+            // active ZYX == passive XYZ w/ neg angles
+            r = createRotationXYZ(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2], false);
+        }
+
+        return Rotation.extractRotationVectorRodrigues(r);
+    }
+
+    /**
+     * convert the eulerXYZ angles to angle axis representation.
+     * NOTE that the resulting vector is the angle axis times the angle, so you can calculate:
+     <pre>
+     angle = ||result||
+     and
+     axis = result//angle
+     </pre>
+     *
+     * @param eulerXYZ eulerXYZ angles for [x, y, z]
+     * @return
+     */
+    public static double createAngleAxisFromEulerAnglesXYZ(double[] eulerXYZ, double[] outAxis) {
+        double[][] r = createRotationXYZ(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2]);
+        double[] rotVec = Rotation.extractRotationVectorRodrigues(r);
+        return Rotation.createAngleAxisFromRotationVector(rotVec, outAxis);
     }
 
     public static double[][] createRotationRodriguesFormula(double[] axis, double angle, boolean passive) {
@@ -2625,7 +2657,7 @@ public class Rotation {
     @param unitLengthAxis axis of rotation normalized to unit length
     @param angle rotation about axis in radians
     */
-    public static double[] createQuaternionUnitLengthBarfoot(double[] unitLengthAxis, double angle) {
+    public static double[] createQuaternionUnitLengthBarfoot(double angle, double[] unitLengthAxis) {
         if (unitLengthAxis.length != 3) {
             throw new IllegalArgumentException("unitLengthAxis.length must be 3");
         }
@@ -2656,14 +2688,33 @@ public class Rotation {
     </pre>
     @param eulerAngles eulerAngles
     */
-    public static double[] createQuaternionUnitLengthBarfoot(double[] eulerAngles) {
+    public static double[] createQuaternionUnitLengthBarfootFromEulerXYZ(double[] eulerAngles) {
         if (eulerAngles.length != 3) {
             throw new IllegalArgumentException("unitLengthAxis.length must be 3");
         }
-        double[] rotVec = createRotationVectorFromEulerAngles(eulerAngles);
+        double[] rotVec = createRotationVectorFromEulerAnglesXYZ(eulerAngles);
         double[] axis = new double[3];
         double angle = createAngleAxisFromRotationVector(rotVec, axis);
-        return createQuaternionUnitLengthBarfoot(axis, angle);
+        return createQuaternionUnitLengthBarfoot(angle, axis);
+    }
+
+    public static double[] createQuaternionUnitLengthBarfootFromEuler(double[] eulerAnglesXYZ, EulerSequence seq) {
+        if (eulerAnglesXYZ.length != 3) {
+            throw new IllegalArgumentException("unitLengthAxis.length must be 3");
+        }
+        double[] rotVec = createRotationVectorFromEulerAngles(eulerAnglesXYZ, seq);
+        double[] axis = new double[3];
+        double angle = createAngleAxisFromRotationVector(rotVec, axis);
+        return createQuaternionUnitLengthBarfoot(angle, axis);
+    }
+
+    public static double[] createQuaternionUnitLengthBarfootFromRotationVector(double[] rotVec) {
+        if (rotVec.length != 3) {
+            throw new IllegalArgumentException("rotVec.length must be 3");
+        }
+        double[] axis = new double[3];
+        double angle = createAngleAxisFromRotationVector(rotVec, axis);
+        return createQuaternionUnitLengthBarfoot(angle, axis);
     }
     
     /*
@@ -2732,28 +2783,45 @@ public class Rotation {
      * 
      *     and principal axis rotations in eqn (35)
      * </pre>
-     * @param eulerXYZ
+     * @param rotVec
      * @return [4X1] quaternion rotation vector.
      */
-    public static double[] createQuaternionBarfootFromEulerAnglesXYZ(double[] eulerXYZ) {
-        if (eulerXYZ.length != 3) {
-            throw new IllegalArgumentException("eulerXYZ.length must be 3");
+    public static double[] createQuaternionBarfootFromRotationVector(double[] rotVec,
+                                                                     EulerSequence seq) {
+        if (rotVec.length != 3) {
+            throw new IllegalArgumentException("rotVec.length must be 3");
         }
-        //TODO: review this
         // length is 4
-        double[] q0 = quaternionPrincipalAxisRotation(eulerXYZ[0], 0);
-        double[] q1 = quaternionPrincipalAxisRotation(eulerXYZ[1], 1);
-        double[] q2 = quaternionPrincipalAxisRotation(eulerXYZ[2], 2);
-        
-        // [4X4]
-        double[][] q1m = quaternionRighthandCompoundOperator(q1);
-        double[][] q2m = quaternionRighthandCompoundOperator(q2);
-        
+        double[] q0 = quaternionPrincipalAxisRotation(-rotVec[0], 0);
+        double[] q1 = quaternionPrincipalAxisRotation(-rotVec[1], 1);
+        double[] q2 = quaternionPrincipalAxisRotation(-rotVec[2], 2);
+
+        /*
+        Barfoot "1-2-3" and "alpha-beta-gamma" as names, refer to the passive Euler rotation sequence XYZ,
+        then Barfoot impl. converts the sequence to active by reversing the order and making the angles negative.
+        active A(a)*B(b)*C(c) == passive C(-c)*B(-b)*A(-a)
+         */
+        double[][] q1m, q2m;
+        double[] q3v;
+        if (seq.equals(EulerSequence.XYZ_ACTIVE)) {
+            // active XYZ == passive ZYX w/ negative angles
+            // [4X4]
+            q1m = quaternionRighthandCompoundOperator(q0);
+            q2m = quaternionRighthandCompoundOperator(q1);
+            q3v = q2;
+        } else {
+            // active ZYX == passive XYZ w/ negative angles
+            // [4X4]
+            q1m = quaternionRighthandCompoundOperator(q2);
+            q2m = quaternionRighthandCompoundOperator(q1);
+            q3v = q0;
+        }
+
         // q2m times q1m times q0 = [4X1]
         // [4X4]
         double[][] t1 = MatrixUtil.multiply(q2m, q1m);
         // 4X1
-        double[] q = MatrixUtil.multiplyMatrixByColumnVector(t1, q0);
+        double[] q = MatrixUtil.multiplyMatrixByColumnVector(t1, q3v);
         
         return q;
     }
@@ -2842,7 +2910,7 @@ public class Rotation {
 
         if (returnQuaternion) {
 
-            double[] _qDPhi = createQuaternionUnitLengthBarfoot(dPhi);
+            double[] _qDPhi = createQuaternionBarfootFromRotationVector(dPhi, seq);
 
             // eqn (48c), compare to _qDPhi
             double[] qDPhi = Arrays.copyOf(dPhi, 4);
@@ -2851,7 +2919,7 @@ public class Rotation {
 
             double[][] qLH = quaternionLefthandCompoundOperator(qDPhi);
 
-            double[] qTheta = createQuaternionUnitLengthBarfoot(theta0);
+            double[] qTheta = createQuaternionUnitLengthBarfootFromEuler(theta0, seq);
 
             double[] q2 = MatrixUtil.multiplyMatrixByColumnVector(qLH, qTheta);
 
@@ -2931,7 +2999,7 @@ public class Rotation {
 
         if (state instanceof RotationPerturbationQuaternion) {
 
-            double[] _qDPhi = createQuaternionUnitLengthBarfoot(dPhi);
+            double[] _qDPhi = createQuaternionBarfootFromRotationVector(dPhi, state.seq);
 
             // eqn (48c), compare to _qDPhi
             double[] qDPhi = Arrays.copyOf(dPhi, 4);
