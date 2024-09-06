@@ -634,8 +634,7 @@ public class Rotation {
         double angle = -Math.acos(n1[0]*n2[0] + n1[1]*n2[1] + n1[2]*n2[2]);
         double[] axis = MatrixUtil.crossProduct(n1, n2);
         //TODO: check the method createQuaternionUnitLengthBarfootFromEulerXYZ with results for quatB here
-        double[] quatH = Rotation.createQuaternionUnitLengthHamilton(axis, angle);
-        double[] quatB = Rotation.createQuaternionBarfootFromHamilton(quatH);
+        double[] quatB = Rotation.createQuaternionHamiltonFromAngleAxis(angle, axis);
         double[][] r = Rotation.createRotation4FromQuaternion(quatB);
         r = MatrixUtil.copySubMatrix(r, 0, 2, 0, 2);
         return r;
@@ -2073,6 +2072,12 @@ public class Rotation {
         return MatrixUtil.multiplyMatrixByColumnVector(r, v);
     }
 
+    /**
+     * multiply quaternions using active transformations
+     * @param q1
+     * @param q2
+     * @return
+     */
     public static double[] multiplyQuaternionsBarfoot(double[] q1, double[] q2) {
         if (q1.length != 3) {
             throw new IllegalArgumentException("q1 length must be 4");
@@ -2092,6 +2097,7 @@ public class Rotation {
     }
 
     public static double[] inverseQuaternionBarfoot(double[] q) {
+        // -1*vector portion
         double[] inv = new double[4];
         for (int i =0; i < 3; ++i) {
             inv[i] = -q[i];
@@ -2172,7 +2178,6 @@ public class Rotation {
      *  rotated = q^+ * q^(-1)^⨁ * v3 = R*v3
      * 
      * </pre>
-      * This method uses active (left-hand system) transformations.
      * @param quaternion 4X1 column vector of [eps eta] where eta is the scalar
      * @param p the vector as a 3 element array followed by a 0, = [4X1].
      * @return 
@@ -2453,49 +2458,6 @@ public class Rotation {
     }
     
     /**
-     * calculate  the Hamilton quaternion which would be extracted from the
-     * rotation matrix created by R_xyz = R_z(theta_z)*R_y(theta_y)*R_z(theta_z).
-     * Note that the Hamilton quaternion is consistent with a right-hand passive system and so are the
-     * Euler equations it uses.
-
-
-     given angle theta and axis n:
-         q = [scalar, vector] = [
-             cos(theta/2), nx*sin(theta/2), ny*sin(theta/2), nz*sin(theta/2)];
-          
-     given euler angles:
-         q1 =  sin(z/2)*sin(y/2)*sin(x/2) + cos(z/2)*cos(y/2)*cos(x/2)
-         q2 = -sin(z/2)*sin(y/2)*cos(x/2) + sin(x/2)*cos(z/2)*cos(y/2)
-         q3 =  sin(z/2)*sin(x/2)*cos(y/2) + sin(y/2)*cos(z/2)*cos(x/2)
-         q4 =  sin(z/2)*cos(y/2)*cos(x/2) - sin(y/2)*sin(x/2)*cos(z/2)
-     
-     * </pre>
-     * @param eulerAngles euler rotation angles
-     * @return 
-     */
-    public static double[] createQuaternionHamiltonFromEulerAnglesZYXIntrinsic(double[] eulerAngles) {
-        if (eulerAngles.length != 3) {
-            throw new IllegalArgumentException("thetas must be length 3");
-        }
-
-        double x2 = eulerAngles[0]/2;
-        double y2 = eulerAngles[1]/2;
-        double z2 = eulerAngles[2]/2;
-
-        // q1 is scalar term
-        double q1 =  Math.sin(z2)*Math.sin(y2)*Math.sin(x2) +
-            Math.cos(z2)*Math.cos(y2)*Math.cos(x2);
-        double q2 = -Math.sin(z2)*Math.sin(y2)*Math.cos(x2) + Math.sin(x2)*Math.cos(z2)*Math.cos(y2);
-        double q3 =  Math.sin(z2)*Math.sin(x2)*Math.cos(y2) + Math.sin(y2)*Math.cos(z2)*Math.cos(x2);
-        double q4 =  Math.sin(z2)*Math.cos(y2)*Math.cos(x2) - Math.sin(y2)*Math.sin(x2)*Math.cos(z2);
-
-        // to match contents of R.from_euler('ZYX', eulerAngles).as_quat() but with scalar first
-        //TODO: find proper assignments of q1, q2, ... for these "passive" transformations
-        return new double[]{q1, q4, q3, q2};
-        //return new double[]{q1, q2, q3, q4};
-    }
-    
-    /**
      * calculate  the Hamilton unit-length quaternion which would be extracted from the
      * rotation matrix created by R_xyz = R_z(theta_z)*R_y(theta_y)*R_z(theta_z).
      *
@@ -2557,28 +2519,9 @@ public class Rotation {
         double ca = Math.cos(angle/2);
         double sa = Math.sin(angle/2);
 
-        //TODO: test
-        
         double[] q = new double[]{ca, nx*sa, ny*sa, nz*sa};
         
         return q;
-    }
-
-    /**
-     * convert the quaternion from [scalar vector] to [vector scalar] in-place.
-     * Barfoot uses intrinsic, active transformations.
-     * @param qHamilton quaternion of format [scalar  vector]
-     */
-    public static void createQuaternionBarfootFromHamiltonInPlace(double[] qHamilton) {
-        if (qHamilton.length != 4) {
-            throw new IllegalArgumentException("qHamilton length must be 4");
-        }
-       
-        double swap = qHamilton[0];
-        for (int i = 1; i < 4; ++i) {
-            qHamilton[i-1] = qHamilton[i];
-        }
-        qHamilton[3] = swap;
     }
     
     /**
@@ -2662,6 +2605,27 @@ public class Rotation {
             throw new IllegalArgumentException("unitLengthAxis.length must be 3");
         }
 
+        double sumSq = MatrixUtil.lPSum(unitLengthAxis, 2);
+        sumSq *= sumSq;
+
+        //TODO: revisit tolerance here:
+        if (Math.abs(sumSq - 1.) > 1E-5) {
+            // can provide same normalization for all, by using rotation vector as an intermediary
+            double[] rotVec = Rotation.createRotationVectorFromAngleAxis(unitLengthAxis, angle);
+            double[] _axis = new double[3];
+            angle = Rotation.createAngleAxisFromRotationVector(rotVec, _axis);
+            unitLengthAxis = _axis;
+            sumSq = MatrixUtil.lPSum(unitLengthAxis, 2);
+            sumSq *= sumSq;
+        }
+
+        // follows from sum of squares of each element in unitLengthAxis should be == 1
+        //cos(theta)^2 + sin(theta)^2 = 1
+        // scalar term = cos(theta)^2
+        // vector portion = |sin(theta)|^2
+        /// u = q // ||q|| vector portion
+        // q2 = q0 + q = cos(theta) + u*sin(theta) ...
+
         double cPhi2 = Math.cos(angle/2.);
         double sPhi2 = Math.sin(angle/2.);
         double[] out = Arrays.copyOf(unitLengthAxis, 4);
@@ -2716,7 +2680,7 @@ public class Rotation {
         double angle = createAngleAxisFromRotationVector(rotVec, axis);
         return createQuaternionUnitLengthBarfoot(angle, axis);
     }
-    
+
     /*
     create a quaternion 4X1 column vector of [scalar vector] from the given
     angle and axis representation of rotation.
@@ -2724,7 +2688,7 @@ public class Rotation {
     first item in the quaternion.
     Hamilton uses passive transformations.
     <pre>
-     
+
     satisfies unit-length constraint q^T*q = 1  (size [1X4]*[4X1]=[1X1].
     q^T*q = q_1^2 + q_2^2 + q_3^2 + q_4^2.
     </pre>

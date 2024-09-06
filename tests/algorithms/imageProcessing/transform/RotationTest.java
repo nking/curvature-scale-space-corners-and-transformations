@@ -80,6 +80,103 @@ public class RotationTest extends TestCase {
         assertTrue(MiscMath.areEqual(eQ, qB3, 1E-5));
     }
 
+    public void testAngleAxisAndRotationVector() {
+        double[] axis = new double[]{1 / Math.sqrt(3), 1 / Math.sqrt(3), 1 / Math.sqrt(3)};//~33 degrees
+        double angle = 2 * Math.PI / 3; // 120 degrees // same as 60 degrees from -1*axis
+        double[] rotVec = Rotation.createRotationVectorFromAngleAxis(axis, angle);
+        //[1.2091995761561454, 1.2091995761561454, 1.2091995761561454] // 69.3 degrees
+        double[] _axis = new double[3];
+        double _angle = Rotation.createAngleAxisFromRotationVector(rotVec, _axis);
+
+        // since 120 degrees CCW is > |120-180| CW, will reverse the axis and sign of angle.
+        // with angle2 = angle - Math.PI // -60 degrees
+        // we scale the axis by (angle/angle2)
+        double angle2 = angle - Math.PI;
+        double[] axis2 = Arrays.copyOf(axis, axis.length);
+        MatrixUtil.multiply(axis2, (angle / angle2));
+        double[] rotVec2 = Rotation.createRotationVectorFromAngleAxis(axis2, angle2);
+        //[1.2091995761561454, 1.2091995761561454, 1.2091995761561454]
+        // same rotation vector, though the angle axis representations were different.
+        assertTrue(MiscMath.areEqual(rotVec, rotVec2, 1E-5));
+        double[] _axis2 = new double[3];
+        double _angle2 = Rotation.createAngleAxisFromRotationVector(rotVec2, _axis2);
+        // now, both rotation vectors are normalized to same standard:
+        assertTrue(MiscMath.areEqual(_axis, _axis2, 1E-5));
+        assertTrue(Math.abs(_angle - _angle2) < 1E-5);
+
+        // considering inverse formula: (angle, axis) inverse = (-angle, axis) or (angle, -axis)
+        double[] negRotVec = Arrays.copyOf(rotVec, rotVec.length);
+        MatrixUtil.multiply(negRotVec, -1);
+        double[] axis3 = Arrays.copyOf(axis, axis.length);
+        double angle3 = -1 * angle;
+        double[] rotVec3 = Rotation.createRotationVectorFromAngleAxis(axis3, angle3);
+        assertTrue(MiscMath.areEqual(negRotVec, rotVec3, 1E-5));
+        double[] axis4 = Arrays.copyOf(axis, axis.length);
+        MatrixUtil.multiply(axis4, -1);
+        double angle4 = angle;
+        double[] rotVec4 = Rotation.createRotationVectorFromAngleAxis(axis4, angle4);
+        assertTrue(MiscMath.areEqual(negRotVec, rotVec4, 1E-5));
+
+        double[][] r1 = Rotation.createRotationRodriguesFormula(rotVec, true);
+        double[][] r2 = Rotation.createRotationRodriguesFormula(rotVec2, true);
+        double[] _t1 = Rotation.extractRotationVectorRodrigues(r1);
+        double[] _t2 = Rotation.extractRotationVectorRodrigues(r2);
+        assertTrue(MiscMath.areEqual(_t1, rotVec, 1E-5));
+        assertTrue(MiscMath.areEqual(_t2, rotVec, 1E-5));
+
+        // q1 and q2 are same as R.from_rotvec([1.2091995761561454, 1.2091995761561454, 1.2091995761561454]).as_quat()
+        double[] eq = new double[]{0.5, 0.5, 0.5, 0.5};
+        double[] q1 = Rotation.createQuaternionUnitLengthBarfoot(angle, axis);
+        double[] q2 = Rotation.createQuaternionHamiltonFromAngleAxis(angle, axis);
+        assertTrue(MiscMath.areEqual(eq, q1, 1E-5));
+        // no need to reorder for scalar term because all entries are the same for this specific case:
+        assertTrue(MiscMath.areEqual(eq, q2, 1E-5));
+
+        double[] p = new double[]{1, 0, 0, 0};
+        double[] p2 = Rotation.rotateVectorByQuaternion4(q1, p);
+        // for an active rotation, we expect result = j
+        // for a passive rotation, we expect result = k;
+        double[] ePassive = new double[]{0, 1, 0, 0};
+        double[] eActive = new double[]{0, 0, 1, 0};
+        assertTrue(MiscMath.areEqual(eActive, p2, 1E-5));
+    }
+
+    public void testQuaternions() {
+
+        double[] rotVec = new double[]{0.12, -0.5, -0.34};
+        double[] axis = new double[3];
+        double angle = Rotation.createAngleAxisFromRotationVector(rotVec, axis);
+
+        double[] q = Rotation.createQuaternionUnitLengthBarfoot(angle, axis);
+        double[] e = new double[]{0.0590545 , -0.24606043, -0.16732109,  0.95287485};
+        assertTrue(MiscMath.areEqual(e, q, 1E-5));
+
+        //convertQuaternionBarfootToHamilton
+        //convertQuaternionHamiltonToBarfoot
+        //createQuaternionBarfootFromAPoint
+        //createQuaternionHamiltonFromAngleAxis
+        //createQuaternionHamiltonFromBarfoot
+        //createQuaternionUnitLengthBarfoot
+        //createQuaternionUnitLengthBarfootFromEuler
+        //createQuaternionUnitLengthBarfootFromEulerXYZ
+        //createQuaternionUnitLengthBarfootFromRotationVector
+        //createQuaternionUnitLengthHamilton
+        //createRotation4FromQuaternion
+
+        // the operators
+        //inverseQuaternionBarfoot
+        // multiplyQuaternionsBarfoot
+        //quaternionConjugateOperator
+        //quaternionLefthandCompoundOperator
+        //quaternionRighthandCompoundOperator
+        //rotateAPointByQuaternionBarfoot
+        //rotateVectorByQuaternion4
+        //rotationBetweenTwoDirections0
+        //rotationBetweenTwoDirections1
+        //procrustesAlgorithmForRotation
+
+    }
+
     public void testSequences() {
 
         //from active perspective now:
@@ -95,8 +192,8 @@ public class RotationTest extends TestCase {
 
         double[] rotVecZYX = Rotation.createRotationVectorFromEulerAngles(eulerZYX, Rotation.EulerSequence.ZYX_ACTIVE);
         //[-1.2592811528236525, -0.4274666442528654, 0.3454896074433141]
-        // same as R.from_euler('XYZ', [-1.32, -0.12, 0.5]).as_rotvec()
-        e = new double[]{-1.31902362,  0.23015806,  0.50325476};
+        // same as R.from_euler('xyz', [-1.32, -0.12, 0.5]).as_rotvec()
+        e = new double[]{-1.25928115, -0.42746664,  0.34548961};
         assertTrue(MiscMath.areEqual(e, rotVecZYX, 1E-5));
 
         /*
@@ -119,7 +216,7 @@ public class RotationTest extends TestCase {
          scalar portions are similar but not same
          here: array([-0.26360695,  0.06366132,  0.56691633,  0.77785891])
          scipy: array([ 0.23071752,  0.10551613, -0.60470735,  0.75496013])
-         where scips: R.from_rotvec([0.50325476, 0.23015806, -1.31902362]).as_quat()
+         where scipy: R.from_rotvec([0.50325476, 0.23015806, -1.31902362]).as_quat()
          */
 
         double[] qBZYXActive = Rotation.createQuaternionBarfootFromRotationVector(rotVecZYX,
