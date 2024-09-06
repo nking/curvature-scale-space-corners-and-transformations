@@ -410,7 +410,7 @@ public class PlanarHomographyTest extends TestCase {
         double[] axisWCSC1 = MatrixUtil.crossProduct(nPNorm, nC1Norm);
         double[] quatH = Rotation.createQuaternionUnitLengthHamilton(axisWCSC1, thetaWCSC1);
         double[] quatB = Rotation.createQuaternionBarfootFromHamilton(quatH);
-        double[][] rWCSC1 = Rotation.createRotationFromQuaternion4(quatB);
+        double[][] rWCSC1 = Rotation.createRotation4FromQuaternion(quatB);
         rWCSC1 = MatrixUtil.copySubMatrix(rWCSC1, 0, 2, 0, 2);
         System.out.printf("r*v=\n%s\n", FormatArray.toString(
                 MatrixUtil.multiplyMatrixByColumnVector(rWCSC1, nPNorm),

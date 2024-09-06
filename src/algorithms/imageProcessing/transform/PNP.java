@@ -878,9 +878,7 @@ public class PNP {
     
     /**
      * update rotation matrix r with deltaTheta.
-     * the approach used avoids singularities and the need to restore 
-     * the constraint afterwards (i.e., constraint restoration is built in).
-     * 
+     *
      * @param r
      * @param thetas input and output array holding euler rotation angles 
      *    theta_x, theta_y, theta_
@@ -891,8 +889,17 @@ public class PNP {
         // EE382-Visual localization & Perception, “Lecture 08- Nonlinear least square & RANSAC”
         // http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
         // parameter perturbations for a Lie group such as rotation are:
-        //     R * (I - [delta x]_x) where [delta x]_x is the skew-symetric matrix of delta_x 
-        
+        //     R * (I - [delta x]_x) where [delta x]_x is the skew-symmetric matrix of delta_x
+
+        double[][] dR = MatrixUtil.skewSymmetric(deltaTheta);
+        for (int i = 0; i <3; ++i) {
+            dR[i][i] = 1 - dR[i][i];
+        }
+        double[][] r2 = MatrixUtil.multiply(r, dR);
+        for (int i = 0; i < 3; ++i) {
+            System.arraycopy(r2[i], 0, r[i], 0, 3);
+        }
+
         // T. Barfoot, et al. 2010, 
         // Pose estimation using linearized rotations and quaternion algebra, 
         // Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
@@ -901,12 +908,20 @@ public class PNP {
         //     where C is rotation matrix r
         //           calculated as C(theta) = 
         //     and deltaPhi = sTheta * deltaTheta
-        
+
+        /*
         //double[][] out;// = MatrixUtil.zeros(3, 3);
-        double[] qUpdated = Rotation.applySingularitySafeRotationPerturbation(thetas, deltaTheta);
-        
+        // NOTE: deltaTheta elements should be < about 0.25 for small angle perturbations requirement
+         Rotation.applySingularitySafeRotationPerturbation(thetas, deltaTheta, EulerSequence seq, true)
+        Rotation.RotationPerturbationQuaternion rPQ =
+                (Rotation.RotationPerturbationQuaternion)Rotation
+                        .applySingularitySafeRotationPerturbation(thetas, deltaTheta, true);
+        double[] qUpdated = rPQ.quaternion;
+
+        //TODO: revisit all of this class
+
         // [4X4]
-        double[][] qR = Rotation.createRotationFromQuaternion4(qUpdated);
+        double[][] qR = Rotation.createRotation4FromQuaternion(qUpdated);
         qR = MatrixUtil.transpose(qR);
         
         // rotation is [0:2, 0:2] of qR  
@@ -924,11 +939,10 @@ public class PNP {
         double[] thetaExtracted = Rotation.extractThetaFromZYX(r);
         System.arraycopy(thetaExtracted, 0, thetas, 0, thetas.length);
         
-        /*
-        for (int i = 0; i < 3; ++i) {
-            thetas[i] += deltaTheta[i];
-        }*/
-        
+        //for (int i = 0; i < 3; ++i) {
+        //    thetas[i] += deltaTheta[i];
+        //}
+        */
     }
 
     /**

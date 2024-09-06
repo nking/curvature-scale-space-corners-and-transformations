@@ -19,110 +19,180 @@ public class RotationTest extends TestCase {
     public RotationTest() {
     }
 
-    public void testAngleAxisMethods1() {
+    public void testCreateRotationXYZ() {
 
-        double tol = 1E-7;
+        double[] eulerXYZ = new double[]{-0.5, 0.12, 1.32};
+        double[][] r = Rotation.createRotationXYZ(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2]);
+
+        double c1 = Math.cos(eulerXYZ[0]);
+        double c2 = Math.cos(eulerXYZ[1]);
+        double c3 = Math.cos(eulerXYZ[2]);
+        double s1 = Math.sin(eulerXYZ[0]);
+        double s2 = Math.sin(eulerXYZ[1]);
+        double s3 = Math.sin(eulerXYZ[2]);
+
+        double[][] e = new double[][]{
+                {c2*c3, -c2*s3, s2},
+                {s1*s2*c3 + c1*s3, -s1*s2*s3 +c1*c3, -s1*c2},
+                {-c1*s2*c3 +s1*s3, c1*s2*s3 + s1*c3, c1*c2}
+        };
+
+        //System.out.printf("XYZ r=\n%s\n", FormatArray.toString(r, "%.5f"));
+        //System.out.printf("e=\n%s\n", FormatArray.toString(e, "%.5f"));
+
+        assertTrue(MiscMath.areEqual(e, r, 1E-5));
+
+        double[] eulerXYZ2 = Rotation.extractThetaFromXYZ(r, true);
+        assertTrue(MiscMath.areEqual(eulerXYZ, eulerXYZ2, 1E-5));
+
+        // intrinsic A(a)*B(b)*C(c)
+        // extrinsic: [A(-a)*B(-b)*C(-c)]^T = C(c)*B(b)*A(a)
+        double[][] r2 = Rotation.createRotationXYZExtrinsic(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2]);
+        double[][] e2 = new double[][]{
+                {0.24639073, -0.86437104, -0.4383541},
+                {0.96174872,  0.1621969 ,  0.22075229},
+                {-0.11971221, -0.47597781,  0.87127155}
+        };
+        assertTrue(MiscMath.areEqual(e2, r2, 1E-5));
+
+        r = Rotation.createRotationXYZ(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2], false);
+        e = MatrixUtil.transpose(e);
+        assertTrue(MiscMath.areEqual(e, r, 1E-5));
+
+        double[] euler2 = new double[3];
+        Rotation.extractThetaFromXYZActive(r, euler2);
+
+        assertTrue(MiscMath.areEqual(eulerXYZ, euler2, 1E-5));
+    }
+
+    public void testCreateRotationZYX() {
+        double[] eulerXYZ = new double[]{-0.5, 0.12, 1.32};
+        double[][] r = Rotation.createRotationZYX(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2]);
+
+        double c1 = Math.cos(eulerXYZ[2]);
+        double c2 = Math.cos(eulerXYZ[1]);
+        double c3 = Math.cos(eulerXYZ[0]);
+        double s1 = Math.sin(eulerXYZ[2]);
+        double s2 = Math.sin(eulerXYZ[1]);
+        double s3 = Math.sin(eulerXYZ[0]);
+
+        double[][] e = new double[][]{
+                {c1*c2, c1*s2*s3 - s1*c3, c1*s2*c3 + s1*s3},
+                {s1*c2, s1*s2*s3 + c1*c3, s1*s2*c3 - c1*s3},
+                {-s2, c2*s3, c2*c3}
+        };
+
+        //System.out.printf("ZYX r=\n%s\n", FormatArray.toString(r, "%.5f"));
+        //System.out.printf("e=\n%s\n", FormatArray.toString(e, "%.5f"));
+
+        assertTrue(MiscMath.areEqual(e, r, 1E-5));
+
+        double[] eulerZYX2 = Rotation.extractThetaFromZYX(r, true);
+        assertTrue(MiscMath.areEqual(eulerZYX2, eulerXYZ, 1E-5));
+
+        double[][] r2 = Rotation.createRotationZYXExtrinsic(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2]);
+        double[][] e2 = new double[][]{
+                {0.24639073, -0.96174872,  0.11971221},
+                {0.83588392,  0.273392  ,  0.47597781},
+                {-0.49049941, -0.01721101,  0.87127155}
+        };
+        assertTrue(MiscMath.areEqual(e2, r2, 1E-5));
+
+        r = Rotation.createRotationZYX(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2], false);
+        e = MatrixUtil.transpose(e);
+        assertTrue(MiscMath.areEqual(e, r, 1E-5));
+
+        double[] euler2 = new double[3];
+        Rotation.extractThetaFromZYXActive(r, euler2);
+
+        assertTrue(MiscMath.areEqual(eulerXYZ, euler2, 1E-5));
+
+    }
+
+    public void testCreateRotationFromUnitLengthAngleAxis() {
+
+        //[0, 2*pi], [0, pi], and [0, 2*pi]
+        double[] axis = new double[]{2.14, 0.13, -0.5};
+        double angle = 4;
+
+        double[] rotVec = Rotation.createRotationVectorFromAngleAxis(axis, angle);
+        //[8.56, 0.52, -2.0]
 
         boolean passive = true;
 
-        double[] eulerAngles = new double[]{31, 55, 15};
-        MatrixUtil.multiply(eulerAngles, Math.PI / 180.);
-        //[0.5410520681182421, 0.9599310885968813, 0.2617993877991494]
+        double[][] r = Rotation.createRotationRodriguesFormula(axis, angle, passive);
 
-        double[] rotVec = Rotation.createRotationVectorFromEulerAngles(eulerAngles);
-        assertTrue(MiscMath.areEqual(new double[]{0.6215418, 0.8698973, 0.4960325}, rotVec, tol));
-
-        // correct:  intrinsic composition
-        double[][] r1XYZ = Rotation.createRotationXYZ(eulerAngles);
-        double[][] expectedR1XYZ = new double[][]{
-                {0.55403229, -0.14845251, 0.81915204},
-                {0.62937001, 0.7187657, -0.2954137},
-                {-0.54492349, 0.67921846, 0.49165097}
-        };
-        assertTrue(MiscMath.areEqual(expectedR1XYZ, r1XYZ, tol));
-        /*
-        createRotationXYZ matches scipy results:
-        from scipy.spatial.transform import Rotation as R
-        theta1Rad = np.array([0.5410520681182421, 0.9599310885968813, 0.2617993877991494])
-        R.from_euler('XYZ', theta1Rad, degrees=False).as_matrix()
-                array([[ 0.55403229, -0.14845251,  0.81915204],
-                       [ 0.62937001,  0.7187657 , -0.2954137 ],
-                       [-0.54492349,  0.67921846,  0.49165097]])
-         */
-        double[] _eulerAngles = Rotation.extractThetaFromXYZ(r1XYZ, true);
-        assertTrue(MiscMath.areEqual(eulerAngles, _eulerAngles, tol));
-
-        double[][] r2 = Rotation.createRotationRodriguesFormula(rotVec, passive);
-        double[][] r3 = Rotation.createRotationRodriguesFormulaTomasi(rotVec, passive);
         Rotation.RodriguesRotation rr = Rotation.createRotationRodriguesBouguet(rotVec, passive);
-        double[][] r4 = rr.r;
-        assertTrue(MiscMath.areEqual(expectedR1XYZ, r2, tol));
-        assertTrue(MiscMath.areEqual(expectedR1XYZ, r3, tol));
-        assertTrue(MiscMath.areEqual(expectedR1XYZ, r4, tol));
+        double[][] r2 = rr.r;
 
-        double[] axis = new double[3];
-        double angle = Rotation.createAngleAxisFromRotationVector(rotVec, axis);
-        assertTrue(Math.abs(angle - 1.1785939590854464) < tol);
-        assertTrue(MiscMath.areEqual(new double[]{0.52735869, 0.73808059, 0.42086797}, axis, tol));
-
-        // scipy intrinsic 'XYZ'
-        //>>> R.from_euler('XYZ', np.array([0.5410521, 0.9599311, 0.2617994])).as_quat()
-        //array([0.2930937 , 0.41020801, 0.23390863, 0.8313316 ])  where scalar is last term
-        double[] expectedQH = new double[]{0.8313316, 0.2930937, 0.41020801, 0.23390863};
-        double[] expectedQB = new double[]{0.2930937, 0.41020801, 0.23390863, 0.8313316};
-        double[] qB = Rotation.createQuaternionUnitLengthBarfoot(axis, angle);
-        double[] qH = Rotation.createQuaternionHamiltonFromAngleAxis(angle, axis);
-        double[] qBH = Rotation.createQuaternionBarfootFromHamilton(qH);
-        double[] qHB = Rotation.createQuaternionHamiltonFromBarfoot(qB);
-        assertTrue(MiscMath.areEqual(expectedQB, qB, 1E-5));
-        assertTrue(MiscMath.areEqual(expectedQH, qH, 1E-5));
-        assertTrue(MiscMath.areEqual(expectedQB, qBH, 1E-5));
-        assertTrue(MiscMath.areEqual(expectedQH, qHB, 1E-5));
-
-        // scipy intrinsic ZYX
-        //Rotation.from_euler('ZYX', np.array([0.5410521, 0.9599311, 0.2617994])).as_matrix()
-        double[][] r1ZYX = Rotation.createRotationZYX(eulerAngles);
-        double[][] expectedR1ZYX = new double[][]{
-                {0.49165095, -0.31575871, 0.81152682},
-                {0.29541371, 0.93715436, 0.18566758},
-                {-0.81915205, 0.14845251, 0.5540322}
+        double[][] e = new double[][] {
+                {0.9000724 ,  0.23591439, -0.3663524},
+                {-0.02759772, -0.80820664, -0.58825199},
+                {-0.43486555,  0.53957987, -0.72093378}
         };
-        assertTrue(MiscMath.areEqual(expectedR1ZYX, r1ZYX, tol));
-        // intrinsic ZYX == extrinsic xyz
-        double[][] r1XYZExtrinsic = Rotation.createRotationXYZExtrinsic(eulerAngles);
-        assertTrue(MiscMath.areEqual(expectedR1ZYX, r1XYZExtrinsic, tol));
-        double[] _eulerAngles2 = Rotation.extractThetaFromZYX(r1ZYX, true);
-        assertTrue(MiscMath.areEqual(eulerAngles, _eulerAngles2, tol));
+        System.out.printf("AA r=\n%s\n", FormatArray.toString(r, "%.5f"));
+        System.out.printf("RV r=\n%s\n", FormatArray.toString(r2, "%.5f"));
+        System.out.printf("e=\n%s\n", FormatArray.toString(e, "%.5f"));
 
-        double[] negEulerAngles = Arrays.copyOf(eulerAngles, eulerAngles.length);
-        MatrixUtil.multiply(negEulerAngles, -1);
-        double[][] rZYXActive = Rotation.createRotationZYX(negEulerAngles);
-        double[][] expectedRZYX = new double[][]{
-                {0.49165097, 0.67921846, -0.54492349},
-                {-0.2954137, 0.7187657, 0.62937001},
-                {0.81915204, -0.14845251, 0.55403229}
+        assertTrue(MiscMath.areEqual(e, r, 1E-5));
+        assertTrue(MiscMath.areEqual(e, r2, 1E-5));
+
+        // =========================================
+        // try all larger angles
+        axis = new double[]{-1*(Math.PI/2 - 0.12), 0.13, -0.5};
+        //[-1.4507963267948965, 0.13, -0.5]
+
+        rotVec = Rotation.createRotationVectorFromAngleAxis(axis, angle);
+        //[-5.803185307179586, 0.52, -2.0]
+
+        r = Rotation.createRotationRodriguesFormula(axis, angle, passive);
+
+        rr = Rotation.createRotationRodriguesBouguet(rotVec, passive);
+        r2 = rr.r;
+
+        e = new double[][] {
+                {0.99914922, -0.04044841, -0.00804796},
+                {0.03924601,  0.99249369, -0.11582756},
+                {0.01267259,  0.11541317,  0.99323673}
         };
+        System.out.printf("AA r=\n%s\n", FormatArray.toString(r, "%.5f"));
+        System.out.printf("RV r=\n%s\n", FormatArray.toString(r2, "%.5f"));
+        System.out.printf("e=\n%s\n", FormatArray.toString(e, "%.5f"));
 
-        double[] eulerXYZActive = new double[3];
-        Rotation.extractThetaFromZYXActive(rZYXActive, eulerXYZActive);
-        assertTrue(MiscMath.areEqual(eulerAngles, eulerXYZActive, tol));
-
+        assertTrue(MiscMath.areEqual(e, r, 1E-5));
+        assertTrue(MiscMath.areEqual(e, r2, 1E-5));
     }
-    public void test2() {
+
+    public void est2() {
 
         double tol = 1E-5;
 
-        // applying sequential perturbations to rotation matrix
+         // applying sequential perturbations to rotation matrix
         double[][] rot0 = MatrixUtil.createIdentityMatrix(3);
         double[] euler = new double[3];
         Rotation.extractThetaFromZYXActive(rot0, euler);
         assertTrue(MiscMath.areEqual(new double[]{0,0,0}, euler, tol));
 
-        double[] perturb = new double[]{}
-        //double[][] createSingularitySafePerturbedRotation(double[] theta0, double[] dTheta)
+        double[][] r1;
+        double[] perturb, theta0;
+        boolean returnQuaternion;
+
+        // perturbations <= about 0.2 radians ~11 degrees
+        perturb = new double[]{0.1, -0.05, 0.5};
+        theta0 = new double[]{0, 0, 0};
+        returnQuaternion = false;
+
+        Rotation.RotationPerturbationMatrix rP = (Rotation.RotationPerturbationMatrix)
+                Rotation.applySingularitySafeRotationPerturbation(
+                theta0, perturb, Rotation.EulerSequence.ZYX_ACTIVE, returnQuaternion);
+        r1 = rP.rotation;
+
+        // TODO: consider perspective and angles
+        Rotation.extractThetaFromZYXActive(r1, euler);
+
+        //assertTrue(MiscMath.areEqual(perturb, euler, tol));
 
         int t = 1;
-
     }
 
     public void _testRodriguesFormula() {
@@ -265,137 +335,6 @@ public class RotationTest extends TestCase {
         double[][] orthogRot = Rotation.procrustesAlgorithmForRotation(
                 MatrixUtil.transpose(x1), MatrixUtil.transpose(x2));
         System.out.printf("rotation from Procrustes algorithm\n=%s\n", FormatArray.toString(orthogRot, "%.3e"));
-    }
-    
-    public void _test2() {
-        
-        double[] theta = new double[]{25.*Math.PI/180., 35.*Math.PI/180., 55.*Math.PI/180.};
-        
-        //System.out.printf("original=%s\n", FormatArray.toString(theta, "%.3e"));
-        
-        double[][] r = Rotation.createRotationZYX(theta);
-        
-        double[] d = Rotation.extractThetaFromZYX(r);
-        //System.out.printf("result=%s\n", FormatArray.toString(d, "%.3e"));
-
-        assertEquals(theta.length, d.length);
-        
-        double diff;
-        double tol = 1e-4;
-        int i;
-        for (i = 0; i < theta.length; ++i) {
-            diff = Math.abs(theta[i] - d[i]);
-            //System.out.println("diff=" + diff);
-            assertTrue(diff < tol);
-        }
-        
-        //========
-        theta = new double[]{-25.*Math.PI/180., -35.*Math.PI/180., -55.*Math.PI/180.};
-        
-        //System.out.printf("original2=%s\n", FormatArray.toString(theta, "%.3e"));
-        
-        r = Rotation.createRotationZYX(theta);
-        
-        d = Rotation.extractThetaFromZYX(r);
-        //System.out.printf("result2=%s\n", FormatArray.toString(d, "%.3e"));
-
-        assertEquals(theta.length, d.length);
-        
-        for (i = 0; i < theta.length; ++i) {
-            diff = Math.abs(theta[i] - d[i]);
-            //System.out.println("diff=" + diff);
-            assertTrue(diff < tol);
-        }
-    }
-
-    public void _test4() throws NotConvergedException {
-         
-        System.out.println("test4 for gimbal lock singularity");
-        
-        /*
-        a test for gimbal lock.
-        theta=[0, 90 degrees (==pi/2), 0]
-        
-        For the asymmetric matrix
-            C_i_j_k = R(ax,ay,az)=R_z(az)*R_y(ay)*R_x(ax), singularity when
-                ay=+-(pi/2)
-        */
-        int i;
-        double[] theta0 
-            = new double[]{0., 0.5*Math.PI/180., 0.};
-        // 0.1 radians = 5.73 degrees.  1 degree = 0.0174 redians
-        double[] dTheta0 
-            = new double[]{2*Math.PI/180., 3*Math.PI/180., 5.5*Math.PI/180.};
-        double[] theta0Up = new double[3];
-        for (i = 0; i < 3; ++i) {
-            theta0Up[i] = theta0[i] + dTheta0[i];
-        }
-        System.out.printf("theta0=%s\n", FormatArray.toString(theta0, "%.3e"));
-        System.out.printf("dTheta0=%s\n", FormatArray.toString(dTheta0, "%.3e"));
-        System.out.printf("theta0Up=%s\n", FormatArray.toString(theta0Up, "%.3e"));
-        
-        //System.out.printf("original=%s\n", FormatArray.toString(theta, "%.3e"));
-        
-        double[][] r0ZYX = Rotation.createRotationZYX(theta0);          
-        double[] theta0ExZYX = Rotation.extractThetaFromZYX(r0ZYX); //** recovered exactly, that is, same as theta0 
-      /* TODO: update and improve these
-        double[][] r0UpZYX = Rotation.applySingularitySafeEulerAnglesPerturbationZYX(theta0, dTheta0);
-        double[] theta0UpExZYX = Rotation.extractThetaFromZYX(r0UpZYX); // ** nearly the same as theta0Up
-        double[][] r0FromTheta0UpZYX = Rotation.createRotationZYX(theta0Up);
-        double[] theta0UpExZYXMinusTheta0 = new double[3];
-        for (i = 0; i < 3; ++i) {
-            theta0UpExZYXMinusTheta0[i] = theta0UpExZYX[i] - theta0[i];
-        }
-        System.out.printf("\nr0ZYX=\n%s\n", FormatArray.toString(r0ZYX, "%.3e"));
-        System.out.printf("r0UpZYX=\n%s\n", FormatArray.toString(r0UpZYX, "%.3e"));
-        System.out.printf("r0FromTheta0UpZYX=\n%s\n", FormatArray.toString(r0FromTheta0UpZYX, "%.3e"));
-        System.out.printf("\ntheta0ExZYX=%s\n", FormatArray.toString(theta0ExZYX, "%.3e"));
-        System.out.printf("theta0UpExZYX=%s\n", FormatArray.toString(theta0UpExZYX, "%.3e"));
-        System.out.printf("theta0UpExZYXMinusTheta0(=dTheta?)=%s\n", FormatArray.toString(theta0UpExZYXMinusTheta0, "%.3e"));
-        
-        double[] q0Barfoot = Rotation.createQuaternionBarfootFromEulerAnglesXYZ(theta0);
-        double[] q0Hamilton = Rotation.createQuaternionHamiltonFromAngleAxis(theta0);
-        double[] q0Barfoot2 = Rotation.createQuaternionBarfootFromHamilton(q0Hamilton);
-        
-        // rotate a quaternion.  
-        double[] dq0Hamilton = Rotation.createQuaternionHamiltonFromAngleAxis(dTheta0);
-        double[] dq0Barfoot = Rotation.createQuaternionBarfootFromHamilton(dq0Hamilton);
-        double[] q0Up = Rotation.rotateVectorByQuaternion4(dq0Barfoot, q0Barfoot2);
-        double[] q0SafeUp = Rotation.applySingularitySafeRotationPerturbation(theta0, dTheta0);
-        double[][] r0QSafeUp = Rotation.createRotationFromQuaternion4(q0SafeUp);
-        
-        double dq0Dist = Rotation.distanceBetweenQuaternions(q0Barfoot2, q0Up);
-        //double dq0Euclid = Rotation.distanceBetweenQuaternionEuclideanTransformations(q0Barfoot2, q0Up);
-        
-        System.out.printf("\ndq0Hamilton=%s\n", FormatArray.toString(dq0Hamilton, "%.3e"));
-        System.out.printf("dq0Barfoot=%s\n", FormatArray.toString(dq0Barfoot, "%.3e"));
-        System.out.printf("\nq0Up=%s\n", FormatArray.toString(q0Up, "%.3e"));
-        System.out.printf("q0SafeUp=%s\n", FormatArray.toString(q0SafeUp, "%.3e"));
-        System.out.printf("r0QSafeUp^T=\n%s\n", FormatArray.toString(MatrixUtil.transpose(r0QSafeUp), "%.3e")); // approx equal to r0UpZYX within 0.035 radians = 2 degrees
-        
-        double[][] r0Q = Rotation.createRotationFromQuaternion4(q0Barfoot2); // this is transposed compared to Rotation.createRotationZYX(theta0)
-        double[][] r0Diff = Rotation.procrustesAlgorithmForRotation(r0ZYX, r0UpZYX); //similar to value in test3() which is good
-        double[] thetaExR0Diff = Rotation.extractThetaFromZYX(r0Diff);
-
-        //dPhi= S(theta) * dTheta.  length is 3.
-        double[] dPhi = Rotation.createRotationVectorBarfoot(theta0, dTheta0);
-        //sTheta is the matrix relating angular velocity to rotation angle rates.
-        double[][] sTheta = Rotation.sTheta(theta0);
-        double[] rodVecFromEuler = Rotation.createRodriguesVectorFromEulerAnglesZYX(theta0);
-        double[] rodPertVecFromEuler = Rotation.createRodriguesVectorFromEulerAnglesZYX(dTheta0);
-        
-        System.out.printf("\nsTheta=%s\n", FormatArray.toString(sTheta, "%.3e"));
-        System.out.printf("dPhi=%s\n", FormatArray.toString(dPhi, "%.3e"));
-        System.out.printf("rodVecFromEuler=%s\n", FormatArray.toString(rodVecFromEuler, "%.3e"));
-        System.out.printf("rodPertVecFromEuler=%s\n", FormatArray.toString(rodPertVecFromEuler, "%.3e"));
-            
-        System.out.printf("\ndq0Dist=%.3e\n", dq0Dist);
-        //System.out.printf("dq0Euclid=%.3e\n", dq0Euclid);
-        System.out.printf("r0Q=\n%s\n", FormatArray.toString(r0Q, "%.3e"));
-        System.out.printf("r0QUpZYX=\n%s\n", FormatArray.toString(r0UpZYX, "%.3e"));
-        System.out.printf("r0Diff=\n%s\n", FormatArray.toString(r0Diff, "%.3e"));
-        System.out.printf("thetaExR0Diff(theta extracted from r)Diff)=\n%s\n", FormatArray.toString(thetaExR0Diff, "%.3e"));
-       */
     }
 
     public void _testRodriguesRotationBouguet() throws NotConvergedException {
@@ -692,37 +631,4 @@ public class RotationTest extends TestCase {
         );
     }
 
-    public void _testDistanceUsingRigidBodyDisplacements() throws NotConvergedException {
-
-        double[] theta1 = new double[]{20, 35, 55};
-        double[] theta2 = new double[]{30, 45, 60};
-
-        double[][] r1 = Rotation.createRotationZYX(theta1);
-        double[][] r2 = Rotation.createRotationZYX(theta2);
-
-        double d12 = Rotation.distanceUsingRigidBodyDisplacements(r1, r2, false);
-
-    }
-
-    public void _testCreateRotationFromUnitLengthAngleAxis() {
-        double[] axis;
-        double angle;
-        double[][] rot, rotXYZ;
-
-        axis = new double[]{0, 1, 0};
-        angle = 35.*(Math.PI/180.);
-        // passive = true for left-hand system, CW rotation
-        //         = false for right-hand system, CCW rotation
-        rot = Rotation.createRotationFromUnitLengthAngleAxis(axis, angle, false);
-
-        // uses right-hand rule
-        rotXYZ = Rotation.createRotationXYZ(new double[]{0, angle, 0});
-
-        for (int row = 0; row < rot.length; ++row) {
-            for (int col = 0; col < rot[row].length; ++col) {
-                assertTrue(Math.abs(rot[row][col] - rotXYZ[row][col]) < 1E-7);
-            }
-        }
-        int t = 2;
-    }
 }

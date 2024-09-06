@@ -234,9 +234,9 @@ public class CameraCalibrationTest extends TestCase {
         // to keep points within FOV, will use a central rotation and translation then random small changes around those
         double rotAboutAxis= 47.7*Math.PI/180.;
         double[] rAxis = new double[]{-0.08573, -0.99438, 0.0621};
-        double[][] rot = Rotation.createRotationFromUnitLengthAngleAxis(rAxis, rotAboutAxis, passive);
+        double[][] rot = Rotation.createRotationRodriguesFormula(rAxis, rotAboutAxis, passive);
         double[] thetaXYZ = Rotation.extractThetaFromXYZ(rot, passive);
-        double[][] _rot = Rotation.createRotationXYZ(thetaXYZ, passive);
+        double[][] _rot = Rotation.createRotationXYZ(thetaXYZ[0], thetaXYZ[1], thetaXYZ[2], passive);
 
         // t in mm = 1.5m from camera in WCS
         double[] trans = new double[]{-211.28, -106.06, 1583.75};
@@ -268,7 +268,7 @@ public class CameraCalibrationTest extends TestCase {
                 _t[row] += trans[row];
             }
 
-            _r = Rotation.createRotationXYZ(_rThetaXYZ);
+            _r = Rotation.createRotationXYZ(_rThetaXYZ[0], _rThetaXYZ[1], _rThetaXYZ[2]);
 
             _x = SceneImageHelper.createImagePoints2DPlanar(xW, K, _r, _t);
 
