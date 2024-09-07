@@ -75,7 +75,7 @@ public class CameraPoseTest extends TestCase {
             double[] axis = new double[3];
             double angle = Rotation.createAngleAxisFromRotationVector(rotVector, axis);
 
-            double[] qHamiltonE = Rotation.createQuaternionUnitLengthHamilton(axis, angle);
+            double[] qHamiltonE = Rotation.createQuaternionHamiltonFromAngleAxis(angle, axis);
             double[] qBarfootE = Rotation.createQuaternionBarfootFromHamilton(qHamiltonE);
 
             // avg is -0.2946225

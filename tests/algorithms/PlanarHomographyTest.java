@@ -408,8 +408,7 @@ public class PlanarHomographyTest extends TestCase {
         double[] nC1Norm = new double[]{0, 0, 1};
         double thetaWCSC1 = -Math.acos(nPNorm[0]*nC1Norm[0] + nPNorm[1]*nC1Norm[1] + nPNorm[2]*nC1Norm[2]);
         double[] axisWCSC1 = MatrixUtil.crossProduct(nPNorm, nC1Norm);
-        double[] quatH = Rotation.createQuaternionUnitLengthHamilton(axisWCSC1, thetaWCSC1);
-        double[] quatB = Rotation.createQuaternionBarfootFromHamilton(quatH);
+        double[] quatB = Rotation.createQuaternionUnitLengthBarfoot(thetaWCSC1, axisWCSC1);
         double[][] rWCSC1 = Rotation.createRotation4FromQuaternion(quatB);
         rWCSC1 = MatrixUtil.copySubMatrix(rWCSC1, 0, 2, 0, 2);
         System.out.printf("r*v=\n%s\n", FormatArray.toString(

@@ -54,7 +54,6 @@ import no.uib.cipr.matrix.SVD;
 
  active transformations are often used for multiple maneuvers of a body.
 
-
  * <b><ul>RIGHT HAND SYSTEM</ul></b>
  * The equations in this section use a right hand system (== passive transformations, CCW rotations of the object while
  * reference frame is fixed).
@@ -267,20 +266,29 @@ Note that Shuster 1993 use the active, LH, CW rotations of the object while refe
       nˆ cross (nˆ cross v) = ([nˆ]_x)^2 * v = -v_perpendicular
    which shows that can also write
       v_parallel = (I + ([nˆ]_x)^2 * v)
-      
- * </pre>
- *
- * NOTE:
- * passive A(a)*B(b)*C(c) =  active (A(a)*B(b)*C(c))^-1
- *                               = (C(c)^-1) * (B(b)^-1) * (A(a)^-1)
- *      *                        = (C(c)^T) * (B(b)^T) * (A(a)^T)
- *      and transpose of a rotation matrix == untransposed using -1*angle.
- *      so  passive A(a)*B(b)*C(c) = active C(-c)*B(-b)*A(-a)
 
- NOTE:
- extrinsic xyz == intrinsic ZYX
- that is, extrinsic: A(a)*B(b)*C(c) == intrinsic C(c)*B(b)*A(a)
+ examples transforming sequences:
+     passive A(a)*B(b)*C(c)
+     active A(-a)*B(-b)*C(-c)
+                   = A(a)^T * B(b)^T * C(c)^T
+                   = (C(c) * B(b) * C(c))^T
 
+     passive intrinsic XYZ = extrinsic transposed(active)
+                           = extrinsic transposed(XYZ(-1*angles))
+     extrinsic passive XYZ = intrinsic active XYZ
+                           = intrinsic transpose(XYZ(-1*angles))
+
+     example:
+        from scipy.spatial.transform import Rotation as R
+        R.from_euler('XYZ', [-0.1, -0.2, -0.3]).as_matrix()
+        array([[ 0.93629336,  0.28962948, -0.19866933],
+               [-0.27509585,  0.95642509,  0.0978434 ],
+               [ 0.21835066, -0.03695701,  0.97517033]])
+        R.from_euler('xyz', [0.1, 0.2, 0.3]).inv().as_matrix()
+        array([[ 0.93629336,  0.28962948, -0.19866933],
+               [-0.27509585,  0.95642509,  0.0978434 ],
+               [ 0.21835066, -0.03695701,  0.97517033]])
+ </pre>
 
  * TODO: add a method to extract the quaternion rotation from a 4X4 rotation matrix.
  * see Barfoot et al.
@@ -306,11 +314,10 @@ public class Rotation {
      * types of Euler rotation sequences implemented in this class for the Barfoot quaternion
      * equations.
      * Note:
-     * passive A(a)*B(b)*C(c) =  active (A(a)*B(b)*C(c))^-1
-     *                         = (C(c)^-1) * (B(b)^-1) * (A(a)^-1)
-     *                         = (C(c)^T) * (B(b)^T) * (A(a)^T)
-     and transpose of a rotation matrix == untransposed using -1*angle.
-     so  passive A(a)*B(b)*C(c) = active C(-c)*B(-b)*A(-a)
+     * passive A(a)*B(b)*C(c)
+     * active A(-a)*B(-b)*C(-c)
+     *         = A(a)^T * B(b)^T * C(c)^T
+     *         = (C(c) * B(b) * C(c))^T
      */
     public static enum EulerSequence {
         XYZ_ACTIVE /*1-2-3*/, ZYX_ACTIVE /*3-2-1*/
@@ -399,25 +406,16 @@ public class Rotation {
         if (passive) {
             return createRotationXYZ(angleX, angleY, angleZ);
         }
-        return createRotationZYX(-angleX, -angleY, -angleZ);
+        return createRotationXYZ(-angleX, -angleY, -angleZ);
     }
 
     public static double[][] createRotationZYX(double angleX, double angleY, double angleZ, boolean passive) {
         if (passive) {
             return createRotationZYX(angleX, angleY, angleZ);
         }
-        return createRotationXYZ(-angleX, -angleY, -angleZ);
+        return createRotationZYX(-angleX, -angleY, -angleZ);
     }
 
-    /**
-     * calculate R(angle_z, angle_y, angle_x) = R_x(angle_x)*R_y(angle_y)*R_z(angle_z).
-     * Internally, it uses createRotationZYX(...)
-     * @return
-     */
-    public static double[][] createRotationXYZExtrinsic(double eulerX, double eulerY, double eulerZ) {
-        return createRotationZYX(eulerX, eulerY, eulerZ);
-    }
-    
     /**
      * create matrix for rotation about the X-axis, a.k.a. roll in passive system (right-hand system, CCW).
        <pre>
@@ -687,16 +685,18 @@ public class Rotation {
         return Rotation.extractRotationVectorRodrigues(r);
     }
 
-    public static double[] createRotationVectorFromEulerAngles(double[] eulerXYZ, EulerSequence seq) {
-        double[][] r;
+    public static double[][] createRotationFromEulerAngles(double[] eulerXYZ, EulerSequence seq) {
         if (seq.equals(EulerSequence.XYZ_ACTIVE)) {
-            // active XYZ == passive ZYX w/ neg angles
-            r = createRotationZYX(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2], false);
+            // intrinsic and active
+            return createRotationXYZ(-eulerXYZ[0], -eulerXYZ[1], -eulerXYZ[2]);
         } else {
-            // active ZYX == passive XYZ w/ neg angles
-            r = createRotationXYZ(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2], false);
+            // ZYX active
+            return createRotationZYX(-eulerXYZ[0], -eulerXYZ[1], -eulerXYZ[2]);
         }
+    }
 
+    public static double[] createRotationVectorFromEulerAngles(double[] eulerXYZ, EulerSequence seq) {
+        double[][] r = createRotationFromEulerAngles(eulerXYZ, seq);
         return Rotation.extractRotationVectorRodrigues(r);
     }
 
@@ -1580,25 +1580,6 @@ public class Rotation {
         out[1] = thetaY;
         out[2] = thetaZ;
     }
-
-    /**
-     * extract euler rotation angles from a rotation matrix which has been built following
-     * the convention of R(theta_Z) * R(theta_Y) * R(theta_X).
-     * This method uses active (left-hand) rotation system .
-     * @param r
-     * @param out output variable to hold theta_x, theta_y, and theta_z,
-     * which, respectively have ranges [0, 2*pi], [0, pi], and [0, 2*pi]
-     */
-    public static void extractThetaFromZYXActive(double[][] r, double[] out) {
-        if (r.length != 3 || r[0].length != 3) {
-            throw new IllegalArgumentException("r must be 3x3");
-        }
-
-        double[] t = extractThetaFromXYZ(r);
-        out[0] = -t[0];
-        out[1] = -t[1];
-        out[2] = -t[2];
-    }
     
     /**
      * extract euler rotation angles from a rotation matrix which has been built following
@@ -1633,6 +1614,8 @@ public class Rotation {
         if (!passive) MatrixUtil.multiply(thetas, -1);
         return thetas;
     }
+
+
     
     /**
      * extract euler rotation angles from a rotation matrix which has been built following
@@ -1711,28 +1694,6 @@ public class Rotation {
     }
 
     /**
-     * extract euler rotation angles from a rotation matrix which has been built following
-     * the convention of R_X(theta_X) * R_Y(theta_Y) * R_Z(theta_Z) active transformations.
-     * @param r
-     * @param out output array of size 3 used to place euler angles extracted
-     * from the rotation matrix under assumption
-     * that the rotation matrix r was constructed with multiplication order
-     * R_X(-theta_X) * R_Y(-theta_Y) * R_Z(-theta_Z) where the negative angles are to transform the passive
-     *            into active.
-     */
-    public static void extractThetaFromXYZActive(double[][] r, double[] out) {
-        if (r.length != 3 || r[0].length != 3) {
-            throw new IllegalArgumentException("r must be 3x3");
-        }
-
-        double[] t = Rotation.extractThetaFromZYX(r);
-
-        out[0] = -t[0];
-        out[1] = -t[1];
-        out[2] = -t[2];
-    }
-            
-    /**
      * another method to extract the Rodrigues vector (angle and axis)
      * from the given
      * rotation matrix.  it's an ambiguous task.
@@ -1780,7 +1741,7 @@ public class Rotation {
                 R = eye(3) + (1-theta2/6.)*Sr + (.5-theta2/24.)*dot(Sr,Sr)
             return mat(R)
         */
-        
+
         double tol = 1.e-7;
         
         double traceR = MatrixUtil.trace(r);
@@ -2276,7 +2237,7 @@ public class Rotation {
 
         /*
         the book "State Estimation for Robotics", 2nd edition, by Barfoot
-        page 271, eqn 7.52 for 1-2-3 sequence (active)
+        page 271, eqn 7.52 for 1-2-3 sequence (active)  as naming for active euler sequence 3-2-1
         S(theta2, theta3)
             [ cos(th2) * cos(th3)   sin(th3)   0 ]
             [ -cos(th2)*sin(th3)    cos(th3)   0 ]
@@ -2332,19 +2293,19 @@ public class Rotation {
 
         double[] col0, col1, col2;
         if (seq.equals(EulerSequence.XYZ_ACTIVE)) {
-            // XYZ active w/ negative angles = ZYX passive
+            // XYZ active = passive w/ negative angles
+            // eqn (58) of Barfoot et al. for a 3-2-1 sequence, but he means 1-2-3 w.r.t. euler notation...
+            double[][] cAlpha = Rotation.createRotationRoll(eulerAngles[0]);
+            col0 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.multiply(cAlpha, cBeta), i2);
+            col1 = MatrixUtil.multiplyMatrixByColumnVector(cAlpha, i1);
+            col2 = i0;
+        } else  {
+            // ZYX active = passive w/ negative angles = XYZ passive
             // eqn (21) of Barfoot et al. for a 1-2-3 sequence
             double[][] cGamma = Rotation.createRotationYaw(eulerAngles[2]);
             col0 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.multiply(cGamma, cBeta), i0);
             col1 = MatrixUtil.multiplyMatrixByColumnVector(cGamma, i1);
             col2 = i2;
-        } else  {
-            // ZYX active w/ negative angles = XYZ passive
-            // eqn (58) of Barfoot et al. for a 3-2-1 sequence
-            double[][] cAlpha = Rotation.createRotationYaw(eulerAngles[0]);
-            col0 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.multiply(cAlpha, cBeta), i2);
-            col1 = MatrixUtil.multiplyMatrixByColumnVector(cAlpha, i1);
-            col2 = i0;
         }
         
         int row;
@@ -2407,25 +2368,6 @@ public class Rotation {
         double[][] rZ = Rotation.createRotationYaw(eulerZ);
 
         return MatrixUtil.multiply(MatrixUtil.multiply(rZ, rY), rX);
-    }
-
-    /**
-     * calculate  R_zyx = (R_z(theta_z)*R_y(theta_y))*R_x(theta_x)
-     * where theta_x = thetas[0], theta_y=thetas[1], theta_z=thetas[2].
-     * This method uses "extrinsic" composition.
-     *
-     * @return R_zyx extrinsic
-     */
-    public static double[][] createRotationZYXExtrinsic(double eulerX, double eulerY, double eulerZ) {
-        return  createRotationXYZ(eulerX, eulerY, eulerZ);
-        /*
-        same as
-        double[][] rX = Rotation.createRotationRoll(angleX);
-        double[][] rY = Rotation.createRotationPitch(angleY);
-        double[][] rZ = Rotation.createRotationYaw(angleZ);
-
-        return MatrixUtil.multiply(MatrixUtil.multiply(rZ, rY), rX);
-         */
     }
 
     /**
@@ -2682,35 +2624,6 @@ public class Rotation {
     }
 
     /*
-    create a quaternion 4X1 column vector of [scalar vector] from the given
-    angle and axis representation of rotation.
-    Hamilton and most other "right hand system" notation place the scalar as the
-    first item in the quaternion.
-    Hamilton uses passive transformations.
-    <pre>
-
-    satisfies unit-length constraint q^T*q = 1  (size [1X4]*[4X1]=[1X1].
-    q^T*q = q_1^2 + q_2^2 + q_3^2 + q_4^2.
-    </pre>
-    @param unitLengthAxis axis of rotation normalized to unit length
-    @param angle angle of rotation to apply
-    */
-    public static double[] createQuaternionUnitLengthHamilton(double[] unitLengthAxis, double angle) {
-        if (unitLengthAxis.length != 3) {
-            throw new IllegalArgumentException("unitLengthAxis.length must be 3");
-        }
-        double cPhi2 = Math.cos(angle)/2.;
-        double sPhi2 = Math.sin(angle)/2.;
-        double[] out = new double[]{
-                cPhi2,
-            unitLengthAxis[0]*sPhi2,
-                unitLengthAxis[1]*sPhi2,
-            unitLengthAxis[2]*sPhi2
-        };
-        return out;
-    }
-
-    /*
     <pre>
      * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
@@ -2763,22 +2676,26 @@ public class Rotation {
         /*
         Barfoot "1-2-3" and "alpha-beta-gamma" as names, refer to the passive Euler rotation sequence XYZ,
         then Barfoot impl. converts the sequence to active by reversing the order and making the angles negative.
-        active A(a)*B(b)*C(c) == passive C(-c)*B(-b)*A(-a)
+        passive A(a)*B(b)*C(c)
+        active A(-a)*B(-b)*C(-c)
+            = A(a)^T * B(b)^T * C(c)^T
+            = (C(c) * B(b) * C(c))^T
          */
         double[][] q1m, q2m;
         double[] q3v;
         if (seq.equals(EulerSequence.XYZ_ACTIVE)) {
-            // active XYZ == passive ZYX w/ negative angles
+            // active XYZ == passive XYZ w/ negative angles
+            // [4X4]
+            //TODO: these might need to be swapped
+            q1m = quaternionRighthandCompoundOperator(q2);
+            q2m = quaternionRighthandCompoundOperator(q1);
+            q3v = q0;
+        } else {
+            // active ZYX == passive ZYX w/ negative angles
             // [4X4]
             q1m = quaternionRighthandCompoundOperator(q0);
             q2m = quaternionRighthandCompoundOperator(q1);
             q3v = q2;
-        } else {
-            // active ZYX == passive XYZ w/ negative angles
-            // [4X4]
-            q1m = quaternionRighthandCompoundOperator(q2);
-            q2m = quaternionRighthandCompoundOperator(q1);
-            q3v = q0;
         }
 
         // q2m times q1m times q0 = [4X1]
@@ -2903,9 +2820,9 @@ public class Rotation {
         //from theta0 create r0
         double[][] r0;
         if (seq.equals(EulerSequence.ZYX_ACTIVE)) {
-            r0 = createRotationXYZ(-theta0[0], -theta0[1], -theta0[2]);
-        } else {
             r0 = createRotationZYX(-theta0[0], -theta0[1], -theta0[2]);
+        } else {
+            r0 = createRotationXYZ(-theta0[0], -theta0[1], -theta0[2]);
         }
 
         double[][] r2 = MatrixUtil.multiply(rPerturb, r0);
@@ -3058,11 +2975,11 @@ public class Rotation {
         // eqn (26)
         //C(theta2) ~ C(theta + dTheta) ~ (I_3 - [dPhi]_x) * C(theta)
 
-        double[] theta0 = new double[3];
+        double[] theta0;
         if (seq.equals(EulerSequence.ZYX_ACTIVE)) {
-            extractThetaFromZYXActive(rTheta, theta0);
+            theta0 = extractThetaFromZYX(rTheta, false);
         } else {
-            extractThetaFromXYZActive(rTheta, theta0);
+            theta0 = extractThetaFromXYZ(rTheta, false);
         }
 
         double[][] qPhiX = createRotationInfSmallPerturbation(theta0, dTheta, seq);

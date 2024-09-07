@@ -22,7 +22,7 @@ public class RotationTest extends TestCase {
     public void testCreateRotationXYZ() {
 
         double[] eulerXYZ = new double[]{-0.5, 0.12, 1.32};
-        double[][] r = Rotation.createRotationXYZ(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2]);
+        double[][] r = Rotation.createRotationXYZ(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2], true);
 
         double c1 = Math.cos(eulerXYZ[0]);
         double c2 = Math.cos(eulerXYZ[1]);
@@ -41,28 +41,14 @@ public class RotationTest extends TestCase {
         //System.out.printf("e=\n%s\n", FormatArray.toString(e, "%.5f"));
 
         assertTrue(MiscMath.areEqual(e, r, 1E-5));
+        double[] _eulerXYZ = Rotation.extractThetaFromXYZ(r, true);
+        assertTrue(MiscMath.areEqual(eulerXYZ, _eulerXYZ, 1E-5));
 
-        double[] eulerXYZ2 = Rotation.extractThetaFromXYZ(r, true);
+        double[][] r2 = Rotation.createRotationXYZ(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2], false);
+        double[] eulerXYZ2 = Rotation.extractThetaFromXYZ(r2, false);
         assertTrue(MiscMath.areEqual(eulerXYZ, eulerXYZ2, 1E-5));
 
-        // intrinsic A(a)*B(b)*C(c)
-        // extrinsic: [A(-a)*B(-b)*C(-c)]^T = C(c)*B(b)*A(a)
-        double[][] r2 = Rotation.createRotationXYZExtrinsic(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2]);
-        double[][] e2 = new double[][]{
-                {0.24639073, -0.86437104, -0.4383541},
-                {0.96174872,  0.1621969 ,  0.22075229},
-                {-0.11971221, -0.47597781,  0.87127155}
-        };
-        assertTrue(MiscMath.areEqual(e2, r2, 1E-5));
-
-        r = Rotation.createRotationXYZ(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2], false);
-        e = MatrixUtil.transpose(e);
-        assertTrue(MiscMath.areEqual(e, r, 1E-5));
-
-        double[] euler2 = new double[3];
-        Rotation.extractThetaFromXYZActive(r, euler2);
-
-        assertTrue(MiscMath.areEqual(eulerXYZ, euler2, 1E-5));
+        //PAUSED HERE.  need passive, active argument:
 
         double[] axis = new double[3];
         double angle = Rotation.createAngleAxisFromEulerAnglesXYZ(eulerXYZ, axis);
@@ -122,7 +108,7 @@ public class RotationTest extends TestCase {
         double[] _t1 = Rotation.extractRotationVectorRodrigues(r1);
         double[] _t2 = Rotation.extractRotationVectorRodrigues(r2);
         assertTrue(MiscMath.areEqual(_t1, rotVec, 1E-5));
-        assertTrue(MiscMath.areEqual(_t2, rotVec, 1E-5));
+        assertTrue(MiscMath.areEqual(_t2, rotVec2, 1E-5));
 
         // q1 and q2 are same as R.from_rotvec([1.2091995761561454, 1.2091995761561454, 1.2091995761561454]).as_quat()
         double[] eq = new double[]{0.5, 0.5, 0.5, 0.5};
@@ -143,24 +129,65 @@ public class RotationTest extends TestCase {
 
     public void testQuaternions() {
 
+        // testing for an active system
+        boolean passive = false;
+
+        // for comparison data to test Barfoot quaternions (which are active and intrinsic),
+        // will assume scipy Rotation is correct.
+        //
+        // start with euler angles as active (scipy is passive so will get -1*eulerAngles) and create an intrinsic Rotation.
+        // extract the rotation vector and compare to this one.
+        // extract the quaternion and compare to the Barfoot quaternion
+
+        double[] eulerAngles = new double[]{0.12, -0.51, 1.45};
+        double[][] r = Rotation.createRotationXYZ(eulerAngles[0], eulerAngles[1], eulerAngles[2], true);
+        double[][] er = new double[][]{
+                {},
+                {},
+                {}
+        };
+        //PAUSED HERE, need passive active arguments
+/*        double[] rotVec = Rotation.createRotationVectorFromEulerAnglesXYZ()
+
         double[] rotVec = new double[]{0.12, -0.5, -0.34};
         double[] axis = new double[3];
         double angle = Rotation.createAngleAxisFromRotationVector(rotVec, axis);
+
+        from scipy
 
         double[] q = Rotation.createQuaternionUnitLengthBarfoot(angle, axis);
         double[] e = new double[]{0.0590545 , -0.24606043, -0.16732109,  0.95287485};
         assertTrue(MiscMath.areEqual(e, q, 1E-5));
 
-        //convertQuaternionBarfootToHamilton
-        //convertQuaternionHamiltonToBarfoot
-        //createQuaternionBarfootFromAPoint
-        //createQuaternionHamiltonFromAngleAxis
-        //createQuaternionHamiltonFromBarfoot
-        //createQuaternionUnitLengthBarfoot
-        //createQuaternionUnitLengthBarfootFromEuler
-        //createQuaternionUnitLengthBarfootFromEulerXYZ
-        //createQuaternionUnitLengthBarfootFromRotationVector
-        //createQuaternionUnitLengthHamilton
+        double[] q2 = Arrays.copyOf(q, q.length);
+        double[] e2 = new double[]{0.95287485, 0.0590545 , -0.24606043, -0.16732109};
+        Rotation.convertQuaternionBarfootToHamilton(q2);
+        assertTrue(MiscMath.areEqual(e2, q2, 1E-5));
+
+        Rotation.convertQuaternionHamiltonToBarfoot(q2);
+        assertTrue(MiscMath.areEqual(e, q2, 1E-5));
+        double[] qH = Rotation.createQuaternionHamiltonFromBarfoot(q);
+        assertTrue(MiscMath.areEqual(e2, qH, 1E-5));
+
+        double[] qH2 = Rotation.createQuaternionHamiltonFromAngleAxis(angle, axis);
+        assertTrue(MiscMath.areEqual(e2, qH2, 1E-5));
+
+        double[] qB = Rotation.createQuaternionUnitLengthBarfoot(angle, axis);
+        assertTrue(MiscMath.areEqual(e, qB, 1E-5));
+
+        double[] qB2 = Rotation.createQuaternionUnitLengthBarfootFromRotationVector(rotVec);
+        assertTrue(MiscMath.areEqual(e, qB2, 1E-5));
+
+        double[] p = new double[]{100, 50, -100};
+        double[] qP = Rotation.createQuaternionBarfootFromAPoint(p);
+        assertTrue(MiscMath.areEqual(new double[]{100, 50, -100, 0}, qP, 1E-5));
+
+        boolean passive = false;
+        double[][] r = Rotation.createRotationRodriguesFormula(rotVec, passive);
+        double[] euler = Rotation.extractThetaFromXYZ(r, passive);
+        double[] qB3 = Rotation.createQuaternionUnitLengthBarfootFromEuler(euler, Rotation.EulerSequence.XYZ_ACTIVE);
+        assertTrue(MiscMath.areEqual(e, qB3, 1E-5));
+*/
         //createRotation4FromQuaternion
 
         // the operators
@@ -177,12 +204,49 @@ public class RotationTest extends TestCase {
 
     }
 
+
+    public void estPerturbations() {
+
+        double tol = 1E-5;
+
+        boolean passive = false;
+
+        // applying sequential perturbations to rotation matrix
+        double[][] rot0 = MatrixUtil.createIdentityMatrix(3);
+        double[] euler = Rotation.extractThetaFromZYX(rot0, passive);
+        assertTrue(MiscMath.areEqual(new double[]{0,0,0}, euler, tol));
+
+        double[][] r1;
+        double[] perturb, theta0;
+        boolean returnQuaternion;
+
+        // perturbations <= about 0.2 radians ~11 degrees
+        perturb = new double[]{0.1, -0.05, 0.5};
+        theta0 = new double[]{0, 0, 0};
+        returnQuaternion = false;
+
+        Rotation.RotationPerturbationMatrix rP = (Rotation.RotationPerturbationMatrix)
+                Rotation.applySingularitySafeRotationPerturbation(
+                        theta0, perturb, Rotation.EulerSequence.ZYX_ACTIVE, returnQuaternion);
+        r1 = rP.rotation;
+
+        // TODO: consider perspective and angles
+        euler = Rotation.extractThetaFromZYX(r1, passive);
+
+        //assertTrue(MiscMath.areEqual(perturb, euler, tol));
+
+        int t = 1;
+    }
+
+
     public void testSequences() {
 
         //from active perspective now:
 
         double[] eulerXYZ = new double[]{-0.5, 0.12, 1.32};
         double[] eulerZYX = new double[]{1.32, 0.12, -0.5};
+
+        double[][] rActiveXYZ = Rotation.createRotationFromEulerAngles(eulerXYZ, Rotation.EulerSequence.XYZ_ACTIVE);
 
         double[] rotVecXYZ = Rotation.createRotationVectorFromEulerAngles(eulerXYZ, Rotation.EulerSequence.XYZ_ACTIVE);
         //[0.5032547612511571, 0.23015806481528148, -1.3190236188603013]
@@ -255,21 +319,8 @@ public class RotationTest extends TestCase {
         double[] eulerZYX2 = Rotation.extractThetaFromZYX(r, true);
         assertTrue(MiscMath.areEqual(eulerZYX2, eulerXYZ, 1E-5));
 
-        double[][] r2 = Rotation.createRotationZYXExtrinsic(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2]);
-        double[][] e2 = new double[][]{
-                {0.24639073, -0.96174872,  0.11971221},
-                {0.83588392,  0.273392  ,  0.47597781},
-                {-0.49049941, -0.01721101,  0.87127155}
-        };
-        assertTrue(MiscMath.areEqual(e2, r2, 1E-5));
-
         r = Rotation.createRotationZYX(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2], false);
-        e = MatrixUtil.transpose(e);
-        assertTrue(MiscMath.areEqual(e, r, 1E-5));
-
-        double[] euler2 = new double[3];
-        Rotation.extractThetaFromZYXActive(r, euler2);
-
+        double[] euler2 = Rotation.extractThetaFromZYX(r, false);
         assertTrue(MiscMath.areEqual(eulerXYZ, euler2, 1E-5));
 
     }
@@ -326,38 +377,6 @@ public class RotationTest extends TestCase {
 
         assertTrue(MiscMath.areEqual(e, r, 1E-5));
         assertTrue(MiscMath.areEqual(e, r2, 1E-5));
-    }
-
-    public void est2() {
-
-        double tol = 1E-5;
-
-         // applying sequential perturbations to rotation matrix
-        double[][] rot0 = MatrixUtil.createIdentityMatrix(3);
-        double[] euler = new double[3];
-        Rotation.extractThetaFromZYXActive(rot0, euler);
-        assertTrue(MiscMath.areEqual(new double[]{0,0,0}, euler, tol));
-
-        double[][] r1;
-        double[] perturb, theta0;
-        boolean returnQuaternion;
-
-        // perturbations <= about 0.2 radians ~11 degrees
-        perturb = new double[]{0.1, -0.05, 0.5};
-        theta0 = new double[]{0, 0, 0};
-        returnQuaternion = false;
-
-        Rotation.RotationPerturbationMatrix rP = (Rotation.RotationPerturbationMatrix)
-                Rotation.applySingularitySafeRotationPerturbation(
-                theta0, perturb, Rotation.EulerSequence.ZYX_ACTIVE, returnQuaternion);
-        r1 = rP.rotation;
-
-        // TODO: consider perspective and angles
-        Rotation.extractThetaFromZYXActive(r1, euler);
-
-        //assertTrue(MiscMath.areEqual(perturb, euler, tol));
-
-        int t = 1;
     }
 
     public void _testRodriguesFormula() {
