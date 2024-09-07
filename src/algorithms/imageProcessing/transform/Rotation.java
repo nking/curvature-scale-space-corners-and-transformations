@@ -870,7 +870,7 @@ public class Rotation {
         /**
          * [3X1]
          */
-        public double[] om;
+        public double[] rotVec;
     }
 
     /**
@@ -1124,7 +1124,7 @@ public class Rotation {
         }
 
         RodriguesRotation rRot = new RodriguesRotation();
-        rRot.om = out;
+        rRot.rotVec = out;
         rRot.r = MatrixUtil.copy(in);
         rRot.dRdR = dout;
 
@@ -1208,7 +1208,7 @@ public class Rotation {
             RodriguesRotation rRot = new RodriguesRotation();
             rRot.r = R;
             rRot.dRdR = dRdin;
-            rRot.om = Arrays.copyOf(rotVec, rotVec.length);
+            rRot.rotVec = Arrays.copyOf(rotVec, rotVec.length);
 
             return rRot;
         }
@@ -1332,7 +1332,7 @@ public class Rotation {
         RodriguesRotation rRot = new RodriguesRotation();
         rRot.r = R;
         rRot.dRdR = dRdin;
-        rRot.om = Arrays.copyOf(rotVec, rotVec.length);
+        rRot.rotVec = Arrays.copyOf(rotVec, rotVec.length);
 
         return rRot;
     }

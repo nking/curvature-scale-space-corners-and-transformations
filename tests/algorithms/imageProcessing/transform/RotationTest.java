@@ -612,12 +612,12 @@ public class RotationTest extends TestCase {
         double[] checkOMC = Rotation.extractRotationVectorRodrigues(R);
 
         Rotation.RodriguesRotation rRot5 = Rotation.extractRotationVectorRodriguesBouguet(R, passive);
-        omc = rRot5.om; // om should equal omc
+        omc = rRot5.rotVec; // om should equal omc
         domdR = rRot5.dRdR;
         Rotation.RodriguesRotation rRot6 = Rotation.extractRotationVectorRodriguesBouguet(
                 MatrixUtil.pointwiseAdd(R, dR), passive
         );
-        om2 = rRot6.om;
+        om2 = rRot6.rotVec;
         om_app = MatrixUtil.add(omc,
                 MatrixUtil.multiplyMatrixByColumnVector(domdR, MatrixUtil.stack(dR)));
         norm1 = MatrixUtil.lPSum(MatrixUtil.subtract(om2, omc), 2);
@@ -686,7 +686,7 @@ public class RotationTest extends TestCase {
         System.out.printf("R(om) existing = \n%s\n", FormatArray.toString(_R, "%.4e"));
         dR = rRot7.dRdR;
         Rotation.RodriguesRotation rRot8 = Rotation.extractRotationVectorRodriguesBouguet(R, passive);
-        om2 = rRot8.om;
+        om2 = rRot8.rotVec;
         double[] _om2 = Rotation.extractRotationVectorRodrigues(R);
         // om and om2 should be  the same
         System.out.printf("rand(3)*pi = om = %s\n", FormatArray.toString(om, "%.4e"));
@@ -714,7 +714,7 @@ public class RotationTest extends TestCase {
         R = rRot9.r;
         dR = rRot9.dRdR;
         Rotation.RodriguesRotation rRot10 = Rotation.extractRotationVectorRodriguesBouguet(R, passive);
-        om2 = rRot10.om;
+        om2 = rRot10.rotVec;
         System.out.printf("should be equal:\n");
         System.out.printf("om=%s\nom2=%s\n", FormatArray.toString(om, "%.4e"),
                 FormatArray.toString(om2, "%.4e"));
@@ -753,7 +753,7 @@ public class RotationTest extends TestCase {
         R = rRot11.r;
         Rotation.RodriguesRotation rRot12 =
                 Rotation.createRotationRodriguesBouguet(
-                        Rotation.extractRotationVectorRodriguesBouguet(R, passive).om, passive);
+                        Rotation.extractRotationVectorRodriguesBouguet(R, passive).rotVec, passive);
         R2 = rRot12.r;
         norm1 = MatrixUtil.spectralNorm(R);
         norm2 = MatrixUtil.spectralNorm(R2);
@@ -775,7 +775,7 @@ public class RotationTest extends TestCase {
         R[1] = new double[]{-6.41765854277654e-05, -0.999999917385145, -0.000401386434914383};
         R[2] = new double[]{0.311803617668748, -0.000401386434914345, 0.950146484968298};
         Rotation.RodriguesRotation rRot13 = Rotation.extractRotationVectorRodriguesBouguet(R, passive);
-        om = rRot13.om;
+        om = rRot13.rotVec;
         System.out.printf("om=%s\nom2=%s\n", FormatArray.toString(om, "%.4e"),
                 FormatArray.toString(om2, "%.4e"));
         norm = MatrixUtil.lPSum(om, 2);
@@ -795,7 +795,7 @@ public class RotationTest extends TestCase {
         R[1] = new double[]{9.53007036072085e-05,	-0.999997464662094,	-0.00224979713751896};
         R[2] = new double[]{-0.0126382639492467,	-0.00225082189773293,	0.999917600647740};
         Rotation.RodriguesRotation rRot14 = Rotation.extractRotationVectorRodriguesBouguet(R, passive);
-        om = rRot14.om;
+        om = rRot14.rotVec;
         norm = MatrixUtil.lPSum(om, 2);
         System.out.printf("norm=%.4e\n\n", norm);
     }
