@@ -19,7 +19,7 @@ public class RotationTest extends TestCase {
     public RotationTest() {
     }
 
-    public void testCreateRotationXYZ() {
+    public void testCreateRotationXYZ() throws NotConvergedException {
 
         double[] eulerXYZ = new double[]{-0.5, 0.12, 1.32};
         double[][] r = Rotation.createRotationXYZ(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2], true);
@@ -31,6 +31,7 @@ public class RotationTest extends TestCase {
         double s2 = Math.sin(eulerXYZ[1]);
         double s3 = Math.sin(eulerXYZ[2]);
 
+        //from "Euler Angles, Quaternions, and Transformation Matrices", NASA Shuttle Program, July 1977
         double[][] e = new double[][]{
                 {c2*c3, -c2*s3, s2},
                 {s1*s2*c3 + c1*s3, -s1*s2*s3 +c1*c3, -s1*c2},
@@ -66,9 +67,10 @@ public class RotationTest extends TestCase {
         assertTrue(MiscMath.areEqual(eQ, qB3, 1E-5));
     }
 
-    public void testAngleAxisAndRotationVector() {
+    public void testAngleAxisAndRotationVector() throws NotConvergedException {
         double[] axis = new double[]{1 / Math.sqrt(3), 1 / Math.sqrt(3), 1 / Math.sqrt(3)};//~33 degrees
         double angle = 2 * Math.PI / 3; // 120 degrees // same as 60 degrees from -1*axis
+
         double[] rotVec = Rotation.createRotationVectorFromAngleAxis(axis, angle);
         //[1.2091995761561454, 1.2091995761561454, 1.2091995761561454] // 69.3 degrees
         double[] _axis = new double[3];
@@ -103,92 +105,114 @@ public class RotationTest extends TestCase {
         double[] rotVec4 = Rotation.createRotationVectorFromAngleAxis(axis4, angle4);
         assertTrue(MiscMath.areEqual(negRotVec, rotVec4, 1E-5));
 
-        double[][] r1 = Rotation.createRotationRodriguesFormula(rotVec, true);
-        double[][] r2 = Rotation.createRotationRodriguesFormula(rotVec2, true);
-        double[] _t1 = Rotation.extractRotationVectorRodrigues(r1);
-        double[] _t2 = Rotation.extractRotationVectorRodrigues(r2);
-        assertTrue(MiscMath.areEqual(_t1, rotVec, 1E-5));
-        assertTrue(MiscMath.areEqual(_t2, rotVec2, 1E-5));
-
-        // q1 and q2 are same as R.from_rotvec([1.2091995761561454, 1.2091995761561454, 1.2091995761561454]).as_quat()
+        //R.from_rotvec([1.2091995761561454, 1.2091995761561454, 1.2091995761561454]).as_quat()
+        //array([0.5, 0.5, 0.5, 0.5])
         double[] eq = new double[]{0.5, 0.5, 0.5, 0.5};
-        double[] q1 = Rotation.createQuaternionUnitLengthBarfoot(angle, axis);
-        double[] q2 = Rotation.createQuaternionHamiltonFromAngleAxis(angle, axis);
-        assertTrue(MiscMath.areEqual(eq, q1, 1E-5));
-        // no need to reorder for scalar term because all entries are the same for this specific case:
-        assertTrue(MiscMath.areEqual(eq, q2, 1E-5));
+        // angle = 2.0943951023931953, axis=[0.5773502691896257, 0.5773502691896257, 0.5773502691896257]
+        angle = Rotation.makeUnitLengthAngleAxis(angle, axis);
+        // angle=  axis=
+        double[] axis5 = Arrays.copyOf(axis, axis.length);
+        //angle5=1.0471975511965974,  axis5 = [-0.5773502691896257, -0.5773502691896257, -0.5773502691896257]
+        double[] qPassive = Rotation.createQuaternionUnitLengthBarfoot(angle, axis);
+        assertTrue(MiscMath.areEqual(eq, qPassive, 1E-5));
+        double[] qActive = Rotation.createQuaternionUnitLengthBarfoot(angle4, axis4);
 
         double[] p = new double[]{1, 0, 0, 0};
-        double[] p2 = Rotation.rotateVectorByQuaternion4(q1, p);
+        double[] p2 = Rotation.rotateVectorByQuaternion4(qActive, p);
         // for an active rotation, we expect result = j
         // for a passive rotation, we expect result = k;
         double[] ePassive = new double[]{0, 1, 0, 0};
         double[] eActive = new double[]{0, 0, 1, 0};
         assertTrue(MiscMath.areEqual(eActive, p2, 1E-5));
+
+        assertTrue(MiscMath.areEqual(ePassive, Rotation.rotateVectorByQuaternion4(qPassive, p), 1E-5));
+
+        // create rotation matrix for passive transformation and extract rotation vector
+        boolean passive = true;
+        double[] eulerXYZ = new double[]{0.12, -0.34, 1.34};
+        double[][] _r1 = Rotation.createRotationXYZ(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2], passive);
+        Rotation.RodriguesRotation rr1 = Rotation.extractRotationVectorRodriguesBouguet(_r1);
+        double[] rv1 = Rotation.extractRotationVectorRodrigues(_r1);
+        //R.from_euler('XYZ', [0.12, -0.34, 1.34]).as_rotvec()
+        //-0.12663695, -0.36569661,  1.30424048
+        assertTrue(MiscMath.areEqual(new double[]{-0.12663695, -0.36569661,  1.30424048}, rv1, 1E-5));
+        assertTrue(MiscMath.areEqual(new double[]{-0.12663695, -0.36569661,  1.30424048}, rr1.rotVec, 1E-5));
+
+        // create rotation matrix for active transformation and extract rotation vector
+        passive = false;
+        double[][] _r2 = Rotation.createRotationXYZ(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2], passive);
+        Rotation.RodriguesRotation rr2 = Rotation.extractRotationVectorRodriguesBouguet(_r2);
+        double[] rv2 = Rotation.extractRotationVectorRodrigues(_r2);
+        assertTrue(MiscMath.areEqual(new double[]{-0.32857351,  0.20790901, -1.34495176}, rv2, 1E-5));
+        assertTrue(MiscMath.areEqual(new double[]{-0.32857351,  0.20790901, -1.34495176}, rr2.rotVec, 1E-5));
     }
 
-    public void testQuaternions() {
+    public void testQuaternions() throws NotConvergedException {
 
         // testing for an active system
         boolean passive = false;
 
+        //PAUSED HERE
+
         // for comparison data to test Barfoot quaternions (which are active and intrinsic),
-        // will assume scipy Rotation is correct.
+        // will use scipy Rotation for expected values
         //
-        // start with euler angles as active (scipy is passive so will get -1*eulerAngles) and create an intrinsic Rotation.
+        // start with euler angles as active (scipy is passive so will get -1*eulerAnglesPassive) and create an intrinsic Rotation.
         // extract the rotation vector and compare to this one.
         // extract the quaternion and compare to the Barfoot quaternion
 
-        double[] eulerAngles = new double[]{0.12, -0.51, 1.45};
-        double[][] r = Rotation.createRotationXYZ(eulerAngles[0], eulerAngles[1], eulerAngles[2], true);
-        double[][] er = new double[][]{
-                {},
-                {},
-                {}
+        double[] eulerAnglesPassive = new double[]{0.12, -0.51, 1.45};
+        //double[] eulerAnglesActive = Arrays.copyOf(eulerAnglesPassive, 3);
+        //MatrixUtil.multiply(eulerAnglesActive, -1);
+
+        double[][] r = Rotation.createRotationXYZ(eulerAnglesPassive[0], eulerAnglesPassive[1], eulerAnglesPassive[2], true);
+        double[][] eRPassive = new double[][]{
+                {0.10516813, -0.86638481, -0.48817725},
+                {0.97853176,  0.17765111, -0.10447817},
+                {0.17724353, -0.46670916,  0.86646828}
         };
-        //PAUSED HERE, need passive active arguments
-/*        double[] rotVec = Rotation.createRotationVectorFromEulerAnglesXYZ()
+        double[][] rActive = Rotation.createRotationXYZ(eulerAnglesPassive[0], eulerAnglesPassive[1], eulerAnglesPassive[2], false);
+        double[][] eRActive = new double[][]{
+                {0.10516813,  0.86638481,  0.48817725},
+                {-0.99261631,  0.06162127,  0.10447817},
+                {0.0604362 , -0.49556047,  0.86646828}
+        };
+        assertTrue(MiscMath.areEqual(eRPassive, r, 1E-5));
+        assertTrue(MiscMath.areEqual(eRActive, rActive, 1E-5));
 
-        double[] rotVec = new double[]{0.12, -0.5, -0.34};
-        double[] axis = new double[3];
-        double angle = Rotation.createAngleAxisFromRotationVector(rotVec, axis);
+        double[] rotVec = Rotation.extractRotationVectorRodrigues(r);
+        //[-0.27172186, -0.49915489,  1.38393504]
+        double[] rotVecActive = Rotation.extractRotationVectorRodrigues(rActive);
+        //[-0.46634452,  0.33243642, -1.4447986]
 
-        from scipy
+        double[] axisPassive = new double[3];
+        double[] axisActive = new double[3];
+        double anglePassive = Rotation.createAngleAxisFromRotationVector(rotVec, axisPassive);
+        double angleActive = Rotation.createAngleAxisFromRotationVector(rotVecActive, axisActive);
 
-        double[] q = Rotation.createQuaternionUnitLengthBarfoot(angle, axis);
-        double[] e = new double[]{0.0590545 , -0.24606043, -0.16732109,  0.95287485};
-        assertTrue(MiscMath.areEqual(e, q, 1E-5));
+        double[] qPassive = Rotation.createQuaternionHamiltonFromAngleAxis(anglePassive, axisPassive);
+        double[] e = new double[]{0.73302243, -0.12354021, -0.22694421,  0.62921559};
+        assertTrue(MiscMath.areEqual(e, qPassive, 1E-5));
+        double[] qB = Rotation.createQuaternionBarfootFromHamilton(qPassive);
+        Rotation.convertQuaternionHamiltonToBarfoot(qPassive);
+        e = new double[]{-0.12354021, -0.22694421,  0.62921559,  0.73302243};
+        assertTrue(MiscMath.areEqual(e, qB, 1E-5));
+        assertTrue(MiscMath.areEqual(e, qPassive, 1E-5));
 
-        double[] q2 = Arrays.copyOf(q, q.length);
-        double[] e2 = new double[]{0.95287485, 0.0590545 , -0.24606043, -0.16732109};
-        Rotation.convertQuaternionBarfootToHamilton(q2);
-        assertTrue(MiscMath.areEqual(e2, q2, 1E-5));
-
-        Rotation.convertQuaternionHamiltonToBarfoot(q2);
-        assertTrue(MiscMath.areEqual(e, q2, 1E-5));
-        double[] qH = Rotation.createQuaternionHamiltonFromBarfoot(q);
-        assertTrue(MiscMath.areEqual(e2, qH, 1E-5));
-
-        double[] qH2 = Rotation.createQuaternionHamiltonFromAngleAxis(angle, axis);
-        assertTrue(MiscMath.areEqual(e2, qH2, 1E-5));
-
-        double[] qB = Rotation.createQuaternionUnitLengthBarfoot(angle, axis);
+        // Barfoot paper uses Active and intrinsic transformations, so checking consistency of those here
+        qB = Rotation.createQuaternionUnitLengthBarfoot(angleActive, axisActive);
+        e = new double[]{-0.21040352,  0.14998738, -0.65185867,  0.71296173};
         assertTrue(MiscMath.areEqual(e, qB, 1E-5));
 
-        double[] qB2 = Rotation.createQuaternionUnitLengthBarfootFromRotationVector(rotVec);
-        assertTrue(MiscMath.areEqual(e, qB2, 1E-5));
+        qB = Rotation.createQuaternionUnitLengthBarfootFromRotationVector(rotVecActive);
+        assertTrue(MiscMath.areEqual(e, qB, 1E-5));
 
-        double[] p = new double[]{100, 50, -100};
-        double[] qP = Rotation.createQuaternionBarfootFromAPoint(p);
-        assertTrue(MiscMath.areEqual(new double[]{100, 50, -100, 0}, qP, 1E-5));
+        qB = Rotation.createQuaternionUnitLengthBarfootFromEuler(eulerAnglesPassive, Rotation.EulerSequence.XYZ_ACTIVE);
+        assertTrue(MiscMath.areEqual(e, qB, 1E-5));
 
-        boolean passive = false;
-        double[][] r = Rotation.createRotationRodriguesFormula(rotVec, passive);
-        double[] euler = Rotation.extractThetaFromXYZ(r, passive);
-        double[] qB3 = Rotation.createQuaternionUnitLengthBarfootFromEuler(euler, Rotation.EulerSequence.XYZ_ACTIVE);
-        assertTrue(MiscMath.areEqual(e, qB3, 1E-5));
-*/
-        //createRotation4FromQuaternion
+        double[][] rB4 = Rotation.createRotation4FromQuaternion(qB);
+        double[][] rB3 = MatrixUtil.copySubMatrix(rB4, 0, 2, 0, 2);
+        assertTrue(MiscMath.areEqual(eRActive, rB3, 1E-5));
 
         // the operators
         //inverseQuaternionBarfoot
@@ -205,7 +229,7 @@ public class RotationTest extends TestCase {
     }
 
 
-    public void estPerturbations() {
+    public void estPerturbations() throws NotConvergedException {
 
         double tol = 1E-5;
 
@@ -239,7 +263,7 @@ public class RotationTest extends TestCase {
     }
 
 
-    public void testSequences() {
+    public void testSequences() throws NotConvergedException {
 
         //from active perspective now:
 
@@ -273,8 +297,8 @@ public class RotationTest extends TestCase {
         Barfoot examples use 2 different euler sequences, active XYZ and active ZYX.
          */
 
-        double[] qBXYZActive = Rotation.createQuaternionBarfootFromRotationVector(rotVecXYZ,
-                Rotation.EulerSequence.XYZ_ACTIVE);
+        //double[] qBXYZActive = Rotation.createQuaternionBarfootFromRotationVector(rotVecXYZ,
+        //        Rotation.EulerSequence.XYZ_ACTIVE);
         //[-0.2636069507418558, 0.06366132010060735, 0.5669163288230646, 0.7778589126296669]
         /* this is similar to -1 * vector portion of R.from_rotvec(rotVecXYZ).as_quat()
          scalar portions are similar but not same
@@ -283,8 +307,8 @@ public class RotationTest extends TestCase {
          where scipy: R.from_rotvec([0.50325476, 0.23015806, -1.31902362]).as_quat()
          */
 
-        double[] qBZYXActive = Rotation.createQuaternionBarfootFromRotationVector(rotVecZYX,
-                Rotation.EulerSequence.ZYX_ACTIVE);
+        //double[] qBZYXActive = Rotation.createQuaternionBarfootFromRotationVector(rotVecZYX,
+        //        Rotation.EulerSequence.ZYX_ACTIVE);
         //[0.5374232236710791, 0.0699706093309076, -0.25880741233766974, 0.7995618273829274]
         // this is similar to -1 *vector portion of R.from_rotvec(rotVecZYX).as_quat()
         // scalar portions are similar but not same
@@ -325,14 +349,18 @@ public class RotationTest extends TestCase {
 
     }
 
-    public void testCreateRotationFromUnitLengthAngleAxis() {
+    public void testCreateRotationFromUnitLengthAngleAxis() throws NotConvergedException {
 
         //[0, 2*pi], [0, pi], and [0, 2*pi]
         double[] axis = new double[]{2.14, 0.13, -0.5};
         double angle = 4;
+        angle = Rotation.makeUnitLengthAngleAxis(angle, axis);
+        // 0.8584, [0.9720747555844925, 0.05905127019905796, -0.22712026999637674]
 
+        // unit length has no effect on rotVec
         double[] rotVec = Rotation.createRotationVectorFromAngleAxis(axis, angle);
-        //[8.56, 0.52, -2.0]
+        //[8.56, 0.52, -2.0] if not unit length
+        //[[2.452274178231329, 0.14896992671498727, -0.5729612565961049]  which is factor 3.49063742 smaller
 
         boolean passive = true;
 
@@ -353,23 +381,34 @@ public class RotationTest extends TestCase {
         assertTrue(MiscMath.areEqual(e, r, 1E-5));
         assertTrue(MiscMath.areEqual(e, r2, 1E-5));
 
+        // correct:
+        double[] _rv1 = Rotation.extractRotationVectorRodrigues(r2);
+        double[] _rv2 = Rotation.extractRotationVectorRodriguesBouguet(r2).rotVec;
+        /* from scipy Rotation
+        R.from_matrix(np.array([[0.9000724 ,  0.23591439, -0.3663524], [-0.02759772, -0.80820664, -0.58825199], [-0.43486555,  0.53957987, -0.72093378]])).as_rotvec()
+        array([ 2.45227417,  0.14896993, -0.57296126])
+         */
+        double[] e2 = new double[]{2.45227417,  0.14896993, -0.57296126};
+        assertTrue(MiscMath.areEqual(e2, _rv1, 1E-5));
+        assertTrue(MiscMath.areEqual(e2, _rv2, 1E-5));
+
         // =========================================
         // try all larger angles
         axis = new double[]{-1*(Math.PI/2 - 0.12), 0.13, -0.5};
         //[-1.4507963267948965, 0.13, -0.5]
+        angle = Rotation.makeUnitLengthAngleAxis(angle, axis);
 
         rotVec = Rotation.createRotationVectorFromAngleAxis(axis, angle);
-        //[-5.803185307179586, 0.52, -2.0]
-
+        //[-0.7004065598563302, 0.06276060333187992, -0.24138693589184584]
         r = Rotation.createRotationRodriguesFormula(axis, angle, passive);
 
         rr = Rotation.createRotationRodriguesBouguet(rotVec, passive);
         r2 = rr.r;
 
         e = new double[][] {
-                {0.99914922, -0.04044841, -0.00804796},
-                {0.03924601,  0.99249369, -0.11582756},
-                {0.01267259,  0.11541317,  0.99323673}
+                {0.97030335,  0.19876976,  0.13784773},
+                {-0.24073974,  0.73799186,  0.63040653},
+                {0.02357526, -0.644871  ,  0.76392775}
         };
         System.out.printf("AA r=\n%s\n", FormatArray.toString(r, "%.5f"));
         System.out.printf("RV r=\n%s\n", FormatArray.toString(r2, "%.5f"));
@@ -379,7 +418,7 @@ public class RotationTest extends TestCase {
         assertTrue(MiscMath.areEqual(e, r2, 1E-5));
     }
 
-    public void _testRodriguesFormula() {
+    public void _testRodriguesFormula() throws NotConvergedException {
         
         //from http://www.vision.caltech.edu/bouguetj/calib_doc/htmls/example.html
 
@@ -611,12 +650,11 @@ public class RotationTest extends TestCase {
 
         double[] checkOMC = Rotation.extractRotationVectorRodrigues(R);
 
-        Rotation.RodriguesRotation rRot5 = Rotation.extractRotationVectorRodriguesBouguet(R, passive);
+        Rotation.RodriguesRotation rRot5 = Rotation.extractRotationVectorRodriguesBouguet(R);
         omc = rRot5.rotVec; // om should equal omc
         domdR = rRot5.dRdR;
         Rotation.RodriguesRotation rRot6 = Rotation.extractRotationVectorRodriguesBouguet(
-                MatrixUtil.pointwiseAdd(R, dR), passive
-        );
+                MatrixUtil.pointwiseAdd(R, dR));
         om2 = rRot6.rotVec;
         om_app = MatrixUtil.add(omc,
                 MatrixUtil.multiplyMatrixByColumnVector(domdR, MatrixUtil.stack(dR)));
@@ -685,7 +723,7 @@ public class RotationTest extends TestCase {
         System.out.printf("R(om) = \n%s\n", FormatArray.toString(R, "%.4e"));
         System.out.printf("R(om) existing = \n%s\n", FormatArray.toString(_R, "%.4e"));
         dR = rRot7.dRdR;
-        Rotation.RodriguesRotation rRot8 = Rotation.extractRotationVectorRodriguesBouguet(R, passive);
+        Rotation.RodriguesRotation rRot8 = Rotation.extractRotationVectorRodriguesBouguet(R);
         om2 = rRot8.rotVec;
         double[] _om2 = Rotation.extractRotationVectorRodrigues(R);
         // om and om2 should be  the same
@@ -713,7 +751,7 @@ public class RotationTest extends TestCase {
         Rotation.RodriguesRotation rRot9 = Rotation.createRotationRodriguesBouguet(om, passive);
         R = rRot9.r;
         dR = rRot9.dRdR;
-        Rotation.RodriguesRotation rRot10 = Rotation.extractRotationVectorRodriguesBouguet(R, passive);
+        Rotation.RodriguesRotation rRot10 = Rotation.extractRotationVectorRodriguesBouguet(R);
         om2 = rRot10.rotVec;
         System.out.printf("should be equal:\n");
         System.out.printf("om=%s\nom2=%s\n", FormatArray.toString(om, "%.4e"),
@@ -753,7 +791,7 @@ public class RotationTest extends TestCase {
         R = rRot11.r;
         Rotation.RodriguesRotation rRot12 =
                 Rotation.createRotationRodriguesBouguet(
-                        Rotation.extractRotationVectorRodriguesBouguet(R, passive).rotVec, passive);
+                        Rotation.extractRotationVectorRodriguesBouguet(R).rotVec, passive);
         R2 = rRot12.r;
         norm1 = MatrixUtil.spectralNorm(R);
         norm2 = MatrixUtil.spectralNorm(R2);
@@ -774,7 +812,7 @@ public class RotationTest extends TestCase {
         R[0] = new double[]{-0.950146567583153, -6.41765854280073e-05, 0.311803617668748};
         R[1] = new double[]{-6.41765854277654e-05, -0.999999917385145, -0.000401386434914383};
         R[2] = new double[]{0.311803617668748, -0.000401386434914345, 0.950146484968298};
-        Rotation.RodriguesRotation rRot13 = Rotation.extractRotationVectorRodriguesBouguet(R, passive);
+        Rotation.RodriguesRotation rRot13 = Rotation.extractRotationVectorRodriguesBouguet(R);
         om = rRot13.rotVec;
         System.out.printf("om=%s\nom2=%s\n", FormatArray.toString(om, "%.4e"),
                 FormatArray.toString(om2, "%.4e"));
@@ -794,7 +832,7 @@ public class RotationTest extends TestCase {
         R[0] = new double[]{-0.999920129411407,	-6.68593208347372e-05,	-0.0126384464118876};
         R[1] = new double[]{9.53007036072085e-05,	-0.999997464662094,	-0.00224979713751896};
         R[2] = new double[]{-0.0126382639492467,	-0.00225082189773293,	0.999917600647740};
-        Rotation.RodriguesRotation rRot14 = Rotation.extractRotationVectorRodriguesBouguet(R, passive);
+        Rotation.RodriguesRotation rRot14 = Rotation.extractRotationVectorRodriguesBouguet(R);
         om = rRot14.rotVec;
         norm = MatrixUtil.lPSum(om, 2);
         System.out.printf("norm=%.4e\n\n", norm);

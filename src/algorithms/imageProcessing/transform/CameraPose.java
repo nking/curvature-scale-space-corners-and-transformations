@@ -1489,7 +1489,7 @@ public class CameraPose {
         //omckk = rodrigues(RRR);
         double[] omckk;
         if (useBouguetForRodrigues) {
-            Rotation.RodriguesRotation rRot = Rotation.extractRotationVectorRodriguesBouguet(RRR, passive);
+            Rotation.RodriguesRotation rRot = Rotation.extractRotationVectorRodriguesBouguet(RRR);
             omckk = rRot.rotVec;
         } else {
             omckk = Rotation.extractRotationVectorRodrigues(RRR);
@@ -1519,7 +1519,7 @@ public class CameraPose {
         Rckk = MatrixUtil.multiply(Rckk, Rtransform);
         //omckk = rodrigues(Rckk);
         if (useBouguetForRodrigues) {
-            omckk = Rotation.extractRotationVectorRodriguesBouguet(Rckk, passive).rotVec;
+            omckk = Rotation.extractRotationVectorRodriguesBouguet(Rckk).rotVec;
             //Rckk = rodrigues(omckk);
             Rckk = Rotation.createRotationRodriguesBouguet(omckk, passive).r;
         } else {
@@ -1665,8 +1665,9 @@ public class CameraPose {
         MatrixUtil.multiply(Tckk, 1./sc);
         //omckk = rodrigues(Rckk);
         double[] omckk;
+        //TODO: revisit this for passive, active consistencies
         if (useBouguetForRodrigues) {
-            omckk = Rotation.extractRotationVectorRodriguesBouguet(Rckk, passive).rotVec;
+            omckk = Rotation.extractRotationVectorRodriguesBouguet(Rckk).rotVec;
             //Rckk = rodrigues(omckk);
             Rckk = Rotation.createRotationRodriguesBouguet(omckk, passive).r;
         } else {

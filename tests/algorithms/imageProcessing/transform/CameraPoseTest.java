@@ -124,7 +124,7 @@ public class CameraPoseTest extends TestCase {
             boolean useBouguetForRodrigues = false;
             //double[] om = qHamiltonE;
             //double[] om = qBarfootE;
-            double[] om = Rotation.extractRotationVectorRodriguesBouguet(expectedR, passive).rotVec;
+            double[] om = Rotation.extractRotationVectorRodriguesBouguet(expectedR).rotVec;
             CameraPose.ProjectedPoints xBou = CameraPose.bouguetProjectPoints2(
                     xW, om, expectedT, expectedIntr, useBouguetForRodrigues);
 

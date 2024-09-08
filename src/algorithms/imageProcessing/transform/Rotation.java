@@ -662,6 +662,14 @@ public class Rotation {
         return theta;
     }
 
+    /**
+     * create rotation vector, given angle axis after making the angle axis.
+     * NOTE: for best results, make the angle axis pair unit length first, by using"
+     * angle = Rotation.makeUnitLengthAngleAxis(angle, axis);
+     * @param axis
+     * @param angle
+     * @return
+     */
     public static double[] createRotationVectorFromAngleAxis(double[] axis, double angle) {
         double[] rVec = Arrays.copyOf(axis, axis.length);
         MatrixUtil.multiply(rVec, angle);
@@ -680,7 +688,7 @@ public class Rotation {
      * @param euler euler angles for [x, y, z]
      * @return
      */
-    public static double[] createRotationVectorFromEulerAnglesXYZ(double[] euler) {
+    public static double[] createRotationVectorFromEulerAnglesXYZ(double[] euler) throws NotConvergedException {
         double[][] r = createRotationXYZ(euler[0], euler[1], euler[2]);
         return Rotation.extractRotationVectorRodrigues(r);
     }
@@ -695,7 +703,7 @@ public class Rotation {
         }
     }
 
-    public static double[] createRotationVectorFromEulerAngles(double[] eulerXYZ, EulerSequence seq) {
+    public static double[] createRotationVectorFromEulerAngles(double[] eulerXYZ, EulerSequence seq) throws NotConvergedException {
         double[][] r = createRotationFromEulerAngles(eulerXYZ, seq);
         return Rotation.extractRotationVectorRodrigues(r);
     }
@@ -712,16 +720,26 @@ public class Rotation {
      * @param eulerXYZ eulerXYZ angles for [x, y, z]
      * @return
      */
-    public static double createAngleAxisFromEulerAnglesXYZ(double[] eulerXYZ, double[] outAxis) {
+    public static double createAngleAxisFromEulerAnglesXYZ(double[] eulerXYZ, double[] outAxis) throws NotConvergedException {
         double[][] r = createRotationXYZ(eulerXYZ[0], eulerXYZ[1], eulerXYZ[2]);
         double[] rotVec = Rotation.extractRotationVectorRodrigues(r);
         return Rotation.createAngleAxisFromRotationVector(rotVec, outAxis);
     }
 
+    /**
+     * create a rotation axis using the Rodrigues formula.  Note that internally,
+     * the unit-length angle axis pair is first calculated and then used in the Rodrigues formula.
+     * @param axis
+     * @param angle
+     * @param passive
+     * @return
+     */
     public static double[][] createRotationRodriguesFormula(double[] axis, double angle, boolean passive) {
         if (axis.length != 3) {
             throw new IllegalArgumentException("axis length must be 3");
         }
+        axis = Arrays.copyOf(axis, 3);
+        angle = Rotation.makeUnitLengthAngleAxis(angle, axis);
         double[] rotVec = createRotationVectorFromAngleAxis(axis, angle);
         return createRotationRodriguesFormula(rotVec, passive);
     }
@@ -891,22 +909,17 @@ public class Rotation {
      *      changelist by Bouguet.
      *      </pre>
      *      Note that this is an ambiguous task.
-     * @param in [3X3] rotation matrix
+     * @param rotation [3X3] rotation matrix
      * @return
      */
-    public static RodriguesRotation extractRotationVectorRodriguesBouguet(double[][] in,
-                                                                          boolean passive) throws NotConvergedException {
+    public static RodriguesRotation extractRotationVectorRodriguesBouguet(double[][] rotation) throws NotConvergedException {
 
-        //[m,n] = size(in);
-        int m = in.length;
-        int n = in[0].length;
+        //[m,n] = size(rotation);
+        int m = rotation.length;
+        int n = rotation[0].length;
 
         if (m != 3 || n != 3) {
-            throw new IllegalArgumentException("in dimensions must be 3 X 3");
-        }
-
-        if (!passive) {
-            in = MatrixUtil.transpose(in);
+            throw new IllegalArgumentException("rotation dimensions must be 3 X 3");
         }
 
         final double eps = 2.2204e-16;
@@ -915,23 +928,29 @@ public class Rotation {
         //bigeps = 10e+20*eps;
         double bigeps = 10e20 * eps;
 
-        //norm(in' * in - eye(3)) < bigeps)...
-        //                & (abs(det(in)-1) < bigeps))
+        //norm(rotation' * rotation - eye(3)) < bigeps)...
+        //                & (abs(det(rotation)-1) < bigeps))
         double check1 = MatrixUtil.spectralNorm(
-                MatrixUtil.pointwiseSubtract(MatrixUtil.createATransposedTimesA(in),
+                MatrixUtil.pointwiseSubtract(MatrixUtil.createATransposedTimesA(rotation),
                         MatrixUtil.createIdentityMatrix(3)));
-        double check2 = Math.abs(MatrixUtil.determinant(in) - 1);
+        double check2 = Math.abs(MatrixUtil.determinant(rotation) - 1);
         if ((check1 >= bigeps) || check2 >= bigeps){
-            throw new IllegalArgumentException("in does not appear to be a rotation matrix");
+            throw new IllegalArgumentException("rotation does not appear to be a rotation matrix");
         }
 
-        //R = in;
-        double[][] R = in;
+        //R = rotation;
+        double[][] R = rotation;
 
-        //% project the rotation matrix to SO(3);
-        //[U,S,V] = svd(R);
-        //R = U*V';
-        R = Rotation.orthonormalizeUsingSVD(R);
+        double det = MatrixUtil.determinant(R);
+        // numerical precision
+        det = Math.round(det * 1E11)/1E11;
+        if (Math.abs(det - 1) > 1E-7) {
+            ///% project the rotation matrix to SO(3);
+            //[U,S,V] = svd(R);
+            //R = U*V';
+            R = Rotation.orthonormalizeUsingSVD(R);
+            System.out.println("WARNING: expecting det(r) = 1 for proper rotation matrix");
+        }
 
         //tr = (trace(R)-1)/2;
         double tr = (MatrixUtil.trace(R) - 1)/2.;
@@ -940,7 +959,7 @@ public class Rotation {
         //theta = real(acos(tr));
         double theta = Math.acos(tr);
         if (Double.isNaN(theta)) {
-            throw new IllegalArgumentException("the rotation 'in' is not proper?");
+            throw new IllegalArgumentException("the rotation 'rotation' is not proper?");
         }
 
         double[] out = null;
@@ -960,7 +979,7 @@ public class Rotation {
             double vth = 1./(2.*Math.sin(theta));
             //dvthdtheta = -vth * cos(theta) / sin(theta);
             double dvthdtheta = -vth * Math.cos(theta) / Math.sin(theta);
-            //dvar1dtheta = [dvthdtheta; 1]; //[2X1]
+            //dvar1dtheta = [dvthdtheta; 1]; //[2X1]  column vector
             double[] dvar1dtheta = new double[]{dvthdtheta, 1};
 
             //dvar1dR = dvar1dtheta * dthetadR;  //[2X1][1X9] = [2X9]
@@ -1018,10 +1037,8 @@ public class Rotation {
 
             //domegadvar2 = [theta * eye(3) om]; // [3X3 | [3X1] ==> [3 X 4]
             double[][] domegadvar2 = MatrixUtil.zeros(3, 4);
-            tmp = MatrixUtil.createIdentityMatrix(3);
-            MatrixUtil.multiply(tmp, theta);
             for (i = 0; i < 3; ++i) {
-                System.arraycopy(tmp[i], 0, domegadvar2[i], 0, tmp[i].length);
+                domegadvar2[i][i] = theta;
                 domegadvar2[i][3] = om[i];
             }
 
@@ -1030,7 +1047,7 @@ public class Rotation {
 
         } else {
             if (tr > 0) {
-                //out = [0 0 0]';
+                //out = [0 0 0]'; [3x1]
                 out = new double[3];
 
                 //         0 1     2    3 4   5   6    7    8
@@ -1051,7 +1068,7 @@ public class Rotation {
                 //% Solution by Mike Burl on Feb 27, 2007
                 //% This is a better way to determine the signs of the
                 //% entries of the rotation vector using a hash table on all
-                //% the combinations of signs of a pairs of products (in the
+                //% the combinations of signs of a pairs of products (rotation the
                 //% rotation matrix)
 
                 //% Define hashvec and Smat
@@ -1061,7 +1078,9 @@ public class Rotation {
                 //Smat = [1,1,1; 1,0,-1; 0,1,-1; 1,-1,0; 1,1,0; 0,1,1; 1,0,1; 1,1,1; 1,1,-1; //[11X 3]
                 //1,-1,-1; 1,-1,1];
                 //      9       10
+                //      [11X1]
                 double[] hashvec = new double[]{0, -1, -3, -9, 9, 3, 1, 13, 5, -7, -11};
+                //      [11 X 3]
                 double[][] Smat = new double[11][];
                 Smat[0] = new double[]{1, 1, 1};
                 Smat[1] = new double[]{1, 0, -1};
@@ -1093,7 +1112,7 @@ public class Rotation {
                 MatrixUtil.multiply(mvec, 0.5);
 
                 //syn  = ((mvec > eps) - (mvec < -eps)); % robust sign() function
-                double[] syn = new double[mvec.length];
+                double[] syn = new double[mvec.length]; //[1X3]
                 double t0, t1;
                 int i;
                 for (i = 0; i < 3; ++i) {
@@ -1125,7 +1144,7 @@ public class Rotation {
 
         RodriguesRotation rRot = new RodriguesRotation();
         rRot.rotVec = out;
-        rRot.r = MatrixUtil.copy(in);
+        rRot.r = MatrixUtil.copy(rotation);
         rRot.dRdR = dout;
 
         return rRot;
@@ -1711,7 +1730,7 @@ public class Rotation {
      * can be constructed as angle of rotation = r_vec/||r_vec|| and angle = ||r_vec||
      * where r_vec is the rodrigues vector.
      */
-    public static double[] extractRotationVectorRodrigues(double[][] r) {
+    public static double[] extractRotationVectorRodrigues(double[][] r) throws NotConvergedException {
         if (r.length != 3 || r[0].length != 3) {
             throw new IllegalArgumentException("r must be 3x3");
         }
@@ -1720,7 +1739,11 @@ public class Rotation {
         // numerical precision
         det = Math.round(det * 1E11)/1E11;
         if (Math.abs(det - 1) > 1E-7) {
-            throw new IllegalArgumentException("expecting det(r) = 1 for proper rotation matrix");
+            //% project the rotation matrix to SO(3);
+            //[U,S,V] = svd(R);
+            //R = U*V';
+            r = Rotation.orthonormalizeUsingSVD(r);
+            System.out.println("WARNING: expecting det(r) = 1 for proper rotation matrix");
         }
 
         /*
@@ -1790,7 +1813,7 @@ public class Rotation {
         w[0] = t1*(r[2][1] - r[1][2]);
         w[1] = t1*(r[0][2] - r[2][0]);
         w[2] = t1*(r[1][0] - r[0][1]);
-        
+
         return w;
     }
     
@@ -2120,9 +2143,11 @@ public class Rotation {
         if (quaternion.length != 4) {
             throw new IllegalArgumentException("quaternion must be length 4");
         }
+        // eqn (12)
         double[][] lh = quaternionLefthandCompoundOperator(quaternion);
-        double[][] invRH = quaternionRighthandCompoundOperator(quaternionConjugateOperator(quaternion));
-        return MatrixUtil.multiply(lh, invRH);
+        double[][] lhT = MatrixUtil.transpose(lh);
+        double[][] rh = quaternionRighthandCompoundOperator(quaternion);
+        return MatrixUtil.multiply(lhT, rh);
     }
     
      /**
@@ -2547,16 +2572,18 @@ public class Rotation {
             throw new IllegalArgumentException("unitLengthAxis.length must be 3");
         }
 
+        /*if (Math.abs(angle) > Math.PI) {
+            unitLengthAxis = Arrays.copyOf(unitLengthAxis, 3);
+            angle = Rotation.makeUnitLengthAngleAxis(angle, unitLengthAxis);
+        }*/
+
         double sumSq = MatrixUtil.lPSum(unitLengthAxis, 2);
         sumSq *= sumSq;
 
         //TODO: revisit tolerance here:
         if (Math.abs(sumSq - 1.) > 1E-5) {
             // can provide same normalization for all, by using rotation vector as an intermediary
-            double[] rotVec = Rotation.createRotationVectorFromAngleAxis(unitLengthAxis, angle);
-            double[] _axis = new double[3];
-            angle = Rotation.createAngleAxisFromRotationVector(rotVec, _axis);
-            unitLengthAxis = _axis;
+            angle = Rotation.makeUnitLengthAngleAxis(angle, unitLengthAxis);
             sumSq = MatrixUtil.lPSum(unitLengthAxis, 2);
             sumSq *= sumSq;
         }
@@ -2594,7 +2621,7 @@ public class Rotation {
     </pre>
     @param eulerAngles eulerAngles
     */
-    public static double[] createQuaternionUnitLengthBarfootFromEulerXYZ(double[] eulerAngles) {
+    public static double[] createQuaternionUnitLengthBarfootFromEulerXYZ(double[] eulerAngles) throws NotConvergedException {
         if (eulerAngles.length != 3) {
             throw new IllegalArgumentException("unitLengthAxis.length must be 3");
         }
@@ -2604,7 +2631,7 @@ public class Rotation {
         return createQuaternionUnitLengthBarfoot(angle, axis);
     }
 
-    public static double[] createQuaternionUnitLengthBarfootFromEuler(double[] eulerAnglesXYZ, EulerSequence seq) {
+    public static double[] createQuaternionUnitLengthBarfootFromEuler(double[] eulerAnglesXYZ, EulerSequence seq) throws NotConvergedException {
         if (eulerAnglesXYZ.length != 3) {
             throw new IllegalArgumentException("unitLengthAxis.length must be 3");
         }
@@ -2660,18 +2687,17 @@ public class Rotation {
      * 
      *     and principal axis rotations in eqn (35)
      * </pre>
-     * @param rotVec
+     * @param eulerXYZ
      * @return [4X1] quaternion rotation vector.
      */
-    public static double[] createQuaternionBarfootFromRotationVector(double[] rotVec,
-                                                                     EulerSequence seq) {
-        if (rotVec.length != 3) {
-            throw new IllegalArgumentException("rotVec.length must be 3");
+    public static double[] createQuaternionBarfootFromEuler(double[] eulerXYZ, EulerSequence seq) {
+        if (eulerXYZ.length != 3) {
+            throw new IllegalArgumentException("eulerXYZ.length must be 3");
         }
         // length is 4
-        double[] q0 = quaternionPrincipalAxisRotation(-rotVec[0], 0);
-        double[] q1 = quaternionPrincipalAxisRotation(-rotVec[1], 1);
-        double[] q2 = quaternionPrincipalAxisRotation(-rotVec[2], 2);
+        double[] q0 = quaternionPrincipalAxisRotation(-eulerXYZ[0], 0);
+        double[] q1 = quaternionPrincipalAxisRotation(-eulerXYZ[1], 1);
+        double[] q2 = quaternionPrincipalAxisRotation(-eulerXYZ[2], 2);
 
         /*
         Barfoot "1-2-3" and "alpha-beta-gamma" as names, refer to the passive Euler rotation sequence XYZ,
@@ -2773,7 +2799,7 @@ public class Rotation {
      * applySingularitySafeRotationPerturbation.
      */
     public static RotationPerturbation applySingularitySafeRotationPerturbation(double[] theta0, double[] dTheta,
-        EulerSequence seq, boolean returnQuaternion) {
+        EulerSequence seq, boolean returnQuaternion) throws NotConvergedException {
 
         //TODO: add consistency checks like allowed range values
 
@@ -2791,16 +2817,14 @@ public class Rotation {
 
         if (returnQuaternion) {
 
-            double[] _qDPhi = createQuaternionBarfootFromRotationVector(dPhi, seq);
+            double[] qTheta = createQuaternionBarfootFromEuler(theta0, seq);
 
-            // eqn (48c), compare to _qDPhi
-            double[] qDPhi = Arrays.copyOf(dPhi, 4);
-            MatrixUtil.multiply(qDPhi, 0.5);
-            qDPhi[3] = 1;
+            // eqn (48c)
+            double[] qdPhi = Arrays.copyOf(dPhi, 4);
+            MatrixUtil.multiply(qdPhi, 0.5);
+            qdPhi[3] = 1;// add identity quaternion
 
-            double[][] qLH = quaternionLefthandCompoundOperator(qDPhi);
-
-            double[] qTheta = createQuaternionUnitLengthBarfootFromEuler(theta0, seq);
+            double[][] qLH = quaternionLefthandCompoundOperator(qdPhi);
 
             double[] q2 = MatrixUtil.multiplyMatrixByColumnVector(qLH, qTheta);
 
@@ -2879,8 +2903,6 @@ public class Rotation {
         double[] dPhi = state.dPhi;
 
         if (state instanceof RotationPerturbationQuaternion) {
-
-            double[] _qDPhi = createQuaternionBarfootFromRotationVector(dPhi, state.seq);
 
             // eqn (48c), compare to _qDPhi
             double[] qDPhi = Arrays.copyOf(dPhi, 4);
@@ -3068,4 +3090,26 @@ public class Rotation {
         double[][] t2 = MatrixUtil.pointwiseSubtract(identity, r);
         return MatrixUtil.multiply(t1, t2);
     }
+
+    /**
+     * convert the axis, angle pair into unit length axis, angle pair.
+     * @param angle
+     * @param axis input axis and output axis
+     * @return the angle
+     */
+    public static double makeUnitLengthAngleAxis(double angle, double[] axis) {
+        if (axis.length != 3) {
+            throw new IllegalArgumentException("axis length must be 3");
+        }
+        double[] rotVec = Rotation.createRotationVectorFromAngleAxis(axis, angle);
+        double[] _axis = new double[3];
+        angle = Rotation.createAngleAxisFromRotationVector(rotVec, _axis);
+        System.arraycopy(_axis, 0, axis, 0, 3);
+        double sign = (angle < 0) ? -1 : 1;
+        angle *= sign;
+        angle %= Math.PI;
+        angle *= sign;
+        return angle;
+    }
+
 }
