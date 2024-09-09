@@ -116,12 +116,12 @@ public class RotationTest extends TestCase {
         assertTrue(MiscMath.areEqual(eq, qPassive, 1E-5));
         double[] qActive = Rotation.createQuaternionUnitLengthBarfoot(angle4, axis4);
 
-        double[] p = new double[]{1, 0, 0, 0};
+        double[] p = new double[]{1, 0, 0};
         double[] p2 = Rotation.rotateVectorByQuaternion4(qActive, p);
         // for an active rotation, we expect result = j
         // for a passive rotation, we expect result = k;
-        double[] ePassive = new double[]{0, 1, 0, 0};
-        double[] eActive = new double[]{0, 0, 1, 0};
+        double[] ePassive = new double[]{0, 1, 0};
+        double[] eActive = new double[]{0, 0, 1};
         assertTrue(MiscMath.areEqual(eActive, p2, 1E-5));
 
         assertTrue(MiscMath.areEqual(ePassive, Rotation.rotateVectorByQuaternion4(qPassive, p), 1E-5));
@@ -228,22 +228,27 @@ public class RotationTest extends TestCase {
         //[0.7960837985490559, 0.5594950300243704, -0.05594950300243705, 0.2237980120097482]
         double[] q12 = Rotation.multiplyQuaternionsBarfoot(q1, q2);
         //[0.8897183441754278, 0.3508917648939988, -0.15208773240925755, 0.24929011014863733]
-        // agrees with numpy quaternions qhen accoutn for intrinsic and hamilton
+        // agrees with numpy quaternions when account for intrinsic and hamilton
         e = new double[]{0.8897183441754278, 0.3508917648939988, -0.15208773240925755, 0.24929011014863733};
         assertTrue(MiscMath.areEqual(e, q12, 1E-5));
 
-        //PAUSED HERE
+        double[] pt = new double[]{120, -15, 39};
+        double[] pt2 = Rotation.rotateAPointByQuaternionBarfoot(q1, pt);
+        double[] v2 = Rotation.rotateVectorByQuaternion4(q1, pt);
+        e = new double[]{103.41623131,  23.29723934,  70.05941579};
+        assertTrue(MiscMath.areEqual(e, pt2, 1E-5));
+        assertTrue(MiscMath.areEqual(e, v2, 1E-5));
+
+        //paused here
 
         // the operators
-        //
-        //quaternionConjugateOperator
-        //quaternionLefthandCompoundOperator
-        //quaternionRighthandCompoundOperator
-        //rotateAPointByQuaternionBarfoot
-        //rotateVectorByQuaternion4
         //rotationBetweenTwoDirections0
         //rotationBetweenTwoDirections1
         //procrustesAlgorithmForRotation
+        //quaternionConjugateOperator
+        //quaternionLefthandCompoundOperator
+        //quaternionRighthandCompoundOperator
+
 
     }
 

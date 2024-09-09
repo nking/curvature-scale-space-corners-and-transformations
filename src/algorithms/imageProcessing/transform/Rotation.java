@@ -2047,13 +2047,14 @@ public class Rotation {
         if (x.length != 3) {
             throw new IllegalArgumentException("x length must be 3");
         }
-        if (q.length != 3) {
+        if (q.length != 4) {
             throw new IllegalArgumentException("q length must be 4");
         }
         // (eqn 11) of Barfoot
         double[][] r = createRotation4FromQuaternion(q);
-        double[] v = createQuaternionBarfootFromAPoint(x);
-        return MatrixUtil.multiplyMatrixByColumnVector(r, v);
+        //double[] x = createQuaternionBarfootFromAPoint(x);
+        r = MatrixUtil.copySubMatrix(r, 0, 2, 0, 2);
+        return MatrixUtil.multiplyMatrixByColumnVector(r, x);
     }
 
     /**
@@ -2087,6 +2088,9 @@ public class Rotation {
      * @return
      */
     public static double[] inverseQuaternionBarfoot(double[] q) {
+        if (q.length != 4) {
+            throw new IllegalArgumentException("q length must be 4");
+        }
         // eqn(5) -1*vector portion
         double[] inv = new double[4];
         for (int i =0; i < 3; ++i) {
@@ -2175,17 +2179,7 @@ public class Rotation {
      * @return 
      */
     public static double[] rotateVectorByQuaternion4(double[] quaternion, double[] p) {
-        if (quaternion.length != 4) {
-            throw new IllegalArgumentException("quaternion must be length 4");
-        }
-        if (p.length != 4) {
-            throw new IllegalArgumentException("p must be length 4");
-        }
-        double[][] r = createRotation4FromQuaternion(quaternion);
-
-        double[] result = MatrixUtil.multiplyMatrixByColumnVector(r, p);
-        
-        return result;
+        return rotateAPointByQuaternionBarfoot(quaternion, p);
     }
 
     /**
