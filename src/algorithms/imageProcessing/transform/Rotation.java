@@ -2063,10 +2063,10 @@ public class Rotation {
      * @return
      */
     public static double[] multiplyQuaternionsBarfoot(double[] q1, double[] q2) {
-        if (q1.length != 3) {
+        if (q1.length != 4) {
             throw new IllegalArgumentException("q1 length must be 4");
         }
-        if (q2.length != 3) {
+        if (q2.length != 4) {
             throw new IllegalArgumentException("q2 length must be 4");
         }
         double[][] lh1 = quaternionLefthandCompoundOperator(q1);
@@ -2080,14 +2080,20 @@ public class Rotation {
         return Arrays.copyOf(x, 4);
     }
 
+    /**
+     * return the inverse of the quaternion (multiplies the vector portion by -1).
+     * Note that for unit-length quaternions,Barfoot et al. refer to the conjugate as the inverse.
+     * @param q
+     * @return
+     */
     public static double[] inverseQuaternionBarfoot(double[] q) {
-        // -1*vector portion
+        // eqn(5) -1*vector portion
         double[] inv = new double[4];
         for (int i =0; i < 3; ++i) {
             inv[i] = -q[i];
         }
         inv[3] = q[3];
-        return q;
+        return inv;
     }
     
     /**

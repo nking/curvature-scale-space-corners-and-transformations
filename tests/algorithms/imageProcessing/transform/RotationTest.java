@@ -49,8 +49,6 @@ public class RotationTest extends TestCase {
         double[] eulerXYZ2 = Rotation.extractThetaFromXYZ(r2, false);
         assertTrue(MiscMath.areEqual(eulerXYZ, eulerXYZ2, 1E-5));
 
-        //PAUSED HERE.  need passive, active argument:
-
         double[] axis = new double[3];
         double angle = Rotation.createAngleAxisFromEulerAnglesXYZ(eulerXYZ, axis);
         double[] rotVec = Rotation.createRotationVectorFromAngleAxis(axis, angle);
@@ -75,6 +73,7 @@ public class RotationTest extends TestCase {
         //[1.2091995761561454, 1.2091995761561454, 1.2091995761561454] // 69.3 degrees
         double[] _axis = new double[3];
         double _angle = Rotation.createAngleAxisFromRotationVector(rotVec, _axis);
+        //_angle=, _axis=
 
         // since 120 degrees CCW is > |120-180| CW, will reverse the axis and sign of angle.
         // with angle2 = angle - Math.PI // -60 degrees
@@ -152,8 +151,6 @@ public class RotationTest extends TestCase {
         // testing for an active system
         boolean passive = false;
 
-        //PAUSED HERE
-
         // for comparison data to test Barfoot quaternions (which are active and intrinsic),
         // will use scipy Rotation for expected values
         //
@@ -214,9 +211,31 @@ public class RotationTest extends TestCase {
         double[][] rB3 = MatrixUtil.copySubMatrix(rB4, 0, 2, 0, 2);
         assertTrue(MiscMath.areEqual(eRActive, rB3, 1E-5));
 
+
+        double[] qBInv = Rotation.inverseQuaternionBarfoot(qB);
+        for (int i = 0; i < 3; ++i) {
+            assertEquals(qB[i], -qBInv[i]);
+        }
+        assertEquals(qB[3], qBInv[3]);
+
+        double[] ax1 =  new double[]{1./Math.sqrt(1+4+9), -2./Math.sqrt(1+4+9), 3./Math.sqrt(1+4+9)};
+        double[] ax2 =  new double[]{10./Math.sqrt(100+1+16), -1./Math.sqrt(100+1+16), 4./Math.sqrt(100+1+16)};
+        double ang1 = 0.5;
+        double ang2 = 1.3;
+        double[] q1 = Rotation.createQuaternionUnitLengthBarfoot(ang1, ax1);
+        //[0.06612148940441465, -0.1322429788088293, 0.19836446821324394, 0.9689124217106447]
+        double[] q2 = Rotation.createQuaternionHamiltonFromAngleAxis(ang2, ax2);
+        //[0.7960837985490559, 0.5594950300243704, -0.05594950300243705, 0.2237980120097482]
+        double[] q12 = Rotation.multiplyQuaternionsBarfoot(q1, q2);
+        //[0.8897183441754278, 0.3508917648939988, -0.15208773240925755, 0.24929011014863733]
+        // agrees with numpy quaternions qhen accoutn for intrinsic and hamilton
+        e = new double[]{0.8897183441754278, 0.3508917648939988, -0.15208773240925755, 0.24929011014863733};
+        assertTrue(MiscMath.areEqual(e, q12, 1E-5));
+
+        //PAUSED HERE
+
         // the operators
-        //inverseQuaternionBarfoot
-        // multiplyQuaternionsBarfoot
+        //
         //quaternionConjugateOperator
         //quaternionLefthandCompoundOperator
         //quaternionRighthandCompoundOperator
@@ -230,6 +249,8 @@ public class RotationTest extends TestCase {
 
 
     public void estPerturbations() throws NotConvergedException {
+
+        //PAUSED HERE
 
         double tol = 1E-5;
 
