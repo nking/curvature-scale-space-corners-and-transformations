@@ -226,11 +226,25 @@ public class RotationTest extends TestCase {
         //[0.06612148940441465, -0.1322429788088293, 0.19836446821324394, 0.9689124217106447]
         double[] q2 = Rotation.createQuaternionHamiltonFromAngleAxis(ang2, ax2);
         //[0.7960837985490559, 0.5594950300243704, -0.05594950300243705, 0.2237980120097482]
-        double[] q12 = Rotation.multiplyQuaternionsBarfoot(q1, q2);
+        double[] q12 = Rotation.quaternionMultiply(q1, q2, false);
         //[0.8897183441754278, 0.3508917648939988, -0.15208773240925755, 0.24929011014863733]
         // agrees with numpy quaternions when account for intrinsic and hamilton
         e = new double[]{0.8897183441754278, 0.3508917648939988, -0.15208773240925755, 0.24929011014863733};
         assertTrue(MiscMath.areEqual(e, q12, 1E-5));
+
+        q12 = Rotation.quaternionMultiply(q1, q2, true);
+        //[0.8897183441754278, 0.3508917648939988, -0.15208773240925755, 0.24929011014863733]
+        // agrees with numpy quaternions when account for intrinsic and hamilton
+        e = new double[]{0.682548333857785, 0.67412017253864, 0.132454542793051, 0.249290110148637};
+        assertTrue(MiscMath.areEqual(e, q12, 1E-5));
+
+        double[] qDiv1 = Rotation._quaternionDivide(q1, q2, false);
+        e = new double[]{-0.860122628415764, -0.410083196413325, 0.240874879688247, 0.184391237432149};
+        assertTrue(MiscMath.areEqual(e, qDiv1, 1E-5));
+
+        double[] qDiv21Passive = Rotation._quaternionDivide(q2, q1, true);
+        e = new double[]{-0.860122628415764, -0.410083196413325, 0.240874879688247, 0.184391237432149};
+        assertTrue(MiscMath.areEqual(e, qDiv1, 1E-5));
 
         double[] pt = new double[]{120, -15, 39};
         double[] pt2 = Rotation.rotateAPointByQuaternionBarfoot(q1, pt);
@@ -239,17 +253,78 @@ public class RotationTest extends TestCase {
         assertTrue(MiscMath.areEqual(e, pt2, 1E-5));
         assertTrue(MiscMath.areEqual(e, v2, 1E-5));
 
-        //paused here
+        double q1Mag = MatrixUtil.lPSum(q1, 2);
+        double q2Mag = MatrixUtil.lPSum(q2, 2);
 
-        // the operators
+        // for fraction 0, should return q1
+        double[] qS1 = Rotation.quaternionSlerp(q1, q2, 0., true);
+        assertTrue(MiscMath.areEqual(q1, qS1, 1E-5));
+
+        // for fraction 1, should return q2
+        double[] qS2 = Rotation.quaternionSlerp(q1, q2, 1., true);
+        assertTrue(MiscMath.areEqual(q2, qS2, 1E-5));
+
+        double[] qS3 = Rotation.quaternionSlerp(q1, q2, 0.25, true);
+        // expected result is from: https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/index.htm
+        // and python module quaternion
+        e = new double[]{0.332932567367378,0.07726708691910845, 0.15462983810434694, 0.9269710437942627};
+        assertTrue(MiscMath.areEqual(e, qS3, 1E-5));
+
+        double[] qS4 = Rotation.quaternionSlerp(q1, q2, 0.97, true);
+        e = new double[]{0.7919862213113104, 0.5490604092641526, -0.04707957064428259, 0.2628193414870057};
+        assertTrue(MiscMath.areEqual(e, qS4, 1E-5));
+    }
+
+    public void testGeodesicNorm() throws NotConvergedException {
+        // testing log using pyquaternion test code.
+        // https://github.com/KieranWynn/pyquaternion/blob/master/pyquaternion/test/test_quaternion.py
+        double[] axis = new double[]{1, 0, 0};
+        double angle = Math.PI;
+        double[] q = Rotation.createQuaternionUnitLengthBarfoot(angle, axis);
+        double[] logQ = Rotation._log(q);
+        assertTrue(MiscMath.areEqual(
+                new double[]{Math.PI/2., 0, 0, 0}, logQ, 1E-5));
+
+        q = new double[]{1,0,0, 0};
+        double[] p = new double[]{0,1,0, 0};
+        double d = Rotation.quaternionGeodesicNorm(q, p);
+        assertTrue(Math.abs(d - Math.PI/2) < 1E-5);
+
+        //q = Quaternion(angle=pi/2, axis=[1,0,0])
+        //p = Quaternion(angle=pi/2, axis=[0,1,0])
+        q = new double[]{Math.sqrt(2)/2.,0,0, Math.sqrt(2)/2.};
+        p = new double[]{0, Math.sqrt(2)/2., 0, Math.sqrt(2)/2.};
+        d = Rotation.quaternionGeodesicNorm(q, p);
+        assertTrue(Math.abs(d - Math.PI/3) < 1E-5);
+
+        q = new double[]{-0.5, -0.5, -0.5,  -0.5};
+        p = new double[]{0.5, 0.5, 0.5,  0.5};
+        d = Rotation.quaternionGeodesicNorm(q, p);
+        assertTrue(Math.abs(d) < 1E-5);
+
+        //double[] d1 = new double[]{0, 45.*(Math.PI/180), 0};
+        //double[] d2 = new double[]{0, 72.*(Math.PI/180), 0};
+        //double[] qd12P = Rotation.rotationBetweenTwoDirections0(d1, d2, true);
+        //double[] qd12A = Rotation.rotationBetweenTwoDirections0(d1, d2, false);
+
+        double[][] r1 = Rotation.createRotationXYZ(0.1, 0.2, 0.3);
+        double[][] r2 = Rotation.createRotationXYZ(0.1, 0.2, 0.3);
+        double[][] r2ToR1 = Rotation.procrustesAlgorithmForRotation(r1, r2);
+        double[][] expected = MatrixUtil.createIdentityMatrix(3);
+        double[][] diff = MatrixUtil.pointwiseSubtract(r2ToR1, expected);
+        double diffSN = MatrixUtil.frobeniusNorm(diff);
+        assertTrue(Math.abs(diffSN) < 1E-7);
+
+        r1 = Rotation.createRotationRoll(36 * Math.PI/180);
+        r2 = Rotation.createRotationRoll(-17 * Math.PI/180);
+        expected = Rotation.createRotationRoll(53 * Math.PI/180.);
+        r2ToR1 = Rotation.procrustesAlgorithmForRotation(r1, r2);
+        diff = MatrixUtil.pointwiseSubtract(r2ToR1, expected);
+        diffSN = MatrixUtil.frobeniusNorm(diff);
+        assertTrue(Math.abs(diffSN) < 1E-7);
+
         //rotationBetweenTwoDirections0
         //rotationBetweenTwoDirections1
-        //procrustesAlgorithmForRotation
-        //quaternionConjugateOperator
-        //quaternionLefthandCompoundOperator
-        //quaternionRighthandCompoundOperator
-
-
     }
 
 

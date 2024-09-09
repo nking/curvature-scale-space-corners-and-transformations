@@ -3,7 +3,9 @@ package algorithms.imageProcessing.transform;
 import algorithms.matrix.MatrixUtil;
 
 import java.util.Arrays;
+import java.lang.Math;
 
+import algorithms.misc.MiscMath;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.SVD;
@@ -290,12 +292,9 @@ Note that Shuster 1993 use the active, LH, CW rotations of the object while refe
                [ 0.21835066, -0.03695701,  0.97517033]])
  </pre>
 
- * TODO: add a method to extract the quaternion rotation from a 4X4 rotation matrix.
  * see Barfoot et al.
  * see http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
- *
- * TODO: add slerp
- *
+ **
  * <pre>
   also note that for optimization of rotation :
       prefer to update the rotation vectors and/or the rotation matrices.
@@ -626,32 +625,16 @@ public class Rotation {
      * @param v2
      * @return
      */
-    public static double[][] rotationBetweenTwoDirections0(double[] v1, double[] v2) {
+    public static double[] rotationBetweenTwoDirections0(double[] v1, double[] v2, boolean passive) {
         double[] n1 = MatrixUtil.normalizeL2(v1);
         double[] n2 = MatrixUtil.normalizeL2(v2);
         double angle = -Math.acos(n1[0]*n2[0] + n1[1]*n2[1] + n1[2]*n2[2]);
         double[] axis = MatrixUtil.crossProduct(n1, n2);
-        //TODO: check the method createQuaternionUnitLengthBarfootFromEulerXYZ with results for quatB here
-        double[] quatB = Rotation.createQuaternionHamiltonFromAngleAxis(angle, axis);
-        double[][] r = Rotation.createRotation4FromQuaternion(quatB);
-        r = MatrixUtil.copySubMatrix(r, 0, 2, 0, 2);
-        return r;
-    }
-
-    /**
-     * calculate the rotation needed to transform direction v1 to direction v2 using
-     * Rodrigues formula.
-     * @param v1
-     * @param v2
-     * @return
-     */
-    public static double[][] rotationBetweenTwoDirections1(double[] v1, double[] v2) {
-        double[] n1 = MatrixUtil.normalizeL2(v1);
-        double[] n2 = MatrixUtil.normalizeL2(v2);
-        double angle = -Math.acos(n1[0]*n2[0] + n1[1]*n2[1] + n1[2]*n2[2]);
-        double[] axis = MatrixUtil.crossProduct(n1, n2);
-        double[][] r = Rotation.createRotationRodriguesFormula(axis, false);
-        return r;
+        double[] qH = Rotation.createQuaternionHamiltonFromAngleAxis(angle, axis);
+        if (passive) {
+            return qH;
+        }
+        return Rotation.createQuaternionBarfootFromHamilton(qH);
     }
 
     public static double createAngleAxisFromRotationVector(double[] rV, double[] outRAxis) {
@@ -1989,6 +1972,143 @@ public class Rotation {
         
         return lhc;
     }
+
+    /**
+     * calculate q1 divided by q2 for quaternions.
+     * The method implements q1 * q2.conjugate().
+     * Note that for the Barfoot system use passive = false;
+     * @param q1
+     * @param q2
+     * @param passive
+     * @return
+     */
+    public static double[] _quaternionDivide(double[] q1, double[] q2, boolean passive) {
+        if (q1.length != 4) {
+            throw new IllegalArgumentException("q1 length must be 4");
+        }
+        if (q2.length != 4) {
+            throw new IllegalArgumentException("q2 length must be 4");
+        }
+        return quaternionMultiply(q1, inverseQuaternionBarfoot(q2), passive);
+    }
+
+    /**
+     * calculate the rotation that is angleFraction of the distance between q0 and q1 using spherical linear
+     * interpolation (slerp).
+     <pre>
+     References:
+     Szeliski, 2010, "Computer Vision: Algorithms and Applications", Algorithm 2.1
+     </pre>
+     * @param q0
+     * @param q1
+     * @param angleFraction
+     * @return
+     */
+    public static double[] quaternionSlerp(double[] q0, double[] q1, double angleFraction, boolean passive) {
+        if (q0.length != 4) {
+            throw new IllegalArgumentException("q0 length must be 4");
+        }
+        if (q1.length != 4) {
+            throw new IllegalArgumentException("q1 length must be 4");
+        }
+        if (angleFraction > 1 || angleFraction < 0) {
+            throw new IllegalArgumentException("angleFraction is outside of range [0, 1].");
+        }
+
+        if (!passive) { // Szeliski algorithm is for passive
+            double[] t = q0;
+            q0 = q1;
+            q1 = t;
+            angleFraction = 1. - angleFraction;
+        }
+
+        // now we are in passive frame
+        double[] qr = _quaternionDivide(q1, q0, true);
+        if (qr[3] < 0) {
+            MatrixUtil.multiply(qr, -1);
+        }
+        double[] vr = (Arrays.copyOf(qr, 3));
+        double norm = MatrixUtil.lPSum(vr, 2);
+        double thetaR = 2 * Math.atan(norm/qr[3]);
+
+        // direction n^.  reusing vr for n^
+        MatrixUtil.multiply(vr, 1./norm);
+        
+        double thetaA = angleFraction * thetaR;
+        double[] qFraction = Arrays.copyOf(vr, 4);
+        MatrixUtil.multiply(qFraction, Math.sin(thetaA/2.));
+        qFraction[3] =  Math.cos(thetaA/2.);
+        double[] result = quaternionMultiply(qFraction, q0, true);
+
+        return result;
+    }
+
+    /**
+     * calc geodesic distance (shortest path along a great arc) between 2 unit-length quaternions.
+     * == half the angle subtended by q0 and q1 along a great arc of the S3 sphere
+     <pre>
+     references
+     http://en.wikipedia.org/wiki/Quaternion
+
+     https://github.com/KieranWynn/pyquaternion/blob/master/pyquaternion/quaternion.py#L800
+     who use MIT license:
+     https://github.com/KieranWynn/pyquaternion/blob/master/LICENSE.txt
+     </pre>
+     * @param q0 a unit-length quaternion with scalar last term (Barfoot quaternion)
+     * @param q1 a unit length quaternion with scalar last term (Barfoot quaternion)
+     * @return
+     */
+    public static double quaternionGeodesicNorm(double[] q0, double[] q1) {
+        double[] q0InvQ1 = Rotation.quaternionMultiply(inverseQuaternionBarfoot(q0), q1, true);
+        double[] qLogMap = _log(q0InvQ1);
+        double norm = MatrixUtil.lPSum(qLogMap, 2);
+        return norm;
+    }
+
+    /**
+     * calculate the quaternion logarithm in scalar last fomat and return result in scala last format.
+     <pre>
+     reference:
+     adapted from the pyquaternion project which uses MIT license.
+     https://github.com/KieranWynn/pyquaternion/blob/master/LICENSE.txt
+     who reference:
+      [Source](https://math.stackexchange.com/questions/2552/the-logarithm-of-quaternion/2554#2554) for more details.
+     </pre>
+     @param q a quaternion in scalar last format
+     @return  A quaternion amount representing log(q) := (log(|q|), v/|v|acos(w/|q|))
+     */
+    public static double[] _log(double[] q) {
+        if (q.length !=  4) {
+            throw new IllegalArgumentException("q length must be 4");
+        }
+        double vNorm = MatrixUtil.lPSum(Arrays.copyOf(q, 3), 2);
+        double qNorm = MatrixUtil.lPSum(q, 2);
+        double tol = 1E-17;
+        if (qNorm < tol) {
+            // undefined
+            return new double[]{Double.NaN, Double.NaN, Double.NaN, Double.POSITIVE_INFINITY};
+        }
+        if (vNorm < tol) {
+            // a real quaternion, no imaginary part
+            return new double[]{0, 0, 0, Math.log(qNorm)};
+        }
+        double qN = (Math.acos(q[3]/qNorm))/vNorm;
+        double[] vec = new double[4];
+        for (int i = 0; i < 3; ++i) {
+            vec[i] = q[i]*qN;
+        }
+        vec[3] = Math.log(qNorm);
+        return vec;
+    }
+
+    /*
+    method computes the logarithm of general quaternions.
+        "
+
+        vec = q.vector / v_norm
+        return Quaternion(scalar=log(q_norm), vector=acos(q.scalar/q_norm)*vec)
+
+     */
     
     /**
      * given a quaternion, return the inverse
@@ -2058,17 +2178,22 @@ public class Rotation {
     }
 
     /**
-     * multiply quaternions using active transformations
+     * multiply quaternions.  Note for the Barfoot system, use passive = false
      * @param q1
      * @param q2
      * @return
      */
-    public static double[] multiplyQuaternionsBarfoot(double[] q1, double[] q2) {
+    public static double[] quaternionMultiply(double[] q1, double[] q2, boolean passive) {
         if (q1.length != 4) {
             throw new IllegalArgumentException("q1 length must be 4");
         }
         if (q2.length != 4) {
             throw new IllegalArgumentException("q2 length must be 4");
+        }
+        if (passive) {
+            double[] t = q1;
+            q1 = q2;
+            q2 = t;
         }
         double[][] lh1 = quaternionLefthandCompoundOperator(q1);
         return MatrixUtil.multiplyMatrixByColumnVector(lh1, q2);
