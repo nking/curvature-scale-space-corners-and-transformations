@@ -2891,8 +2891,9 @@ public class Rotation {
      *              be perturbed by dTheta.  The order of the angles in the array is X,Y,Z even
      *               if the seq used is not.
      *               In Barfoot paper eqn 26, this is theta with a bar over it.
-     * @param dTheta the perturbation to apply to the rotation matrix as euler rotation angles as
-     *               X, Y, Z ordered values.
+     * @param dTheta the perturbation to apply to the rotation matrix as euler rotation angles
+     *    must be small (cosine(dTheta[i]) ~ 1, sine(dTheta[i] ~ 0 or sine(dTheta[i])/i ~ 1).
+     *     The order of the angles in the array is X,Y,Z even if the seq used is not.
      *
      * @param seq Euler sequence
      * @param returnQuaternion if true, calculates the rotation quaternion and returns a datastructure holding it,
@@ -2990,9 +2991,10 @@ public class Rotation {
      </pre>
      * @param state data structure holding the current state rotation matrix or quaternion, the EulerSequence, and the
      * current state updatable rotation vector dPhi.
-     * @param dTheta the perturbation to apply to the rotation matrix as euler rotation angles.
-     *               The order of the angles in the array is X,Y,Z even
-     *      *               if the seq used is not.
+     @param dTheta the perturbation to apply to the rotation matrix as euler rotation angles
+     *    must be small (cosine(dTheta[i]) ~ 1, sine(dTheta[i] ~ 0 or sine(dTheta[i])/i ~ 1).
+     *     The order of the angles in the array is X,Y,Z even if the seq used is not.
+     *     if the seq used is not.
      * @return a data structure holding the resulting rotation matrix or quaternion, the EulerSequence, and the
      * updatable rotation vector dPhi.
      */

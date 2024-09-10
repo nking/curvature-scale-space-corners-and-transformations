@@ -342,7 +342,8 @@ public class RotationTest extends TestCase {
         double[] perturb, theta0;
         boolean returnQuaternion;
 
-        // small perturbations must be <= about 0.2 radians ~11 degrees
+        // small perturbations must be <= about 0.1 radians ~5.7 degrees
+        // 0.5 is large, but wanting to look at how close a rotation from perturb as rotation vector is to result
         perturb = new double[]{0.1, -0.05, 0.5};
         theta0 = new double[]{0, 0, 0};
         returnQuaternion = false;
@@ -364,16 +365,64 @@ public class RotationTest extends TestCase {
                 Rotation.applySingularitySafeRotationPerturbation(
                         theta0, perturb, Rotation.EulerSequence.ZYX_ACTIVE, !returnQuaternion);
         double[] q1 = qP.quaternion;
+        double[] q0 = Rotation.createIdentityQuaternion();
+        double[] diffQ1Q0 = Rotation.quaternionMultiply(q1, Rotation.quaternionConjugateOperator(q0), passive);
+
         // for intrinsic, q1 = [-0.05, 0.025, -0.25, 1.0]
         // expecting intrinsic ZYX, active: [-0.04223358,  0.0365512 , -0.24580705,  0.96770824]
         double[] eQ = new double[]{-0.04223358,  0.0365512 , -0.24580705,  0.96770824};
-        for (int i = 0; i < eulerR1ZYX.length; ++i) {
+        for (int i = 0; i < eQ.length; ++i) {
             double tolerance = 0.5*Math.abs(eQ[i]);
             double diff = Math.abs(q1[i] - eQ[i]);
             assertTrue(diff <= tolerance);
         }
 
-        
+        double[] perturb2 = new double[]{0.1, -0.08, 0.05};
+        Rotation.RotationPerturbationMatrix rP2 = (Rotation.RotationPerturbationMatrix)
+                Rotation.applySingularitySafeRotationPerturbation(rP, perturb2);
+        double[][] r2 = rP2.rotation;
+        double[][] diffR1ToR2 = Rotation.procrustesAlgorithmForRotation(r2, r1);
+        double[] extractedP2 = Rotation.extractThetaFromZYX(diffR1ToR2, passive);
+        double[][] expectedDiffR1ToR2 = Rotation.createRotationRodriguesFormula(perturb2, passive);
+
+        // extractedP2 is on the order of perturb2 but smaller.  except last term tends towards value 1 because of the
+        //    internal structure of the algorithm (col2 = i2)
+        // expectedDiffR1ToR2 is on the order of diffR1ToR2 excepting [1][0] and [0][1]
+        // roughly asserting here for future regression checks
+        for (int i = 0; i < 2; ++i) {
+            double tolerance = Math.abs(0.85*perturb2[i]);
+            double diff = Math.abs(extractedP2[i] - perturb2[i]);
+            assertTrue(diff <= tolerance);
+        }
+        for (int i = 0; i < diffR1ToR2.length; ++i) {
+            for (int j = 0; j < diffR1ToR2[i].length; ++j) {
+                double tolerance = 0.7 * Math.abs(expectedDiffR1ToR2[i][j]);
+                if ((i==1 && j==0) || (i==0 && j==1)) continue;
+                double diff = Math.abs(diffR1ToR2[i][j] - expectedDiffR1ToR2[i][j]);
+                assertTrue(diff <= tolerance);
+            }
+        }
+
+        Rotation.RotationPerturbationQuaternion qP2 = (Rotation.RotationPerturbationQuaternion)
+                Rotation.applySingularitySafeRotationPerturbation(qP, perturb2);
+
+        // perturb2 = 0.1, -0.08, 0.05
+        double[] q2 = qP2.quaternion;
+
+        //diff in rotation
+        //q2 = q(dphi)^+ * q1
+        // q(dphi)^+ = q2 * q1^-1
+        double[] diffQ2Q1 = Rotation.quaternionMultiply(q2, Rotation.quaternionConjugateOperator(q1), passive);
+
+        //R.from_euler('ZYX', [-0.05, 0.08, -0.1]).as_quat()
+        double[] eQ2 = new double[]{-0.04892521,  0.04117523, -0.02294818,  0.99768948};
+        for (int i = 0; i < 4; ++i) {
+            if (i == 2) continue;  // skip the 3rd term. details in createQuaternionBarfootFromEuler
+            double tolerance = 0.5*Math.abs(eQ2[i]);
+            double diff = Math.abs(diffQ2Q1[i] - eQ2[i]);
+            assertTrue(diff <= tolerance);
+        }
+
     }
 
     public void testCreateRotationZYX() {
