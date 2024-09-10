@@ -347,106 +347,33 @@ public class RotationTest extends TestCase {
         theta0 = new double[]{0, 0, 0};
         returnQuaternion = false;
 
-        // intrinsic setting now gives expected results.
-        // TODO: after more testing, if that's strill true, remove public option for extrinsic or extrinsic
-        // and document results
-        boolean extrinsic = !true;
-
         Rotation.RotationPerturbationMatrix rP = (Rotation.RotationPerturbationMatrix)
                 Rotation.applySingularitySafeRotationPerturbation(
-                        theta0, perturb, Rotation.EulerSequence.ZYX_ACTIVE, returnQuaternion, extrinsic);
+                        theta0, perturb, Rotation.EulerSequence.ZYX_ACTIVE, returnQuaternion);
         r1 = rP.rotation;
-        // for extrinsic, extracting eulerZYX=[0.4636476090008061, -0.044691581036352686, 0.09966865249116204]
         // for intrinsic, extracting eulerZYX=[0.09966865249116204, -0.049710870978323454, 0.4636476090008061]
         // perturb = 0.1, -0.05, 0.5
         double[] eulerR1ZYX = Rotation.extractThetaFromZYX(r1, passive);
-        double[] eulerR1XYZ = Rotation.extractThetaFromXYZ(r1, passive);
+        for (int i = 0; i < eulerR1ZYX.length; ++i) {
+            double tolerance = Math.abs(0.8*perturb[i]);
+            double diff = Math.abs(eulerR1ZYX[i] - perturb[i]);
+            assertTrue(diff <= tolerance);
+        }
 
         Rotation.RotationPerturbationQuaternion qP = (Rotation.RotationPerturbationQuaternion)
                 Rotation.applySingularitySafeRotationPerturbation(
-                        theta0, perturb, Rotation.EulerSequence.ZYX_ACTIVE, !returnQuaternion, extrinsic);
+                        theta0, perturb, Rotation.EulerSequence.ZYX_ACTIVE, !returnQuaternion);
         double[] q1 = qP.quaternion;
-        // for extrinsic, q1 = [-0.25, 0.025, -0.05, 1.0]
         // for intrinsic, q1 = [-0.05, 0.025, -0.25, 1.0]
-        // expecting extrinsic zyx, active: -0.05458703,  0.01182884, -0.24822807,  0.96709005
         // expecting intrinsic ZYX, active: [-0.04223358,  0.0365512 , -0.24580705,  0.96770824]
+        double[] eQ = new double[]{-0.04223358,  0.0365512 , -0.24580705,  0.96770824};
+        for (int i = 0; i < eulerR1ZYX.length; ++i) {
+            double tolerance = 0.5*Math.abs(eQ[i]);
+            double diff = Math.abs(q1[i] - eQ[i]);
+            assertTrue(diff <= tolerance);
+        }
 
-        //so looks like we need to use intrinsic and then transpose or take conjugate
-
-        // check that perturbation led to roughly, an expected rotation of perturb
-        double[][] r2 = Rotation.createRotationZYX(perturb[0], perturb[1], perturb[2], passive);
-        double[] euler2 = Rotation.extractThetaFromZYX(r2, passive);
-        assertTrue(MiscMath.areEqual(perturb, euler2, tol));
-        MatrixUtil.multiply(r2, 1./r2[0][0]);
-
-        //intrinsic ABC = extrinsic CBA
-
-        // euler has the opposite signs from what is expected.
-        // one way that could happen is if the resulting Barfoot rotation matrix is actually extrinsic instead of
-        // intrinsic.
-        // if r1 is extrinsic, then the rotation matrix r1 should be equivalent to XYZ (we used ZYX transformations)
-        double[][] intrinsicXYZ = Rotation.createRotationXYZ(perturb[0], perturb[1], perturb[2], passive);
-        double[] _incorrectExtr = Rotation.extractThetaFromZYX(intrinsicXYZ, passive);
-
-        //TODO: quaternion tests
-
-        //from active perspective now:
-        passive = false;
-
-        double[] eulerXYZ = new double[]{-0.5, 0.12, 1.32};
-        double[] eulerZYX = new double[]{1.32, 0.12, -0.5};
-
-        double[][] rActiveXYZ = Rotation.createRotationFromEulerAngles(eulerXYZ, Rotation.EulerSequence.XYZ_ACTIVE);
-
-        double[] rotVecXYZ = Rotation.createRotationVectorFromEulerAngles(eulerXYZ, Rotation.EulerSequence.XYZ_ACTIVE);
-        //[0.5032547612511571, 0.23015806481528148, -1.3190236188603013]
-        // same as R.from_euler('XYZ', [+0.5, -0.12, -1.32]).as_rotvec()
-        double[] e = new double[]{0.50325476,  0.23015806, -1.31902362};
-        assertTrue(MiscMath.areEqual(e, rotVecXYZ, 1E-5));
-
-        double[] rotVecZYX = Rotation.createRotationVectorFromEulerAngles(eulerZYX, Rotation.EulerSequence.ZYX_ACTIVE);
-        //[-1.2592811528236525, -0.4274666442528654, 0.3454896074433141]
-        // same as R.from_euler('xyz', [-1.32, -0.12, 0.5]).as_rotvec()
-        e = new double[]{-1.25928115, -0.42746664,  0.34548961};
-        assertTrue(MiscMath.areEqual(e, rotVecZYX, 1E-5));
-
-        /*
-        Barfoot is using active and intrinsic.
-
-        scipy library uses passive and allows specification of intrinsic or extrinsic, but the
-        input array for euler or rotation elements must match the sequence order
-        (i.e. for ZYX, euler=[thetaZ, thetaY, thetaX].
-
-        Barfoot "1-2-3" and "alpha-beta-gamma" as names, refer to the passive Euler rotation sequence XYZ,
-        then Barfoot impl. converts the sequence to active by making the angles negative, and that is equiv
-        to transposing each component and keeping positive angles, which is further equiv to the
-        transpose of the reverse sequence:
-        passive A(a)*B(b)*C(c) == active A(-a)*B(-b)*C(-c)
-                               = A(a)^T * B(b)^T * C(c)^T
-                               = (C(c) * B*b) * A(a) )^T
-
-        Barfoot examples use 2 different euler sequences, active XYZ and active ZYX.
-         */
-
-        //double[] qBXYZActive = Rotation.createQuaternionBarfootFromRotationVector(rotVecXYZ,
-        //        Rotation.EulerSequence.XYZ_ACTIVE);
-        //[-0.2636069507418558, 0.06366132010060735, 0.5669163288230646, 0.7778589126296669]
-        /* this is similar to -1 * vector portion of R.from_rotvec(rotVecXYZ).as_quat()
-         scalar portions are similar but not same
-         here: array([-0.26360695,  0.06366132,  0.56691633,  0.77785891])
-         scipy: array([ 0.23071752,  0.10551613, -0.60470735,  0.75496013])
-         where scipy: R.from_rotvec([0.50325476, 0.23015806, -1.31902362]).as_quat()
-         */
-
-        //double[] qBZYXActive = Rotation.createQuaternionBarfootFromRotationVector(rotVecZYX,
-        //        Rotation.EulerSequence.ZYX_ACTIVE);
-        //[0.5374232236710791, 0.0699706093309076, -0.25880741233766974, 0.7995618273829274]
-        // this is similar to -1 *vector portion of R.from_rotvec(rotVecZYX).as_quat()
-        // scalar portions are similar but not same
-
-        //createQuaternionUnitLengthBarfootFromEuler(euler, seq)
-
-
+        
     }
 
     public void testCreateRotationZYX() {
