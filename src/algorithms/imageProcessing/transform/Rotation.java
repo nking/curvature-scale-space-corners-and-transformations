@@ -2439,20 +2439,20 @@ public class Rotation {
         // Barfoot uses euler active transformations.  we use the positive angles given, but later, if extracting
         //   angles, they should be considered negative in a passive context.
 
-        double[][] cBeta = Rotation.createRotationPitch(eulerAngles[1]);
+        double[][] cBeta = Rotation.createRotationPitch(-eulerAngles[1]);
 
         double[] col0, col1, col2;
         if (seq.equals(EulerSequence.XYZ_ACTIVE)) {
             // XYZ active = passive w/ negative angles
             // eqn (58) of Barfoot et al. for a 3-2-1 sequence, but he means 1-2-3 w.r.t. euler notation...
-            double[][] cAlpha = Rotation.createRotationRoll(eulerAngles[0]);
+            double[][] cAlpha = Rotation.createRotationRoll(-eulerAngles[0]);
             col0 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.multiply(cAlpha, cBeta), i2);
             col1 = MatrixUtil.multiplyMatrixByColumnVector(cAlpha, i1);
             col2 = i0;
         } else  {
             // ZYX active = passive w/ negative angles = XYZ passive
             // eqn (21) of Barfoot et al. for a 1-2-3 sequence
-            double[][] cGamma = Rotation.createRotationYaw(eulerAngles[2]);
+            double[][] cGamma = Rotation.createRotationYaw(-eulerAngles[2]);
             col0 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.multiply(cGamma, cBeta), i0);
             col1 = MatrixUtil.multiplyMatrixByColumnVector(cGamma, i1);
             col2 = i2;
@@ -2964,14 +2964,20 @@ public class Rotation {
             rPerturb[i][i] = 1. - rPerturb[i][i];
         }
 
+        //TODO: revisit this when consider how to test this better.  consider following steps in the Barfoot et al.
+        //   paper for one of the 2 experiments in it.
+        //   The Barfoot et al. paper uses active transformations, and appears to use intrinsic,
+        // but test results look like the resulting rotation matrix needs to be transposed,
+        // which would be true for extrinsic case.
+
         // for active transformations, we need -1*euler angles to use with euler rotation matrices that are intrinsic
 
         //from theta0 create r0
         double[][] r0;
         if (seq.equals(EulerSequence.ZYX_ACTIVE)) {
-            r0 = createRotationZYX(-theta0[0], -theta0[1], -theta0[2]);
+            r0 = createRotationZYX(theta0[0], theta0[1], theta0[2], false);
         } else {
-            r0 = createRotationXYZ(-theta0[0], -theta0[1], -theta0[2]);
+            r0 = createRotationXYZ(theta0[0], theta0[1], theta0[2], false);
         }
 
         double[][] r2 = MatrixUtil.multiply(rPerturb, r0);

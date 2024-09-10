@@ -327,10 +327,7 @@ public class RotationTest extends TestCase {
         //rotationBetweenTwoDirections1
     }
 
-
-    public void estPerturbations() throws NotConvergedException {
-
-        //PAUSED HERE
+    public void testPerturbations() throws NotConvergedException {
 
         double tol = 1E-5;
 
@@ -345,7 +342,7 @@ public class RotationTest extends TestCase {
         double[] perturb, theta0;
         boolean returnQuaternion;
 
-        // perturbations <= about 0.2 radians ~11 degrees
+        // small perturbations must be <= about 0.2 radians ~11 degrees
         perturb = new double[]{0.1, -0.05, 0.5};
         theta0 = new double[]{0, 0, 0};
         returnQuaternion = false;
@@ -355,10 +352,24 @@ public class RotationTest extends TestCase {
                         theta0, perturb, Rotation.EulerSequence.ZYX_ACTIVE, returnQuaternion);
         r1 = rP.rotation;
 
-        // TODO: consider perspective and angles
-        euler = Rotation.extractThetaFromZYX(r1, passive);
+        // check that perturbation led to roughly, an expected rotation of perturb
+        double[][] r2 = Rotation.createRotationZYX(perturb[0], perturb[1], perturb[2], passive);
+        double[] euler2 = Rotation.extractThetaFromZYX(r2, passive);
+        assertTrue(MiscMath.areEqual(perturb, euler2, tol));
+        MatrixUtil.multiply(r2, 1./r2[0][0]);
 
+        // euler has the opposite signs as expected.
+        // one way that could happen is if the resulting Barfoot rotation matrix is actually extrinsic instead of
+        // intrinsic.
+        euler = Rotation.extractThetaFromZYX(r1, passive);
+        //double[][] r3 = Rotation.createRotationZYX(euler[0], euler[1], euler[2], passive);
+
+        // this fails unless assume r1 is extrinsic.
+        // in that case, should transpose r1 then extract the euler
         //assertTrue(MiscMath.areEqual(perturb, euler, tol));
+        double[][] rIfR1Extrinsic = MatrixUtil.transpose(r1);
+        double[] eulerIfR1Extrinsic = Rotation.extractThetaFromZYX(rIfR1Extrinsic, passive);
+        assertTrue(MiscMath.areEqual(perturb, eulerIfR1Extrinsic, 1E-1));
 
         int t = 1;
     }
