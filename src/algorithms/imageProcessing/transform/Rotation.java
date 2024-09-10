@@ -13,6 +13,10 @@ import no.uib.cipr.matrix.SVD;
 /**
  * a utility class holding rotations associated with euler angles,
  * quaternions, and angle-axis representations (using rodrigues formula for the later).
+ *
+ Note that this class focus is intrinsic and passive transformations.
+ If one needs extrinsic operations, there are notes here, but it might be best to implement
+ methods using Direct Cosine matrices.
  * 
  * a rotation matrix describes a transformation in euclidean space.  it is a
  * member of  special orthogonal group SO(n) where n is usually 3, but can

@@ -5,6 +5,14 @@
    - chap 12.1.3 of MASKS book
    - https://docs.opencv.org/4.x/dc/d2c/tutorial_real_time_pose.html
 
+-- graph based SLAM
+
+-- for generating random rotation matrices for unit tests:
+    Massé & Rivest (2006) show how to use the Cayley transform to generate and test 
+    matrices according to this criterion.
+    León, Carlos A.; Massé, Jean-Claude; Rivest, Louis-Paul (February 2006), "A statistical model for random rotations", Journal of Multivariate Analysis, 97 (2): 412–430, doi:10.1016/j.jmva.2005.03.009, ISSN 0047-259X
+    http://www.mat.ulaval.ca/pages/lpr/
+
 -- for bundleadjustment using a preconditioner for J,  conjugate gradient,
    and sparse matrices:
    see Kushal and Agarwal, "Visibility Based Preconditioning for Bundle Adjustment"
