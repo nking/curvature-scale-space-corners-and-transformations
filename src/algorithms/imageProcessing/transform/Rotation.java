@@ -275,10 +275,7 @@ Note that Shuster 1993 use the active, LH, CW rotations of the object while refe
                    = A(a)^T * B(b)^T * C(c)^T
                    = (C(c) * B(b) * C(c))^T
 
-     passive intrinsic XYZ = extrinsic transposed(active)
-                           = extrinsic transposed(XYZ(-1*angles))
-     extrinsic passive XYZ = intrinsic active XYZ
-                           = intrinsic transpose(XYZ(-1*angles))
+     intrinsic ABC = extrinsic CBA
 
      example:
         from scipy.spatial.transform import Rotation as R
@@ -2308,40 +2305,40 @@ public class Rotation {
     }
 
     /**
-     * calculate S_theta which is the matrix relating angular velocity to 
+     * calculate S_theta which is the matrix relating angular velocity to
      * rotation angle rates.
      *
      The method uses intrinsic, active transformations.
      *
      * TODO: consider overloading for more rotation sequences.
      * <pre>
-     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized 
+     * from Barfoot, Forbes, & Furgale 2010, "Pose estimation using linearized
      * rotations and quaternion algebra", Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049.
-     * 
+     *
      * eqn (21):
      * calc C = 3X3 rotation matrix (often written as R)
      * given array of euler rotation angles alpha, beta, gamma
-     * 
+     *
      * s_theta column 0 = C_gamma(eulerAngles[2]) * C_beta(eulerAngles[1]) * [1, 0, 0]^T
      *         column 1 = C_gamma(eulerAngles[2]) * [0, 1, 0]^T
      *         column 2 = [0, 0, 1]^T
-     * 
+     *
              C_gamma                        C_beta                            C_alpha
-      cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):    
-            | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |  
-            | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |  
-            |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |  
+      cc rotation about z-axis (yaw):   cc about the y-axis (pitch):    cc about x-axis (roll):
+            | cos φ   -sin φ    0 |          |  cos ψ    0  sin ψ |         |    1       0       0 |
+            | sin φ    cos φ    0 |          |      0    1      0 |         |    0   cos θ  -sin θ |
+            |     0        0    1 |          | -sin ψ    0  cos ψ |         |    0   sin θ   cos θ |
      *  eulerAngles[0] = angleX angle of rotation about x-axis (roll) in units of radians.
      *             can use createRotationRoll(eulerAngles[0])
      *  eulerAngles[1] = angleY angle of rotation about y-axis (pitch) in units of radians.
      *             can use createRotationPitch(eulerAngles[1])
      *  eulerAngles[2] = angleZ angle of rotation about z-axis (yaw) in units of radians.
      *             can use createRotationYaw(eulerAngles[2])
-     * 
+     *
      * see also, pp 479-480, eqn (285) of Shuster 1993, "A Survey of AttitudeRepresentations"
      * http://www.ladispe.polito.it/corsi/Meccatronica/02JHCOR/2011-12/Slides/Shuster_Pub_1993h_J_Repsurv_scan.pdf
      * though the sign conventions of the sine terms are different
-     * 
+     *
      * </pre>
      * This method uses active (left-hand system) transformations.
      *
@@ -2349,13 +2346,13 @@ public class Rotation {
      * @param seq Euler sequence in use
      * @return [3X3]
      */
-    public static double[][] sTheta(double[] eulerAngles, EulerSequence seq) {
+    public static double[][] sTheta(double[] eulerAngles, EulerSequence seq, boolean extrinsic) {
         if (eulerAngles.length != 3) {
             throw new IllegalArgumentException("eulerAngles length must be 3");
         }
         double[][] sTheta = MatrixUtil.zeros(3, 3);
-        sTheta(eulerAngles, sTheta, seq);
-        
+        sTheta(eulerAngles, sTheta, seq, extrinsic);
+
         return sTheta;
     }
     
@@ -2378,9 +2375,11 @@ public class Rotation {
      *
      * @param eulerAngles euler angles as representation of rotation matrix
      * @param seq euler sequence in use
-     * @param output 
+     * @param output
+     * @param extrinsic
      */
-    public static void sTheta(double[] eulerAngles, double[][] output, EulerSequence seq) {
+    public static void sTheta(double[] eulerAngles, double[][] output, EulerSequence seq,
+                               boolean extrinsic) {
         if (eulerAngles.length != 3) {
             throw new IllegalArgumentException("eulerAngles length must be 3");
         }
@@ -2393,20 +2392,9 @@ public class Rotation {
             [ -cos(th2)*sin(th3)    cos(th3)   0 ]
             [ sin(th2)              0          1 ]
 
-        which is [yaw_passive(-th3) * pitch_passive(-th2) * I_col0   yaw_passive(-th3) * I_col2  I_col3 ]
+        intrinsic ABC == extrinsic CBA
 
-        passive = A(a)*B(b)*C(c),
-        active = (A(a)*B(b)*C(c))^-1
-               = (C(c)^-1) * (B(b)^-1) * (A(a)^-1)
-               = (C(c)^T) * (B(b)^T) * (A(a)^T)
-        and transpose of a rotation matrix == untransposed with -1*angle
-        so  active = C(-c)*B(-b)*A(-a)
-
-        Barfoot "1-2-3" refers to passive Euler rotation sequence, then converts it to active
-        by reversing the order and making the angles negative.
-
-        furthermore in eqn (21) Barfoot et al., the columns for the identity matrix are in the passive order "1-2-3"
-        This is eqn (7.51) in Barfoot book.
+        Barfoot uses extrinsic transformations.
 
          */
 
@@ -2442,22 +2430,44 @@ public class Rotation {
         double[][] cBeta = Rotation.createRotationPitch(-eulerAngles[1]);
 
         double[] col0, col1, col2;
-        if (seq.equals(EulerSequence.XYZ_ACTIVE)) {
-            // XYZ active = passive w/ negative angles
-            // eqn (58) of Barfoot et al. for a 3-2-1 sequence, but he means 1-2-3 w.r.t. euler notation...
-            double[][] cAlpha = Rotation.createRotationRoll(-eulerAngles[0]);
-            col0 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.multiply(cAlpha, cBeta), i2);
-            col1 = MatrixUtil.multiplyMatrixByColumnVector(cAlpha, i1);
-            col2 = i0;
-        } else  {
-            // ZYX active = passive w/ negative angles = XYZ passive
-            // eqn (21) of Barfoot et al. for a 1-2-3 sequence
-            double[][] cGamma = Rotation.createRotationYaw(-eulerAngles[2]);
-            col0 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.multiply(cGamma, cBeta), i0);
-            col1 = MatrixUtil.multiplyMatrixByColumnVector(cGamma, i1);
-            col2 = i2;
+        if (extrinsic) {
+            if (seq.equals(EulerSequence.XYZ_ACTIVE)) {
+                // XYZ active == XYZ passive, but with negative angles
+                // Barfoot et al. use extrinsic transformations.
+                // so Barfoot et al XYZ_ACTIVE is intrinsic ZYX ACTIVE
+                // eqn (21) of Barfoot et al. for a 1-2-3 sequence
+                double[][] cGamma = Rotation.createRotationYaw(-eulerAngles[2]);
+                col0 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.multiply(cGamma, cBeta), i0);
+                col1 = MatrixUtil.multiplyMatrixByColumnVector(cGamma, i1);
+                col2 = i2;
+            } else {
+                // ZYX active == ZYX passive, but with negative angles
+                // Barfoot et al. use extrinsic transformations.
+                // so Barfoot et al ZYX_ACTIVE is intrinsic XYZ ACTIVE
+                // eqn (58) of Barfoot et al. for a 3-2-1 sequence, but he means 1-2-3 w.r.t. euler notation...
+                double[][] cAlpha = Rotation.createRotationRoll(-eulerAngles[0]);
+                col0 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.multiply(cAlpha, cBeta), i2);
+                col1 = MatrixUtil.multiplyMatrixByColumnVector(cAlpha, i1);
+                col2 = i0;
+            }
+        } else {
+
+            // intrinsic
+            if (!seq.equals(EulerSequence.XYZ_ACTIVE)) {
+                // eqn (21) of Barfoot et al. for a 1-2-3 sequence
+                double[][] cGamma = Rotation.createRotationYaw(-eulerAngles[2]);
+                col0 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.multiply(cGamma, cBeta), i0);
+                col1 = MatrixUtil.multiplyMatrixByColumnVector(cGamma, i1);
+                col2 = i2;
+            } else {
+                // eqn (58) of Barfoot et al. for a 3-2-1 sequence, but he means 1-2-3 w.r.t. euler notation...
+                double[][] cAlpha = Rotation.createRotationRoll(-eulerAngles[0]);
+                col0 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.multiply(cAlpha, cBeta), i2);
+                col1 = MatrixUtil.multiplyMatrixByColumnVector(cAlpha, i1);
+                col2 = i0;
+            }
         }
-        
+
         int row;
         for (row = 0; row < 3; ++row) {
             output[row][0] = col0[row];
@@ -2813,40 +2823,54 @@ public class Rotation {
      *     and principal axis rotations in eqn (35)
      * </pre>
      * @param eulerXYZ
+     * @param extrinsic
      * @return [4X1] quaternion rotation vector.
      */
-    public static double[] createQuaternionBarfootFromEuler(double[] eulerXYZ, EulerSequence seq) {
+    public static double[] createQuaternionBarfootFromEuler(double[] eulerXYZ, EulerSequence seq,
+                                                            boolean extrinsic) {
         if (eulerXYZ.length != 3) {
             throw new IllegalArgumentException("eulerXYZ.length must be 3");
         }
+
         // length is 4
         double[] q0 = quaternionPrincipalAxisRotation(-eulerXYZ[0], 0);
         double[] q1 = quaternionPrincipalAxisRotation(-eulerXYZ[1], 1);
         double[] q2 = quaternionPrincipalAxisRotation(-eulerXYZ[2], 2);
 
-        /*
-        Barfoot "1-2-3" and "alpha-beta-gamma" as names, refer to the passive Euler rotation sequence XYZ,
-        then Barfoot impl. converts the sequence to active by reversing the order and making the angles negative.
-        passive A(a)*B(b)*C(c)
-        active A(-a)*B(-b)*C(-c)
-            = A(a)^T * B(b)^T * C(c)^T
-            = (C(c) * B(b) * C(c))^T
-         */
+        // XYZ active == XYZ passive, but with negative angles
+        // Barfoot et al. use extrinsic transformations.
+        // so Barfoot et al XYZ_ACTIVE is intrinsic ZYX ACTIVE
+        // eqn (21) of Barfoot et al. for a 1-2-3 sequence
+
         double[][] q1m, q2m;
         double[] q3v;
-        if (seq.equals(EulerSequence.XYZ_ACTIVE)) {
-            // active XYZ == passive XYZ w/ negative angles
-            // [4X4]
-            //TODO: these might need to be swapped
-            q1m = quaternionRighthandCompoundOperator(q2);
-            q2m = quaternionRighthandCompoundOperator(q1);
-            q3v = q0;
+        if (extrinsic) {
+            if (seq.equals(EulerSequence.XYZ_ACTIVE)) {
+                // [4X4]  Barfoot et al XYZ_ACTIVE is intrinsic ZYX ACTIVE
+                q1m = quaternionLefthandCompoundOperator(q2);
+                q2m = quaternionLefthandCompoundOperator(q1);
+                q3v = q0;
+            } else {
+                // Barfoot et al ZYX_ACTIVE is intrinsic XYZ ACTIVE
+                // [4X4]
+                q1m = quaternionLefthandCompoundOperator(q0);
+                q2m = quaternionLefthandCompoundOperator(q1);
+                q3v = q2;
+            }
         } else {
-            // active ZYX == passive ZYX w/ negative angles
-            // [4X4]
-            q1m = quaternionRighthandCompoundOperator(q0);
-            q2m = quaternionRighthandCompoundOperator(q1);
-            q3v = q2;
+
+            if (!seq.equals(EulerSequence.XYZ_ACTIVE)) {
+                // [4X4]  Barfoot et al XYZ_ACTIVE is intrinsic ZYX ACTIVE
+                q1m = quaternionLefthandCompoundOperator(q2);
+                q2m = quaternionLefthandCompoundOperator(q1);
+                q3v = q0;
+            } else {
+                // Barfoot et al ZYX_ACTIVE is intrinsic XYZ ACTIVE
+                // [4X4]
+                q1m = quaternionLefthandCompoundOperator(q0);
+                q2m = quaternionLefthandCompoundOperator(q1);
+                q3v = q2;
+            }
         }
 
         // q2m times q1m times q0 = [4X1]
@@ -2854,7 +2878,7 @@ public class Rotation {
         double[][] t1 = MatrixUtil.multiply(q2m, q1m);
         // 4X1
         double[] q = MatrixUtil.multiplyMatrixByColumnVector(t1, q3v);
-        
+
         return q;
     }
     
@@ -2871,11 +2895,13 @@ public class Rotation {
      * @param eulerAngles euler rotation angles
      * @param dTheta perturbation to apply to rotation
      * @param seq Euler sequence in use
+     * @param extrinsic
      * @return dPhi= S(eulerAngles) * dTheta.  length is 3.
      */
-    public static double[] createRotationVectorBarfoot(double[] eulerAngles, double[] dTheta, EulerSequence seq) {
+    public static double[] createRotationVectorBarfoot(double[] eulerAngles, double[] dTheta, EulerSequence seq,
+                                                       boolean extrinsic) {
         
-        double[][] sTheta = sTheta(eulerAngles, seq);
+        double[][] sTheta = sTheta(eulerAngles, seq, extrinsic);
         
         // length 3
         double[] dPhi = MatrixUtil.multiplyMatrixByColumnVector(sTheta, dTheta);
@@ -2919,12 +2945,14 @@ public class Rotation {
      * @param seq Euler sequence
      * @param returnQuaternion if true, calculates the rotation quaternion and returns a datastructure holding it,
      *                         else if false, calculates the rotation matrix and returns a datastructure holding it.
-     * @return a data structure holding the resulting rotation matrix or quaternion, the EulerSequence, and the
+     *
+     * @param extrinsic if true, use extrinsic (default for Barfoot paper), else intrinsic
+     *                        @return a data structure holding the resulting rotation matrix or quaternion, the EulerSequence, and the
      * updatable rotation vector dPhi.  This returned data structure can be used in the overloaded
      * applySingularitySafeRotationPerturbation.
      */
     public static RotationPerturbation applySingularitySafeRotationPerturbation(double[] theta0, double[] dTheta,
-        EulerSequence seq, boolean returnQuaternion) throws NotConvergedException {
+        EulerSequence seq, boolean returnQuaternion, boolean extrinsic) throws NotConvergedException {
 
         //TODO: add consistency checks like allowed range values
 
@@ -2938,15 +2966,19 @@ public class Rotation {
         //let dPhi = S(theta0)*dTheta
 
         //length 3
-        double[] dPhi = createRotationVectorBarfoot(theta0, dTheta, seq);
+        double[] dPhi = createRotationVectorBarfoot(theta0, dTheta, seq, extrinsic);
 
         if (returnQuaternion) {
 
-            double[] qTheta = createQuaternionBarfootFromEuler(theta0, seq);
+            //TODO: revisit this for intrinsic.  handle multiplication operation order changes
+
+            double[] qTheta = createQuaternionBarfootFromEuler(theta0, seq, extrinsic);
 
             // eqn (48c)
             double[] qdPhi = Arrays.copyOf(dPhi, 4);
-            MatrixUtil.multiply(qdPhi, 0.5);
+            //MatrixUtil.multiply(qdPhi, 0.5);
+            // comparing (30b) to (47c), it may be that we need a subtraction here instead
+            MatrixUtil.multiply(qdPhi, -0.5);
             qdPhi[3] = 1;// add identity quaternion
 
             double[][] qLH = quaternionLefthandCompoundOperator(qdPhi);
@@ -2958,11 +2990,12 @@ public class Rotation {
             return result;
         }
 
+        // eqn (25) Barfoot et al.
         // infinitesimally small rotation matrix for the perturbation
         double[][] rPerturb = MatrixUtil.skewSymmetric(dPhi);
-        for (int i = 0; i < rPerturb.length; ++i) {
-            rPerturb[i][i] = 1. - rPerturb[i][i];
-        }
+        double[][] eye = MatrixUtil.createIdentityMatrix(3);
+        //TODO: revisit this for intrinsic.  handle multiplication operation order changes
+        rPerturb = MatrixUtil.pointwiseSubtract(eye, rPerturb);
 
         //TODO: revisit this when consider how to test this better.  consider following steps in the Barfoot et al.
         //   paper for one of the 2 experiments in it.
@@ -2970,14 +3003,25 @@ public class Rotation {
         // but test results look like the resulting rotation matrix needs to be transposed,
         // which would be true for extrinsic case.
 
-        // for active transformations, we need -1*euler angles to use with euler rotation matrices that are intrinsic
+        // XYZ active == XYZ passive, but with negative angles
+        // Barfoot et al. use extrinsic transformations.
+        // so Barfoot et al XYZ_ACTIVE is intrinsic ZYX ACTIVE
+        // eqn (21) of Barfoot et al. for a 1-2-3 sequence
 
         //from theta0 create r0
         double[][] r0;
-        if (seq.equals(EulerSequence.ZYX_ACTIVE)) {
-            r0 = createRotationZYX(theta0[0], theta0[1], theta0[2], false);
+        if (extrinsic) {
+            if (seq.equals(EulerSequence.XYZ_ACTIVE)) {
+                r0 = createRotationZYX(theta0[0], theta0[1], theta0[2], false);
+            } else {
+                r0 = createRotationXYZ(theta0[0], theta0[1], theta0[2], false);
+            }
         } else {
-            r0 = createRotationXYZ(theta0[0], theta0[1], theta0[2], false);
+            if (seq.equals(EulerSequence.XYZ_ACTIVE)) {
+                r0 = createRotationXYZ(theta0[0], theta0[1], theta0[2], false);
+            } else {
+                r0 = createRotationZYX(theta0[0], theta0[1], theta0[2], false);
+            }
         }
 
         double[][] r2 = MatrixUtil.multiply(rPerturb, r0);
@@ -3074,10 +3118,11 @@ public class Rotation {
      * @param seq
      * @return
      */
-    protected static double[][] createRotationInfSmallPerturbation(double[] theta0, double[] dTheta, EulerSequence seq) {
+    protected static double[][] createRotationInfSmallPerturbation(double[] theta0, double[] dTheta, EulerSequence seq,
+                                                                   boolean extrinsic) {
 
         //dPhi = S(theta) * dTheta
-        double[] dPhi = createRotationVectorBarfoot(theta0, dTheta, seq);
+        double[] dPhi = createRotationVectorBarfoot(theta0, dTheta, seq, extrinsic);
 
         // infinitesimally small rotation matrix:
         double[][] qPhiX = MatrixUtil.skewSymmetric(dPhi);
@@ -3113,11 +3158,12 @@ public class Rotation {
      * @param dTheta the perturbation to apply to the rotation matrix as euler rotation angles
      * must be small (cosine(dTheta[i]) ~ 1, sine(dTheta[i] ~ 0 or sine(dTheta[i])/i ~ 1).
      *               The order of the angles in the array is X,Y,Z even if the seq used is not.
+     * @param extrinsic
      * @return resulting quaternion from perturbation applied to quaternion
      * formed from theta euler angles.
      */
     protected static double[][] _applySingularitySafeRotationPerturbation(double[][] rTheta, double[] dTheta,
-                                                                      EulerSequence seq) {
+                                                                      EulerSequence seq, boolean extrinsic) {
         if (dTheta.length != 3) {
             throw new IllegalArgumentException("dTheta length must be 3");
         }
@@ -3135,7 +3181,7 @@ public class Rotation {
             theta0 = extractThetaFromXYZ(rTheta, false);
         }
 
-        double[][] qPhiX = createRotationInfSmallPerturbation(theta0, dTheta, seq);
+        double[][] qPhiX = createRotationInfSmallPerturbation(theta0, dTheta, seq, extrinsic);
 
         return MatrixUtil.multiply(qPhiX, rTheta);
     }

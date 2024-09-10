@@ -347,10 +347,31 @@ public class RotationTest extends TestCase {
         theta0 = new double[]{0, 0, 0};
         returnQuaternion = false;
 
+        // intrinsic setting now gives expected results.
+        // TODO: after more testing, if that's strill true, remove public option for extrinsic or extrinsic
+        // and document results
+        boolean extrinsic = !true;
+
         Rotation.RotationPerturbationMatrix rP = (Rotation.RotationPerturbationMatrix)
                 Rotation.applySingularitySafeRotationPerturbation(
-                        theta0, perturb, Rotation.EulerSequence.ZYX_ACTIVE, returnQuaternion);
+                        theta0, perturb, Rotation.EulerSequence.ZYX_ACTIVE, returnQuaternion, extrinsic);
         r1 = rP.rotation;
+        // for extrinsic, extracting eulerZYX=[0.4636476090008061, -0.044691581036352686, 0.09966865249116204]
+        // for intrinsic, extracting eulerZYX=[0.09966865249116204, -0.049710870978323454, 0.4636476090008061]
+        // perturb = 0.1, -0.05, 0.5
+        double[] eulerR1ZYX = Rotation.extractThetaFromZYX(r1, passive);
+        double[] eulerR1XYZ = Rotation.extractThetaFromXYZ(r1, passive);
+
+        Rotation.RotationPerturbationQuaternion qP = (Rotation.RotationPerturbationQuaternion)
+                Rotation.applySingularitySafeRotationPerturbation(
+                        theta0, perturb, Rotation.EulerSequence.ZYX_ACTIVE, !returnQuaternion, extrinsic);
+        double[] q1 = qP.quaternion;
+        // for extrinsic, q1 = [-0.25, 0.025, -0.05, 1.0]
+        // for intrinsic, q1 = [-0.05, 0.025, -0.25, 1.0]
+        // expecting extrinsic zyx, active: -0.05458703,  0.01182884, -0.24822807,  0.96709005
+        // expecting intrinsic ZYX, active: [-0.04223358,  0.0365512 , -0.24580705,  0.96770824]
+
+        //so looks like we need to use intrinsic and then transpose or take conjugate
 
         // check that perturbation led to roughly, an expected rotation of perturb
         double[][] r2 = Rotation.createRotationZYX(perturb[0], perturb[1], perturb[2], passive);
@@ -358,26 +379,19 @@ public class RotationTest extends TestCase {
         assertTrue(MiscMath.areEqual(perturb, euler2, tol));
         MatrixUtil.multiply(r2, 1./r2[0][0]);
 
-        // euler has the opposite signs as expected.
+        //intrinsic ABC = extrinsic CBA
+
+        // euler has the opposite signs from what is expected.
         // one way that could happen is if the resulting Barfoot rotation matrix is actually extrinsic instead of
         // intrinsic.
-        euler = Rotation.extractThetaFromZYX(r1, passive);
-        //double[][] r3 = Rotation.createRotationZYX(euler[0], euler[1], euler[2], passive);
+        // if r1 is extrinsic, then the rotation matrix r1 should be equivalent to XYZ (we used ZYX transformations)
+        double[][] intrinsicXYZ = Rotation.createRotationXYZ(perturb[0], perturb[1], perturb[2], passive);
+        double[] _incorrectExtr = Rotation.extractThetaFromZYX(intrinsicXYZ, passive);
 
-        // this fails unless assume r1 is extrinsic.
-        // in that case, should transpose r1 then extract the euler
-        //assertTrue(MiscMath.areEqual(perturb, euler, tol));
-        double[][] rIfR1Extrinsic = MatrixUtil.transpose(r1);
-        double[] eulerIfR1Extrinsic = Rotation.extractThetaFromZYX(rIfR1Extrinsic, passive);
-        assertTrue(MiscMath.areEqual(perturb, eulerIfR1Extrinsic, 1E-1));
-
-        int t = 1;
-    }
-
-
-    public void testSequences() throws NotConvergedException {
+        //TODO: quaternion tests
 
         //from active perspective now:
+        passive = false;
 
         double[] eulerXYZ = new double[]{-0.5, 0.12, 1.32};
         double[] eulerZYX = new double[]{1.32, 0.12, -0.5};
@@ -399,12 +413,17 @@ public class RotationTest extends TestCase {
         /*
         Barfoot is using active and intrinsic.
 
-        scipy library uses intrinsic and allows specification of active or passive, but the
-        input euler or rotation must match the sequence order.
+        scipy library uses passive and allows specification of intrinsic or extrinsic, but the
+        input array for euler or rotation elements must match the sequence order
+        (i.e. for ZYX, euler=[thetaZ, thetaY, thetaX].
 
         Barfoot "1-2-3" and "alpha-beta-gamma" as names, refer to the passive Euler rotation sequence XYZ,
-        then Barfoot impl. converts the sequence to active by reversing the order and making the angles negative.
-        active A(a)*B(b)*C(c) == passive C(-c)*B(-b)*A(-a)
+        then Barfoot impl. converts the sequence to active by making the angles negative, and that is equiv
+        to transposing each component and keeping positive angles, which is further equiv to the
+        transpose of the reverse sequence:
+        passive A(a)*B(b)*C(c) == active A(-a)*B(-b)*C(-c)
+                               = A(a)^T * B(b)^T * C(c)^T
+                               = (C(c) * B*b) * A(a) )^T
 
         Barfoot examples use 2 different euler sequences, active XYZ and active ZYX.
          */
