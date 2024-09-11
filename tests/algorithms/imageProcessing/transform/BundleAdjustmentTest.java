@@ -28,7 +28,7 @@ public class BundleAdjustmentTest extends TestCase {
     private static final Logger log;
     static {
         log = Logger.getLogger(CameraCalibration.class.getSimpleName());
-        //log.setLevel(LEVEL);
+        log.setLevel(LEVEL);
     }
     
     public BundleAdjustmentTest() {
@@ -71,7 +71,7 @@ public class BundleAdjustmentTest extends TestCase {
         assertEquals(3, coordsI.length);
         assertEquals(nFeatures*nImages, coordsI[0].length);
         
-        log.log(LEVEL, String.format("coordsW dimensions = [%d X %d]\ncoordsI dimensions = [%d X %d]\n",
+        log.fine(String.format("coordsW dimensions = [%d X %d]\ncoordsI dimensions = [%d X %d]\n",
             coordsW.length, coordsW[0].length, coordsI.length, coordsI[0].length));
 
         boolean useBouguetForRodrigues = false;
@@ -102,11 +102,11 @@ public class BundleAdjustmentTest extends TestCase {
         double k1E = 0.1371;
         double k2E = -0.20101;
 
-        /*log.log(LEVEL, "From CameraCalibration.estimateCamera:\n");
-        log.log(LEVEL, String.format("\n(fX, fY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", fX, fY, alphaE, betaE));
-        log.log(LEVEL, String.format("(oX, oY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", oX, oY, u0E, v0E));
-        log.log(LEVEL, String.format("skew=%.3e.  expected=%.3e\n", skew, gammaE));
-        log.log(LEVEL, String.format("[kRadial]=[%.3e, %.3e].  expected=[%.3e, %.3e]\n", 
+        /*log.fine("From CameraCalibration.estimateCamera:\n");
+        log.fine(String.format("\n(fX, fY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", fX, fY, alphaE, betaE));
+        log.fine(String.format("(oX, oY)=(%.3e, %.3e).  expected=(%.3e, %.3e)\n", oX, oY, u0E, v0E));
+        log.fine(String.format("skew=%.3e.  expected=%.3e\n", skew, gammaE));
+        log.fine(String.format("[kRadial]=[%.3e, %.3e].  expected=[%.3e, %.3e]\n", 
             kRadial[0], kRadial[1], k1E, k2E));
          */
 
@@ -168,7 +168,7 @@ public class BundleAdjustmentTest extends TestCase {
             intr, extrRotVecs, extrTrans,
             kRadials, nMaxIter, useR2R4, useBouguetForRodrigues);
         
-        log.log(LEVEL, String.format("\nAfter BundleAdjustment\n"));
+        log.fine(String.format("\nAfter BundleAdjustment\n"));
         
         // only f is refined:
         double fX2 = intr.getBlock(0, 0)[0][0];
@@ -180,17 +180,17 @@ public class BundleAdjustmentTest extends TestCase {
 
         System.out.printf("Compare method results to Zhang 1998:\n");
 
-        log.log(LEVEL, String.format("\n(fx0, fx1, fx expected)=(%.3e, %.3e, %.3e)\n",
+        log.fine(String.format("\n(fx0, fx1, fx expected)=(%.3e, %.3e, %.3e)\n",
             fX, fX2, alphaE));
-        log.log(LEVEL, String.format("\n(fy0, fy1, fy expected)=(%.3e, %.3e, %.3e)\n",
+        log.fine(String.format("\n(fy0, fy1, fy expected)=(%.3e, %.3e, %.3e)\n",
                 fY, fY2, betaE));
-        log.log(LEVEL, String.format("\n(ox0, ox1, ox expected)=(%.3e, %.3e, %.3e)\n",
+        log.fine(String.format("\n(ox0, ox1, ox expected)=(%.3e, %.3e, %.3e)\n",
                 oX, oX2, u0E));
-        log.log(LEVEL, String.format("\n(oy0, oy1, oy expected)=(%.3e, %.3e, %.3e)\n",
+        log.fine(String.format("\n(oy0, oy1, oy expected)=(%.3e, %.3e, %.3e)\n",
                 oY, oY2, v0E));
-        log.log(LEVEL, String.format("\n(skew0, skew1, skew expected)=(%.3e, %.3e, %.3e)\n",
+        log.fine(String.format("\n(skew0, skew1, skew expected)=(%.3e, %.3e, %.3e)\n",
                 skew, skew2, gammaE));
-        log.log(LEVEL, String.format("kRadial0=[%.3e, %.3e], kRadial1=[%.3e, %.3e],  kRadial expected=[%.3e, %.3e]\n",
+        log.fine(String.format("kRadial0=[%.3e, %.3e], kRadial1=[%.3e, %.3e],  kRadial expected=[%.3e, %.3e]\n",
             kRadial[0], kRadial[1], kRadial2[0], kRadial2[1], k1E, k2E));
 
         boolean passive = false;

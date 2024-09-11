@@ -28,6 +28,7 @@ public class OpticalFlow {
     private static final Logger log;
     static {
         log = Logger.getLogger(CameraCalibration.class.getSimpleName());
+        log.setLevel(LEVEL);
     }
 
     /**
@@ -215,7 +216,7 @@ public class OpticalFlow {
             prevV = MatrixUtil.copy(v);
         }
 
-        log.log(LEVEL, "nIter=" + nIter + ", sumDiff=" + sumDiff);
+        log.fine("nIter=" + nIter + ", sumDiff=" + sumDiff);
 
         List<double[][]> out = new ArrayList<>();
         out.add(u);

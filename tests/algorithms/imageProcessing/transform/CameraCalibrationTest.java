@@ -24,19 +24,20 @@ public class CameraCalibrationTest extends TestCase {
     
     static double eps = 1.e-5;
     
-    private static final Level LEVEL = Level.FINEST;
+    private static final Level LEVEL = Level.INFO;
     private static final Logger log;
     static {
         log = Logger.getLogger(CameraCalibration.class.getSimpleName());
+        log.setLevel(LEVEL);
     }
     
     public CameraCalibrationTest() {
     }
     
-    public void __testApplyRemoveRadialDistortion()
+    public void testApplyRemoveRadialDistortion()
     throws Exception {
         
-        log.log(LEVEL, "testApplyRemoveRadialDistortion");
+        log.fine( "testApplyRemoveRadialDistortion");
 
         // test for model #3
         // test for model #4
@@ -45,8 +46,8 @@ public class CameraCalibrationTest extends TestCase {
         
         // generate coords in radial annuli in area 100x100 then unit standard normalized
         double[][] coords = generateCoords0();
-        
-        log.log(LEVEL, String.format("orig coords=\n%s\n", FormatArray.toString(coords, "%.3f")));
+
+        log.fine(String.format("orig coords=\n%s\n", FormatArray.toString(coords, "%.3f")));
         
         double[] k1s = new double[]{0.25, +0.25};
         double[] k2s = new double[]{0.2, +0.2};
@@ -59,7 +60,7 @@ public class CameraCalibrationTest extends TestCase {
             for (i = 0; i < k1s.length; ++i) {
                 k1 = k1s[i];
                 k2 = k2s[i];
-                log.log(LEVEL, "useR2R4=" + useR2R4 + "   k1="+ k1);
+                log.fine("useR2R4=" + useR2R4 + "   k1="+ k1);
                 xyd = CameraCalibration.applyRadialDistortion(coords, k1, k2, useR2R4);
                 xy = CameraCalibration.removeRadialDistortion(xyd, k1, k2, useR2R4);
                 // assert xyd != coordsI
@@ -69,7 +70,7 @@ public class CameraCalibrationTest extends TestCase {
                     diffDy = Math.abs(coords[1][j] - xyd[1][j]);
                     diffx = Math.abs(coords[0][j] - xy[0][j]);
                     diffy = Math.abs(coords[1][j] - xy[1][j]);
-                    log.log(LEVEL, String.format("(%.4e,%.4e): diff(%.4e, %.4e)?  same(%.4e, %.4e)?\n", 
+                    log.fine(String.format("(%.4e,%.4e): diff(%.4e, %.4e)?  same(%.4e, %.4e)?\n", 
                         coords[0][j], coords[1][j], diffDx, diffDy, diffx, diffy));
                     assertTrue(diffx < eps);
                     assertTrue(diffy < eps);
@@ -83,12 +84,12 @@ public class CameraCalibrationTest extends TestCase {
 
     public void estCalibration3DZhang() throws Exception {
         // need the 3rd dimension to use this
-        //log.log(LEVEL, "testCalibration3DZhang");
+        //log.fine("testCalibration3DZhang");
         //calibrationZhang(true);
     }
 
     public void testCalibrationPlanarZhang() throws Exception {
-        log.log(LEVEL, "testCalibrationPlanarZhang");
+        log.fine("testCalibrationPlanarZhang");
         calibrationZhang(false);
     }
 
@@ -143,9 +144,9 @@ public class CameraCalibrationTest extends TestCase {
         CameraExtrinsicParameters ex1;
         for (int i = 0; i < nImages; ++i) {
             ex1 = extrinsics.get(i);
-            //log.log(LEVEL, String.format("\nimg %d:\n", i));
-            //log.log(LEVEL, String.format("   r=%s\n", FormatArray.toString(ex1.getRotation(), "%.3e")));
-            //log.log(LEVEL, String.format("   t=%s\n", FormatArray.toString(ex1.getTranslation(), "%.3e")));
+            //log.fine(String.format("\nimg %d:\n", i));
+            //log.fine(String.format("   r=%s\n", FormatArray.toString(ex1.getRotation(), "%.3e")));
+            //log.fine(String.format("   t=%s\n", FormatArray.toString(ex1.getTranslation(), "%.3e")));
 
             double[][] rExp = Zhang98Data.getRotation(i+1);
             double[] tExp = Zhang98Data.getTranslation(i+1);
@@ -159,8 +160,8 @@ public class CameraCalibrationTest extends TestCase {
             assertTrue(tSSD < 3);
         }
 
-        //log.log(LEVEL, String.format("k=%s\n", FormatArray.toString(kRadial, "%.4e")));
-        //log.log(LEVEL, String.format("expected k=%.3e, %.3e\n", k1E, k2E));
+        //log.fine(String.format("k=%s\n", FormatArray.toString(kRadial, "%.4e")));
+        //log.fine(String.format("expected k=%.3e, %.3e\n", k1E, k2E));
 
         // quick test of apply and remove distortion
         // (u_d, v_d) are the distorted features in coordsI in image reference frame.
@@ -189,7 +190,7 @@ public class CameraCalibrationTest extends TestCase {
                 diff = Math.abs(xyi[0][j] - xyDI[0][j]);
                 //assertTrue(diff > 0.1);
                 diffD = Math.abs(xyDUI[0][j] - xyDI[0][j]);
-                log.log(LEVEL, String.format("(%.3f,%.3f): (distorted-undistorted)=%.5e \n     (orig - removedApplied)=%.5e\n", 
+                log.fine(String.format("(%.3f,%.3f): (distorted-undistorted)=%.5e \n     (orig - removedApplied)=%.5e\n", 
                     xyDI[0][j], xyDI[1][j], diff, diffD));
                 System.out.flush();
                 //assertTrue(diffD < 0.1);
@@ -199,7 +200,7 @@ public class CameraCalibrationTest extends TestCase {
     }
 
     public void __testPlanarRandom() throws Exception {
-        log.log(LEVEL, "testPlanarRandom");
+        log.fine("testPlanarRandom");
 
         long seed = System.currentTimeMillis();
         System.out.println("seed=" + seed);
@@ -386,16 +387,16 @@ public class CameraCalibrationTest extends TestCase {
         return coords;
     }
 
-    
+
     public void estNeurochemistryBookPoses() throws Exception {
-        
+
         //test pose
         //test triangulation
-        
+
         /*
         images are 3024x4032
           errors likely > 8 pixels
-        
+
             img2         img1            img3
         #1 678, 718     608, 530        744, 806
         #2 2210, 886    2462, 512       2286, 526
@@ -415,7 +416,7 @@ public class CameraCalibrationTest extends TestCase {
           #6 -8, -3, 41.5
           #7 -11, -14, 41.5
           #8  11, -14, 41.5
-        
+
         expecting
              focalLength ~ 1604 pixels = 2.245 mm
              no skew
@@ -429,53 +430,53 @@ public class CameraCalibrationTest extends TestCase {
             pixel width = 1.4e-3mm
             FOV = 77 degrees = 1.344 radians
         */
-        
+
         boolean useR2R4 = false;
-        
+
         int nFeatures = NeurochemistryBookData.nFeatures;
         int nImages = NeurochemistryBookData.mImages;
-        
+
         // 3 X (3*8)
         double[][] coordsW = NeurochemistryBookData.getFeatureWCS();
         assertEquals(3, coordsW.length);
         assertEquals(nFeatures, coordsW[0].length);
-        
+
         //3 X (3*8))
         double[][] coordsI = NeurochemistryBookData.getObservedFeaturesInAllImages();
         assertEquals(3, coordsI.length);
         assertEquals(nFeatures*nImages, coordsI[0].length);
-        
-        //log.log(LEVEL, String.format("coordsW dimensions = [%d X %d]\ncoordsI dimensions = [%d X %d]\n",
+
+        //log.fine(String.format("coordsW dimensions = [%d X %d]\ncoordsI dimensions = [%d X %d]\n",
         //    coordsW.length, coordsW[0].length, coordsI.length, coordsI[0].length));
-        
-        
+
+
         CameraMatrices cameraMatrices = CameraCalibration.estimateCameraPlanar(
             nFeatures, coordsI, coordsW, useR2R4);
-        
+
         Camera.CameraIntrinsicParameters kIntr = cameraMatrices.getIntrinsics();
-        
+
         List<Camera.CameraExtrinsicParameters> extrinsics = cameraMatrices.getExtrinsics();
-        
-        log.log(LEVEL, String.format("intr=\n%s\n", FormatArray.toString(kIntr.getIntrinsic(), "%.3e")));
-        
+
+        log.fine(String.format("intr=\n%s\n", FormatArray.toString(kIntr.getIntrinsic(), "%.3e")));
+
         Camera.CameraExtrinsicParameters ex1;
         for (int i = 0; i < nImages; ++i) {
             ex1 = extrinsics.get(i);
-            log.log(LEVEL, String.format("\n"));
-            log.log(LEVEL, String.format("   r%d=\n%s\n", i, FormatArray.toString(ex1.getRotation(), "%.3e")));
-            log.log(LEVEL, String.format("ansR%d=\n%s\n", i, FormatArray.toString(NeurochemistryBookData.getRotation(i), "%.3e")));
-            log.log(LEVEL, String.format("   t%d=\n%s\n", i,FormatArray.toString(ex1.getTranslation(), "%.3e")));
-            log.log(LEVEL, String.format("ansT%d=\n%s\n", i,FormatArray.toString(NeurochemistryBookData.getTranslation(i), "%.3e")));
+            log.fine(String.format("\n"));
+            log.fine(String.format("   r%d=\n%s\n", i, FormatArray.toString(ex1.getRotation(), "%.3e")));
+            log.fine(String.format("ansR%d=\n%s\n", i, FormatArray.toString(NeurochemistryBookData.getRotation(i), "%.3e")));
+            log.fine(String.format("   t%d=\n%s\n", i,FormatArray.toString(ex1.getTranslation(), "%.3e")));
+            log.fine(String.format("ansT%d=\n%s\n", i,FormatArray.toString(NeurochemistryBookData.getTranslation(i), "%.3e")));
         }
-        
+
         NeurochemistryBookData.printExpectedTriangulation();
         /*
         NeurochemistryBookData.printObservedMinusProjected_Camera_Frame();
         NeurochemistryBookData.printObservedMinusProjected_Image_Frame();
         */
-        
+
         /*
-        // theta_x is rotated by 180 degrees 
+        // theta_x is rotated by 180 degrees
         double[][] q = new double[3][];
         q[0] = new double[]{9.928e-01, 7.859e-02, -9.033e-02};
         q[1] = new double[]{7.195e-02, -9.946e-01, -7.454e-02};
@@ -500,7 +501,7 @@ public class CameraCalibrationTest extends TestCase {
         }
         System.out.println();
         */
-        
+
         double[][] q = new double[3][];
         q[0] = new double[]{9.652e-01, -4.408e-03, 2.616e-01};
         q[1] = new double[]{3.769e-02, -9.871e-01, -1.557e-01};
@@ -513,7 +514,7 @@ public class CameraCalibrationTest extends TestCase {
         System.out.println();
     }
 
-    public void testSolveForExtrinsicPlanarWetzstein() {
+    public void estSolveForExtrinsicPlanarWetzstein() {
         //static Camera.CameraExtrinsicParameters solveForExtrinsicPlanarWetzstein(
         //        double[][] coordsC, double[][] coordsW) throws NotConvergedException
 
