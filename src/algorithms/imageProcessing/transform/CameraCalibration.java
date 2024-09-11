@@ -2351,6 +2351,8 @@ public class CameraCalibration {
         
         int nImages = cameraMatrices.getExtrinsics().size();
         int nFeatures = u.length/nImages;
+
+        double[][] kIntr = cameraMatrices.getIntrinsics().getIntrinsic();
                 
         /* 
         (ud, vd) are Real observed distorted image points in image reference frame.
@@ -2387,7 +2389,7 @@ public class CameraCalibration {
         to obtain totally 2Nn equations in matrix form as
         Dk = d, where k = [k1, k2]^T .
 
-        The linear least-square solutions for k is k = (D^T*D)^−1*D^T*d = pseudoInv(D)*d.
+        The linear least-square solutions for k is k = (D^T*D)^−1 * D^T * d = pseudoInv(D) * d.
 
           if choose #3:
 
@@ -2428,12 +2430,12 @@ public class CameraCalibration {
                 vi = v[nFeatures*i + j];
                 udi = uvD[0][nFeatures*i + j];
                 vdi = uvD[1][nFeatures*i + j];
-                xi = xy[0][j];
+                xi = xy[0][j]; // distorted pixels transformed to camera coords
                 yi = xy[1][j];
                 xi2 = xi*xi;
                 yi2 = yi*yi;
         
-                
+                // r_x, r_y components
                 calculateC2s(xi, yi, c2s);
                 c2p1 = c2s[0];
                 divc2p1 = c2s[1];
@@ -2466,8 +2468,26 @@ public class CameraCalibration {
         //k = (D^T*D)^−1*D^T*d = pseudoInv(D) * d
         double[][] dInv = MatrixUtil.pseudoinverseFullColumnRank(dM);
         double[] k = MatrixUtil.multiplyMatrixByColumnVector(dInv, dV);
-                
-        return k;
+
+        /*
+        TODO: consider revising the above to transform the image coordinates into camera coordinates to solve for k
+        in camera space.
+
+        k here as is, is in image space, so need to transform to camera space by using the inverse intrinsic camera.
+
+        more specifically:
+        ud - u = (u−u0)*[k1*r + k2*r^2]
+            r is ud,vd of image reference transformed to camera reference frame.
+        ud and u are in image reference frame.
+
+        so at this point, k is in image reference frame
+        */
+
+        k = MatrixUtil.multiplyMatrixByColumnVector(
+            Camera.createIntrinsicCameraMatrixInverse(cameraMatrices.getIntrinsics().getIntrinsic()),
+            new double[]{k[0], k[1], 1});
+
+        return Arrays.copyOf(k, 2);
     }
 
     static double[][] solveForHomographies(double[][] coordsI, 

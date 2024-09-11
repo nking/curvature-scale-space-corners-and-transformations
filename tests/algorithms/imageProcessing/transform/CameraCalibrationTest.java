@@ -123,6 +123,8 @@ public class CameraCalibrationTest extends TestCase {
         double v0E = 220.8684;
         double k1E = 0.1371;
         double k2E = -2.0101;
+        //Ma et al. find k1E = -0.23, k2E = 0.19
+        // Zhang 1999 paper, Table 2 find k1E ~ -0.2, K2E ~ 0.2
 
         Camera.CameraIntrinsicParameters kIntr = c.getIntrinsics();
         
@@ -139,6 +141,14 @@ public class CameraCalibrationTest extends TestCase {
         assertTrue(Math.abs(u0E - u0) < 1.0);
         assertTrue(Math.abs(betaE - beta) < 1.0);
         assertTrue(Math.abs(v0E - v0) < 1.0);
+
+        //k1E =  0.14, k2E = -2.01
+        //k1E = -0.23, k2E = 0.19
+        //k1E ~ -0.2, K2E ~ 0.2
+        double kDiff = Math.abs(kRadial[0] - -0.23);
+        assertTrue(kDiff < 0.2);
+        kDiff = Math.abs(kRadial[0] - 0.2);
+        assertTrue(kDiff < 1);
 
         List<CameraExtrinsicParameters> extrinsics = c.getExtrinsics();
         CameraExtrinsicParameters ex1;
