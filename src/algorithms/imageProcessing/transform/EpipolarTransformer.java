@@ -17,12 +17,56 @@ import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.util.FormatArray;
 
 /**
- * class to solve for the epipoles for two images with stereo projection
+ * class to solve for the epipolar and/or essential matrices and their epipoles for two images with stereo projection
  * and apply the solution.
  *
  * <pre>
+ *  The essential matrix is defined by the planes formed by the 3 vectors of optical centers of 2 cameras and the
+ *  individual points X in 3D-space called world coordinate system (WCS).
+ *  Each point X in 3-D space lies on a plane it forms with the optical centers.
+ *  For each of those planes, the point X projected into image 1 is x1 and the point X projected into image 2 is x2.
+ *  x1 and x2 can be described by the plane, and also by the rotation and translation between the cameras.
+ *  let lambda1 and lambda2 be scale parameters.
+ *  lambda1 * x2 = lambda2 * R * x1 + T.
+ *
+ *  The translation vector is along the baseline between the 2 cameras.
+ *  If we pre-multiply both sides by the skew symmetric matrix of T to give us the cross products:
+ *     lambda1 * [T]_x * x2 = lambda2 * [T]_x * R * x1 + [T]_x * T
+           T cross product with itself is 0.
+ *     lambda1 * [T]_x * x2 = lambda2 * [T]_x * R * x1 + [T]_x * T
+ *                          = lambda2 * [T]_x * R * x1 + 0
+ *         vector T is from epipolar point e1 to epipolar point e2.
+ *         vector x2 is from epipolar point e2 to x2.
+ *         [T]_x * x2 is perpendicular to x2
+ *         so then x2^T * [T]_x * x2 is 0.
+ *         we can use that to simplify the equation further when we pre-multiply both sides by x2^T
+ *     lambda1 * x2^T * [T]_x * x2 = lambda2 * x2^T * [T]_x * R * x1
+ *                0 = lambda2 * x2^T * [T]_x * R * x1
+ *
+ *     The essential matrix E is defined as [T]_x * R
+ *         E = [T]_x * R
+ *         x2^T * E * x1 = 0
+ *
+ *     Epipolar plane is intersection of o1, o2, X where o1 = optical center for camera 1, o2 = same for camera 2.
+ *
+ *     e1 and e2 are the projections of o1 and o2 into their images (and may exist outside of image bounds).
+ *
+ *     each point x1, x2 has an epipolar line l1, l2, in its image that is the intersection of x1 with e1, and x2 with e2.
+ *
+ *     e2^T * E = 0
+ *     E * e1 = 0
+ *     l2 = E * x1
+ *     l1 = E^T * x2
+ *     li^T * ei = 0
+ *     li^T * xi = 0
+ *
+ *
  * The fundamental matrix is the projective solution for transformation
  * between 2 images of the same objects in pixel coordinates.
+ *
+ *     F = K^-T * E * K^-1 where K is the intrinsic camera matrix.
+ *       = [K*T]_x * R * K^-1  if det(K) ~ 1 else apply a scale factor too.
+ *
  * Present below is the solution for having 7 matched points between images
  * and the solution for having 8 or more matched points between the images.
  * Both use numerical conditioning and recipes suggested by Hartley
