@@ -436,11 +436,19 @@ public class CameraCalibration {
             //ell[2*i]     = new double[]{X, Y, 1, 0, 0, 0, u*X, u*Y, u};
             //ell[2*i + 1] = new double[]{0, 0, 0, X, Y, 1, v*X, v*Y, v};
         }
+        coordsI = null;
+        coordsW = null;
 
         MatrixUtil.SVDProducts svd = MatrixUtil.performSVD(ell);
 
         // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
         double[] xOrth = svd.vT[svd.vT.length - 1];
+
+        // subject to ||x|| = 1
+        xOrth = MatrixUtil.normalizeLP(xOrth, 2);
+        if (xOrth[xOrth.length - 1] < 0) {
+            MatrixUtil.multiply(xOrth, -1);
+        }
 
         //h00, h01, h02, h10, h11, h12, h20,h21,h22
 
@@ -448,6 +456,8 @@ public class CameraCalibration {
         for (int i = 0; i < 3; i++) {
             System.arraycopy(xOrth, (i * 3), h[i], 0, 3);
         }
+
+        svd = null;
 
         if (useNormConditioning) {
             h = MatrixUtil.multiply(EpipolarNormalizationHelper.inverseT(tI), h);
@@ -526,6 +536,12 @@ public class CameraCalibration {
 
         // vT is 9X9.  last row in vT is the eigenvector for the smallest eigenvalue
         double[] xOrth = svd.vT[svd.vT.length - 1];
+
+        // subject to ||x|| = 1
+        xOrth = MatrixUtil.normalizeLP(xOrth, 2);
+        if (xOrth[xOrth.length - 1] < 0) {
+            MatrixUtil.multiply(xOrth, -1);
+        }
 
         //h00, h01, h02, h10, h11, h12, h20,h21,h22
 
@@ -656,6 +672,11 @@ public class CameraCalibration {
         double[] xOrth = vT[vT.length - 1];
         //h00, h01, h02, h10, h11, h12,h20,h21,h22
         MatrixUtil.multiply(xOrth, 1./xOrth[xOrth.length - 1]);
+        //TODO: consider normalization instead:
+        //xOrth = MatrixUtil.normalizeLP(xOrth, 2);
+        //if (xOrth[xOrth.length - 1] < 0) {
+        //    MatrixUtil.multiply(xOrth, -1);
+        //}
 
         // Hrem = reshape(hh,3,3)';
         // Matlab reshape fills along columns, but this is transposed, so fill rows
@@ -994,6 +1015,9 @@ public class CameraCalibration {
             kIntr = Camera.createIntrinsicCameraMatrix(
                     alpha, beta, u0, v0, gamma);
         }
+
+        // enforce element [2][2]=1
+        MatrixUtil.multiply(kIntr, 1./kIntr[2][2]);
 
         //B = lambda * K^-T * K  [3X3] = [3X3]*[3X3]
         //K^T*K^-1*B = lambda

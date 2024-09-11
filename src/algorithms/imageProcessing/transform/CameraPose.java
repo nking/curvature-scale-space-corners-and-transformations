@@ -362,6 +362,9 @@ public class CameraPose {
 
         // subject to ||x|| = 1
         xOrth = MatrixUtil.normalizeLP(xOrth, 2);
+        if (xOrth[xOrth.length - 1] < 0) {
+            MatrixUtil.multiply(xOrth, -1);
+        }
 
         // assert that ell * xOrth ~ 0
         //double[] chk = MatrixUtil.multiplyMatrixByColumnVector(ell, xOrth);

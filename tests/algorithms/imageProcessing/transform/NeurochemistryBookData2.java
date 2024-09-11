@@ -169,7 +169,7 @@ public class NeurochemistryBookData2 {
             default:
                 throw new IllegalArgumentException("idx out of range");
         }
-        return Rotation.createRotationZYX(thetas);
+        return Rotation.createRotationZYX(thetas[0], thetas[1], thetas[2]);
     }
     
     /**

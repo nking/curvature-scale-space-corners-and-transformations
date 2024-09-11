@@ -143,30 +143,24 @@ public class CameraCalibrationTest extends TestCase {
         CameraExtrinsicParameters ex1;
         for (int i = 0; i < nImages; ++i) {
             ex1 = extrinsics.get(i);
-            log.log(LEVEL, String.format("\nimg %d:\n", i));
-            log.log(LEVEL, String.format("   r=%s\n", FormatArray.toString(ex1.getRotation(), "%.3e")));
-            log.log(LEVEL, String.format("   t=%s\n", FormatArray.toString(ex1.getTranslation(), "%.3e")));
+            //log.log(LEVEL, String.format("\nimg %d:\n", i));
+            //log.log(LEVEL, String.format("   r=%s\n", FormatArray.toString(ex1.getRotation(), "%.3e")));
+            //log.log(LEVEL, String.format("   t=%s\n", FormatArray.toString(ex1.getTranslation(), "%.3e")));
 
             double[][] rExp = Zhang98Data.getRotation(i+1);
-            double[] tZYX = Rotation.extractThetaFromZYX(rExp);
-            double[] tXYZ = Rotation.extractThetaFromXYZ(rExp);
-            System.out.printf("THETAS ZYX (%d): %s\n", i+1, FormatArray.toString(tZYX, "%.4f"));
-            System.out.printf("THETAS XYZ (%d): %s\n", i+1, FormatArray.toString(tXYZ, "%.4f"));
-
             double[] tExp = Zhang98Data.getTranslation(i+1);
             double[][] rDiff = Rotation.procrustesAlgorithmForRotation(rExp, ex1.getRotation());
             double fsR = MatrixUtil.frobeniusNorm( MatrixUtil.pointwiseSubtract(
                     rDiff, MatrixUtil.createIdentityMatrix(3)));
+            assertTrue(fsR < 0.1);
 
-            double[] tRatio = MatrixUtil.pointwiseDivision(ex1.getTranslation(), tExp);
-            log.log(LEVEL, String.format("   trans result/expected==%s\n", FormatArray.toString(tRatio, "%.3e")));
-            log.log(LEVEL, String.format("   rSSD=%.3f\n", fsR));
-
-            int t = 2;
+            double[] tDiff = MatrixUtil.subtract(ex1.getTranslation(), tExp);
+            double tSSD = MatrixUtil.lPSum(tDiff, 2);
+            assertTrue(tSSD < 3);
         }
 
-        log.log(LEVEL, String.format("k=%s\n", FormatArray.toString(kRadial, "%.4e")));
-        log.log(LEVEL, String.format("expected k=%.3e, %.3e\n", k1E, k2E));
+        //log.log(LEVEL, String.format("k=%s\n", FormatArray.toString(kRadial, "%.4e")));
+        //log.log(LEVEL, String.format("expected k=%.3e, %.3e\n", k1E, k2E));
 
         // quick test of apply and remove distortion
         // (u_d, v_d) are the distorted features in coordsI in image reference frame.

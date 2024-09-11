@@ -193,7 +193,7 @@ public class NeurochemistryBookData {
             default:
                 throw new IllegalArgumentException("idx out of range");
         }
-        return Rotation.createRotationZYX(thetas);
+        return Rotation.createRotationZYX(thetas[0], thetas[1], thetas[2]);
     }
     
     /**
@@ -319,11 +319,10 @@ public class NeurochemistryBookData {
         intr[1] = new double[]{0, 1600, 2016};
         intr[2] = new double[]{0, 0, 1};
         
-        double[][] r0 = Rotation.createRotationZYX(
-            new double[]{0, 0, 0});
+        double[][] r0 = Rotation.createRotationZYX(0, 0, 0);
         
         double[][] r1 = Rotation.createRotationZYX(
-            new double[]{0, 23.5*Math.PI/180., 0});
+            0, 23.5*Math.PI/180., 0);
         
         double[] t0 = new double[]{0, 0, 0};
         double[] t1 = new double[]{-18, 0, 0};

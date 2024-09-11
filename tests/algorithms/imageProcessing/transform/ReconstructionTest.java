@@ -205,10 +205,10 @@ public class ReconstructionTest extends TestCase {
 
         double[] r2RightOrthRelToLeftVec = Rotation.extractRotationVectorRodrigues(r2RightOrthRelToLeft);
         double[] r2LeftIVec = Rotation.extractRotationVectorRodrigues(r2LeftI);
-        double[][] r2Direc = Rotation.rotationBetweenTwoDirections0(r2LeftVec, r2RightVec);
-        double[][] r2OrthDirec = Rotation.rotationBetweenTwoDirections0(r2LeftOrthVec, r2RightOrthVec);
-        double[] r2DirecVec = Rotation.extractRotationVectorRodrigues(r2Direc);
-        double[] r2OrthDirecVec = Rotation.extractRotationVectorRodrigues(r2OrthDirec);
+        //double[][] r2Direc = Rotation.rotationBetweenTwoDirections0(r2LeftVec, r2RightVec);
+        //double[][] r2OrthDirec = Rotation.rotationBetweenTwoDirections0(r2LeftOrthVec, r2RightOrthVec);
+        //double[] r2DirecVec = Rotation.extractRotationVectorRodrigues(r2Direc);
+        //double[] r2OrthDirecVec = Rotation.extractRotationVectorRodrigues(r2OrthDirec);
         //expected om = 0.00611, 0.00489, -0.00359   +- 0.0027, 0.00308, 0.00029
         //expected t = -99.84929, 0.82221, 0.43647   +- 0.142, 0.11352, 0.49773
 
@@ -238,10 +238,10 @@ public class ReconstructionTest extends TestCase {
             System.out.printf("r2RightOrthRelToLeftVec=\n%s\n", FormatArray.toString(r2RightOrthRelToLeftVec, "%.3e"));
             System.out.printf("r2LeftIVec=\n%s\n", FormatArray.toString(r2LeftIVec, "%.3e"));
             // r2Direc is closest to EXPECTED
-            System.out.printf("r2Direc=\n%s\n", FormatArray.toString(r2Direc, "%.3e"));
-            System.out.printf("r2OrthDirec=\n%s\n", FormatArray.toString(r2OrthDirec, "%.3e"));
-            System.out.printf("r2DirecVec=\n%s\n", FormatArray.toString(r2DirecVec, "%.3e"));
-            System.out.printf("r2OrthDirecVec=\n%s\n", FormatArray.toString(r2OrthDirecVec, "%.3e"));
+            //System.out.printf("r2Direc=\n%s\n", FormatArray.toString(r2Direc, "%.3e"));
+            //System.out.printf("r2OrthDirec=\n%s\n", FormatArray.toString(r2OrthDirec, "%.3e"));
+            //System.out.printf("r2DirecVec=\n%s\n", FormatArray.toString(r2DirecVec, "%.3e"));
+            //System.out.printf("r2OrthDirecVec=\n%s\n", FormatArray.toString(r2OrthDirecVec, "%.3e"));
             System.out.printf("EXPECTED OM=(0.00611, 0.00489, -0.00359)   +- 0.0027, 0.00308, 0.00029\n");
             System.out.printf("\n");
             System.out.printf("t2Left=\n%s\n", FormatArray.toString(t2Left, "%.3e"));
@@ -369,16 +369,16 @@ public class ReconstructionTest extends TestCase {
             System.out.printf("r=\n%s\n", FormatArray.toString(r, "%.3e"));
             System.out.printf("rOrth=\n%s\n", FormatArray.toString(rOrth, "%.3e"));
             System.out.printf("t=\n%s\n", FormatArray.toString(t, "%.3e"));
-            System.out.printf("r2Direc=\n%s\n", FormatArray.toString(r2Direc, "%.3e"));
+            //System.out.printf("r2Direc=\n%s\n", FormatArray.toString(r2Direc, "%.3e"));
             System.out.printf("distR=%.3e\n", distR);
 
-            double[][] rDiffFromDirec = Rotation.rotationBetweenTwoDirections0(
-                    Rotation.extractRotationVectorRodrigues(r), r2DirecVec);
-            System.out.printf("rDiffFromDirec=\n%s\n", FormatArray.toString(rDiffFromDirec, "%.3e"));
-            double[] degreesDiff = Rotation.extractThetaFromZYX(rDiffFromDirec);
-            MatrixUtil.multiply(degreesDiff, 180./Math.PI);
+            //double[][] rDiffFromDirec = Rotation.rotationBetweenTwoDirections0(
+            //        Rotation.extractRotationVectorRodrigues(r), r2DirecVec);
+            //System.out.printf("rDiffFromDirec=\n%s\n", FormatArray.toString(rDiffFromDirec, "%.3e"));
+            //double[] degreesDiff = Rotation.extractThetaFromZYX(rDiffFromDirec);
+            //MatrixUtil.multiply(degreesDiff, 180./Math.PI);
             // can see the z-axis negative direction here:
-            System.out.printf("rDiffFromDirec degrees=%s\n", FormatArray.toString(degreesDiff, "%.3e"));
+            //System.out.printf("rDiffFromDirec degrees=%s\n", FormatArray.toString(degreesDiff, "%.3e"));
 
             double[][] pXW = pr[ii].XW;
             System.out.printf("pXW[%d]=%s\n",
@@ -607,10 +607,6 @@ public class ReconstructionTest extends TestCase {
 
         double[] rodriguesL1 = Rotation.extractRotationVectorRodrigues(left1);
         double[] rodriguesL2 = Rotation.extractRotationVectorRodrigues(right1);
-        // diffRodrigues ix [-0.0014421799439685579, -0.006811388962245868, 0.003946526358523994]
-        double[] diffRodrigues = MatrixUtil.subtract(rodriguesL1, rodriguesL2);
-        double[][] r120 = Rotation.rotationBetweenTwoDirections0(rodriguesL1, rodriguesL2);
-        double[][] r121 = Rotation.rotationBetweenTwoDirections1(rodriguesL1, rodriguesL2);
 
         //what rotation
         double[][] diffRSameCenter = Rotation.procrustesAlgorithmForRotation(left1, right1);
