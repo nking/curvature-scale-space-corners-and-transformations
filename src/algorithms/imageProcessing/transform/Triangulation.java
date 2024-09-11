@@ -266,7 +266,7 @@ public class Triangulation {
         since data are noisy, these equalities need to be solved as best fit:
         
         x1 = P1 * X1  and  x2 = P2 * X2
-            where x1 and x2 are in homogeneous coordinates
+            where x1 and x2 are in homogenous coordinates
         
         similarity relation: same direction ray, but have a scale factor alpha
         
@@ -397,7 +397,7 @@ public class Triangulation {
         // eigenvector corresponding to the smallest eigenvalue is last row in svd.V^T
         double[] X = Arrays.copyOf(vT[vT.length - 1], vT[0].length);
         MatrixUtil.multiply(X, 1./X[X.length - 1]);
-        
+
         /*
         System.out.printf("x1=\n%s\n", FormatArray.toString(x1, "%.4e"));
         System.out.printf("camera1=\n%s\n", FormatArray.toString(camera1, "%.4e"));
@@ -414,7 +414,11 @@ public class Triangulation {
         
         MatrixUtil.multiply(x1Rev, 1./x1Rev[2]);
         MatrixUtil.multiply(x2Rev, 1./x2Rev[2]);
-        
+
+        // TODO: consider quality check and correction:  if any points in x1Rev or x2Rev are < 0,
+        // TODO: compare x1Rev to x1C, etc
+        // TODO: backwards project x1C to XW1 and x2C to XW2 and if they are not the same, take the mean of them
+
         /*
         System.out.printf("x1Rev=\n%s\n", FormatArray.toString(x1Rev, "%.4e"));
         System.out.printf("x1=\n%s\n", FormatArray.toString(MatrixUtil.extractColumn(x1, 0), "%.4e"));

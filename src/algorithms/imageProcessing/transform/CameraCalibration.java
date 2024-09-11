@@ -76,7 +76,7 @@ public class CameraCalibration {
      </pre>
      * @param n n is the number of points in each image which is the
               same for all images.  n is number of features.
-     * @param coordsI  holds the homogeneous image coordinates in pixels of
+     * @param coordsI  holds the homogenous image coordinates in pixels of
                features present in all images ordered in the same
                manner and paired with features in coordsW.
                It is a 2-dimensional double array of format
@@ -92,7 +92,7 @@ public class CameraCalibration {
                     [yim1[0], yim1[1], ...yim1[n-1], yim2[0], yim2[1],...yim2[n-1],...]
                     [1, 1, ...1, 1, 1,...1,...]]
     </pre>
-     * @param coordsW holds the homogeneous world coordinates of features, ordered
+     * @param coordsW holds the homogenous world coordinates of features, ordered
                by the same features in the images.
                the first row is the X coordinates, the second row
                is the Y coordinates, and the third row is 1's 
@@ -1258,11 +1258,11 @@ public class CameraCalibration {
             CameraIntrinsicParameters kIntr, double[][] h) throws NotConvergedException {
 
         // notes from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
-        // homogeneous repr of a point is x_vec = (x, y, 1)^T
+        // homogenous repr of a point is x_vec = (x, y, 1)^T
         // equation f a line is ell = a*x + b*y + c = 0;
-        // line rewritten in homogeneous coordinates is x_vec^T * ell.
+        // line rewritten in homogenous coordinates is x_vec^T * ell.
         // general conic in 3 dimensions is a*x^2 + b*x*y + c*y^2 + d*x*z + e*y*z + f*z^2 = 0.
-        //     rewritten using 2D homogeneous coordinates, quadratic form: x_vec^T * C * x_vec = 0
+        //     rewritten using 2D homogenous coordinates, quadratic form: x_vec^T * C * x_vec = 0
         //                  [a   b/2   d/2 ]
         //        where C = [b/2   c   c/2 ]
         //                  [d/2 c/2     f ]

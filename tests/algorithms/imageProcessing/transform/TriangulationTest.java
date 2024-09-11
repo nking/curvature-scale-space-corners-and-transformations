@@ -227,12 +227,29 @@ public class TriangulationTest extends TestCase {
             MatrixUtil.multiply(wcs.X, 1./wcs.X[3]);
             MatrixUtil.multiply(wcs.X, -1);
 
-            //System.out.printf("\nresult=%s\n", FormatArray.toString(wcs.X, "%.5f"));
-            //System.out.printf("expect=%s\n", FormatArray.toString(expected, "%.5f"));
+            System.out.printf("\nresult=%s\n", FormatArray.toString(wcs.X, "%.5f"));
+            System.out.printf("expect=%s\n", FormatArray.toString(expected, "%.5f"));
 
             assertTrue(Math.abs(wcs.X[0] - expected[0]) < 0.1);
             assertTrue(Math.abs(wcs.X[1] - expected[1]) < 0.1);
 
         }// end i
+    }
+
+    public void testRandom() {
+
+        double[][] xyzRange = new double[][]{
+                {1000, 2000}, {1000, 2000}, {10, 20}
+        };
+        int nPoints = 100;
+
+        long seed = System.nanoTime();
+        System.out.printf("seed=%d\n", seed);
+        Random rand = new Random(seed);
+
+        double[][] xW = SceneImageHelper.randomPoints3D(rand, nPoints, xyzRange);
+
+       // double[][] x1 = SceneImageHelper.createImagePoints2D(xW, double[][] k, double[][] r, double[] t,
+        //boolean makeHomogenous) {
     }
 }

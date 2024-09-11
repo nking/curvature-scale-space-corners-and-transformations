@@ -45,7 +45,9 @@ import no.uib.cipr.matrix.*;
  * IEEE transactions on pattern analysis and machine intelligence, 
  * 40(3):611–625, 2018.
  *
- * TODO:  add gauge fix.  And related to that, consider adding constraints 
+ * TODO:  add gauge fix.  The gauge is the coordinate system a.k.a. datum
+ * in photogrammetry. (see Bartoli "Towards Gauge Invariant Bundle Adjustment:..."
+ * And related to that, consider adding constraints
  * suggested in Seliski 2010: u_0 and v_0 are close to half the image lengths 
  * and widths, respectively.  the angle between 2 image axes is close to 90.
   the focal lengths along both axes are greater than 0.     
@@ -353,14 +355,14 @@ public class BundleAdjustment {
         and this on 3F points:
         "3D points: Even for calibrated cameras, 
         ** ==> vision geometry and visual reconstructions are intrinsically projective. 
-        If a 3D (X Y Z)^⊤ parametrization (or equivalently a homogeneous affine (X Y Z 1)^⊤ one)
+        If a 3D (X Y Z)^⊤ parametrization (or equivalently a homogenous affine (X Y Z 1)^⊤ one)
         is used for very distant 3D points, large X, Y, Z displacements are 
         needed to change the image significantly. I.e., in (X Y Z) space the 
         cost function becomes very flat and steps needed for cost adjustment 
         become very large for distant points. 
-            In comparison, with a homogeneous projective parametrization (X Y Z W)^⊤,
+            In comparison, with a homogenous projective parametrization (X Y Z W)^⊤,
         the behaviour near infinity is natural, finite and well-conditioned so 
-        long as the normalization keeps the homogeneous 4-vector finite at 
+        long as the normalization keeps the homogenous 4-vector finite at 
         infinity (by sending W → 0 there). In fact, there is no immediate 
         visual distinction between the images of real points near infinity and 
         virtual ones ‘beyond’ it (all camera geometries admit such virtual 
@@ -377,7 +379,7 @@ public class BundleAdjustment {
         disastrous for distant ones because it artificially cuts away half of 
         the natural parameter space, and hides the fact by sending the resulting 
         edge to infinite parameter values.
-        **==> Instead, you should use a homogeneous parametrization (X Y Z W )^⊤
+        **==> Instead, you should use a homogenous parametrization (X Y Z W )^⊤
         for distant points, e.g. with spherical normalization summation X_i^2 = 1."
         
         on Rotations:
@@ -1282,6 +1284,8 @@ public class BundleAdjustment {
             ** Daniel D. Morris, Kenichi Kanatani and Takeo Kanade,
             "Gauge Fixing for Accurate 3D Estimation"
 
+            see Bartoli "Towards Gauge Invariant Bundle Adjustment:..."
+
            Also, in this project, can see it as fixing the exrinsic parameters
               of the first camera to rotation = I and translation=0.
            Also in this project, Reconstruction.java:
@@ -1415,6 +1419,7 @@ public class BundleAdjustment {
         double[] xWCI = new double[3];
         double[] xWII;
 
+        //TODO: revisit this when next revise this class
         boolean passive = false;
 
         double[][] rotM;

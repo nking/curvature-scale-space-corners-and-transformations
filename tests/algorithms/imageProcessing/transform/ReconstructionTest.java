@@ -740,7 +740,7 @@ public class ReconstructionTest extends TestCase {
 
     }
 
-    //NOTE: should not use the Zhang data for this.  x,y are not homogeneous coords
+    //NOTE: should not use the Zhang data for this.  x,y are not homogenous coords
     public void estCalculateProjectiveReconstruction() throws Exception {
         System.out.println("testCalculateProjectiveReconstruction");
 
@@ -1091,7 +1091,7 @@ public class ReconstructionTest extends TestCase {
     /**
      * given a list of keypoints in format (col, row), write a double array of size [2 X kP.size()] where the
      * first row holds the col values, the second row holds the row values and the third row holds values "1" for
-     * the z-axis representation in homogeneous coordinates.
+     * the z-axis representation in homogenous coordinates.
      * @param kP input list of keypoints in format (col, row)
      * @return the data in format [2 X kP.size()]
      */
