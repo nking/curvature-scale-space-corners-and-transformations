@@ -36,30 +36,45 @@ public class PlanarHomographyTest extends TestCase {
         System.out.println("SEED=" + seed);
         Random rand = new Random(seed);
 
+        boolean passive = true;
         double angle = Math.PI/10.;
         double d = 5;
         double lambda = 4;
         // rotation is cc about the y-axis (pitch)
-        double[][] r = new double[3][];
-        r[0] = new double[]{Math.cos(angle), 0, Math.sin(angle)};
-        r[1] = new double[]{0, 1, 0};
-        r[2] = new double[]{-Math.sin(angle), 0, Math.cos(angle)};
+        double[][] r = Rotation.createRotationPitch(angle, passive);
 
         int i;
         int j;
 
         double[] t = new double[]{2, 0, 0};
+
         double[] n = new double[]{1, 0, 2}; // chosen to not have sqrt(sqsum))=1
 
-        // then the plane P is tangent to n
-        // which is (-2, 0, 1) or any multiple of that.
+        // anything perpendicular to n has cross product with it = 0
+        /*
+        1    0   2
+        a0  a1  a2
+        cross product:  0*a2 - 2*a1 = [-2*a1       ]
+                        1*a2 - 2*a0   [1*a2 - 2*a0 ]
+                        1*a1 - 0*a0   [a1          ]
 
-        System.out.printf("angle of rotation about y axis =%.3f, depth d=%.1f, lambda scale=%.1f\n",
-                angle, d, lambda);
+        so a plane P tangent to n is [-2, 2-2=0, -1] = [-2, 0, 1] or any multiple of it
+
+        here, n is the normal vector, tangent to plane P w.r.t. the first camera.
+
+        plane P is in 3D space containing WCS points to be imaged by 2 cameras.
+         */
+
+        System.out.printf("angle of rotation about y axis =%.3f, depth d=%.1f, lambda scale=%.1f\n", angle, d, lambda);
         System.out.printf("from camera1 to camera2, Rotation=\n%s\n", FormatArray.toString(r, "%.3e"));
         System.out.printf("from camera1 to camera2, T=\n%s\n", FormatArray.toString(t, "%.3e"));
         System.out.printf("perpendicular to plane P: N=\n%s\n", FormatArray.toString(n, "%.3e"));
 
+        /*
+        see (5.40) of MASKS book
+
+        H_l = lambda * H = lambda * (R + ((1/d) * T * N^T))
+         */
         double[][] hl = MatrixUtil.outerProduct(t, n);
         MatrixUtil.multiply(hl, 1./d);
         hl = MatrixUtil.pointwiseAdd(r, hl);
@@ -408,20 +423,17 @@ public class PlanarHomographyTest extends TestCase {
         double[] nC1Norm = new double[]{0, 0, 1};
         double thetaWCSC1 = -Math.acos(nPNorm[0]*nC1Norm[0] + nPNorm[1]*nC1Norm[1] + nPNorm[2]*nC1Norm[2]);
         double[] axisWCSC1 = MatrixUtil.crossProduct(nPNorm, nC1Norm);
-        double[] quatB = Rotation.createQuaternionUnitLengthBarfoot(thetaWCSC1, axisWCSC1);
-        double[][] rWCSC1 = Rotation.createRotation4FromQuaternion(quatB);
-        rWCSC1 = MatrixUtil.copySubMatrix(rWCSC1, 0, 2, 0, 2);
-        System.out.printf("r*v=\n%s\n", FormatArray.toString(
-                MatrixUtil.multiplyMatrixByColumnVector(rWCSC1, nPNorm),
-                "%.4e"
-        ));
-            // expecting (0, 0, 1)
-            double[] checkNC1 = MatrixUtil.multiplyMatrixByColumnVector(rWCSC1, nPNorm);
+        double angle2 = Rotation.makeUnitLengthAngleAxis(thetaWCSC1, axisWCSC1);
+        double[][] rWCSC1 = Rotation.createRotationRodriguesFormula(axisWCSC1, thetaWCSC1, passive);
+
+        // expecting (0, 0, 1)
+        double[] checkNC1 = MatrixUtil.multiplyMatrixByColumnVector(rWCSC1, nPNorm);
+        System.out.printf("expecting %s, result=%s\n", FormatArray.toString(nC1Norm, "%.4e"),
+                FormatArray.toString(checkNC1, "%.4e"));
+
             assertTrue(Math.abs(checkNC1[0] - nC1Norm[0]) < 1E-7);
             assertTrue(Math.abs(checkNC1[1] - nC1Norm[1]) < 1E-7);
             assertTrue(Math.abs(checkNC1[2] - nC1Norm[2]) < 1E-7);
-
-            boolean passive = false;
 
             // using the rodrigues formula was faster but a little less accurate:
         double[][] r2 = Rotation.createRotationRodriguesFormula(axisWCSC1, passive);
@@ -490,8 +502,8 @@ public class PlanarHomographyTest extends TestCase {
 
         //solnN is the unit normal vector of the plane P with respect to the first camera frame.
 
-        // section 2.4.1 is homogeneous coordinate system
-        // homogeneous coordinates append a "1" to (x,y,z) coordinates,
+        // section 2.4.1 is homogenous coordinate system
+        // homogenous coordinates append a "1" to (x,y,z) coordinates,
         // resulting in a 4-dimensional vactor (x,y,z,1).
         // This embeds Euclidean E^3 into a hyperplane in R^4 instead of R^3 (MASKS, "An Invitation to 3-D Vision")
 
