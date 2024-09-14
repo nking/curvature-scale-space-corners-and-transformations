@@ -153,7 +153,19 @@ public class TriangulationTest extends TestCase {
         Triangulation.WCSPt wcsPt2 = Triangulation.calculateWCSPoint(p1, p2, x1C, x2C);
 
         xw = wcsPt.X;
-        System.out.printf("\nc: xw=%s\n", FormatArray.toString(xw, "%.3e"));
+        System.out.printf("\nc: xw2=%s\n", FormatArray.toString(xw, "%.3e"));
+        //xw=6.670e-03, -5.187e-02, -9.986e-01, 2.102e-03
+        // xw[0]/xw[3], xw[1]/xw[3], xw[2]/xw[3] = (3.173168411037107, -24.676498572787818, -475.07136060894385)
+
+        MatrixUtil.multiply(xw, 1./xw[xw.length - 1]);
+        System.out.printf("      =%s\n", FormatArray.toString(xw, "%.3e"));
+
+        assertTrue(Math.abs(Math.abs(xw[2]) - 425) < 150);
+
+        // using xim, yim and P=K*[R|T]
+        Triangulation.WCSPt wcsPt3 = Triangulation.calculateWCSPoint(camera1, camera2, x1, x2);
+        xw = wcsPt3.X;
+        System.out.printf("\nc: xw3=%s\n", FormatArray.toString(xw, "%.3e"));
         //xw=6.670e-03, -5.187e-02, -9.986e-01, 2.102e-03
         // xw[0]/xw[3], xw[1]/xw[3], xw[2]/xw[3] = (3.173168411037107, -24.676498572787818, -475.07136060894385)
 

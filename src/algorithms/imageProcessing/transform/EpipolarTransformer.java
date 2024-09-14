@@ -20,6 +20,14 @@ import algorithms.util.FormatArray;
  * class to solve for the epipolar and/or essential matrices and their epipoles for two images with stereo projection
  * and apply the solution.
  *
+ * the essential matrix contains information about the relative rotation between the 2 cameras and the direction of
+ * translation between the two cameras.
+ *
+ * The fundamental matrix contains information about the relative rotation between the 2 cameras, the direction of
+ * translation between the two cameras, and the intrinisc camera matrix.
+ *
+ * To recover scale one needs to use absolute orientation methods.
+ *
  * <pre>
  *  The essential matrix is defined by the planes formed by the 3 vectors of optical centers of 2 cameras and the
  *  individual points X in 3D-space called world coordinate system (WCS).
@@ -60,12 +68,13 @@ import algorithms.util.FormatArray;
  *     li^T * ei = 0
  *     li^T * xi = 0
  *
- *
  * The fundamental matrix is the projective solution for transformation
  * between 2 images of the same objects in pixel coordinates.
  *
- *     F = K^-T * E * K^-1 where K is the intrinsic camera matrix.
- *       = [K*T]_x * R * K^-1  if det(K) ~ 1 else apply a scale factor too.
+ *     E = K2^T * F * K1
+ *     F = K^-T * E * K^-1
+ *                  where K is the intrinsic camera matrix.
+ *       = K^-T * [T]_x * R * K^-1  if det(K) ~ 1 else apply a scale factor too.
  *
  * Present below is the solution for having 7 matched points between images
  * and the solution for having 8 or more matched points between the images.
@@ -379,7 +388,7 @@ public class EpipolarTransformer {
     private static double eps = 1e-12;
 
     /**
-     * calculate the epipolar projection.  all normalizations and de-normalizations are handled internally.
+     * calculate the epipolar projection.  no normalizations and de-normalizations are handled internally.
      * if the camera calibration is known, the essential matrix is returned.
      * @param leftXY the left image coordinates of the feature correspondences
      * @param rightXY the right image coordinates of the feature correspondences
@@ -411,7 +420,7 @@ public class EpipolarTransformer {
         //leftXY = MatrixUtil.copy(leftXY);
         //rightXY = MatrixUtil.copy(rightXY);
 
-        double[][] a = createFundamentalMatrix(leftXY, rightXY);
+        double[][] a = createDesignMatrix(leftXY, rightXY);
 
         SVDProducts svd0 = null;
         try {
@@ -427,7 +436,6 @@ public class EpipolarTransformer {
         double[][] ff = new double[3][3];
         int i;
         for (i = 0; i < 3; i++) {
-            ff[i] = new double[3];
             ff[i][0] = vT[ns - 1][(i * 3) + 0];
             ff[i][1] = vT[ns - 1][(i * 3) + 1];
             ff[i][2] = vT[ns - 1][(i * 3) + 2];
@@ -445,7 +453,7 @@ public class EpipolarTransformer {
         // keep the largest 2 values in sDiag to make the diagonal rank 2
         //TODO: follow up on Torry and Murray 1997 use of sqrt(lambda1), sqrt(lambda2).
         //      it's probably because they are using the square of the measurement matrix.
-        double[][] d = MatrixUtil.zeros(3,3);
+        double[] d = new double[3];
         if (calibrated) {
             //from Serge Belongie lectures from Computer Vision II, CSE 252B, USSD
             // refers to Ma, Soatto, Kosecka, and Sastry 2003
@@ -455,23 +463,25 @@ public class EpipolarTransformer {
             // d = [lambda, lambda, 0] where lambda = (svd.s[0] + svd.s[1])/2.
             // MASKS Theorem 5.9
             double sig = (svd.getS()[0] + svd.getS()[1])/2.;
-            d[0][0] = sig;
-            d[1][1] = sig;
+            d[0] = sig;
+            d[1] = sig;
             //NOTE: to normalize E, one can use sig = 1 here. see p. 122 of MASKS chapt 5.
         } else {
-            d[0][0] = svd.getS()[0];
-            d[1][1] = svd.getS()[1];
+            d[0] = svd.getS()[0];
+            d[1] = svd.getS()[1];
         }
 
         /*
         multiply the terms:
              F = dot(U, dot(diag(D),V^T))
         */
+        double[][] u = MatrixUtil.convertToRowMajor(svd.getU());
         vT = MatrixUtil.convertToRowMajor(svd.getVt());
-        double[][] dDotV = MatrixUtil.multiply(d, vT);
 
         // 3x3 with rank 2
-        double[][] fm = MatrixUtil.multiply(MatrixUtil.convertToRowMajor(svd.getU()), dDotV);
+        double[][] fm = MatrixUtil.multiply(MatrixUtil.multiplyByDiagonal(u, d), vT);
+
+        // TODO: consider dividing by Frobenius norm
 
         return fm;
     }
@@ -497,7 +507,7 @@ public class EpipolarTransformer {
             throw new IllegalArgumentException("leftXY and rightXY must have 7 points");
         }
 
-        double[][] a = createFundamentalMatrix(leftXY, rightXY);
+        double[][] a = createDesignMatrix(leftXY, rightXY);
 
         SVDProducts svd = null;
         try {
@@ -1767,8 +1777,8 @@ public class EpipolarTransformer {
      * second is y.
      * @return fundamental matrix of size [nPoints x 9]
      */
-    double[][] createFundamentalMatrix(double[][] normXY1,
-                                       double[][] normXY2) {
+    double[][] createDesignMatrix(double[][] normXY1,
+                                  double[][] normXY2) {
 
         if (normXY1 == null) {
             throw new IllegalArgumentException("normXY1 cannot be null");

@@ -59,18 +59,18 @@ public class Triangulation {
      * @param k2 intrinsic camera matrix for image 2 in units of pixels.
      * @param r2 the rotation matrix for the extrinsic camera matrix for image 2.
      * @param t2 the translation vector for the extrinsic camera matrix for image 2.
-     * @param x1c the camera 1 set of correspondence points.  format is 3 x N where
+     * @param x1 the camera 1 set of correspondence points.  format is 3 x N where
      * N is the number of points.  all points are observations of real world point X
-     *           and should be in camera reference frame.
-     * @param x2c the camera 2 set of correspondence points.  format is 3 x N where
+     *           and should be in image reference frame.
+     * @param x2 the camera 2 set of correspondence points.  format is 3 x N where
      *      * N is the number of points.  all points are observations of real world point X
-     *      *           and should be in camera reference frame.
+     *      *           and should be in image reference frame.
      * @return the point coordinates in world coordinate reference frame
      */
     public static WCSPt calculateWCSPoint(
             double[][] k1, double[][] r1, double[] t1,
             double[][] k2, double[][] r2, double[] t2,
-            double[][] x1c, double[][] x2c) {
+            double[][] x1, double[][] x2) {
         
         if (k1.length != 3 || k1[0].length != 3) {
             throw new IllegalArgumentException("k1 must be 3 x 3");
@@ -90,11 +90,11 @@ public class Triangulation {
         if (t2.length != 3 ) {
             throw new IllegalArgumentException("t2 must be length 3");
         }
-        if (x1c.length != 3 || x2c.length != 3) {
+        if (x1.length != 3 || x2.length != 3) {
             throw new IllegalArgumentException("x1.length must be 3 and so must x2.length");
         }
-        int n = x1c[0].length;
-        if (x2c[0].length != n) {
+        int n = x1[0].length;
+        if (x2[0].length != n) {
             throw new IllegalArgumentException("x1 and x2 must be same dimensions");
         }
 
@@ -103,39 +103,39 @@ public class Triangulation {
         
         double[][] camera2 = Camera.createCamera(k2, r2, t2);
         
-        return calculateWCSPoint(camera1, camera2, x1c, x2c);
+        return calculateWCSPoint(camera1, camera2, x1, x2);
     }
-    
+
     /**
-     given the projection matrices and matching correspondence of points between the 2 cameras
+     * given the projection matrices and matching correspondence of points between the 2 cameras
      * (measurements of the same object, that is, as a single 3D point is returned) calculate the real world
      * coordinate of the observations.
+
+     x1, y1 must be in image reference frame for this method.
+     <pre>
+
+     following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+     </pre>
+     * @param camera1 camera parameters for image 1.   the size is 3X4
      *
-     * <pre>
-     *     NOTE the projection matrix is formed using P = K * [ R | t ]
-     *     and x = alpha * P * X
-     *     so x1 and x2 should be in camera coordinates.
+     * @param camera2 camera parameters for image 2. the size is 3X4.
      *
-     * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
-     * </pre>
-     * @param camera1 camera matrix for image 1.   the size is 3X4.
-     *                the data are used to construct P = K * [ R | t ].
-     * @param camera2 camera matrix for image 2. the size is 3X4.
-     *                the data are used to construct P = K * [ R | t ].
-     * @param x1c the set of measurements of 1 real world point X from image 1 in camera coordinate reference frame.
+     * @param x1 the set of measurements of 1 real world point X from camera 1 in image coordinates.
      * The corresponding measurements of the same point in camera 2 are in x2.
      * format is 3 x N where N is the number of measurements.
-     *
-     * @param x2c the set of measurements of 1 real world point X from image 2 in camera coordinate reference frame.
-     *      * The corresponding measurements of the same point in camera 1 are in x2.
-     *      * format is 3 x N where N is the number of measurements.
-     *
+     * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
+     * If the data are not perfect, need more than 1 pair for best fit.
+     * @param x2 the set of measurements of 1 real world point X from camera 2 in image coordinates.
+     * The corresponding measurements of the same point in camera 1 are in x1.
+     * format is 3 x N where N is the number of measurements.
+     * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
+     * If the data are not perfect, need more than 1 pair for best fit.
      * @return the 3D coordinate of the point in world scene.  note that
      * the entire array can be normalized by the last element.
      */
     public static WCSPt calculateWCSPoint(
         CameraParameters camera1, CameraParameters camera2,
-        double[][] x1c, double[][] x2c) {
+        double[][] x1, double[][] x2) {
         
         return calculateWCSPoint(camera1.getIntrinsicParameters().getIntrinsic(),
             camera1.getExtrinsicParameters().getRotation(),
@@ -143,29 +143,33 @@ public class Triangulation {
             camera2.getIntrinsicParameters().getIntrinsic(),
             camera2.getExtrinsicParameters().getRotation(),
             camera2.getExtrinsicParameters().getTranslation(),
-            x1c, x2c);
+            x1, x2);
     }
-    
+
     /**
-     given the projection matrices and matching correspondence of points between the 2 images
+     * given the projection matrices and matching correspondence of points between the 2 cameras
      * (measurements of the same object, that is, as a single 3D point is returned) calculate the real world
      * coordinate of the observations.
      *
-     * <pre>
-     *     P = K * [ R | t ], and x1 and x2 must be in camera coordinate reference frame.
-     *
-     * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
-     * </pre>
-     * @param camera1 camera matrix for image 1.   the size is 3X4.
-     *                P = K * [ R | t ].
+     <pre>
+     if x1 and x2 are in camera coordinates, then Pi = [Ri | Ti] must be used.
+     if x1 and x2 are in image coordinates, then Pi = Ki * [Ri | Ti] must be used.
+     where Ki is intrinsic camera matrix for camera i, R is the rotation matrix for camera i, and i is
+     the translation vector for camera i.
+     following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+     </pre>
+     * @param camera1 camera matrix for image 1.   the size is 3X4
+     *               if x1 and x2 are in camera coordinates, then P1 = [R1 | T1] must be used.
+     *       if x1 and x2 are in image coordinates, then P1 = K1 * [R1 | T1] must be used.
      * @param camera2 camera matrix for image 2. the size is 3X4.
-     *                P = K * [ R | t ].
-     * @param x1c the set of measurements of 1 real world point X from camera 1 in camera coordinates.
+     *                 if x1 and x2 are in camera coordinates, then P2 = [R2 | T2] must be used.
+     *        if x1 and x2 are in image coordinates, then P2 = K2 * [R2 | T2] must be used.
+     * @param x1c the set of measurements of 1 real world point X from camera 1 in camera coordinates or image coords.
      * The corresponding measurements of the same point in camera 2 are in x2.
      * format is 3 x N where N is the number of measurements.
      * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
      * If the data are not perfect, need more than 1 pair for best fit.
-     * @param x2c the set of measurements of 1 real world point X from camera 2 in camera coordinates.
+     * @param x2c the set of measurements of 1 real world point X from camera 2 in camera coordinates or image coords.
      * The corresponding measurements of the same point in camera 1 are in x1.
      * format is 3 x N where N is the number of measurements.
      * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
@@ -185,25 +189,25 @@ public class Triangulation {
       * (measurements of the same object, that is, as a single 3D point is returned) calculate the real world
       * coordinate of the observations.
      *
-     * <pre>
-      *     P = K * [ R | t ], and x1 and x2 must be in camera coordinates(pixels).
-      *
-      *     NOTE: sometimes the rotation is applied before translation, then P = K * [ R | -R*t].
-      *     This method uses the projection matrix rows and does not decompose it into K and R components
-      *     so the assumed order of transformations does not affect this method.
-      *
-     * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
-     * </pre>
+     <pre>
+           if x1 and x2 are in camera coordinates, then Pi = [Ri | Ti] must be used.
+           if x1 and x2 are in image coordinates, then Pi = Ki * [Ri | Ti] must be used.
+           where Ki is intrinsic camera matrix for camera i, R is the rotation matrix for camera i, and i is
+           the translation vector for camera i.
+      following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+      </pre>
      * @param camera1 camera matrix for image 1.   the size is 3X4
-      *                P = K * [ R | t ].
+      *               if x1 and x2 are in camera coordinates, then P1 = [R1 | T1] must be used.
+      *       if x1 and x2 are in image coordinates, then P1 = K1 * [R1 | T1] must be used.
      * @param camera2 camera matrix for image 2. the size is 3X4.
-      *                 P = K * [ R | t ].
-     * @param x1c the set of measurements of 1 real world point X from camera 1 in camera coordinates.
+      *                 if x1 and x2 are in camera coordinates, then P2 = [R2 | T2] must be used.
+      *        if x1 and x2 are in image coordinates, then P2 = K2 * [R2 | T2] must be used.
+     * @param x1c the set of measurements of 1 real world point X from camera 1 in camera coordinates or image coords.
      * The corresponding measurements of the same point in camera 2 are in x2.
      * format is 3 x N where N is the number of measurements.
      * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
      * If the data are not perfect, need more than 1 pair for best fit.
-     * @param x2c the set of measurements of 1 real world point X from camera 2 in camera coordinates.
+     * @param x2c the set of measurements of 1 real world point X from camera 2 in camera coordinates or image coords.
      * The corresponding measurements of the same point in camera 1 are in x1.
      * format is 3 x N where N is the number of measurements.
      * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),

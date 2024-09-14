@@ -86,19 +86,14 @@ public class EpipolarNormalizationHelper {
 
         double[] rowMeans = MatrixUtil.rowMeans(x);
 
-        int col;
-        int row;
-        for (row = 0; row < nd; ++row) {
-            for (col = 0; col < n; ++col) {
-                x[row][col] -= rowMeans[row];
-            }
-        }
-
         double[] stdevs = new double[nd];
+        double diff;
+        int row, col;
         for (row = 0; row < nd; ++row) {
             for (col = 0; col < n; ++col) {
                 // difference from mean 0
-                stdevs[row] += (x[row][col]*x[row][col]);
+                diff = x[row][col] - rowMeans[row];
+                stdevs[row] += (diff * diff);
             }
         }
         for (row = 0; row < nd; ++row) {
@@ -107,14 +102,6 @@ public class EpipolarNormalizationHelper {
                 System.out.println("WARNING: standard deviation of row " + row
                         + " was 0, so consider using another normalization " +
                         "method like min-max instead");
-            }
-        }
-
-        for (row = 0; row < nd; ++row) {
-            for (col = 0; col < n; ++col) {
-                if (stdevs[row] > 0) {
-                    x[row][col] /= stdevs[row];
-                }
             }
         }
 
@@ -129,6 +116,11 @@ public class EpipolarNormalizationHelper {
             }
         }
         t[nd][nd] = 1;
+
+        double[][] xTrans = MatrixUtil.multiply(t, x);
+        for (row = 0; row < xTrans.length; ++row) {
+            System.arraycopy(xTrans[row], 0, x[row], 0, xTrans[row].length);
+        }
 
         return t;
     }
@@ -172,17 +164,19 @@ public class EpipolarNormalizationHelper {
         }
 
         /*
-        denormalized x2^T = transpose(normalized x2) * transpose(T2^-1)
-        denormalized x1 = (T1^-1) * (normalized x1)
-        denormalized FM = transpose(T2) * FM_normalized * T1
-         */
+        u1_normalized = T1 * u1
+          u2_normalized = T2 * u2
 
-        double[][] tInv2T = transposeInverseT(t2);
+          denormalized u1 = T1^-1 * u1_normalized
+          denormalized u2 = T2^-1 * u2_normalized
+
+          FM_normalized = inverse(transpose(T2)) * FM * inverse(T1)
+         */
         double[][] tInv1 = inverseT(t1);
+        double[][] tInv2 = inverseT(t2);
 
         // [NX3]*[3X3]=[NX3]
-        double[][] x2D = MatrixUtil.multiply(MatrixUtil.transpose(x2), tInv2T);
-        x2D = MatrixUtil.transpose(x2D);
+        double[][] x2D = MatrixUtil.multiply(tInv2, x2);
         double[][] x1D = MatrixUtil.multiply(tInv1, x1);
 
         int i;
@@ -195,7 +189,9 @@ public class EpipolarNormalizationHelper {
     }
 
     /**
+     * FM_normalized = inverse(transpose(T2)) * FM * inverse(T1)
      * denormalized FM = transpose(T2) * FM_normalized * T1
+     *
      * @param fm the fundamental matrix calculated using normalized x1 and x2 data
      *           points, where t1 and t2 are the transformation matrices used
      *           to normalize x1 and x2, respectively.
@@ -215,29 +211,47 @@ public class EpipolarNormalizationHelper {
         }
         int n = fm[0].length;
 
-        //denormalized FM = transpose(T2) * FM_normalized * T1
-        double[][] fmD = MatrixUtil.multiply(fm, t1);
-        fmD = MatrixUtil.multiply(MatrixUtil.transpose(t2), fmD);
+        /*
+        u1_normalized = T1 * u1
+          u2_normalized = T2 * u2
+
+          denormalized u1 = T1^-1 * u1_normalized
+          denormalized u2 = T2^-1 * u2_normalized
+
+          FM_normalized = inverse(transpose(T2)) * FM * inverse(T1)
+            with caveat about centroid and normalization details...
+
+         FM_normalized * T1 = inverse(transpose(T2)) * FM
+         transpose(T2) * FM_normalized * T1 = FM
+
+         denormalized FM = transpose(T2) * FM_normalized * T1
+
+         */
+        double[][] t2T = MatrixUtil.transpose(t2);
+        double[][] fmD = MatrixUtil.multiply(t2T, fm);
+        fmD = MatrixUtil.multiply(fmD, t1);
 
         for (int i = 0; i < fmD.length; ++i) {
             System.arraycopy(fmD[i], 0, fm[i], 0, fmD[i].length);
         }
     }
 
-    private static double[][] transposeInverseT(double[][] t) {
+    static double[][] transposeInverseT(double[][] t) {
         if (t.length != 3 && t.length != 4) {
             throw new IllegalArgumentException("t.length must be 3 or 4");
         }
         int nd = t.length - 1;
 
-        double[][] tinv = new double[t.length][t.length];
+        double[][] tInvT = new double[t.length][t.length];
         for (int i = 0; i < nd; ++i) {
-            tinv[i][i] = 1./t[i][i];
-            tinv[i][t.length - 1] = -1 * t[i][t.length - 1]/t[i][i];
+            tInvT[i][i] = 1./t[i][i];
+            //tInvT[i][t.length - 1] = -1 * t[i][t.length - 1]/t[i][i];
+            // for transposed:
+            tInvT[t.length - 1][i] = -1 * t[i][t.length - 1]/t[i][i];
         }
-        tinv[nd][nd] = 1;
+        tInvT[nd][nd] = 1;
 
-        return tinv;
+        return tInvT;
     }
 
     public static double[][] inverseT(double[][] t) {

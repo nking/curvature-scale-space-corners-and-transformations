@@ -148,6 +148,9 @@ public class EpipolarTransformerTest extends TestCase {
           FM_normalized = inverse(transpose(T2)) * FM * inverse(T1)
             with caveat about centroid and normalization details...
 
+         FM_normalized * T1 = inverse(transpose(T2)) * FM
+         transpose(T2) * FM_normalized * T1 = FM
+
       ==> denormalized FM = transpose(T2) * FM_normalized * T1
         
           u2^T * FM * u1 = u2_normalized^T * FM_normalized * u1_normalized = residual
@@ -1018,35 +1021,6 @@ public class EpipolarTransformerTest extends TestCase {
         assertFalse(d);
     }
 
-    public void testNormalizeUsingUnitStandard() {
-        int n = 3;
-        double[][] xy = new double[3][];
-        xy[0] = new double[]{20, 30, 40};
-        xy[1] = new double[]{2, 3, 4};
-        xy[2] = new double[]{1, 1, 1};
-
-        double[] expected = new double[]{30, 3, 10, 1};
-        double[][] expectedXY = MatrixUtil.copy(xy);
-        int i;
-        int j;
-        double[] mean = new double[1];
-        double[] sD = new double[1];
-        expectedXY[0] = Standardization.standardUnitNormalization(expectedXY[0], 1, mean, sD);
-        expectedXY[1] = Standardization.standardUnitNormalization(expectedXY[1], 1, mean, sD);
-
-        double tol = 1E-7;
-
-        double[] ms = EpipolarTransformer.normalizeUsingUnitStandard(xy);
-        for (i = 0; i < 4; ++i) {
-            assertTrue(Math.abs(ms[i] - expected[i]) < tol);
-        }
-        for (i = 0; i < n; ++i) {
-            for (j = 0; j < 3; ++j) {
-                assertTrue(Math.abs(expectedXY[j][i] - xy[j][i]) < tol);
-            }
-        }
-    }
-    
     public static void main(String[] args) {
         
         try {
