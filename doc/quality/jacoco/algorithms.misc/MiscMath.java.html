@@ -664,17 +664,17 @@ import java.util.*;
 <span class="fc" id="L664">        double r = (9.*b*c - 27.*d - 2.*b*b*b)/54.;</span>
 <span class="fc" id="L665">        double discriminant = q*q*q + r*r;</span>
             
-<span class="pc bpc" id="L667" title="1 of 2 branches missed.">        if (discriminant &gt;= 0) {</span>
+<span class="fc bfc" id="L667" title="All 2 branches covered.">        if (discriminant &gt;= 0) {</span>
             
             // discriminant &gt; 0: one root is real and two complex conjugate
             // discriminant == 0 : all roots are real and at least two are equal
             
-<span class="nc" id="L672">            double s = realcuberoot(r + Math.sqrt(discriminant));   </span>
-<span class="nc" id="L673">            double t = realcuberoot(r - Math.sqrt(discriminant));</span>
+<span class="fc" id="L672">            double s = realcuberoot(r + Math.sqrt(discriminant));   </span>
+<span class="fc" id="L673">            double t = realcuberoot(r - Math.sqrt(discriminant));</span>
     
-<span class="nc" id="L675">            double root = s + t - bOn3;</span>
+<span class="fc" id="L675">            double root = s + t - bOn3;</span>
         
-<span class="nc" id="L677">            return new double[]{root};</span>
+<span class="fc" id="L677">            return new double[]{root};</span>
             
         } else {
 
@@ -697,7 +697,7 @@ import java.util.*;
     }
    
     public static double realcuberoot(double x) {
-<span class="pc bpc" id="L700" title="1 of 2 branches missed.">        double sign = (x &lt; 0.) ? -1 : 1;</span>
+<span class="fc bfc" id="L700" title="All 2 branches covered.">        double sign = (x &lt; 0.) ? -1 : 1;</span>
 <span class="fc" id="L701">        double y = sign * Math.pow(Math.abs(x), 1./3.);</span>
 <span class="fc" id="L702">        return y;</span>
     }
@@ -2495,6 +2495,44 @@ import java.util.*;
 <span class="fc" id="L2495">            MiscMath.setHashValue(list, lastIdx[0], hash);</span>
         }
 <span class="fc" id="L2497">    }</span>
+
+    /**
+     * if a and b are same size and ae element-wise equal within tol, returns true, else false
+     * @param a array a to compare with b
+     * @param b array b to oompare with a
+     * @param tol the amount that abs(a[i] - b[i]) must be less than or equal to be considered equal.
+     * @return true if a and b are element-wise equal within tol, else false
+     */
+    public static boolean areEqual(double[][] a, double[][] b, double tol) {
+<span class="pc bpc" id="L2507" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L2508">            return false;</span>
+        }
+<span class="fc bfc" id="L2510" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="pc bpc" id="L2511" title="1 of 2 branches missed.">            if (!areEqual(a[i], b[i], tol)) {</span>
+<span class="nc" id="L2512">                return false;</span>
+            }
+        }
+<span class="fc" id="L2515">        return true;</span>
+    }
+
+    /**
+     * if a and b are same length and ae element-wise equal within tol, returns true, else false
+     * @param a array a to compare with b
+     * @param b array b to oompare with a
+     * @param tol the amount that abs(a[i] - b[i]) must be less than or equal to be considered equal.
+     * @return true if a and b are element-wise equal within tol, else false
+     */
+    public static boolean areEqual(double[] a, double[] b, double tol) {
+<span class="pc bpc" id="L2526" title="1 of 2 branches missed.">        if (a.length != b.length) {</span>
+<span class="nc" id="L2527">            return false;</span>
+        }
+<span class="fc bfc" id="L2529" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="pc bpc" id="L2530" title="1 of 2 branches missed.">            if (Math.abs(a[i] - b[i]) &gt; tol) {</span>
+<span class="nc" id="L2531">                return false;</span>
+            }
+        }
+<span class="fc" id="L2534">        return true;</span>
+    }
     
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

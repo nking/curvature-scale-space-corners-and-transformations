@@ -85,115 +85,134 @@ public class GroupAverageColors {
 <span class="nc" id="L85">        this.avgCIEA = lab[1];</span>
 <span class="nc" id="L86">        this.avgCIEB = lab[2];</span>
 <span class="nc" id="L87">    }</span>
-    
-<span class="fc" id="L89">    public GroupAverageColors(Image img, Collection&lt;PairInt&gt; a) {</span>
-        
+
+<span class="fc" id="L89">    public GroupAverageColors(Image img) {</span>
+
 <span class="fc" id="L91">        CIEChromaticity cieC = new CIEChromaticity();</span>
+
+<span class="fc" id="L93">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+
+<span class="fc" id="L95">        int[] avgRGB = imageProcessor.getAverageRGB(img);</span>
+
+<span class="fc" id="L97">        this.rAvg = avgRGB[0];</span>
+<span class="fc" id="L98">        this.gAvg = avgRGB[1];</span>
+<span class="fc" id="L99">        this.bAvg = avgRGB[2];</span>
+
+<span class="fc" id="L101">        float[] lab = cieC.rgbToCIELAB(avgRGB[0], avgRGB[1], avgRGB[2]);</span>
+
+<span class="fc" id="L103">        this.avgCIEL = lab[0];</span>
+<span class="fc" id="L104">        this.avgCIEA = lab[1];</span>
+<span class="fc" id="L105">        this.avgCIEB = lab[2];</span>
+<span class="fc" id="L106">    }</span>
+    
+<span class="fc" id="L108">    public GroupAverageColors(Image img, Collection&lt;PairInt&gt; a) {</span>
+        
+<span class="fc" id="L110">        CIEChromaticity cieC = new CIEChromaticity();</span>
             
-<span class="fc" id="L93">        MiscellaneousCurveHelper curveHelper =</span>
+<span class="fc" id="L112">        MiscellaneousCurveHelper curveHelper =</span>
             new MiscellaneousCurveHelper();
         
-<span class="fc" id="L96">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L115">        ImageProcessor imageProcessor = new ImageProcessor();</span>
         
-<span class="fc" id="L98">        double[] xyCen = curveHelper.calculateXYCentroids(a);</span>
+<span class="fc" id="L117">        double[] xyCen = curveHelper.calculateXYCentroids(a);</span>
                 
-<span class="fc" id="L100">        this.xCen = (int)Math.round(xyCen[0]);</span>
+<span class="fc" id="L119">        this.xCen = (int)Math.round(xyCen[0]);</span>
         
-<span class="fc" id="L102">        this.yCen = (int)Math.round(xyCen[1]);</span>
+<span class="fc" id="L121">        this.yCen = (int)Math.round(xyCen[1]);</span>
                 
-<span class="fc" id="L104">        int[] avgRGB = imageProcessor.getAverageRGB(img, a);</span>
+<span class="fc" id="L123">        int[] avgRGB = imageProcessor.getAverageRGB(img, a);</span>
         
-<span class="fc" id="L106">        this.rAvg = avgRGB[0];</span>
-<span class="fc" id="L107">        this.gAvg = avgRGB[1];</span>
-<span class="fc" id="L108">        this.bAvg = avgRGB[2];</span>
+<span class="fc" id="L125">        this.rAvg = avgRGB[0];</span>
+<span class="fc" id="L126">        this.gAvg = avgRGB[1];</span>
+<span class="fc" id="L127">        this.bAvg = avgRGB[2];</span>
         
-<span class="fc" id="L110">        float[] lab = cieC.rgbToCIELAB(</span>
+<span class="fc" id="L129">        float[] lab = cieC.rgbToCIELAB(</span>
             avgRGB[0], avgRGB[1], avgRGB[2]);
                 
-<span class="fc" id="L113">        this.avgCIEL = lab[0];</span>
-<span class="fc" id="L114">        this.avgCIEA = lab[1];</span>
-<span class="fc" id="L115">        this.avgCIEB = lab[2];</span>
-<span class="fc" id="L116">    }</span>
+<span class="fc" id="L132">        this.avgCIEL = lab[0];</span>
+<span class="fc" id="L133">        this.avgCIEA = lab[1];</span>
+<span class="fc" id="L134">        this.avgCIEB = lab[2];</span>
+<span class="fc" id="L135">    }</span>
     
     public double calculateDeltaE2000(GroupAverageColors other) {
         
-<span class="nc" id="L120">        CIEChromaticity cieC = new CIEChromaticity();</span>
+<span class="nc" id="L139">        CIEChromaticity cieC = new CIEChromaticity();</span>
         
-<span class="nc" id="L122">        double delta = </span>
-<span class="nc" id="L123">            cieC.calcDeltaECIE2000(avgCIEL, avgCIEA, avgCIEB,</span>
+<span class="nc" id="L141">        double delta = </span>
+<span class="nc" id="L142">            cieC.calcDeltaECIE2000(avgCIEL, avgCIEA, avgCIEB,</span>
                 other.avgCIEL, other.avgCIEA, other.avgCIEB);
         
-<span class="nc" id="L126">        return delta;</span>
+<span class="nc" id="L145">        return delta;</span>
     }
 
     /**
      * @return the xCen
      */
     public int getXCen() {
-<span class="nc" id="L133">        return xCen;</span>
+<span class="nc" id="L152">        return xCen;</span>
     }
 
     /**
      * @param xCen the xCen to set
      */
     public void setXCen(int xCen) {
-<span class="nc" id="L140">        this.xCen = xCen;</span>
-<span class="nc" id="L141">    }</span>
+<span class="nc" id="L159">        this.xCen = xCen;</span>
+<span class="nc" id="L160">    }</span>
 
     /**
      * @return the yCen
      */
     public int getYCen() {
-<span class="nc" id="L147">        return yCen;</span>
+<span class="nc" id="L166">        return yCen;</span>
     }
 
     /**
      * @param yCen the yCen to set
      */
     public void setYCen(int yCen) {
-<span class="nc" id="L154">        this.yCen = yCen;</span>
-<span class="nc" id="L155">    }</span>
+<span class="nc" id="L173">        this.yCen = yCen;</span>
+<span class="nc" id="L174">    }</span>
 
     /**
      * @return the rAvg
      */
     public int getR() {
-<span class="fc" id="L161">        return rAvg;</span>
+<span class="fc" id="L180">        return rAvg;</span>
     }
 
     /**
      * @return the gAvg
      */
     public int getG() {
-<span class="fc" id="L168">        return gAvg;</span>
+<span class="fc" id="L187">        return gAvg;</span>
     }
 
     /**
      * @return the bAvg
      */
     public int getB() {
-<span class="fc" id="L175">        return bAvg;</span>
+<span class="fc" id="L194">        return bAvg;</span>
     }
 
     /**
      * @return the avgCIEL
      */
     public float getCIEL() {
-<span class="nc" id="L182">        return avgCIEL;</span>
+<span class="nc" id="L201">        return avgCIEL;</span>
     }
 
     /**
      * @return the avgCIEA
      */
     public float getCIEA() {
-<span class="nc" id="L189">        return avgCIEA;</span>
+<span class="nc" id="L208">        return avgCIEA;</span>
     }
 
     /**
      * @return the avgCIEB
      */
     public float getCIEB() {
-<span class="nc" id="L196">        return avgCIEB;</span>
+<span class="nc" id="L215">        return avgCIEB;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -518,8 +518,8 @@ import java.util.Set;
 
 <span class="fc" id="L519">        int eAngle = (int)Math.round(regionPoints.ellipseParams.orientation * 180./Math.PI);</span>
         // put into 0 to 180 ref frame
-<span class="fc bfc" id="L521" title="All 2 branches covered.">        if (eAngle &gt; 179) {</span>
-<span class="fc" id="L522">            eAngle -= 180;</span>
+<span class="pc bpc" id="L521" title="1 of 2 branches missed.">        if (eAngle &gt; 179) {</span>
+<span class="nc" id="L522">            eAngle -= 180;</span>
         }
         // put into ref frame of dominant orientations (major axis direction)
 <span class="fc" id="L525">        eAngle -= 90;</span>
@@ -1334,24 +1334,24 @@ import java.util.Set;
 <span class="fc bfc" id="L1334" title="All 2 branches covered.">        for (int i = minRow; i &lt;= maxRow; ++i) {</span>
 <span class="fc" id="L1335">            PairInt xMinMax = rowColRange.get(i);</span>
             int x0, x1;
-<span class="pc bpc" id="L1337" title="1 of 2 branches missed.">            if (xMinMax == null) {</span>
-<span class="nc" id="L1338">                PairInt prev = null;</span>
-<span class="nc" id="L1339">                int off = 0;</span>
-<span class="nc bnc" id="L1340" title="All 2 branches missed.">                while (prev == null) {</span>
-<span class="nc" id="L1341">                    off--;</span>
-<span class="nc" id="L1342">                    prev = rowColRange.get(i + off);</span>
+<span class="fc bfc" id="L1337" title="All 2 branches covered.">            if (xMinMax == null) {</span>
+<span class="fc" id="L1338">                PairInt prev = null;</span>
+<span class="fc" id="L1339">                int off = 0;</span>
+<span class="fc bfc" id="L1340" title="All 2 branches covered.">                while (prev == null) {</span>
+<span class="fc" id="L1341">                    off--;</span>
+<span class="fc" id="L1342">                    prev = rowColRange.get(i + off);</span>
                 }
-<span class="nc" id="L1344">                PairInt next = null;</span>
-<span class="nc" id="L1345">                off = 0;</span>
-<span class="nc bnc" id="L1346" title="All 2 branches missed.">                while (next == null) {</span>
-<span class="nc" id="L1347">                    off++;</span>
-<span class="nc" id="L1348">                    next = rowColRange.get(i + off);</span>
+<span class="fc" id="L1344">                PairInt next = null;</span>
+<span class="fc" id="L1345">                off = 0;</span>
+<span class="fc bfc" id="L1346" title="All 2 branches covered.">                while (next == null) {</span>
+<span class="fc" id="L1347">                    off++;</span>
+<span class="fc" id="L1348">                    next = rowColRange.get(i + off);</span>
                 }
-<span class="nc bnc" id="L1350" title="All 2 branches missed.">                assert(prev != null);</span>
-<span class="nc bnc" id="L1351" title="All 2 branches missed.">                assert(next != null);</span>
-<span class="nc" id="L1352">                x0 = Math.round(((float)prev.getX() + (float)next.getX())/2.f);</span>
-<span class="nc" id="L1353">                x1 = Math.round(((float)prev.getY() + (float)next.getY())/2.f);</span>
-<span class="nc" id="L1354">            } else {</span>
+<span class="pc bnc" id="L1350" title="All 2 branches missed.">                assert(prev != null);</span>
+<span class="pc bnc" id="L1351" title="All 2 branches missed.">                assert(next != null);</span>
+<span class="fc" id="L1352">                x0 = Math.round(((float)prev.getX() + (float)next.getX())/2.f);</span>
+<span class="fc" id="L1353">                x1 = Math.round(((float)prev.getY() + (float)next.getY())/2.f);</span>
+<span class="fc" id="L1354">            } else {</span>
 <span class="fc" id="L1355">                x0 = xMinMax.getX();</span>
 <span class="fc" id="L1356">                x1 = xMinMax.getY();</span>
             }

@@ -33,23 +33,59 @@ import java.util.Set;
         }
     }
 
+    public static CMODE determineColorMode(ImageExt img) {
+
+<span class="fc" id="L38">        GroupAverageColors clrs = new GroupAverageColors(img);</span>
+
+<span class="fc" id="L40">        int limit1 = 150;</span>
+<span class="fc" id="L41">        int limit2 = 55;</span>
+<span class="pc bpc" id="L42" title="3 of 4 branches missed.">        if (clrs.getR() &gt;= limit1 &amp;&amp; clrs.getG() &gt;= limit1 &amp;&amp;</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">                clrs.getB() &gt;= limit1) {</span>
+<span class="nc" id="L44">            return CMODE.WHITE;</span>
+<span class="pc bpc" id="L45" title="3 of 4 branches missed.">        } else if (clrs.getR() &lt;= limit2 &amp;&amp; clrs.getG() &lt;= limit2 &amp;&amp;</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">                clrs.getB() &lt;= limit2) {</span>
+<span class="nc" id="L47">            return CMODE.BLACK;</span>
+        } else {
+<span class="fc" id="L49">            return CMODE.OTHER;</span>
+        }
+    }
+
     public static CMODE determinePolarThetaMode(GreyscaleImage luvTheta, 
         Collection&lt;PairInt&gt; points) {
     
-<span class="fc" id="L39">        double avg = 0;</span>
-<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (PairInt p : points) {</span>
-<span class="fc" id="L41">            avg += luvTheta.getValue(p);</span>
-<span class="fc" id="L42">        }</span>
-<span class="fc" id="L43">        avg /= (double)points.size();</span>
+<span class="fc" id="L56">        double avg = 0;</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc" id="L58">            avg += luvTheta.getValue(p);</span>
+<span class="fc" id="L59">        }</span>
+<span class="fc" id="L60">        avg /= (double)points.size();</span>
         
-<span class="fc" id="L45">        int limit1 = 220;</span>
-<span class="fc" id="L46">        int limit2 = 25;</span>
-<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (avg &gt;= limit1) {</span>
-<span class="fc" id="L48">            return CMODE.WHITE;</span>
-<span class="fc bfc" id="L49" title="All 2 branches covered.">        } else if (avg &lt;= limit2) {</span>
-<span class="fc" id="L50">            return CMODE.BLACK;</span>
+<span class="fc" id="L62">        int limit1 = 220;</span>
+<span class="fc" id="L63">        int limit2 = 25;</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (avg &gt;= limit1) {</span>
+<span class="fc" id="L65">            return CMODE.WHITE;</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        } else if (avg &lt;= limit2) {</span>
+<span class="fc" id="L67">            return CMODE.BLACK;</span>
         } else {
-<span class="fc" id="L52">            return CMODE.OTHER;</span>
+<span class="fc" id="L69">            return CMODE.OTHER;</span>
+        }
+    }
+
+    public static CMODE determinePolarThetaMode(GreyscaleImage luvTheta) {
+
+<span class="fc" id="L75">        double avg = 0;</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        for (int p = 0; p &lt; luvTheta.getNPixels(); ++p) {</span>
+<span class="fc" id="L77">            avg += luvTheta.getValue(p);</span>
+        }
+<span class="fc" id="L79">        avg /= (double)luvTheta.getNPixels();</span>
+
+<span class="fc" id="L81">        int limit1 = 220;</span>
+<span class="fc" id="L82">        int limit2 = 25;</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        if (avg &gt;= limit1) {</span>
+<span class="nc" id="L84">            return CMODE.WHITE;</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">        } else if (avg &lt;= limit2) {</span>
+<span class="nc" id="L86">            return CMODE.BLACK;</span>
+        } else {
+<span class="fc" id="L88">            return CMODE.OTHER;</span>
         }
     }
 
@@ -57,19 +93,19 @@ import java.util.Set;
         GreyscaleImage gImg, GreyscaleImage bImg, 
         Collection&lt;PairInt&gt; points) {
     
-<span class="nc" id="L60">        GroupAverageColors clrs = new GroupAverageColors(</span>
+<span class="nc" id="L96">        GroupAverageColors clrs = new GroupAverageColors(</span>
             rImg, gImg, bImg, points);
         
-<span class="nc" id="L63">        int limit1 = 150;</span>
-<span class="nc" id="L64">        int limit2 = 55;</span>
-<span class="nc bnc" id="L65" title="All 4 branches missed.">        if (clrs.getR() &gt;= limit1 &amp;&amp; clrs.getG() &gt;= limit1 &amp;&amp;</span>
-<span class="nc bnc" id="L66" title="All 2 branches missed.">            clrs.getB() &gt;= limit1) {</span>
-<span class="nc" id="L67">            return CMODE.WHITE;</span>
-<span class="nc bnc" id="L68" title="All 4 branches missed.">        } else if (clrs.getR() &lt;= limit2 &amp;&amp; clrs.getG() &lt;= limit2 &amp;&amp;</span>
-<span class="nc bnc" id="L69" title="All 2 branches missed.">            clrs.getB() &lt;= limit2) {</span>
-<span class="nc" id="L70">            return CMODE.BLACK;</span>
+<span class="nc" id="L99">        int limit1 = 150;</span>
+<span class="nc" id="L100">        int limit2 = 55;</span>
+<span class="nc bnc" id="L101" title="All 4 branches missed.">        if (clrs.getR() &gt;= limit1 &amp;&amp; clrs.getG() &gt;= limit1 &amp;&amp;</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">            clrs.getB() &gt;= limit1) {</span>
+<span class="nc" id="L103">            return CMODE.WHITE;</span>
+<span class="nc bnc" id="L104" title="All 4 branches missed.">        } else if (clrs.getR() &lt;= limit2 &amp;&amp; clrs.getG() &lt;= limit2 &amp;&amp;</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">            clrs.getB() &lt;= limit2) {</span>
+<span class="nc" id="L106">            return CMODE.BLACK;</span>
         } else {
-<span class="nc" id="L72">            return CMODE.OTHER;</span>
+<span class="nc" id="L108">            return CMODE.OTHER;</span>
         }
     }
 

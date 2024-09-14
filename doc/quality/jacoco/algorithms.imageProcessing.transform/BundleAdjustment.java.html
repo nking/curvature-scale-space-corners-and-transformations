@@ -18,7 +18,7 @@ import no.uib.cipr.matrix.*;
  in refinement of the intrinsic and extrinsic camera parameters.
  BundleAdjustment calculates partial derivatives of the parameters
  and calculates the re-projection error to form the parameter update steps,
- the gradient covector, and the evaluation of the objective (sum of squares of
+ the gradient covector, and the evaluation of the objective (minimize sum of squares of
  the re-projection error).
 
  The main method is solveSparsely(...).
@@ -33,7 +33,7 @@ import no.uib.cipr.matrix.*;
  * rays leaving each 3D feature and converging on each camera centre, which are 
  * ‘adjusted’ optimally with respect to both feature and camera positions. 
  * Equivalently — unlike independent model methods, which merge partial 
- * reconstructions without up- dating their internal structure — all of the 
+ * reconstructions without up-dating their internal structure — all of the
  * structure and camera parameters are adjusted together ‘in one bundle’.&quot;
  * 
  * This version of Bundle-Adjustment uses Levenberg-Marquardt Algorithm (LMA) 
@@ -45,14 +45,17 @@ import no.uib.cipr.matrix.*;
  * IEEE transactions on pattern analysis and machine intelligence, 
  * 40(3):611–625, 2018.
  *
- * TODO:  add gauge fix.  And related to that, consider adding constraints 
+ * TODO:  add gauge fix.  The gauge is the coordinate system a.k.a. datum
+ * in photogrammetry. (see Bartoli &quot;Towards Gauge Invariant Bundle Adjustment:...&quot;
+ * And related to that, consider adding constraints
  * suggested in Seliski 2010: u_0 and v_0 are close to half the image lengths 
  * and widths, respectively.  the angle between 2 image axes is close to 90.
   the focal lengths along both axes are greater than 0.     
  * 
  * TODO: consider implementing the &quot;reduced structure system&quot; for the cases
  * where (9^3)*mImages &gt; (3^3)*nFeatures,  The &quot;reduced camera system&quot; is
- * currently implemented.
+ * currently implemented only, but &quot;reduced structure system&quot;
+ * for some cases would be more efficient.
  * 
  * &lt;pre&gt;
  * for a bigger picture summary, see Section 
@@ -62,7 +65,7 @@ import no.uib.cipr.matrix.*;
  * Also see Chap 5.2, pp 127-128 of MASKS for constrained optimization.
  * &lt;/pre&gt;
  &lt;pre&gt;
- Note, if need to estimate the instrinsic camera for initial conditions, one can generally
+ Note, if need to estimate the intrinsic camera for initial conditions, one can generally
  start with:
  MASKS Algorithm 11.6, step 1:
  Guess a calibration matrix K by choosing the optical center at the center of the image,
@@ -77,14 +80,14 @@ import no.uib.cipr.matrix.*;
  */
 public class BundleAdjustment {
 
-<span class="fc" id="L80">    private int useHomography = 0;</span>
+<span class="fc" id="L83">    private int useHomography = 0;</span>
         
-    //private static qfinal Level LEVEL = Level.INFO;
-<span class="fc" id="L83">    private static final Logger log = Logger.getLogger(CameraCalibration.class.getSimpleName());</span>
+    //private static final Level LEVEL = Level.INFO;
+<span class="fc" id="L86">    private static final Logger log = Logger.getLogger(CameraCalibration.class.getSimpleName());</span>
     
-<span class="fc" id="L85">    public BundleAdjustment() {</span>
-<span class="fc" id="L86">        useHomography = 0;</span>
-<span class="fc" id="L87">    }</span>
+<span class="fc" id="L88">    public BundleAdjustment() {</span>
+<span class="fc" id="L89">        useHomography = 0;</span>
+<span class="fc" id="L90">    }</span>
 
     // use negative because the gradients use convention -J^T*f where f.
     private static final double updateSign = -1;
@@ -104,8 +107,8 @@ public class BundleAdjustment {
      * derivatives.
      */
     public void setUseHomography() {
-<span class="nc" id="L107">        useHomography =1;</span>
-<span class="nc" id="L108">    }</span>
+<span class="fc" id="L110">        useHomography =1;</span>
+<span class="fc" id="L111">    }</span>
     
     /**
      * NOTE: this method could use improvements and more testing.
@@ -167,9 +170,9 @@ public class BundleAdjustment {
             a pair of stereo-images.  it also uses cholesky factoring of block
             sparse matrix structure.
            
-     Tomasi 2007,CPS 296.1 Supplementary Lectur Notes, Duke University
+     Tomasi 2007,CPS 296.1 Supplementary Lecture Notes, Duke University
      
-     graph partioning:
+     graph partitioning:
         https://cseweb.ucsd.edu/classes/fa04/cse252c/manmohan1.pdf
         recursive partitioning w/ elimination graph and vertex cut.
         
@@ -183,7 +186,7 @@ public class BundleAdjustment {
         UnweightedGraphCommunityFinder.java
         
      &lt;/pre&gt;
-     TODO: review nad improve the derivatives.
+     TODO: review and improve the derivatives.  need good test data.
      * @param coordsI the features observed in different images (in coordinates
      * of the image reference frame).
      * The format of coordsI is 3 X (nFeatures*nImages). Each row should
@@ -226,59 +229,59 @@ public class BundleAdjustment {
             double[][] kRadials, final int nMaxIter, boolean useR2R4, boolean useBouguetForRodrigues)
         throws NotConvergedException, IOException {
 
-<span class="fc" id="L229">        int nFeatures = coordsW[0].length;</span>
-<span class="fc" id="L230">        int mImages = coordsI[0].length / nFeatures;</span>
+<span class="fc" id="L232">        int nFeatures = coordsW[0].length;</span>
+<span class="fc" id="L233">        int mImages = coordsI[0].length / nFeatures;</span>
 
-<span class="pc bpc" id="L232" title="1 of 2 branches missed.">        if (nFeatures &lt; 6) {</span>
-<span class="nc" id="L233">            throw new IllegalArgumentException(&quot;coordsW[0].length must be at least 6&quot;);</span>
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">        if (nFeatures &lt; 6) {</span>
+<span class="nc" id="L236">            throw new IllegalArgumentException(&quot;coordsW[0].length must be at least 6&quot;);</span>
         }
-<span class="pc bpc" id="L235" title="1 of 2 branches missed.">        if ((coordsI[0].length % nFeatures) &gt; 0) {</span>
-<span class="nc" id="L236">            throw new IllegalArgumentException(&quot;the number of images present in coordsI should&quot;</span>
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">        if ((coordsI[0].length % nFeatures) &gt; 0) {</span>
+<span class="nc" id="L239">            throw new IllegalArgumentException(&quot;the number of images present in coordsI should&quot;</span>
                     + &quot; be evenly divided by the number of features in coordsW (that is, coordsI should&quot;
                     + &quot; have that same number of features for each image)&quot;);
         }
-<span class="pc bpc" id="L240" title="1 of 2 branches missed.">        if (coordsI.length != 3) {</span>
-<span class="nc" id="L241">            throw new IllegalArgumentException(&quot;coordsI must have 3 rows.&quot;);</span>
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">        if (coordsI.length != 3) {</span>
+<span class="nc" id="L244">            throw new IllegalArgumentException(&quot;coordsI must have 3 rows.&quot;);</span>
         }
-<span class="pc bpc" id="L243" title="1 of 2 branches missed.">        if (coordsW.length != 3) {</span>
-<span class="nc" id="L244">            throw new IllegalArgumentException(&quot;coordsW must have 3 rows.&quot;);</span>
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">        if (coordsW.length != 3) {</span>
+<span class="nc" id="L247">            throw new IllegalArgumentException(&quot;coordsW must have 3 rows.&quot;);</span>
         }
-<span class="pc bpc" id="L246" title="1 of 2 branches missed.">        if (coordsI[0].length != nFeatures * mImages) {</span>
-<span class="nc" id="L247">            throw new IllegalArgumentException(&quot;coordsI[0].length must be evenly &quot;</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">        if (coordsI[0].length != nFeatures * mImages) {</span>
+<span class="nc" id="L250">            throw new IllegalArgumentException(&quot;coordsI[0].length must be evenly &quot;</span>
                     + &quot;divisible by nFeatures which is coordsW[0].length&quot;);
         }
-<span class="pc bpc" id="L250" title="1 of 2 branches missed.">        if (intr.getA().length != 3 * mImages) {</span>
-<span class="nc" id="L251">            throw new IllegalArgumentException(&quot;intr.length must be 3*mImages&quot;);</span>
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">        if (intr.getA().length != 3 * mImages) {</span>
+<span class="nc" id="L254">            throw new IllegalArgumentException(&quot;intr.length must be 3*mImages&quot;);</span>
         }
-<span class="pc bpc" id="L253" title="1 of 2 branches missed.">        if (intr.getA()[0].length != 3) {</span>
-<span class="nc" id="L254">            throw new IllegalArgumentException(&quot;intr[0].length must be 3&quot;);</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">        if (intr.getA()[0].length != 3) {</span>
+<span class="nc" id="L257">            throw new IllegalArgumentException(&quot;intr[0].length must be 3&quot;);</span>
         }
-<span class="pc bpc" id="L256" title="1 of 2 branches missed.">        if (kRadials.length != mImages) {</span>
-<span class="nc" id="L257">            throw new IllegalArgumentException(&quot;kRadials.length must be equal &quot;</span>
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">        if (kRadials.length != mImages) {</span>
+<span class="nc" id="L260">            throw new IllegalArgumentException(&quot;kRadials.length must be equal &quot;</span>
                     + &quot;to the number of cameras.&quot;);
         }
-<span class="pc bpc" id="L260" title="1 of 2 branches missed.">        if (kRadials[0].length != 2) {</span>
-<span class="nc" id="L261">            throw new IllegalArgumentException(&quot;kRadials[0].length must be 2.&quot;);</span>
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">        if (kRadials[0].length != 2) {</span>
+<span class="nc" id="L264">            throw new IllegalArgumentException(&quot;kRadials[0].length must be 2.&quot;);</span>
         }
-<span class="pc bpc" id="L263" title="1 of 2 branches missed.">        if (extrRVecs[0].length != 3) {</span>
-<span class="nc" id="L264">            throw new IllegalArgumentException(&quot;extrRVecs[0].length must be 3&quot;);</span>
+<span class="pc bpc" id="L266" title="1 of 2 branches missed.">        if (extrRVecs[0].length != 3) {</span>
+<span class="nc" id="L267">            throw new IllegalArgumentException(&quot;extrRVecs[0].length must be 3&quot;);</span>
         }
-<span class="pc bpc" id="L266" title="1 of 2 branches missed.">        if (extrRVecs.length != mImages) {</span>
-<span class="nc" id="L267">            throw new IllegalArgumentException(&quot;extrRVecs.length must be mImages &quot;</span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">        if (extrRVecs.length != mImages) {</span>
+<span class="nc" id="L270">            throw new IllegalArgumentException(&quot;extrRVecs.length must be mImages &quot;</span>
                     + &quot;where mImages = coordsI[0].length/coordsW[0].length&quot;);
         }
-<span class="pc bpc" id="L270" title="1 of 2 branches missed.">        if (extrTrans[0].length != 3) {</span>
-<span class="nc" id="L271">            throw new IllegalArgumentException(&quot;extrTrans[0].length must be 3&quot;);</span>
+<span class="pc bpc" id="L273" title="1 of 2 branches missed.">        if (extrTrans[0].length != 3) {</span>
+<span class="nc" id="L274">            throw new IllegalArgumentException(&quot;extrTrans[0].length must be 3&quot;);</span>
         }
-<span class="pc bpc" id="L273" title="1 of 2 branches missed.">        if (extrTrans.length != mImages) {</span>
-<span class="nc" id="L274">            throw new IllegalArgumentException(&quot;extrTrans.length must be mImages &quot;</span>
+<span class="pc bpc" id="L276" title="1 of 2 branches missed.">        if (extrTrans.length != mImages) {</span>
+<span class="nc" id="L277">            throw new IllegalArgumentException(&quot;extrTrans.length must be mImages &quot;</span>
                     + &quot;where mImages = coordsI[0].length/coordsW[0].length&quot;);
         }
-<span class="pc bpc" id="L277" title="1 of 2 branches missed.">        if (imageFeaturesMap == null) {</span>
-<span class="nc" id="L278">            throw new IllegalArgumentException(&quot;imageFeaturesMap cannot be null&quot;);</span>
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">        if (imageFeaturesMap == null) {</span>
+<span class="nc" id="L281">            throw new IllegalArgumentException(&quot;imageFeaturesMap cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L280" title="1 of 2 branches missed.">        if (imageFeaturesMap.size() != mImages) {</span>
-<span class="nc" id="L281">            throw new IllegalArgumentException(&quot;imageFeaturesMap size must equal &quot;</span>
+<span class="pc bpc" id="L283" title="1 of 2 branches missed.">        if (imageFeaturesMap.size() != mImages) {</span>
+<span class="nc" id="L284">            throw new IllegalArgumentException(&quot;imageFeaturesMap size must equal &quot;</span>
                     + &quot;the number of images which = coordsI[0].length/coordsW[0].length&quot;);
         }
 
@@ -352,14 +355,14 @@ public class BundleAdjustment {
         and this on 3F points:
         &quot;3D points: Even for calibrated cameras, 
         ** ==&gt; vision geometry and visual reconstructions are intrinsically projective. 
-        If a 3D (X Y Z)^⊤ parametrization (or equivalently a homogeneous affine (X Y Z 1)^⊤ one)
+        If a 3D (X Y Z)^⊤ parametrization (or equivalently a homogenous affine (X Y Z 1)^⊤ one)
         is used for very distant 3D points, large X, Y, Z displacements are 
         needed to change the image significantly. I.e., in (X Y Z) space the 
         cost function becomes very flat and steps needed for cost adjustment 
         become very large for distant points. 
-            In comparison, with a homogeneous projective parametrization (X Y Z W)^⊤,
+            In comparison, with a homogenous projective parametrization (X Y Z W)^⊤,
         the behaviour near infinity is natural, finite and well-conditioned so 
-        long as the normalization keeps the homogeneous 4-vector finite at 
+        long as the normalization keeps the homogenous 4-vector finite at 
         infinity (by sending W → 0 there). In fact, there is no immediate 
         visual distinction between the images of real points near infinity and 
         virtual ones ‘beyond’ it (all camera geometries admit such virtual 
@@ -376,7 +379,7 @@ public class BundleAdjustment {
         disastrous for distant ones because it artificially cuts away half of 
         the natural parameter space, and hides the fact by sending the resulting 
         edge to infinite parameter values.
-        **==&gt; Instead, you should use a homogeneous parametrization (X Y Z W )^⊤
+        **==&gt; Instead, you should use a homogenous parametrization (X Y Z W )^⊤
         for distant points, e.g. with spherical normalization summation X_i^2 = 1.&quot;
         
         on Rotations:
@@ -469,8 +472,8 @@ public class BundleAdjustment {
 
         //factor to raise or lower lambda.  
         //   consider using the eigenvalue spacing of J^T*J (Transtrum &amp; Sethna, &quot;Improvements to the Levenberg-Marquardt algorithm for nonlinear least-squares minimization&quot;)
-<span class="fc" id="L472">        double lambdaF = 2;</span>
-<span class="fc" id="L473">        double eps = 1E-12;</span>
+<span class="fc" id="L475">        double lambdaF = 2;</span>
+<span class="fc" id="L476">        double eps = 1E-12;</span>
 
         // (J^T*J + lambda*I) * deltas = -J^T*f where f is the reprojection residuals
 
@@ -478,9 +481,9 @@ public class BundleAdjustment {
         //   (9 camera parameters and 3 feature point positions).
 
         // deltas the point parameters (== world coordinate features)
-<span class="fc" id="L481">        double[] outDP = new double[3 * nFeatures];</span>
+<span class="fc" id="L484">        double[] outDP = new double[3 * nFeatures];</span>
         // deltas for the camera parameters
-<span class="fc" id="L483">        double[] outDC = new double[9 * mImages];</span>
+<span class="fc" id="L486">        double[] outDC = new double[9 * mImages];</span>
 
         // Qu array u for parameters is ordered: rot_0, trans_0, intr_0, ...rot_m-1, trans_m-1, intr_m-1, then x_0, ... x_n
         // but the delta parameter array for all params is ordered:
@@ -488,12 +491,12 @@ public class BundleAdjustment {
         // gradient g is same length   
 
         //the gradient covector for point parameters.  used in calc gain ration and stopping
-<span class="fc" id="L491">        double[] outGradP = new double[3 * nFeatures];</span>
+<span class="fc" id="L494">        double[] outGradP = new double[3 * nFeatures];</span>
         // the gradient covector for camera parameters.  used in calc gain ration and stopping
-<span class="fc" id="L493">        double[] outGradC = new double[9 * mImages];</span>
+<span class="fc" id="L496">        double[] outGradC = new double[9 * mImages];</span>
 
-<span class="fc" id="L495">        final double tolP = 1.e-2;</span>
-<span class="fc" id="L496">        final double tolG = 1.e-3;</span>
+<span class="fc" id="L498">        final double tolP = 1.e-2;</span>
+<span class="fc" id="L499">        final double tolG = 1.e-3;</span>
 
         // not using these as they are estimated in calculateLMVectorsSparsely
         //initDeltaPWithQu(outDP);
@@ -501,123 +504,123 @@ public class BundleAdjustment {
 
         // evaluation of the objective re-projection error. 
         //the sum of squares of the observed feature - projected feature in camera reference frame
-<span class="fc" id="L504">        final double[] outFSqSum = new double[1];</span>
+<span class="fc" id="L507">        final double[] outFSqSum = new double[1];</span>
 
-<span class="fc" id="L506">        double[] outInitLambda = new double[1];</span>
+<span class="fc" id="L509">        double[] outInitLambda = new double[1];</span>
 
-<span class="fc" id="L508">        double lambda = 0;</span>
+<span class="fc" id="L511">        double lambda = 0;</span>
         double f;
-<span class="fc" id="L510">        double fBest = Double.POSITIVE_INFINITY;</span>
+<span class="fc" id="L513">        double fBest = Double.POSITIVE_INFINITY;</span>
 
-<span class="fc" id="L512">        int nIter = 0;</span>
-<span class="pc bpc" id="L513" title="1 of 2 branches missed.">        while (nIter &lt; nMaxIter) {</span>
+<span class="fc" id="L515">        int nIter = 0;</span>
+<span class="pc bpc" id="L516" title="1 of 2 branches missed.">        while (nIter &lt; nMaxIter) {</span>
             // for nIter = 0:
             //     use lambda=0, evaluate objective, and get the max of diagonal of (J^T*J) as the output initLambda
 
             try {
                 // solve for the out variables, given the initial solution and lambda=0:
-<span class="fc" id="L519">                calculateLMVectorsSparsely(coordsI, coordsW,</span>
+<span class="fc" id="L522">                calculateLMVectorsSparsely(coordsI, coordsW,</span>
                         imageFeaturesMap, intr, extrRVecs, extrTrans, kRadials, useR2R4,
                         outDP, outDC, outGradP, outGradC, outFSqSum, lambda, outInitLambda, useBouguetForRodrigues);
 
-<span class="fc" id="L523">                log.info(String.format(&quot;FSqSum=%.3e&quot;, outFSqSum[0]));</span>
+<span class="fc" id="L526">                log.info(String.format(&quot;FSqSum=%.3e&quot;, outFSqSum[0]));</span>
 
-<span class="nc" id="L525">            } catch (NaNException e) {</span>
-<span class="nc" id="L526">                System.err.println(e.getMessage());</span>
-<span class="nc" id="L527">                return;</span>
-<span class="fc" id="L528">            }</span>
+<span class="nc" id="L528">            } catch (NaNException e) {</span>
+<span class="nc" id="L529">                System.err.println(e.getMessage());</span>
+<span class="nc" id="L530">                return;</span>
+<span class="fc" id="L531">            }</span>
 
             // sum of the squares of the re-projection errors:
-<span class="fc" id="L531">            f = outFSqSum[0];</span>
+<span class="fc" id="L534">            f = outFSqSum[0];</span>
 
-<span class="fc bfc" id="L533" title="All 2 branches covered.">            if (nIter == 0) {</span>
-<span class="fc" id="L534">                lambda = outInitLambda[0];</span>
-<span class="fc" id="L535">                log.info(String.format(&quot;max diag of Hessian lambda=%.7e\n&quot;, lambda));</span>
+<span class="fc bfc" id="L536" title="All 2 branches covered.">            if (nIter == 0) {</span>
+<span class="fc" id="L537">                lambda = outInitLambda[0];</span>
+<span class="fc" id="L538">                log.info(String.format(&quot;max diag of Hessian lambda=%.7e\n&quot;, lambda));</span>
                 // set to null to prevent re-calculating the max of diagonal of (J^T*J) again in calculateLMVectorsSparsely
-<span class="fc" id="L537">                outInitLambda = null;</span>
-<span class="fc" id="L538">                fBest = f;</span>
+<span class="fc" id="L540">                outInitLambda = null;</span>
+<span class="fc" id="L541">                fBest = f;</span>
             }
 
-<span class="fc" id="L541">            log.fine(String.format(</span>
+<span class="fc" id="L544">            log.fine(String.format(</span>
                     &quot;(nIter=0) lambda=%.3e F=%.3e\n  dC=%s\n  gradC=%s\n\n&quot;,
-<span class="fc" id="L543">                    lambda, outFSqSum[0],</span>
-<span class="fc" id="L544">                    FormatArray.toString(outDC, &quot;%.3e&quot;),</span>
-<span class="fc" id="L545">                    FormatArray.toString(outGradC, &quot;%.3e&quot;)));</span>
-<span class="fc" id="L546">            log.fine(String.format(</span>
-<span class="fc" id="L547">                    &quot;dP=%s\n  gradP=%s\n&quot;, FormatArray.toString(outDP, &quot;%.3e&quot;),</span>
-<span class="fc" id="L548">                    FormatArray.toString(outGradP, &quot;%.3e&quot;)</span>
+<span class="fc" id="L546">                    lambda, outFSqSum[0],</span>
+<span class="fc" id="L547">                    FormatArray.toString(outDC, &quot;%.3e&quot;),</span>
+<span class="fc" id="L548">                    FormatArray.toString(outGradC, &quot;%.3e&quot;)));</span>
+<span class="fc" id="L549">            log.fine(String.format(</span>
+<span class="fc" id="L550">                    &quot;dP=%s\n  gradP=%s\n&quot;, FormatArray.toString(outDP, &quot;%.3e&quot;),</span>
+<span class="fc" id="L551">                    FormatArray.toString(outGradP, &quot;%.3e&quot;)</span>
             ));
 
             // make a test update of the parameters and calculate fsqsum for those test params
-<span class="fc" id="L552">            BlockMatrixIsometric intrTest = intr.copy();</span>
-<span class="fc" id="L553">            double[][] extrRVecsTest = MatrixUtil.copy(extrRVecs);</span>
-<span class="fc" id="L554">            double[][] extrTransTest = MatrixUtil.copy(extrTrans);</span>
-<span class="fc" id="L555">            double[][] kRadialsTest = MatrixUtil.copy(kRadials);</span>
-<span class="fc" id="L556">            double[][] coordsWTest = MatrixUtil.copy(coordsW);</span>
+<span class="fc" id="L555">            BlockMatrixIsometric intrTest = intr.copy();</span>
+<span class="fc" id="L556">            double[][] extrRVecsTest = MatrixUtil.copy(extrRVecs);</span>
+<span class="fc" id="L557">            double[][] extrTransTest = MatrixUtil.copy(extrTrans);</span>
+<span class="fc" id="L558">            double[][] kRadialsTest = MatrixUtil.copy(kRadials);</span>
+<span class="fc" id="L559">            double[][] coordsWTest = MatrixUtil.copy(coordsW);</span>
             /*rotation elements are indexes 0, 1, 2 of dC
             translation elements are indexes 3,4,5 of dC
             focus, radial1, radial2 are indexes 6,7,8 of dC
             3D WCS of features points are indexes 0, 1, 2 of dP
             */
-<span class="fc" id="L562">            updateTranslation(extrTransTest, outDC);</span>
-<span class="fc" id="L563">            updateRotationVectors(extrRVecsTest, outDC);</span>
-<span class="fc" id="L564">            updateIntrinsic(intrTest, outDC);</span>
-<span class="fc" id="L565">            updateRadialDistortion(kRadialsTest, outDC);</span>
-<span class="fc" id="L566">            updateWorldC(coordsWTest, outDP);</span>
+<span class="fc" id="L565">            updateTranslation(extrTransTest, outDC);</span>
+<span class="fc" id="L566">            updateRotationVectors(extrRVecsTest, outDC);</span>
+<span class="fc" id="L567">            updateIntrinsic(intrTest, outDC);</span>
+<span class="fc" id="L568">            updateRadialDistortion(kRadialsTest, outDC);</span>
+<span class="fc" id="L569">            updateWorldC(coordsWTest, outDP);</span>
 
-<span class="fc" id="L568">            double fTest = calcReprojectionErrors(coordsI, coordsW, intrTest, extrRVecsTest, extrTransTest,</span>
+<span class="fc" id="L571">            double fTest = calcReprojectionErrors(coordsI, coordsW, intrTest, extrRVecsTest, extrTransTest,</span>
                     kRadialsTest, useR2R4, useBouguetForRodrigues);
 
             // calc gain ratio before potentially changing f;
-<span class="fc" id="L572">            double gainRatio = calculateGainRatio(fTest, fBest, outDC, outDP, lambda, outGradC, outGradP, eps);</span>
+<span class="fc" id="L575">            double gainRatio = calculateGainRatio(fTest, fBest, outDC, outDP, lambda, outGradC, outGradP, eps);</span>
 
             // calc variables needed for stopping conditions before potentially updating the parameters
-<span class="fc" id="L575">            boolean deltaCStop = isNegligible(outDC, tolP);</span>
-<span class="fc" id="L576">            boolean gradCStop = isNegligible(outGradC, tolG);</span>
-<span class="fc" id="L577">            boolean deltaPStop = isNegligible(outDP, tolP);</span>
-<span class="fc" id="L578">            boolean gradPStop = isNegligible(outGradP, tolG);</span>
+<span class="fc" id="L578">            boolean deltaCStop = isNegligible(outDC, tolP);</span>
+<span class="fc" id="L579">            boolean gradCStop = isNegligible(outGradC, tolG);</span>
+<span class="fc" id="L580">            boolean deltaPStop = isNegligible(outDP, tolP);</span>
+<span class="fc" id="L581">            boolean gradPStop = isNegligible(outGradP, tolG);</span>
 
-<span class="fc" id="L580">            log.info(String.format(&quot;%d) FBest=%.3e, F=%.3e, FTest=%.3e accept=%b  gain ratio=%.3e&quot;,</span>
-<span class="fc bfc" id="L581" title="All 2 branches covered.">                    nIter, fBest, f, fTest, (fTest &lt; fBest), gainRatio));</span>
+<span class="fc" id="L583">            log.info(String.format(&quot;%d) FBest=%.3e, F=%.3e, FTest=%.3e accept=%b  gain ratio=%.3e&quot;,</span>
+<span class="pc bpc" id="L584" title="1 of 2 branches missed.">                    nIter, fBest, f, fTest, (fTest &lt; fBest), gainRatio));</span>
 
-<span class="fc" id="L583">            boolean accept = false;</span>
-<span class="fc bfc" id="L584" title="All 2 branches covered.">            if (fTest &lt; fBest) {</span>
-<span class="fc" id="L585">                accept = true;</span>
-<span class="fc" id="L586">                fBest = fTest;</span>
+<span class="fc" id="L586">            boolean accept = false;</span>
+<span class="pc bpc" id="L587" title="1 of 2 branches missed.">            if (fTest &lt; fBest) {</span>
+<span class="nc" id="L588">                accept = true;</span>
+<span class="nc" id="L589">                fBest = fTest;</span>
                 //set params = test params
-<span class="fc" id="L588">                intr.set(intrTest);</span>
-<span class="fc" id="L589">                MatrixUtil.copy(extrRVecsTest, extrRVecs);</span>
-<span class="fc" id="L590">                MatrixUtil.copy(extrTransTest, extrTrans);</span>
-<span class="fc" id="L591">                MatrixUtil.copy(kRadialsTest, kRadials);</span>
-<span class="fc" id="L592">                MatrixUtil.copy(coordsWTest, coordsW);</span>
+<span class="nc" id="L591">                intr.set(intrTest);</span>
+<span class="nc" id="L592">                MatrixUtil.copy(extrRVecsTest, extrRVecs);</span>
+<span class="nc" id="L593">                MatrixUtil.copy(extrTransTest, extrTrans);</span>
+<span class="nc" id="L594">                MatrixUtil.copy(kRadialsTest, kRadials);</span>
+<span class="nc" id="L595">                MatrixUtil.copy(coordsWTest, coordsW);</span>
                 // increase the step size by decreasing lambda
-<span class="fc" id="L594">                lambda /= lambdaF;</span>
+<span class="nc" id="L597">                lambda /= lambdaF;</span>
            // } else if (nIter &gt; 1 &amp;&amp; fTest &gt; f) {
                 //TODO: check that this is a valid stopping condition
          //       break;
             } else {
                 //log.info(String.format(&quot;%d) FSqSum=%.3e, FTestSqSum=%.3e accept=%b gain ratio=%.3e&quot;, nIter, f, fTest, accept, gainRatio));
                 // decrease the step size by increasing lambda
-<span class="fc" id="L601">                lambda *= lambdaF;</span>
-<span class="fc" id="L602">                lambdaF *= 2;</span>
+<span class="fc" id="L604">                lambda *= lambdaF;</span>
+<span class="fc" id="L605">                lambdaF *= 2;</span>
             }
 
-<span class="fc" id="L605">            log.info(String.format(&quot;new lambda=%.11e\n&quot;, lambda));</span>
+<span class="fc" id="L608">            log.info(String.format(&quot;new lambda=%.11e\n&quot;, lambda));</span>
 
             // check for convergence
-<span class="pc bpc" id="L608" title="1 of 4 branches missed.">            if (deltaCStop || gradCStop</span>
+<span class="pc bpc" id="L611" title="1 of 4 branches missed.">            if (deltaCStop || gradCStop</span>
                     //|| (gainRatio &gt; 0)
             ) {
-<span class="nc" id="L611">                break;</span>
-            }
-<span class="pc bpc" id="L613" title="1 of 2 branches missed.">            if (lambda &lt; eps) {</span>
 <span class="nc" id="L614">                break;</span>
             }
-<span class="fc" id="L616">            ++nIter;</span>
-<span class="fc" id="L617">        }</span>
+<span class="pc bpc" id="L616" title="1 of 2 branches missed.">            if (lambda &lt; eps) {</span>
+<span class="nc" id="L617">                break;</span>
+            }
+<span class="fc" id="L619">            ++nIter;</span>
+<span class="fc" id="L620">        }</span>
 
-<span class="fc" id="L619">        log.info(&quot;nIter=&quot; + nIter);</span>
-<span class="fc" id="L620">    }</span>
+<span class="fc" id="L622">        log.info(&quot;nIter=&quot; + nIter);</span>
+<span class="fc" id="L623">    }</span>
 
     /**
      *
@@ -638,102 +641,102 @@ public class BundleAdjustment {
         double[][] kRadials, final boolean useR2R4, boolean useBouguetForRodrigues
                                             ) throws IOException, NotConvergedException {
 
-<span class="fc" id="L641">        int nFeatures = coordsW[0].length;</span>
-<span class="fc" id="L642">        int mImages = coordsI[0].length / nFeatures;</span>
+<span class="fc" id="L644">        int nFeatures = coordsW[0].length;</span>
+<span class="fc" id="L645">        int mImages = coordsI[0].length / nFeatures;</span>
 
-<span class="pc bpc" id="L644" title="1 of 2 branches missed.">        if (coordsI.length != 3) {</span>
-<span class="nc" id="L645">            throw new IllegalArgumentException(&quot;coordsI.length must be 3&quot;);</span>
+<span class="pc bpc" id="L647" title="1 of 2 branches missed.">        if (coordsI.length != 3) {</span>
+<span class="nc" id="L648">            throw new IllegalArgumentException(&quot;coordsI.length must be 3&quot;);</span>
         }
-<span class="pc bpc" id="L647" title="1 of 2 branches missed.">        if (coordsW.length != 3) {</span>
-<span class="nc" id="L648">            throw new IllegalArgumentException(&quot;coordsW.length must be 3&quot;);</span>
+<span class="pc bpc" id="L650" title="1 of 2 branches missed.">        if (coordsW.length != 3) {</span>
+<span class="nc" id="L651">            throw new IllegalArgumentException(&quot;coordsW.length must be 3&quot;);</span>
         }
-<span class="pc bpc" id="L650" title="1 of 2 branches missed.">        if (coordsI[0].length != nFeatures * mImages) {</span>
-<span class="nc" id="L651">            throw new IllegalArgumentException(&quot;coordsI[0].length must be evenly &quot;</span>
+<span class="pc bpc" id="L653" title="1 of 2 branches missed.">        if (coordsI[0].length != nFeatures * mImages) {</span>
+<span class="nc" id="L654">            throw new IllegalArgumentException(&quot;coordsI[0].length must be evenly &quot;</span>
                     + &quot;divisible by nFeatures which is coordsW[0].length&quot;);
         }
-<span class="pc bpc" id="L654" title="1 of 2 branches missed.">        if (intr.getA().length != 3 * mImages) {</span>
-<span class="nc" id="L655">            throw new IllegalArgumentException(&quot;intr.length must be 3*mImages&quot;);</span>
+<span class="pc bpc" id="L657" title="1 of 2 branches missed.">        if (intr.getA().length != 3 * mImages) {</span>
+<span class="nc" id="L658">            throw new IllegalArgumentException(&quot;intr.length must be 3*mImages&quot;);</span>
         }
-<span class="pc bpc" id="L657" title="1 of 2 branches missed.">        if (intr.getA()[0].length != 3) {</span>
-<span class="nc" id="L658">            throw new IllegalArgumentException(&quot;intr[0].length must be 3&quot;);</span>
+<span class="pc bpc" id="L660" title="1 of 2 branches missed.">        if (intr.getA()[0].length != 3) {</span>
+<span class="nc" id="L661">            throw new IllegalArgumentException(&quot;intr[0].length must be 3&quot;);</span>
         }
-<span class="pc bpc" id="L660" title="1 of 2 branches missed.">        if (kRadials.length != mImages) {</span>
-<span class="nc" id="L661">            throw new IllegalArgumentException(&quot;kRadials.length must be equal &quot;</span>
+<span class="pc bpc" id="L663" title="1 of 2 branches missed.">        if (kRadials.length != mImages) {</span>
+<span class="nc" id="L664">            throw new IllegalArgumentException(&quot;kRadials.length must be equal &quot;</span>
                     + &quot;to the number of cameras.&quot;);
         }
-<span class="pc bpc" id="L664" title="1 of 2 branches missed.">        if (kRadials[0].length != 2) {</span>
-<span class="nc" id="L665">            throw new IllegalArgumentException(&quot;kRadials[0].length must be 2.&quot;);</span>
+<span class="pc bpc" id="L667" title="1 of 2 branches missed.">        if (kRadials[0].length != 2) {</span>
+<span class="nc" id="L668">            throw new IllegalArgumentException(&quot;kRadials[0].length must be 2.&quot;);</span>
         }
-<span class="pc bpc" id="L667" title="1 of 2 branches missed.">        if (extrRVecs[0].length != 3) {</span>
-<span class="nc" id="L668">            throw new IllegalArgumentException(&quot;extrRVecs[0].length must be 3&quot;);</span>
+<span class="pc bpc" id="L670" title="1 of 2 branches missed.">        if (extrRVecs[0].length != 3) {</span>
+<span class="nc" id="L671">            throw new IllegalArgumentException(&quot;extrRVecs[0].length must be 3&quot;);</span>
         }
-<span class="pc bpc" id="L670" title="1 of 2 branches missed.">        if (extrRVecs.length != mImages) {</span>
-<span class="nc" id="L671">            throw new IllegalArgumentException(&quot;extrRVecs.length must be mImages &quot;</span>
+<span class="pc bpc" id="L673" title="1 of 2 branches missed.">        if (extrRVecs.length != mImages) {</span>
+<span class="nc" id="L674">            throw new IllegalArgumentException(&quot;extrRVecs.length must be mImages &quot;</span>
                     + &quot;where mImages = coordsI[0].length/coordsW[0].length&quot;);
         }
-<span class="pc bpc" id="L674" title="1 of 2 branches missed.">        if (extrTrans[0].length != 3) {</span>
-<span class="nc" id="L675">            throw new IllegalArgumentException(&quot;extrTrans[0].length must be 3&quot;);</span>
+<span class="pc bpc" id="L677" title="1 of 2 branches missed.">        if (extrTrans[0].length != 3) {</span>
+<span class="nc" id="L678">            throw new IllegalArgumentException(&quot;extrTrans[0].length must be 3&quot;);</span>
         }
-<span class="pc bpc" id="L677" title="1 of 2 branches missed.">        if (extrTrans.length != mImages) {</span>
-<span class="nc" id="L678">            throw new IllegalArgumentException(&quot;extrTrans.length must be mImages &quot;</span>
+<span class="pc bpc" id="L680" title="1 of 2 branches missed.">        if (extrTrans.length != mImages) {</span>
+<span class="nc" id="L681">            throw new IllegalArgumentException(&quot;extrTrans.length must be mImages &quot;</span>
                     + &quot;where mImages = coordsI[0].length/coordsW[0].length&quot;);
         }
-<span class="pc bpc" id="L681" title="1 of 2 branches missed.">        if (nFeatures &lt; 6) {</span>
-<span class="nc" id="L682">            throw new IllegalArgumentException(&quot;need at least 6 features in an image&quot;);</span>
+<span class="pc bpc" id="L684" title="1 of 2 branches missed.">        if (nFeatures &lt; 6) {</span>
+<span class="nc" id="L685">            throw new IllegalArgumentException(&quot;need at least 6 features in an image&quot;);</span>
         }
 
-<span class="fc" id="L685">        double fSqSum = 0;</span>
+<span class="fc" id="L688">        double fSqSum = 0;</span>
 
-<span class="fc" id="L687">        double[][] auxIntr = MatrixUtil.zeros(3, 3);</span>
+<span class="fc" id="L690">        double[][] auxIntr = MatrixUtil.zeros(3, 3);</span>
 
         //size is [3 X 3*mImages] with each block being [3X3]
-<span class="fc" id="L690">        BlockMatrixIsometric rotMatrices = createRotationMatricesFromVectors(extrRVecs, useBouguetForRodrigues);</span>
-<span class="fc" id="L691">        double[][] rotM = MatrixUtil.zeros(3, 3);</span>
+<span class="fc" id="L693">        BlockMatrixIsometric rotMatrices = createRotationMatricesFromVectors(extrRVecs, useBouguetForRodrigues);</span>
+<span class="fc" id="L694">        double[][] rotM = MatrixUtil.zeros(3, 3);</span>
 
         // [2X1]
-<span class="fc" id="L694">        double[] fIJ2 = new double[2];</span>
+<span class="fc" id="L697">        double[] fIJ2 = new double[2];</span>
 
         // i for n features, j for m images
         int i, j, k;
-<span class="fc bfc" id="L698" title="All 2 branches covered.">        for (j = 0; j &lt; mImages; ++j) { // this is camera c in Engels pseudocode</span>
+<span class="fc bfc" id="L701" title="All 2 branches covered.">        for (j = 0; j &lt; mImages; ++j) { // this is camera c in Engels pseudocode</span>
 
             //intr is 3 X 3*nCameras where each block is size 3X3.
-<span class="fc" id="L701">            intr.getBlock(auxIntr, j, 0);</span>
+<span class="fc" id="L704">            intr.getBlock(auxIntr, j, 0);</span>
 
             // get the rotation matrix rotM [3X3]
-<span class="fc" id="L704">            rotMatrices.getBlock(rotM, 0, j);</span>
+<span class="fc" id="L707">            rotMatrices.getBlock(rotM, 0, j);</span>
 
-<span class="fc" id="L706">            double[] omckk = Arrays.copyOf(extrRVecs[j], extrRVecs[j].length);</span>
-<span class="fc" id="L707">            double[] Tckk = Arrays.copyOf(extrTrans[j], extrTrans[j].length);</span>
+<span class="fc" id="L709">            double[] omckk = Arrays.copyOf(extrRVecs[j], extrRVecs[j].length);</span>
+<span class="fc" id="L710">            double[] Tckk = Arrays.copyOf(extrTrans[j], extrTrans[j].length);</span>
 
-<span class="fc" id="L709">            Camera.CameraIntrinsicParameters intrinsics</span>
+<span class="fc" id="L712">            Camera.CameraIntrinsicParameters intrinsics</span>
                     = new Camera.CameraIntrinsicParameters(auxIntr, kRadials[j], useR2R4);
 
             // since the derivatives aren't needed for projection, can just use rigid motion and then transform to image frame
-<span class="fc" id="L713">            CameraPose.ProjectedPoints pp = CameraPose.bouguetProjectPoints2(coordsW, omckk, Tckk, intrinsics,</span>
+<span class="fc" id="L716">            CameraPose.ProjectedPoints pp = CameraPose.bouguetProjectPoints2(coordsW, omckk, Tckk, intrinsics,</span>
                     useBouguetForRodrigues);
-<span class="fc" id="L715">            double[][] x = pp.xEst;  //[2 X n] // these are in image reference frame</span>
+<span class="fc" id="L718">            double[][] x = pp.xEst;  //[2 X n] // these are in image reference frame</span>
             //CameraPose.ProjectedPoints pp  = CameraPose.bouguetRigidMotion(coordsW, extrRVecs[j], extrTrans[j]);
             //double[][] x = pp.xEst;
             //if (useCameraFrame == 0) {
             //    x = Camera.cameraToPixelCoordinates(x, intrinsics);
             //}
 
-<span class="fc" id="L722">            double[][] xkk = MatrixUtil.copySubMatrix(coordsI, 0, 1, nFeatures * j, nFeatures * (j + 1) - 1);</span>
+<span class="fc" id="L725">            double[][] xkk = MatrixUtil.copySubMatrix(coordsI, 0, 1, nFeatures * j, nFeatures * (j + 1) - 1);</span>
 
             //[2 X n]
-<span class="fc" id="L725">            double[][] fj = MatrixUtil.pointwiseSubtract(xkk, x);</span>
+<span class="fc" id="L728">            double[][] fj = MatrixUtil.pointwiseSubtract(xkk, x);</span>
 
-<span class="fc bfc" id="L727" title="All 2 branches covered.">            for (i = 0; i &lt; nFeatures; ++i) {</span>
+<span class="fc bfc" id="L730" title="All 2 branches covered.">            for (i = 0; i &lt; nFeatures; ++i) {</span>
                 //aIJ [2X9]  camera partial derivs (rot, trans, f, k0, k1)
                 //bIJ [2X3] point partial derivs (dXW)
-<span class="fc bfc" id="L730" title="All 2 branches covered.">                for (k = 0; k &lt; 2; ++k) {</span>
-<span class="fc" id="L731">                    fIJ2[k] = fj[k][i];</span>
+<span class="fc bfc" id="L733" title="All 2 branches covered.">                for (k = 0; k &lt; 2; ++k) {</span>
+<span class="fc" id="L734">                    fIJ2[k] = fj[k][i];</span>
                 }
-<span class="fc" id="L733">                fSqSum += MatrixUtil.innerProduct(fIJ2, fIJ2);</span>
+<span class="fc" id="L736">                fSqSum += MatrixUtil.innerProduct(fIJ2, fIJ2);</span>
             }
         }
-<span class="fc" id="L736">        return fSqSum;</span>
+<span class="fc" id="L739">        return fSqSum;</span>
     }
 
     /**
@@ -872,193 +875,193 @@ public class BundleAdjustment {
       double[] outFSqSum, final double lambda,
       double[] outInitLambda, boolean useBouguetForRodrigues) throws NotConvergedException, IOException, NaNException {
 
-<span class="fc" id="L875">        int nFeatures = coordsW[0].length;</span>
-<span class="fc" id="L876">        int mImages = coordsI[0].length/nFeatures;</span>
+<span class="fc" id="L878">        int nFeatures = coordsW[0].length;</span>
+<span class="fc" id="L879">        int mImages = coordsI[0].length/nFeatures;</span>
 
-<span class="pc bpc" id="L878" title="1 of 2 branches missed.">        if (coordsI.length != 3) {</span>
-<span class="nc" id="L879">            throw new IllegalArgumentException(&quot;coordsI.length must be 3&quot;);</span>
+<span class="pc bpc" id="L881" title="1 of 2 branches missed.">        if (coordsI.length != 3) {</span>
+<span class="nc" id="L882">            throw new IllegalArgumentException(&quot;coordsI.length must be 3&quot;);</span>
         }
-<span class="pc bpc" id="L881" title="1 of 2 branches missed.">        if (coordsW.length != 3) {</span>
-<span class="nc" id="L882">            throw new IllegalArgumentException(&quot;coordsW.length must be 3&quot;);</span>
+<span class="pc bpc" id="L884" title="1 of 2 branches missed.">        if (coordsW.length != 3) {</span>
+<span class="nc" id="L885">            throw new IllegalArgumentException(&quot;coordsW.length must be 3&quot;);</span>
         }
-<span class="pc bpc" id="L884" title="1 of 2 branches missed.">        if (coordsI[0].length != nFeatures*mImages) {</span>
-<span class="nc" id="L885">            throw new IllegalArgumentException(&quot;coordsI[0].length must be evenly &quot;</span>
+<span class="pc bpc" id="L887" title="1 of 2 branches missed.">        if (coordsI[0].length != nFeatures*mImages) {</span>
+<span class="nc" id="L888">            throw new IllegalArgumentException(&quot;coordsI[0].length must be evenly &quot;</span>
                     + &quot;divisible by nFeatures which is coordsW[0].length&quot;);
         }
-<span class="pc bpc" id="L888" title="1 of 2 branches missed.">        if (intr.getA().length != 3*mImages) {</span>
-<span class="nc" id="L889">            throw new IllegalArgumentException(&quot;intr.length must be 3*mImages&quot;);</span>
+<span class="pc bpc" id="L891" title="1 of 2 branches missed.">        if (intr.getA().length != 3*mImages) {</span>
+<span class="nc" id="L892">            throw new IllegalArgumentException(&quot;intr.length must be 3*mImages&quot;);</span>
         }
-<span class="pc bpc" id="L891" title="1 of 2 branches missed.">        if (intr.getA()[0].length != 3) {</span>
-<span class="nc" id="L892">            throw new IllegalArgumentException(&quot;intr[0].length must be 3&quot;);</span>
+<span class="pc bpc" id="L894" title="1 of 2 branches missed.">        if (intr.getA()[0].length != 3) {</span>
+<span class="nc" id="L895">            throw new IllegalArgumentException(&quot;intr[0].length must be 3&quot;);</span>
         }
-<span class="pc bpc" id="L894" title="1 of 2 branches missed.">        if (kRadials.length != mImages) {</span>
-<span class="nc" id="L895">            throw new IllegalArgumentException(&quot;kRadials.length must be equal &quot;</span>
+<span class="pc bpc" id="L897" title="1 of 2 branches missed.">        if (kRadials.length != mImages) {</span>
+<span class="nc" id="L898">            throw new IllegalArgumentException(&quot;kRadials.length must be equal &quot;</span>
                     + &quot;to the number of cameras.&quot;);
         }
-<span class="pc bpc" id="L898" title="1 of 2 branches missed.">        if (kRadials[0].length != 2) {</span>
-<span class="nc" id="L899">            throw new IllegalArgumentException(&quot;kRadials[0].length must be 2.&quot;);</span>
+<span class="pc bpc" id="L901" title="1 of 2 branches missed.">        if (kRadials[0].length != 2) {</span>
+<span class="nc" id="L902">            throw new IllegalArgumentException(&quot;kRadials[0].length must be 2.&quot;);</span>
         }
-<span class="pc bpc" id="L901" title="1 of 2 branches missed.">        if (extrRVecs[0].length != 3) {</span>
-<span class="nc" id="L902">            throw new IllegalArgumentException(&quot;extrRVecs[0].length must be 3&quot;);</span>
+<span class="pc bpc" id="L904" title="1 of 2 branches missed.">        if (extrRVecs[0].length != 3) {</span>
+<span class="nc" id="L905">            throw new IllegalArgumentException(&quot;extrRVecs[0].length must be 3&quot;);</span>
         }
-<span class="pc bpc" id="L904" title="1 of 2 branches missed.">        if (extrRVecs.length != mImages) {</span>
-<span class="nc" id="L905">            throw new IllegalArgumentException(&quot;extrRVecs.length must be mImages &quot;</span>
+<span class="pc bpc" id="L907" title="1 of 2 branches missed.">        if (extrRVecs.length != mImages) {</span>
+<span class="nc" id="L908">            throw new IllegalArgumentException(&quot;extrRVecs.length must be mImages &quot;</span>
                     + &quot;where mImages = coordsI[0].length/coordsW[0].length&quot;);
         }
-<span class="pc bpc" id="L908" title="1 of 2 branches missed.">        if (extrTrans[0].length != 3) {</span>
-<span class="nc" id="L909">            throw new IllegalArgumentException(&quot;extrTrans[0].length must be 3&quot;);</span>
+<span class="pc bpc" id="L911" title="1 of 2 branches missed.">        if (extrTrans[0].length != 3) {</span>
+<span class="nc" id="L912">            throw new IllegalArgumentException(&quot;extrTrans[0].length must be 3&quot;);</span>
         }
-<span class="pc bpc" id="L911" title="1 of 2 branches missed.">        if (extrTrans.length != mImages) {</span>
-<span class="nc" id="L912">            throw new IllegalArgumentException(&quot;extrTrans.length must be mImages &quot;</span>
+<span class="pc bpc" id="L914" title="1 of 2 branches missed.">        if (extrTrans.length != mImages) {</span>
+<span class="nc" id="L915">            throw new IllegalArgumentException(&quot;extrTrans.length must be mImages &quot;</span>
                     + &quot;where mImages = coordsI[0].length/coordsW[0].length&quot;);
         }
-<span class="pc bpc" id="L915" title="1 of 2 branches missed.">        if (outDP.length != 3*nFeatures) {</span>
-<span class="nc" id="L916">            throw new IllegalArgumentException(&quot;outDP.length must be 3*nFeatures &quot;</span>
+<span class="pc bpc" id="L918" title="1 of 2 branches missed.">        if (outDP.length != 3*nFeatures) {</span>
+<span class="nc" id="L919">            throw new IllegalArgumentException(&quot;outDP.length must be 3*nFeatures &quot;</span>
                     + &quot;where nFeatures=coordsW[0].length&quot;);
         }
-<span class="pc bpc" id="L919" title="1 of 2 branches missed.">        if (outDC.length != 9*mImages) {</span>
-<span class="nc" id="L920">            throw new IllegalArgumentException(&quot;outDC.length must be 9*mImages &quot;</span>
+<span class="pc bpc" id="L922" title="1 of 2 branches missed.">        if (outDC.length != 9*mImages) {</span>
+<span class="nc" id="L923">            throw new IllegalArgumentException(&quot;outDC.length must be 9*mImages &quot;</span>
                     + &quot;where mImages=coordsI[0].length/coordsW[0].length&quot;);
         }
-<span class="pc bpc" id="L923" title="1 of 2 branches missed.">        if (outGradP.length != 3*nFeatures) {</span>
-<span class="nc" id="L924">            throw new IllegalArgumentException(&quot;outGradP.length must be 3 * number of features&quot;);</span>
+<span class="pc bpc" id="L926" title="1 of 2 branches missed.">        if (outGradP.length != 3*nFeatures) {</span>
+<span class="nc" id="L927">            throw new IllegalArgumentException(&quot;outGradP.length must be 3 * number of features&quot;);</span>
         }
-<span class="pc bpc" id="L926" title="1 of 2 branches missed.">        if (outGradC.length != 9*mImages) {</span>
-<span class="nc" id="L927">            throw new IllegalArgumentException(&quot;outGradC.length must be 9 * number of images&quot;);</span>
+<span class="pc bpc" id="L929" title="1 of 2 branches missed.">        if (outGradC.length != 9*mImages) {</span>
+<span class="nc" id="L930">            throw new IllegalArgumentException(&quot;outGradC.length must be 9 * number of images&quot;);</span>
         }
-<span class="pc bpc" id="L929" title="1 of 2 branches missed.">        if (outFSqSum.length != 1) {</span>
-<span class="nc" id="L930">            throw new IllegalArgumentException(&quot;outFSqSum.length must be 1&quot;);</span>
+<span class="pc bpc" id="L932" title="1 of 2 branches missed.">        if (outFSqSum.length != 1) {</span>
+<span class="nc" id="L933">            throw new IllegalArgumentException(&quot;outFSqSum.length must be 1&quot;);</span>
         }
-<span class="pc bpc" id="L932" title="1 of 2 branches missed.">        if (!(lambda  &gt;= 0.)) {</span>
-<span class="nc" id="L933">            throw new IllegalArgumentException(&quot;lambda must be a positive number&quot;);</span>
+<span class="pc bpc" id="L935" title="1 of 2 branches missed.">        if (!(lambda  &gt;= 0.)) {</span>
+<span class="nc" id="L936">            throw new IllegalArgumentException(&quot;lambda must be a positive number&quot;);</span>
         }
-<span class="pc bpc" id="L935" title="1 of 2 branches missed.">        if (imageFeaturesMap == null) {</span>
-<span class="nc" id="L936">            throw new IllegalArgumentException(&quot;imageFeaturesMap cannot be null&quot;);</span>
+<span class="pc bpc" id="L938" title="1 of 2 branches missed.">        if (imageFeaturesMap == null) {</span>
+<span class="nc" id="L939">            throw new IllegalArgumentException(&quot;imageFeaturesMap cannot be null&quot;);</span>
         }
-<span class="pc bpc" id="L938" title="1 of 2 branches missed.">        if (imageFeaturesMap.size() != mImages) {</span>
-<span class="nc" id="L939">            throw new IllegalArgumentException(&quot;imageFeaturesMap size must equal &quot;</span>
+<span class="pc bpc" id="L941" title="1 of 2 branches missed.">        if (imageFeaturesMap.size() != mImages) {</span>
+<span class="nc" id="L942">            throw new IllegalArgumentException(&quot;imageFeaturesMap size must equal &quot;</span>
                     + &quot;the number of images which = coordsI[0].length/coordsW[0].length&quot;);
         }
-<span class="pc bpc" id="L942" title="1 of 2 branches missed.">        if (nFeatures &lt; 6) {</span>
-<span class="nc" id="L943">            throw new IllegalArgumentException(&quot;need at least 6 features in an image&quot;);</span>
+<span class="pc bpc" id="L945" title="1 of 2 branches missed.">        if (nFeatures &lt; 6) {</span>
+<span class="nc" id="L946">            throw new IllegalArgumentException(&quot;need at least 6 features in an image&quot;);</span>
         }
 
-<span class="fc bfc" id="L946" title="All 2 branches covered.">        if (outInitLambda != null) {</span>
+<span class="fc bfc" id="L949" title="All 2 branches covered.">        if (outInitLambda != null) {</span>
             // this will hold the maximum of the diagonals of hPPI and hCCJ
-<span class="fc" id="L948">            outInitLambda[0] = Double.NEGATIVE_INFINITY;</span>
+<span class="fc" id="L951">            outInitLambda[0] = Double.NEGATIVE_INFINITY;</span>
         }
 
-<span class="fc" id="L951">        Arrays.fill(outGradC, 0); // [9*mImages]</span>
-<span class="fc" id="L952">        Arrays.fill(outGradP, 0); // [3*nFeatures]</span>
-<span class="fc" id="L953">        Arrays.fill(outDC, 0);    // [9*mImages]</span>
-<span class="fc" id="L954">        Arrays.fill(outDP, 0);    //[3*nFeatures]</span>
-<span class="fc" id="L955">        Arrays.fill(outFSqSum, 0);</span>
+<span class="fc" id="L954">        Arrays.fill(outGradC, 0); // [9*mImages]</span>
+<span class="fc" id="L955">        Arrays.fill(outGradP, 0); // [3*nFeatures]</span>
+<span class="fc" id="L956">        Arrays.fill(outDC, 0);    // [9*mImages]</span>
+<span class="fc" id="L957">        Arrays.fill(outDP, 0);    //[3*nFeatures]</span>
+<span class="fc" id="L958">        Arrays.fill(outFSqSum, 0);</span>
 
-<span class="fc" id="L957">        double[] bC = outGradC;// [9*mImages]</span>
-<span class="fc" id="L958">        double[] bP = outGradP;// [3*nFeatures]</span>
+<span class="fc" id="L960">        double[] bC = outGradC;// [9*mImages]</span>
+<span class="fc" id="L961">        double[] bP = outGradP;// [3*nFeatures]</span>
 
-<span class="fc" id="L960">        double[][] auxIntr = MatrixUtil.zeros(3, 3);</span>
+<span class="fc" id="L963">        double[][] auxIntr = MatrixUtil.zeros(3, 3);</span>
 
         //size is [3 X 3*mImages] with each block being [3X3]
-<span class="fc" id="L963">        BlockMatrixIsometric rotMatrices = createRotationMatricesFromVectors(extrRVecs, useBouguetForRodrigues);</span>
-<span class="fc" id="L964">        double[] rotAux = new double[3];</span>
-<span class="fc" id="L965">        double[][] rotM = MatrixUtil.zeros(3, 3);</span>
+<span class="fc" id="L966">        BlockMatrixIsometric rotMatrices = createRotationMatricesFromVectors(extrRVecs, useBouguetForRodrigues);</span>
+<span class="fc" id="L967">        double[] rotAux = new double[3];</span>
+<span class="fc" id="L968">        double[][] rotM = MatrixUtil.zeros(3, 3);</span>
 
         //[2X9]  camera partial derivs (rot, trans, f, k0, k1)
-<span class="fc" id="L968">        double[][] aIJ = MatrixUtil.zeros(2, 9);</span>
+<span class="fc" id="L971">        double[][] aIJ = MatrixUtil.zeros(2, 9);</span>
         //[2X3] point partial derivs (dXW)
-<span class="fc" id="L970">        double[][] bIJ = MatrixUtil.zeros(2, 3);</span>
+<span class="fc" id="L973">        double[][] bIJ = MatrixUtil.zeros(2, 3);</span>
         //aka jP_I_J^T [3X2]
-<span class="fc" id="L972">        double[][] bIJT = MatrixUtil.zeros(3, 2);</span>
+<span class="fc" id="L975">        double[][] bIJT = MatrixUtil.zeros(3, 2);</span>
         //aka jC_I_J^T  [9X2]
-<span class="fc" id="L974">        double[][] aIJT = MatrixUtil.zeros(9, 2);</span>
+<span class="fc" id="L977">        double[][] aIJT = MatrixUtil.zeros(9, 2);</span>
         // aka jP^T*JP; [3X3]
-<span class="fc" id="L976">        double[][] bIJsq = MatrixUtil.zeros(3, 3);</span>
+<span class="fc" id="L979">        double[][] bIJsq = MatrixUtil.zeros(3, 3);</span>
         // [2X1]
-<span class="fc" id="L978">        double[] fIJ2 = new double[2];</span>
+<span class="fc" id="L981">        double[] fIJ2 = new double[2];</span>
         //aka bP [3X1]
-<span class="fc" id="L980">        double[] bIJTF = new double[3];</span>
+<span class="fc" id="L983">        double[] bIJTF = new double[3];</span>
         //aka bC [9X1]  which is aka jC_I_J^T * fIJ
-<span class="fc" id="L982">        double[] aIJTF = new double[9];</span>
+<span class="fc" id="L985">        double[] aIJTF = new double[9];</span>
 
         //HPC is a.k.a. J_C^T*J_P a.k.a. (W^*)^T
         //W_i_j^T are stored here as [3X9] blocks. each W_i_j^T is b_i_j^T*a_i_j
-<span class="fc" id="L986">        BlockMatrixIsometric hPCBlocks /*W^T*/= new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 9*mImages), 3, 9);</span>
-<span class="fc" id="L987">        double[][] auxHPC = MatrixUtil.zeros(3, 9);</span>
-<span class="fc" id="L988">        double[][] auxHPCT = MatrixUtil.zeros(9, 3);</span>
+<span class="fc" id="L989">        BlockMatrixIsometric hPCBlocks /*W^T*/= new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 9*mImages), 3, 9);</span>
+<span class="fc" id="L990">        double[][] auxHPC = MatrixUtil.zeros(3, 9);</span>
+<span class="fc" id="L991">        double[][] auxHPCT = MatrixUtil.zeros(9, 3);</span>
 
         //HPP is a.k.a. (J_P^T*J_P) a.k.a. V
         //The diagonals, V_i, are stored here as [3X3] blocks. each V_i is a summation
         // of b_i_j^T*b_i_j over all j images.
-<span class="fc" id="L993">        BlockMatrixIsometric hPPIBlocks /*VI*/= new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 3), 3, 3);</span>
+<span class="fc" id="L996">        BlockMatrixIsometric hPPIBlocks /*VI*/= new BlockMatrixIsometric(MatrixUtil.zeros(3*nFeatures, 3), 3, 3);</span>
         // aka V_i; a [3X3] block
-<span class="fc" id="L995">        double[][] hPPI = MatrixUtil.zeros(3, 3);</span>
+<span class="fc" id="L998">        double[][] hPPI = MatrixUtil.zeros(3, 3);</span>
 
         //HCC is a.k.a. J_C^T*J_C a.k.a. U^* (and in Qu thesis is variable B).
         //The diagonals, U_j, are stored here as [9X9] blocks. each U_j is a summation of a_i_j^T*a_i_j over all i features.
         // HCC is set into matrix A as it is calculated.
         // storing hCCJBlocks in mA, while populating mA with only HCC.  later will add the negative rightsize of mA to mA
-<span class="fc" id="L1001">        BlockMatrixIsometric hCCJBlocks /*UJ*/= new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9), 9, 9);</span>
-<span class="fc" id="L1002">        double[][] auxHCCJ = MatrixUtil.zeros(9, 9);</span>
+<span class="fc" id="L1004">        BlockMatrixIsometric hCCJBlocks /*UJ*/= new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9), 9, 9);</span>
+<span class="fc" id="L1005">        double[][] auxHCCJ = MatrixUtil.zeros(9, 9);</span>
 
         // i for n features, j for m images
         int i, j, k;
-<span class="fc bfc" id="L1006" title="All 2 branches covered.">        for (j = 0; j &lt; mImages; ++j) { // this is camera c in Engels pseudocode</span>
+<span class="fc bfc" id="L1009" title="All 2 branches covered.">        for (j = 0; j &lt; mImages; ++j) { // this is camera c in Engels pseudocode</span>
 
             //intr is 3 X 3*nCameras where each block is size 3X3.
-<span class="fc" id="L1009">            intr.getBlock(auxIntr, j, 0);</span>
+<span class="fc" id="L1012">            intr.getBlock(auxIntr, j, 0);</span>
 
             // get the rotation matrix rotM [3X3]
-<span class="fc" id="L1012">            rotMatrices.getBlock(rotM, 0, j);</span>
+<span class="fc" id="L1015">            rotMatrices.getBlock(rotM, 0, j);</span>
 
-<span class="fc" id="L1014">            double[] omckk = Arrays.copyOf(extrRVecs[j], extrRVecs[j].length);</span>
-<span class="fc" id="L1015">            double[] Tckk = Arrays.copyOf(extrTrans[j], extrTrans[j].length);</span>
+<span class="fc" id="L1017">            double[] omckk = Arrays.copyOf(extrRVecs[j], extrRVecs[j].length);</span>
+<span class="fc" id="L1018">            double[] Tckk = Arrays.copyOf(extrTrans[j], extrTrans[j].length);</span>
 
-<span class="fc" id="L1017">            Camera.CameraIntrinsicParameters intrinsics</span>
+<span class="fc" id="L1020">            Camera.CameraIntrinsicParameters intrinsics</span>
                     = new Camera.CameraIntrinsicParameters(auxIntr, kRadials[j], useR2R4);
             CameraPose.ProjectedPoints pp;
             if (useBouguetDerivs) {
-<span class="fc" id="L1021">                pp = CameraPose.bouguetProjectPoints2(coordsW, omckk, Tckk, intrinsics, useBouguetForRodrigues);</span>
+<span class="fc" id="L1024">                pp = CameraPose.bouguetProjectPoints2(coordsW, omckk, Tckk, intrinsics, useBouguetForRodrigues);</span>
             } else {
                 pp = quProjectPoints(coordsW, omckk, Tckk, intrinsics, useBouguetForRodrigues);
             }
-<span class="fc" id="L1025">            double[][] x = pp.xEst;  //[2 X n] // these are in image reference frame</span>
-<span class="fc" id="L1026">            double[][] dxdom = pp.dxdom; // [2*n X 3]</span>
-<span class="fc" id="L1027">            double[][] dxdT = pp.dxdT; // [2*n X 3]</span>
-<span class="fc" id="L1028">            double[][] dxdF = pp.dxdF;//[2*n X 2]</span>
-<span class="fc" id="L1029">            double[][] dxdK = pp.dxdK;//[2*n X 4]</span>
+<span class="fc" id="L1028">            double[][] x = pp.xEst;  //[2 X n] // these are in image reference frame</span>
+<span class="fc" id="L1029">            double[][] dxdom = pp.dxdom; // [2*n X 3]</span>
+<span class="fc" id="L1030">            double[][] dxdT = pp.dxdT; // [2*n X 3]</span>
+<span class="fc" id="L1031">            double[][] dxdF = pp.dxdF;//[2*n X 2]</span>
+<span class="fc" id="L1032">            double[][] dxdK = pp.dxdK;//[2*n X 4]</span>
             double[][] dP;
             if (useBouguetDerivs) {
-<span class="fc" id="L1032">                dP = MatrixUtil.multiply(dxdT, rotM); //[2*n X 3]</span>
+<span class="fc" id="L1035">                dP = MatrixUtil.multiply(dxdT, rotM); //[2*n X 3]</span>
             } else {
                 dP = pp.dxdX;
             }
 
-<span class="fc" id="L1037">            double[][] xkk = MatrixUtil.copySubMatrix(coordsI, 0, 1, nFeatures*j, nFeatures*(j + 1) - 1);</span>
+<span class="fc" id="L1040">            double[][] xkk = MatrixUtil.copySubMatrix(coordsI, 0, 1, nFeatures*j, nFeatures*(j + 1) - 1);</span>
 
             //[2 X n]
-<span class="fc" id="L1040">            double[][] fj = MatrixUtil.pointwiseSubtract(xkk, x);</span>
+<span class="fc" id="L1043">            double[][] fj = MatrixUtil.pointwiseSubtract(xkk, x);</span>
 
-<span class="fc bfc" id="L1042" title="All 2 branches covered.">            for (i = 0; i &lt; nFeatures; ++i) {</span>
+<span class="fc bfc" id="L1045" title="All 2 branches covered.">            for (i = 0; i &lt; nFeatures; ++i) {</span>
                 //aIJ [2X9]  camera partial derivs (rot, trans, f, k0, k1)
                 //bIJ [2X3] point partial derivs (dXW)
-<span class="fc bfc" id="L1045" title="All 2 branches covered.">                for (k = 0; k &lt; 2; ++k) {</span>
-<span class="fc" id="L1046">                    System.arraycopy(dxdom[i*2 + k], 0, aIJ[k], 0, 3 );</span>
-<span class="fc" id="L1047">                    System.arraycopy(dxdT[i*2 + k], 0, aIJ[k], 3, 3 );</span>
-<span class="fc" id="L1048">                    aIJ[k][6] = dxdF[i*2 + k][0];</span>
-<span class="fc" id="L1049">                    aIJ[k][7] = dxdK[i*2 + k][0];</span>
-<span class="fc" id="L1050">                    aIJ[k][8] = dxdK[i*2 + k][1];</span>
-<span class="fc" id="L1051">                    System.arraycopy(dP[i*2 + k], 0, bIJ[k], 0, 3 );</span>
-<span class="fc" id="L1052">                    fIJ2[k] = fj[k][i];</span>
+<span class="fc bfc" id="L1048" title="All 2 branches covered.">                for (k = 0; k &lt; 2; ++k) {</span>
+<span class="fc" id="L1049">                    System.arraycopy(dxdom[i*2 + k], 0, aIJ[k], 0, 3 );</span>
+<span class="fc" id="L1050">                    System.arraycopy(dxdT[i*2 + k], 0, aIJ[k], 3, 3 );</span>
+<span class="fc" id="L1051">                    aIJ[k][6] = dxdF[i*2 + k][0];</span>
+<span class="fc" id="L1052">                    aIJ[k][7] = dxdK[i*2 + k][0];</span>
+<span class="fc" id="L1053">                    aIJ[k][8] = dxdK[i*2 + k][1];</span>
+<span class="fc" id="L1054">                    System.arraycopy(dP[i*2 + k], 0, bIJ[k], 0, 3 );</span>
+<span class="fc" id="L1055">                    fIJ2[k] = fj[k][i];</span>
                 }
                 //System.out.printf(&quot;AIJ=%s\n&quot;, FormatArray.toString(aIJ,&quot;%.3e&quot;));
 
                 //bIJ^T; [3X2]  aka jP^T
-<span class="fc" id="L1057">                MatrixUtil.transpose(bIJ, bIJT);</span>
+<span class="fc" id="L1060">                MatrixUtil.transpose(bIJ, bIJT);</span>
                 //aIJ^T; [9X2] aka jC^T
-<span class="fc" id="L1059">                MatrixUtil.transpose(aIJ, aIJT);</span>
+<span class="fc" id="L1062">                MatrixUtil.transpose(aIJ, aIJT);</span>
 
-<span class="fc" id="L1061">                outFSqSum[0] += MatrixUtil.innerProduct(fIJ2, fIJ2);</span>
+<span class="fc" id="L1064">                outFSqSum[0] += MatrixUtil.innerProduct(fIJ2, fIJ2);</span>
 
                 /*
                 gradP = bP = -JP^T * F  [3n X 1]
@@ -1071,10 +1074,10 @@ public class BundleAdjustment {
                 where each row is [3X2]*[2X1] = [3X1]
                 */
                 //bIJTF =  bIJT * fIJ;// [3X2]*[2X1] = [3X1]
-<span class="fc" id="L1074">                MatrixUtil.multiplyMatrixByColumnVector(bIJT, fIJ2, bIJTF);</span>
-<span class="fc bfc" id="L1075" title="All 2 branches covered.">                for (k = 0; k &lt; 3; ++k) {</span>
+<span class="fc" id="L1077">                MatrixUtil.multiplyMatrixByColumnVector(bIJT, fIJ2, bIJTF);</span>
+<span class="fc bfc" id="L1078" title="All 2 branches covered.">                for (k = 0; k &lt; 3; ++k) {</span>
                     // i is the current feature
-<span class="fc" id="L1077">                    bP[i*3 + k] -= bIJTF[k];</span>
+<span class="fc" id="L1080">                    bP[i*3 + k] -= bIJTF[k];</span>
                 }
 
                 /*
@@ -1087,34 +1090,34 @@ public class BundleAdjustment {
                 where each row is [9X2][2X1] = [9X1]
                 */
                 //aIJTF = aIJT * fIJ.  [9X2]*[2X1]=[1X9]
-<span class="fc" id="L1090">                MatrixUtil.multiplyMatrixByColumnVector(aIJT, fIJ2, aIJTF);</span>
-<span class="fc bfc" id="L1091" title="All 2 branches covered.">                for (k = 0; k &lt; 9; ++k) {</span>
+<span class="fc" id="L1093">                MatrixUtil.multiplyMatrixByColumnVector(aIJT, fIJ2, aIJTF);</span>
+<span class="fc bfc" id="L1094" title="All 2 branches covered.">                for (k = 0; k &lt; 9; ++k) {</span>
                     // j is the current image
-<span class="fc" id="L1093">                    bC[j*9 + k] -= aIJTF[k]; // bc is [9*mImages]</span>
+<span class="fc" id="L1096">                    bC[j*9 + k] -= aIJTF[k]; // bc is [9*mImages]</span>
                 }
 
                 // compute block (i,j) of hPC as hPC=jPTJC [3X9]
                 //hPC[i][j] = bIJT * aIJ;
-<span class="fc" id="L1098">                MatrixUtil.multiply(bIJT, aIJ, auxHPC);</span>
-<span class="fc" id="L1099">                hPCBlocks.setBlock(auxHPC, i, j);</span>
+<span class="fc" id="L1101">                MatrixUtil.multiply(bIJT, aIJ, auxHPC);</span>
+<span class="fc" id="L1102">                hPCBlocks.setBlock(auxHPC, i, j);</span>
 
                 // bIJsq = bij^T * bij = [3X2]*[2X3] = [3X3]
-<span class="fc" id="L1102">                MatrixUtil.multiply(bIJT, bIJ, bIJsq);</span>
+<span class="fc" id="L1105">                MatrixUtil.multiply(bIJT, bIJ, bIJsq);</span>
 
                 // HPP_i, aka V_i: for feature i, sum over all images. [3X3]
                 // fetch existing block for feature i, add BIJsq to it, update the block
-<span class="fc" id="L1106">                hPPIBlocks.addToBlock(bIJsq, i, 0);</span>
+<span class="fc" id="L1109">                hPPIBlocks.addToBlock(bIJsq, i, 0);</span>
 
                 //[9X9]
                 //each HCC_j a.k.a. U_j, is a summation of a_i_j^T*a_i_j over all i features
-<span class="fc" id="L1110">                createATransposedTimesA(aIJ, auxHCCJ);</span>
-<span class="fc" id="L1111">                hCCJBlocks.addToBlock(auxHCCJ, j, 0);</span>
+<span class="fc" id="L1113">                createATransposedTimesA(aIJ, auxHCCJ);</span>
+<span class="fc" id="L1114">                hCCJBlocks.addToBlock(auxHCCJ, j, 0);</span>
             } // end loop i over features
         } // end loop j over images
 
-<span class="fc" id="L1115">        log.info(String.format(&quot;outGradC=\n%s\n&quot;, FormatArray.toString(outGradC, &quot;%.3e&quot;)));</span>
-<span class="fc" id="L1116">        log.info(String.format(&quot;outGradP=%.3e, %.3e, %.3e, %.3e, %.3e, %.3e, ...&quot;,</span>
-<span class="fc" id="L1117">                outGradP[0], outGradP[1], outGradP[2], outGradP[3], outGradP[4], outGradP[5]));</span>
+<span class="fc" id="L1118">        log.info(String.format(&quot;outGradC=\n%s\n&quot;, FormatArray.toString(outGradC, &quot;%.3e&quot;)));</span>
+<span class="fc" id="L1119">        log.info(String.format(&quot;outGradP=%.3e, %.3e, %.3e, %.3e, %.3e, %.3e, ...&quot;,</span>
+<span class="fc" id="L1120">                outGradP[0], outGradP[1], outGradP[2], outGradP[3], outGradP[4], outGradP[5]));</span>
 
         // augment the diagonals of HPP and HCC by the dampening term.
 
@@ -1124,31 +1127,31 @@ public class BundleAdjustment {
         // Each H_PP_i and each H_CC_j are the diagonal blocks of J^T*J.
         // Solomon's &quot;Numerical Algorithms&quot; Section 12.1.2:
         //  J^T*J is positive semi-definite and so J^T*J + λ*I_n×n must be positive definite.
-<span class="fc bfc" id="L1127" title="All 2 branches covered.">        for (j = 0; j &lt; mImages; ++j) {</span>
-<span class="fc" id="L1128">            hCCJBlocks.getBlock(auxHCCJ, j, 0);</span>
-<span class="fc bfc" id="L1129" title="All 2 branches covered.">            if (outInitLambda != null) {</span>
-<span class="fc bfc" id="L1130" title="All 2 branches covered.">                if (maxDiag(auxHCCJ, outInitLambda)) {</span>
-<span class="fc" id="L1131">                    log.info(String.format(&quot;max of diagonal blocks of HCC (aka U): new lambda=%.7e\n&quot;, outInitLambda[0]));</span>
+<span class="fc bfc" id="L1130" title="All 2 branches covered.">        for (j = 0; j &lt; mImages; ++j) {</span>
+<span class="fc" id="L1131">            hCCJBlocks.getBlock(auxHCCJ, j, 0);</span>
+<span class="fc bfc" id="L1132" title="All 2 branches covered.">            if (outInitLambda != null) {</span>
+<span class="fc bfc" id="L1133" title="All 2 branches covered.">                if (maxDiag(auxHCCJ, outInitLambda)) {</span>
+<span class="fc" id="L1134">                    log.info(String.format(&quot;max of diagonal blocks of HCC (aka U): new lambda=%.7e\n&quot;, outInitLambda[0]));</span>
                 }
             }
-<span class="fc bfc" id="L1134" title="All 2 branches covered.">            for (k = 0; k &lt; auxHCCJ.length; ++k) {</span>
-<span class="fc" id="L1135">                auxHCCJ[k][k] += lambda;</span>
+<span class="fc bfc" id="L1137" title="All 2 branches covered.">            for (k = 0; k &lt; auxHCCJ.length; ++k) {</span>
+<span class="fc" id="L1138">                auxHCCJ[k][k] += lambda;</span>
             }
-<span class="fc" id="L1137">            hCCJBlocks.setBlock(auxHCCJ, j, 0);</span>
+<span class="fc" id="L1140">            hCCJBlocks.setBlock(auxHCCJ, j, 0);</span>
         }
 
-<span class="fc bfc" id="L1140" title="All 2 branches covered.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
-<span class="fc" id="L1141">            hPPIBlocks.getBlock(hPPI, i, 0);</span>
-<span class="fc bfc" id="L1142" title="All 2 branches covered.">            if (outInitLambda != null) {</span>
+<span class="fc bfc" id="L1143" title="All 2 branches covered.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
+<span class="fc" id="L1144">            hPPIBlocks.getBlock(hPPI, i, 0);</span>
+<span class="fc bfc" id="L1145" title="All 2 branches covered.">            if (outInitLambda != null) {</span>
                 // find maximum of the diagonal of hPP.  the diagonal of HPP is each [3X3] block hPPI.
-<span class="pc bpc" id="L1144" title="1 of 2 branches missed.">                if (maxDiag(hPPI, outInitLambda)) {</span>
-<span class="nc" id="L1145">                    log.info(String.format(&quot;max diag of hPPI (aka V_i): new lambda=%.7e\n&quot;, outInitLambda[0]));</span>
+<span class="pc bpc" id="L1147" title="1 of 2 branches missed.">                if (maxDiag(hPPI, outInitLambda)) {</span>
+<span class="nc" id="L1148">                    log.info(String.format(&quot;max diag of hPPI (aka V_i): new lambda=%.7e\n&quot;, outInitLambda[0]));</span>
                 }
             }
-<span class="fc bfc" id="L1148" title="All 2 branches covered.">            for (k = 0; k &lt; 3; ++k) {</span>
-<span class="fc" id="L1149">                hPPI[k][k] += lambda;</span>
+<span class="fc bfc" id="L1151" title="All 2 branches covered.">            for (k = 0; k &lt; 3; ++k) {</span>
+<span class="fc" id="L1152">                hPPI[k][k] += lambda;</span>
             }
-<span class="fc" id="L1151">            hPPIBlocks.setBlock(hPPI, i, 0);</span>
+<span class="fc" id="L1154">            hPPIBlocks.setBlock(hPPI, i, 0);</span>
         }
 
         // solve for dC and dP (== gradC and gradP, respectively)
@@ -1181,78 +1184,78 @@ public class BundleAdjustment {
                [row J, col I] = (hPC[i][j])^T * invVI
          */
         //tPC = HPC^T*HPP^-1 = W*V^-1 [9m X 3n]
-<span class="fc" id="L1184">        BlockMatrixIsometric tPCBlocks = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 3*nFeatures),</span>
+<span class="fc" id="L1187">        BlockMatrixIsometric tPCBlocks = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 3*nFeatures),</span>
                 9, 3);
-<span class="fc" id="L1186">        double[][] tPC = MatrixUtil.zeros(9, 3);</span>
+<span class="fc" id="L1189">        double[][] tPC = MatrixUtil.zeros(9, 3);</span>
 
         //tP = HPP^-1*bP = V^-1*bP [3n X 1] or [1n X 3] row format
         // blocks: n rows and 1 column
-<span class="fc" id="L1190">        BlockMatrixIsometric tPRowBlocks = new BlockMatrixIsometric(</span>
-<span class="fc" id="L1191">                MatrixUtil.zeros(nFeatures, 3), 1, 3);</span>
-<span class="fc" id="L1192">        double[] tPI = new double[3];</span>
+<span class="fc" id="L1193">        BlockMatrixIsometric tPRowBlocks = new BlockMatrixIsometric(</span>
+<span class="fc" id="L1194">                MatrixUtil.zeros(nFeatures, 3), 1, 3);</span>
+<span class="fc" id="L1195">        double[] tPI = new double[3];</span>
 
         // matrix A is the reduced camera matrix a.k.a. Schur complement. [9m X 9m]; [mXm] block matrix with  blocks [9x9]
         // U_J is stored it in alone until i and j loops complete the first time, then
         //     the rest of mA is subtracted in.
-<span class="fc" id="L1197">        BlockMatrixIsometric mA = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9*mImages), 9, 9);</span>
+<span class="fc" id="L1200">        BlockMatrixIsometric mA = new BlockMatrixIsometric(MatrixUtil.zeros(9*mImages, 9*mImages), 9, 9);</span>
 
         //aka (V_i)^-1; a [3X3] block
-<span class="fc" id="L1200">        double[][] invHPPI = null;</span>
+<span class="fc" id="L1203">        double[][] invHPPI = null;</span>
         // for each feature i
-<span class="fc" id="L1202">        double[] bPI = new double[3];</span>
+<span class="fc" id="L1205">        double[] bPI = new double[3];</span>
 
         // calc tPC and tP entirely
-<span class="fc bfc" id="L1205" title="All 2 branches covered.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
+<span class="fc bfc" id="L1208" title="All 2 branches covered.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
             //calc tP = HPP^-1*bP = V^-1*bP and set into tPBlocks(i,0) += invVI*(Σ_j(-BIJT*F1J))
             //invHPPI aka V^-1 is [3X3]
-<span class="fc" id="L1208">            hPPIBlocks.getBlock(hPPI, i, 0);</span>
-<span class="fc" id="L1209">            invHPPI = MatrixUtil.pseudoinverseRankDeficient(hPPI);</span>
+<span class="fc" id="L1211">            hPPIBlocks.getBlock(hPPI, i, 0);</span>
+<span class="fc" id="L1212">            invHPPI = MatrixUtil.pseudoinverseRankDeficient(hPPI);</span>
 
-<span class="fc" id="L1211">            System.arraycopy(bP, i*3, bPI, 0, 3);</span>
+<span class="fc" id="L1214">            System.arraycopy(bP, i*3, bPI, 0, 3);</span>
             // [3X3][3X1]=[3X1]
-<span class="fc" id="L1213">            MatrixUtil.multiplyMatrixByColumnVector(invHPPI, bPI, tPI);</span>
-<span class="fc" id="L1214">            tPRowBlocks.addToRowBlock(tPI, i, 0);</span>
+<span class="fc" id="L1216">            MatrixUtil.multiplyMatrixByColumnVector(invHPPI, bPI, tPI);</span>
+<span class="fc" id="L1217">            tPRowBlocks.addToRowBlock(tPI, i, 0);</span>
 
-<span class="fc bfc" id="L1216" title="All 2 branches covered.">            for (j = 0; j &lt; mImages; ++j) { // this is camera c in Engels pseudocode</span>
+<span class="fc bfc" id="L1219" title="All 2 branches covered.">            for (j = 0; j &lt; mImages; ++j) { // this is camera c in Engels pseudocode</span>
                 //TODO consider how to handle feature not present in image here
-<span class="pc bpc" id="L1218" title="1 of 2 branches missed.">                if (!imageFeaturesMap.get(j).contains(i)) {</span>
-<span class="nc" id="L1219">                    continue;</span>
+<span class="pc bpc" id="L1221" title="1 of 2 branches missed.">                if (!imageFeaturesMap.get(j).contains(i)) {</span>
+<span class="nc" id="L1222">                    continue;</span>
                 }
                 //calc tPC = HPC^T*HPP^-1 = W*V^-1 and set into tPCBlocks(j,i)=WIJ*invVI//[9X3]
                 // auxHPC is [3X9]
                 // tPC block is [9X3][3X3]=[9X3]
-<span class="fc" id="L1224">                hPCBlocks.getBlock(auxHPC, i, j);</span>
-<span class="fc" id="L1225">                MatrixUtil.transpose(auxHPC, auxHPCT);</span>
-<span class="fc" id="L1226">                MatrixUtil.multiply(auxHPCT, invHPPI, tPC);</span>
-<span class="fc" id="L1227">                tPCBlocks.setBlock(tPC, j, i);</span>
+<span class="fc" id="L1227">                hPCBlocks.getBlock(auxHPC, i, j);</span>
+<span class="fc" id="L1228">                MatrixUtil.transpose(auxHPC, auxHPCT);</span>
+<span class="fc" id="L1229">                MatrixUtil.multiply(auxHPCT, invHPPI, tPC);</span>
+<span class="fc" id="L1230">                tPCBlocks.setBlock(tPC, j, i);</span>
             } // end loop over j images
         } // end loop over i images
 
         // mA = HCC - HPCT*HPP^-1*HPC = U - W*(V^-1)*W^T
         //    = HCC - tPC * HPC
         // first term of mA is the diagonal blocks of HCC
-<span class="fc bfc" id="L1234" title="All 2 branches covered.">        for (j = 0; j &lt; mImages; ++j) {</span>
-<span class="fc" id="L1235">            hCCJBlocks.getBlock(auxHCCJ, j, 0);</span>
-<span class="fc" id="L1236">            mA.setBlock(auxHCCJ, j, j);</span>
+<span class="fc bfc" id="L1237" title="All 2 branches covered.">        for (j = 0; j &lt; mImages; ++j) {</span>
+<span class="fc" id="L1238">            hCCJBlocks.getBlock(auxHCCJ, j, 0);</span>
+<span class="fc" id="L1239">            mA.setBlock(auxHCCJ, j, j);</span>
         }
         // the rest of mA subtracts from itself tPC times HPC
-<span class="fc" id="L1239">        double[][] tmp = MatrixUtil.multiply(tPCBlocks.getA(), hPCBlocks.getA());</span>
-<span class="fc" id="L1240">        MatrixUtil.pointwiseSubtract(mA.getA(), tmp, mA.getA());</span>
+<span class="fc" id="L1242">        double[][] tmp = MatrixUtil.multiply(tPCBlocks.getA(), hPCBlocks.getA());</span>
+<span class="fc" id="L1243">        MatrixUtil.pointwiseSubtract(mA.getA(), tmp, mA.getA());</span>
 
-<span class="fc" id="L1242">        tmp = null;</span>
+<span class="fc" id="L1245">        tmp = null;</span>
 
         //vB = bC - HPCT*HPP^-1*bP   = bC - W*(V^-1)*bP
         //   = bC - HPCT * tP
         // [9m X 1] - [9*mImages X 3*nFeatures] [3*nFeatures X 1]
 
         //stack tPRowBlocks.getA() along rows
-<span class="fc" id="L1249">        double[] tmp3 = MatrixUtil.stack(MatrixUtil.transpose(tPRowBlocks.getA()));// nFeatures X 3 =&gt; 3 X nFeatures =&gt; 3*nFeatures X 1</span>
-<span class="fc" id="L1250">        tmp3 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.transpose(hPCBlocks.getA()), tmp3);</span>
+<span class="fc" id="L1252">        double[] tmp3 = MatrixUtil.stack(MatrixUtil.transpose(tPRowBlocks.getA()));// nFeatures X 3 =&gt; 3 X nFeatures =&gt; 3*nFeatures X 1</span>
+<span class="fc" id="L1253">        tmp3 = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.transpose(hPCBlocks.getA()), tmp3);</span>
 
         //mImages*9
-<span class="fc" id="L1253">        double[] vB = MatrixUtil.subtract(bC, tmp3);</span>
+<span class="fc" id="L1256">        double[] vB = MatrixUtil.subtract(bC, tmp3);</span>
 
-<span class="fc" id="L1255">        tmp3 = null;</span>
+<span class="fc" id="L1258">        tmp3 = null;</span>
 
         // at this point, we have calculated mA and vB
 
@@ -1281,6 +1284,8 @@ public class BundleAdjustment {
             ** Daniel D. Morris, Kenichi Kanatani and Takeo Kanade,
             &quot;Gauge Fixing for Accurate 3D Estimation&quot;
 
+            see Bartoli &quot;Towards Gauge Invariant Bundle Adjustment:...&quot;
+
            Also, in this project, can see it as fixing the exrinsic parameters
               of the first camera to rotation = I and translation=0.
            Also in this project, Reconstruction.java:
@@ -1305,31 +1310,31 @@ public class BundleAdjustment {
         //    Cholesky decomposition, so need to find the nearest or a nearest
         //    symmetric positive definite.
 
-<span class="fc" id="L1308">        log.fine(String.format(&quot;mA=%s\n&quot;, FormatArray.toString(mA.getA(), &quot;%.3e&quot;)));</span>
-<span class="fc" id="L1309">        log.fine(String.format(&quot;vB=%s\n&quot;, FormatArray.toString(vB, &quot;%.3e&quot;)));</span>
+<span class="fc" id="L1313">        log.fine(String.format(&quot;mA=%s\n&quot;, FormatArray.toString(mA.getA(), &quot;%.3e&quot;)));</span>
+<span class="fc" id="L1314">        log.fine(String.format(&quot;vB=%s\n&quot;, FormatArray.toString(vB, &quot;%.3e&quot;)));</span>
 
-<span class="fc" id="L1311">        boolean useInv = false;</span>
+<span class="fc" id="L1316">        boolean useInv = false;</span>
 
-<span class="fc" id="L1313">        double eps = 1.e-11;</span>
+<span class="fc" id="L1318">        double eps = 1.e-11;</span>
 
         try {
             // this method attempts to find the nearest symmetric positive *definite* matrix to A:
-<span class="fc" id="L1317">            double[][] aPSD = MatrixUtil.nearestPositiveSemidefiniteToA(mA.getA(), eps);</span>
+<span class="fc" id="L1322">            double[][] aPSD = MatrixUtil.nearestPositiveSemidefiniteToA(mA.getA(), eps);</span>
             /*    double[][] b = MatrixUtil.nearestSymmetricToA(mA.getA());
                 EVD evdB = EVD.factorize(new DenseMatrix(b));
                 SVD svdB = SVD.factorize(new DenseMatrix(b));
             */
-<span class="fc" id="L1322">            DenseCholesky chol = new DenseCholesky(aPSD.length, false);</span>
-<span class="fc" id="L1323">            chol = chol.factor(new LowerSPDDenseMatrix(new DenseMatrix(aPSD)));</span>
-<span class="fc" id="L1324">            LowerTriangDenseMatrix _cholL = chol.getL();</span>
+<span class="fc" id="L1327">            DenseCholesky chol = new DenseCholesky(aPSD.length, false);</span>
+<span class="fc" id="L1328">            chol = chol.factor(new LowerSPDDenseMatrix(new DenseMatrix(aPSD)));</span>
+<span class="fc" id="L1329">            LowerTriangDenseMatrix _cholL = chol.getL();</span>
 
             //[mImages*9, mImages*9]
-<span class="fc" id="L1327">            double[][] cholL = Matrices.getArray(_cholL);</span>
-<span class="fc" id="L1328">            double[][] cholLT = MatrixUtil.transpose(cholL);</span>
+<span class="fc" id="L1332">            double[][] cholL = Matrices.getArray(_cholL);</span>
+<span class="fc" id="L1333">            double[][] cholLT = MatrixUtil.transpose(cholL);</span>
 
-<span class="fc" id="L1330">            log.fine(String.format(&quot;cholL=\n%s\n&quot;, FormatArray.toString(cholL, &quot;%.3e&quot;)));</span>
-<span class="fc" id="L1331">            log.fine(String.format(&quot;cholL*LT=\n%s\n&quot;, FormatArray.toString(</span>
-<span class="fc" id="L1332">                    MatrixUtil.multiply(cholL, cholLT), &quot;%.3e&quot;)));</span>
+<span class="fc" id="L1335">            log.fine(String.format(&quot;cholL=\n%s\n&quot;, FormatArray.toString(cholL, &quot;%.3e&quot;)));</span>
+<span class="fc" id="L1336">            log.fine(String.format(&quot;cholL*LT=\n%s\n&quot;, FormatArray.toString(</span>
+<span class="fc" id="L1337">                    MatrixUtil.multiply(cholL, cholLT), &quot;%.3e&quot;)));</span>
 
             /* avoid inverting A by using Cholesky decomposition w/ forward and backward substitution to find dC.
             mA * dC = vB
@@ -1342,29 +1347,29 @@ public class BundleAdjustment {
             returning to y = (L^* * dC), can solve for dC via backward subst
             */
 
-<span class="fc" id="L1345">            double[] yM = MatrixUtil.forwardSubstitution(cholL,  vB);</span>
+<span class="fc" id="L1350">            double[] yM = MatrixUtil.forwardSubstitution(cholL,  vB);</span>
             // temporary exit until find reasons for very large numbers in some
             //   of the arrays
-<span class="pc bpc" id="L1348" title="1 of 2 branches missed.">            if (hasNaN(yM)) {</span>
-<span class="nc" id="L1349">                throw new NaNException(&quot;Errors due to unusually large numbers&quot;);</span>
+<span class="pc bpc" id="L1353" title="1 of 2 branches missed.">            if (hasNaN(yM)) {</span>
+<span class="nc" id="L1354">                throw new NaNException(&quot;Errors due to unusually large numbers&quot;);</span>
             }
             // [[mImages*9 X mImages*9] * x = [mImages*9] ==&gt; x is length mImages*9
             // x is dC
-<span class="fc" id="L1353">            MatrixUtil.backwardSubstitution(cholLT, yM, outDC);</span>
-<span class="fc" id="L1354">            log.fine(String.format(&quot;yM=%s\n&quot;, FormatArray.toString(yM, &quot;%.3e&quot;)));</span>
-<span class="fc" id="L1355">            log.info(String.format(&quot;outDC from forward, backward substitution=\n%s\n&quot;, FormatArray.toString(outDC, &quot;%.3e&quot;)));</span>
+<span class="fc" id="L1358">            MatrixUtil.backwardSubstitution(cholLT, yM, outDC);</span>
+<span class="fc" id="L1359">            log.fine(String.format(&quot;yM=%s\n&quot;, FormatArray.toString(yM, &quot;%.3e&quot;)));</span>
+<span class="fc" id="L1360">            log.info(String.format(&quot;outDC from forward, backward substitution=\n%s\n&quot;, FormatArray.toString(outDC, &quot;%.3e&quot;)));</span>
 
-<span class="nc" id="L1357">        } catch (Throwable t) {</span>
+<span class="nc" id="L1362">        } catch (Throwable t) {</span>
             // cholesky decomp of nearest psd to a failed.
             // use inverse
-<span class="nc" id="L1360">            useInv = true;</span>
-<span class="fc" id="L1361">        }</span>
-<span class="pc bpc" id="L1362" title="1 of 2 branches missed.">        if (useInv) {</span>
+<span class="nc" id="L1365">            useInv = true;</span>
+<span class="fc" id="L1366">        }</span>
+<span class="pc bpc" id="L1367" title="1 of 2 branches missed.">        if (useInv) {</span>
             // [mImages*9 X mImages*9] * y = [mImages X 9]
             // length is vB.length is [mImages*9 X 1]
-<span class="nc" id="L1365">            double[][] _mInv = MatrixUtil.pseudoinverseFullColumnRank(mA.getA());</span>
-<span class="nc" id="L1366">            MatrixUtil.multiplyMatrixByColumnVector(_mInv, vB, outDC);</span>
-<span class="nc" id="L1367">            log.info(String.format(&quot;outDC from pInv(M) * B =\n%s\n&quot;, FormatArray.toString(outDC, &quot;%.3e&quot;)));</span>
+<span class="nc" id="L1370">            double[][] _mInv = MatrixUtil.pseudoinverseFullColumnRank(mA.getA());</span>
+<span class="nc" id="L1371">            MatrixUtil.multiplyMatrixByColumnVector(_mInv, vB, outDC);</span>
+<span class="nc" id="L1372">            log.info(String.format(&quot;outDC from pInv(M) * B =\n%s\n&quot;, FormatArray.toString(outDC, &quot;%.3e&quot;)));</span>
         }
 
         // tPC = HPC^T*(HPP^-1)
@@ -1373,12 +1378,12 @@ public class BundleAdjustment {
         //              dP = tP            - tPC^T * dC // [3nX1] - [3nX9m]*[9*mImagesX1]
         //                                              // = [3*n_features X 1]
 
-<span class="fc" id="L1376">        MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.transpose(tPCBlocks.getA()), outDC, outDP);</span>
-<span class="fc bfc" id="L1377" title="All 2 branches covered.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
-<span class="fc" id="L1378">            tPRowBlocks.getRowBlock(tPI, i, 0);  // tPI is length 3</span>
+<span class="fc" id="L1381">        MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.transpose(tPCBlocks.getA()), outDC, outDP);</span>
+<span class="fc bfc" id="L1382" title="All 2 branches covered.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
+<span class="fc" id="L1383">            tPRowBlocks.getRowBlock(tPI, i, 0);  // tPI is length 3</span>
             // tPI - next 3 items of outDP
-<span class="fc bfc" id="L1380" title="All 2 branches covered.">            for (k = 0; k &lt; tPI.length; ++k) {</span>
-<span class="fc" id="L1381">                outDP[i*3 + k] = tPI[k] - outDP[i*3 + k];</span>
+<span class="fc bfc" id="L1385" title="All 2 branches covered.">            for (k = 0; k &lt; tPI.length; ++k) {</span>
+<span class="fc" id="L1386">                outDP[i*3 + k] = tPI[k] - outDP[i*3 + k];</span>
             }
 
             // Engels: compute updated point (i.e. world coord features)
@@ -1389,9 +1394,9 @@ public class BundleAdjustment {
         } // end loop over feature i
 
         // outDP can be large, so print just a few
-<span class="fc" id="L1392">        log.info(String.format(&quot;outDP=%.3e, %.3e, %.3e, %.3e, %.3e, %.3e, ...&quot;,</span>
-<span class="fc" id="L1393">                outDP[0], outDP[1], outDP[2], outDP[3], outDP[4], outDP[5]));</span>
-<span class="fc" id="L1394">        log.fine(String.format(&quot;outDP=%s\n&quot;, FormatArray.toString(outDP, &quot;%.3e&quot;)));</span>
+<span class="fc" id="L1397">        log.info(String.format(&quot;outDP=%.3e, %.3e, %.3e, %.3e, %.3e, %.3e, ...&quot;,</span>
+<span class="fc" id="L1398">                outDP[0], outDP[1], outDP[2], outDP[3], outDP[4], outDP[5]));</span>
+<span class="fc" id="L1399">        log.fine(String.format(&quot;outDP=%s\n&quot;, FormatArray.toString(outDP, &quot;%.3e&quot;)));</span>
 
         //outGradC
         //outGradP
@@ -1399,7 +1404,7 @@ public class BundleAdjustment {
         //outDP
         //outFSqSum
 
-<span class="fc" id="L1402">    }</span>
+<span class="fc" id="L1407">    }</span>
 
     /**
     // for one image
@@ -1408,84 +1413,87 @@ public class BundleAdjustment {
     private CameraPose.ProjectedPoints quProjectPoints(double[][] coordsW, double[] om, double[] t,
         Camera.CameraIntrinsicParameters intrinsics, boolean useBouguetForRodrigues) {
 
-<span class="nc" id="L1411">        int nFeatures = coordsW[0].length;</span>
+<span class="nc" id="L1416">        int nFeatures = coordsW[0].length;</span>
 
-<span class="nc" id="L1413">        double[] xWI = new double[3];</span>
-<span class="nc" id="L1414">        double[] xWCI = new double[3];</span>
+<span class="nc" id="L1418">        double[] xWI = new double[3];</span>
+<span class="nc" id="L1419">        double[] xWCI = new double[3];</span>
         double[] xWII;
 
+        //TODO: revisit this when next revise this class
+<span class="nc" id="L1423">        boolean passive = false;</span>
+
         double[][] rotM;
-<span class="nc bnc" id="L1418" title="All 2 branches missed.">        if (useBouguetForRodrigues) {</span>
-<span class="nc" id="L1419">            rotM = Rotation.createRodriguesFormulaRotationMatrix(om);</span>
+<span class="nc bnc" id="L1426" title="All 2 branches missed.">        if (useBouguetForRodrigues) {</span>
+<span class="nc" id="L1427">            rotM = Rotation.createRotationRodriguesFormula(om, passive);</span>
         } else {
-<span class="nc" id="L1421">            rotM = Rotation.createRodriguesFormulaRotationMatrix(om);</span>
+<span class="nc" id="L1429">            rotM = Rotation.createRotationRodriguesFormula(om, passive);</span>
         }
 
-<span class="nc" id="L1424">        double[] rotAux = new double[3];</span>
+<span class="nc" id="L1432">        double[] rotAux = new double[3];</span>
 
-<span class="nc" id="L1426">        AuxiliaryArrays aa = new AuxiliaryArrays();</span>
+<span class="nc" id="L1434">        AuxiliaryArrays aa = new AuxiliaryArrays();</span>
         //[2X9]  camera partial derivs (rot, trans, f, k0, k1)
-<span class="nc" id="L1428">        double[][] aIJ = MatrixUtil.zeros(2, 9);</span>
+<span class="nc" id="L1436">        double[][] aIJ = MatrixUtil.zeros(2, 9);</span>
         //[2X3] point partial derivs (dXW)
-<span class="nc" id="L1430">        double[][] bIJ = MatrixUtil.zeros(2, 3);</span>
+<span class="nc" id="L1438">        double[][] bIJ = MatrixUtil.zeros(2, 3);</span>
 
-<span class="nc" id="L1432">        double[][] intr = intrinsics.getIntrinsic();</span>
+<span class="nc" id="L1440">        double[][] intr = intrinsics.getIntrinsic();</span>
         double k1;
         double k2;
-<span class="nc bnc" id="L1435" title="All 2 branches missed.">        if (intrinsics.getRadialDistortionCoeffs() != null) {</span>
-<span class="nc" id="L1436">            k1 = intrinsics.getRadialDistortionCoeffs()[0];</span>
-<span class="nc" id="L1437">            k2 = intrinsics.getRadialDistortionCoeffs()[1];</span>
+<span class="nc bnc" id="L1443" title="All 2 branches missed.">        if (intrinsics.getRadialDistortionCoeffs() != null) {</span>
+<span class="nc" id="L1444">            k1 = intrinsics.getRadialDistortionCoeffs()[0];</span>
+<span class="nc" id="L1445">            k2 = intrinsics.getRadialDistortionCoeffs()[1];</span>
         } else {
-<span class="nc" id="L1439">            k1 = 0;</span>
-<span class="nc" id="L1440">            k2 = 0;</span>
+<span class="nc" id="L1447">            k1 = 0;</span>
+<span class="nc" id="L1448">            k2 = 0;</span>
         }
 
-<span class="nc" id="L1443">        CameraPose.ProjectedPoints p = new CameraPose.ProjectedPoints();</span>
+<span class="nc" id="L1451">        CameraPose.ProjectedPoints p = new CameraPose.ProjectedPoints();</span>
 
         //[2 X n] projected points xEst = R*X+T, where R = rodrigues(om), X is world coordinates of object, and T is translation
-<span class="nc" id="L1446">        p.xEst = MatrixUtil.zeros(2, nFeatures);</span>
+<span class="nc" id="L1454">        p.xEst = MatrixUtil.zeros(2, nFeatures);</span>
         //[2*n X 3] derivatives of XP w.r.t. rotation vector om
-<span class="nc" id="L1448">        p.dxdom = MatrixUtil.zeros(2*nFeatures, 3);</span>
+<span class="nc" id="L1456">        p.dxdom = MatrixUtil.zeros(2*nFeatures, 3);</span>
         //[2*n X 3] derivatives of XP w.r.t. translation vector
-<span class="nc" id="L1450">        p.dxdT = MatrixUtil.zeros(2*nFeatures, 3);</span>
+<span class="nc" id="L1458">        p.dxdT = MatrixUtil.zeros(2*nFeatures, 3);</span>
         //[2*n X 2] derivatives of XP w.r.t. camera focal length
-<span class="nc" id="L1452">        p.dxdF = MatrixUtil.zeros(2*nFeatures, 2);</span>
+<span class="nc" id="L1460">        p.dxdF = MatrixUtil.zeros(2*nFeatures, 2);</span>
         //[2*n X 2] derivatives of XP w.r.t. camera principal point
-<span class="nc" id="L1454">        p.dxdC = MatrixUtil.zeros(2*nFeatures, 2);</span>
+<span class="nc" id="L1462">        p.dxdC = MatrixUtil.zeros(2*nFeatures, 2);</span>
         //[2*n X 4] derivatives of XP w.r.t. camera distortion coefficients
-<span class="nc" id="L1456">        p.dxdK = MatrixUtil.zeros(2*nFeatures, 4);</span>
+<span class="nc" id="L1464">        p.dxdK = MatrixUtil.zeros(2*nFeatures, 4);</span>
         //[2*n X 1] derivatives of XP w.r.t. camera skew coefficient between x and y pixel
-<span class="nc" id="L1458">        p.dxdAlpha = new double[2*nFeatures];</span>
+<span class="nc" id="L1466">        p.dxdAlpha = new double[2*nFeatures];</span>
         //[2*n X 3] derivatives of XP w.r.t. the real world point
-<span class="nc" id="L1460">        p.dxdX = MatrixUtil.zeros(2*nFeatures, 3);</span>
+<span class="nc" id="L1468">        p.dxdX = MatrixUtil.zeros(2*nFeatures, 3);</span>
 
         int i, k;
-<span class="nc bnc" id="L1463" title="All 2 branches missed.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
+<span class="nc bnc" id="L1471" title="All 2 branches missed.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
             //populate xWI; extract the world feature.  size [1X3]
-<span class="nc" id="L1465">            MatrixUtil.extractColumn(coordsW, i, xWI);</span>
+<span class="nc" id="L1473">            MatrixUtil.extractColumn(coordsW, i, xWI);</span>
 
             //R * X + t
-<span class="nc" id="L1468">            Camera.worldToCameraCoordinates(xWI, rotM, t, rotAux, xWCI);</span>
+<span class="nc" id="L1476">            Camera.worldToCameraCoordinates(xWI, rotM, t, rotAux, xWCI);</span>
 
-<span class="nc" id="L1470">            aIJBIJ(xWI, xWCI, intr, k1, k2, om, rotM, t, aa, aIJ, bIJ);</span>
+<span class="nc" id="L1478">            aIJBIJ(xWI, xWCI, intr, k1, k2, om, rotM, t, aa, aIJ, bIJ);</span>
 
             //transpose to image frame, includes radial distortion corrections
-<span class="nc" id="L1473">            xWII = Camera.cameraToPixelCoordinates(xWCI, intrinsics);</span>
-<span class="nc" id="L1474">            p.xEst[0][i] = xWII[0];</span>
-<span class="nc" id="L1475">            p.xEst[1][i] = xWII[1];</span>
+<span class="nc" id="L1481">            xWII = Camera.cameraToPixelCoordinates(xWCI, intrinsics);</span>
+<span class="nc" id="L1482">            p.xEst[0][i] = xWII[0];</span>
+<span class="nc" id="L1483">            p.xEst[1][i] = xWII[1];</span>
 
             //set aIJ and bIJ into output arrays. [2X9], [2X3] into [2*n X 3]  ...
-<span class="nc bnc" id="L1478" title="All 2 branches missed.">            for (k = 0; k &lt; 3; ++k) {</span>
-<span class="nc" id="L1479">                p.dxdom[i*2][k]     = aIJ[0][k];</span>
-<span class="nc" id="L1480">                p.dxdom[i*2 + 1][k] = aIJ[1][k];</span>
-<span class="nc" id="L1481">                p.dxdT[i*2][k]     = aIJ[0][k + 3];</span>
-<span class="nc" id="L1482">                p.dxdT[i*2 + 1][k] = aIJ[1][k + 3];</span>
+<span class="nc bnc" id="L1486" title="All 2 branches missed.">            for (k = 0; k &lt; 3; ++k) {</span>
+<span class="nc" id="L1487">                p.dxdom[i*2][k]     = aIJ[0][k];</span>
+<span class="nc" id="L1488">                p.dxdom[i*2 + 1][k] = aIJ[1][k];</span>
+<span class="nc" id="L1489">                p.dxdT[i*2][k]     = aIJ[0][k + 3];</span>
+<span class="nc" id="L1490">                p.dxdT[i*2 + 1][k] = aIJ[1][k + 3];</span>
 
-<span class="nc" id="L1484">                p.dxdX[i*2][k]     = bIJ[0][k];</span>
-<span class="nc" id="L1485">                p.dxdX[i*2 + 1][k]     = bIJ[1][k];</span>
+<span class="nc" id="L1492">                p.dxdX[i*2][k]     = bIJ[0][k];</span>
+<span class="nc" id="L1493">                p.dxdX[i*2 + 1][k]     = bIJ[1][k];</span>
             }
-<span class="nc" id="L1487">            p.dxdF[i*2][0] = aIJ[0][6];</span>
-<span class="nc" id="L1488">            p.dxdF[i*2 + 1][1] = aIJ[1][6];</span>
+<span class="nc" id="L1495">            p.dxdF[i*2][0] = aIJ[0][6];</span>
+<span class="nc" id="L1496">            p.dxdF[i*2 + 1][1] = aIJ[1][6];</span>
 
             //[2*n X 2] derivatives of XP w.r.t. camera principal point
             //p.dxdC
@@ -1493,13 +1501,13 @@ public class BundleAdjustment {
             //p.dxdAlpha
 
             //[2*n X 4] derivatives of XP w.r.t. camera distortion coefficients
-<span class="nc" id="L1496">            p.dxdK[i*2][0] = aIJ[0][7];</span>
-<span class="nc" id="L1497">            p.dxdK[i*2 + 1][0] = aIJ[1][7];</span>
-<span class="nc" id="L1498">            p.dxdK[i*2][1] = aIJ[0][8];</span>
-<span class="nc" id="L1499">            p.dxdK[i*2 + 1][1] = aIJ[1][8];</span>
+<span class="nc" id="L1504">            p.dxdK[i*2][0] = aIJ[0][7];</span>
+<span class="nc" id="L1505">            p.dxdK[i*2 + 1][0] = aIJ[1][7];</span>
+<span class="nc" id="L1506">            p.dxdK[i*2][1] = aIJ[0][8];</span>
+<span class="nc" id="L1507">            p.dxdK[i*2 + 1][1] = aIJ[1][8];</span>
         }
 
-<span class="nc" id="L1502">        return p;</span>
+<span class="nc" id="L1510">        return p;</span>
     }
 
     /**
@@ -1520,30 +1528,30 @@ public class BundleAdjustment {
     void pdCpIJCIJ(double[] xWCNI, double[][] intr,
         double k1, double k2, double[][] out) {
         
-<span class="nc bnc" id="L1523" title="All 4 branches missed.">        if (out.length != 2 || out[0].length != 2) {</span>
-<span class="nc" id="L1524">            throw new IllegalArgumentException(&quot;out size must be 2X2&quot;);</span>
+<span class="nc bnc" id="L1531" title="All 4 branches missed.">        if (out.length != 2 || out[0].length != 2) {</span>
+<span class="nc" id="L1532">            throw new IllegalArgumentException(&quot;out size must be 2X2&quot;);</span>
         }
         
-<span class="nc" id="L1527">        double x = -xWCNI[0];</span>
-<span class="nc" id="L1528">        double y = -xWCNI[1];</span>
+<span class="nc" id="L1535">        double x = -xWCNI[0];</span>
+<span class="nc" id="L1536">        double y = -xWCNI[1];</span>
         
-<span class="nc" id="L1530">        double x2 = x*x;</span>
-<span class="nc" id="L1531">        double x4 = x2*x2;</span>
-<span class="nc" id="L1532">        double y2 = y*y;</span>
-<span class="nc" id="L1533">        double y4 = y2*y2;</span>
+<span class="nc" id="L1538">        double x2 = x*x;</span>
+<span class="nc" id="L1539">        double x4 = x2*x2;</span>
+<span class="nc" id="L1540">        double y2 = y*y;</span>
+<span class="nc" id="L1541">        double y4 = y2*y2;</span>
         
-<span class="nc" id="L1535">        double f1 = intr[0][0];</span>
+<span class="nc" id="L1543">        double f1 = intr[0][0];</span>
         
-<span class="nc" id="L1537">        double pdxx = f1 * (1 + k1*(3*x2 + y2) + k2*(5*x4 + y4 + 6*x2*y2));</span>
-<span class="nc" id="L1538">        double pdxy = 2*f1*x*y*(k1 + 2*k2*(x2 + y2));</span>
-<span class="nc" id="L1539">        double pdyx = pdxy;</span>
-<span class="nc" id="L1540">        double pdyy = f1*(k1*(3*y2 + x2) + k2*(5*y4 + x4 + 6*x2*y2));</span>
+<span class="nc" id="L1545">        double pdxx = f1 * (1 + k1*(3*x2 + y2) + k2*(5*x4 + y4 + 6*x2*y2));</span>
+<span class="nc" id="L1546">        double pdxy = 2*f1*x*y*(k1 + 2*k2*(x2 + y2));</span>
+<span class="nc" id="L1547">        double pdyx = pdxy;</span>
+<span class="nc" id="L1548">        double pdyy = f1*(k1*(3*y2 + x2) + k2*(5*y4 + x4 + 6*x2*y2));</span>
         
-<span class="nc" id="L1542">        out[0][0] = pdxx;</span>
-<span class="nc" id="L1543">        out[0][1] = pdxy;</span>
-<span class="nc" id="L1544">        out[1][0] = pdyx;</span>
-<span class="nc" id="L1545">        out[1][1] = pdyy;</span>
-<span class="nc" id="L1546">    }</span>
+<span class="nc" id="L1550">        out[0][0] = pdxx;</span>
+<span class="nc" id="L1551">        out[0][1] = pdxy;</span>
+<span class="nc" id="L1552">        out[1][0] = pdyx;</span>
+<span class="nc" id="L1553">        out[1][1] = pdyy;</span>
+<span class="nc" id="L1554">    }</span>
     
     /**
      * the partial derivative of the 2D coordinates of perspective projection 
@@ -1556,24 +1564,24 @@ public class BundleAdjustment {
      */
     void pdCIJXWIJ(double[] xWCI, double[][] out) {
         
-<span class="nc bnc" id="L1559" title="All 4 branches missed.">        if (out.length != 2 || out[0].length != 3) {</span>
-<span class="nc" id="L1560">            throw new IllegalArgumentException(&quot;out size must be 2X3&quot;);</span>
+<span class="nc bnc" id="L1567" title="All 4 branches missed.">        if (out.length != 2 || out[0].length != 3) {</span>
+<span class="nc" id="L1568">            throw new IllegalArgumentException(&quot;out size must be 2X3&quot;);</span>
         }
         
-<span class="nc" id="L1563">        double x = xWCI[0];</span>
-<span class="nc" id="L1564">        double y = xWCI[1];</span>
-<span class="nc" id="L1565">        double z = xWCI[2];</span>
-<span class="nc" id="L1566">        double z2 = z*z;</span>
+<span class="nc" id="L1571">        double x = xWCI[0];</span>
+<span class="nc" id="L1572">        double y = xWCI[1];</span>
+<span class="nc" id="L1573">        double z = xWCI[2];</span>
+<span class="nc" id="L1574">        double z2 = z*z;</span>
         
-<span class="nc" id="L1568">        out[0][0] = -1./z;</span>
-<span class="nc" id="L1569">        out[0][1] = 0;</span>
-<span class="nc" id="L1570">        out[0][2] = x/z2;</span>
+<span class="nc" id="L1576">        out[0][0] = -1./z;</span>
+<span class="nc" id="L1577">        out[0][1] = 0;</span>
+<span class="nc" id="L1578">        out[0][2] = x/z2;</span>
         
-<span class="nc" id="L1572">        out[1][0] = 0;</span>
-<span class="nc" id="L1573">        out[1][1] = -1./z;</span>
-<span class="nc" id="L1574">        out[1][2] = y/z2;</span>
+<span class="nc" id="L1580">        out[1][0] = 0;</span>
+<span class="nc" id="L1581">        out[1][1] = -1./z;</span>
+<span class="nc" id="L1582">        out[1][2] = y/z2;</span>
         
-<span class="nc" id="L1576">    }</span>
+<span class="nc" id="L1584">    }</span>
     
     /**
      * the partial derivative of the
@@ -1593,30 +1601,30 @@ public class BundleAdjustment {
     void pdCpIJYJ(double[] xWCNI, double[][] intr,
         double k1, double k2, double[][] out) {
         
-<span class="nc bnc" id="L1596" title="All 4 branches missed.">        if (out.length != 2 || out[0].length != 3) {</span>
-<span class="nc" id="L1597">            throw new IllegalArgumentException(&quot;out size must be 2X3&quot;);</span>
+<span class="nc bnc" id="L1604" title="All 4 branches missed.">        if (out.length != 2 || out[0].length != 3) {</span>
+<span class="nc" id="L1605">            throw new IllegalArgumentException(&quot;out size must be 2X3&quot;);</span>
         }
         
-<span class="nc" id="L1600">        double x = xWCNI[0];</span>
-<span class="nc" id="L1601">        double y = xWCNI[1];</span>
+<span class="nc" id="L1608">        double x = xWCNI[0];</span>
+<span class="nc" id="L1609">        double y = xWCNI[1];</span>
         
-<span class="nc" id="L1603">        double x2 = x*x;</span>
-<span class="nc" id="L1604">        double y2 = y*y;</span>
-<span class="nc" id="L1605">        double r2 = x2 + y2;</span>
-<span class="nc" id="L1606">        double r4 = r2*r2;</span>
+<span class="nc" id="L1611">        double x2 = x*x;</span>
+<span class="nc" id="L1612">        double y2 = y*y;</span>
+<span class="nc" id="L1613">        double r2 = x2 + y2;</span>
+<span class="nc" id="L1614">        double r4 = r2*r2;</span>
         
-<span class="nc" id="L1608">        double f1 = intr[0][0];</span>
+<span class="nc" id="L1616">        double f1 = intr[0][0];</span>
         
-<span class="nc" id="L1610">        double dis = 1 + k1*r2 + k2*r4;</span>
+<span class="nc" id="L1618">        double dis = 1 + k1*r2 + k2*r4;</span>
         
-<span class="nc" id="L1612">        out[0][0] = dis*x;</span>
-<span class="nc" id="L1613">        out[0][1] = f1*r2*x;</span>
-<span class="nc" id="L1614">        out[0][2] = f1*r4 * x;</span>
-<span class="nc" id="L1615">        out[1][0] = dis*y;</span>
-<span class="nc" id="L1616">        out[1][1] = f1*r2*y;</span>
-<span class="nc" id="L1617">        out[1][2] = f1*r4*y;</span>
+<span class="nc" id="L1620">        out[0][0] = dis*x;</span>
+<span class="nc" id="L1621">        out[0][1] = f1*r2*x;</span>
+<span class="nc" id="L1622">        out[0][2] = f1*r4 * x;</span>
+<span class="nc" id="L1623">        out[1][0] = dis*y;</span>
+<span class="nc" id="L1624">        out[1][1] = f1*r2*y;</span>
+<span class="nc" id="L1625">        out[1][2] = f1*r4*y;</span>
         
-<span class="nc" id="L1619">    }</span>
+<span class="nc" id="L1627">    }</span>
     
     /**
      * the partial derivative of the
@@ -1629,78 +1637,78 @@ public class BundleAdjustment {
      */
     void pdXWIJPhiJ(double[] xWI, double[] phi, double[][] out) {
         
-<span class="nc bnc" id="L1632" title="All 4 branches missed.">        if (out.length != 3 || out[0].length != 3) {</span>
-<span class="nc" id="L1633">            throw new IllegalArgumentException(&quot;out size must be 3X3&quot;);</span>
+<span class="nc bnc" id="L1640" title="All 4 branches missed.">        if (out.length != 3 || out[0].length != 3) {</span>
+<span class="nc" id="L1641">            throw new IllegalArgumentException(&quot;out size must be 3X3&quot;);</span>
         }
         
-<span class="nc" id="L1636">        double x = xWI[0];</span>
-<span class="nc" id="L1637">        double y = xWI[1];</span>
-<span class="nc" id="L1638">        double z = xWI[2];</span>
-<span class="nc" id="L1639">        double pX = phi[0]; // in radians</span>
-<span class="nc" id="L1640">        double pY = phi[1];</span>
-<span class="nc" id="L1641">        double pZ = phi[2];</span>
-<span class="nc" id="L1642">        double p = Math.sqrt(pX*pX + pY*pY + pZ*pZ);</span>
-<span class="nc" id="L1643">        double p2 = p*p;</span>
-<span class="nc" id="L1644">        double p3 = p2*p;</span>
-<span class="nc" id="L1645">        double p4 = p2*p2;</span>
-<span class="nc" id="L1646">        double c = Math.cos(p);</span>
-<span class="nc" id="L1647">        double s = Math.sin(p);</span>
+<span class="nc" id="L1644">        double x = xWI[0];</span>
+<span class="nc" id="L1645">        double y = xWI[1];</span>
+<span class="nc" id="L1646">        double z = xWI[2];</span>
+<span class="nc" id="L1647">        double pX = phi[0]; // in radians</span>
+<span class="nc" id="L1648">        double pY = phi[1];</span>
+<span class="nc" id="L1649">        double pZ = phi[2];</span>
+<span class="nc" id="L1650">        double p = Math.sqrt(pX*pX + pY*pY + pZ*pZ);</span>
+<span class="nc" id="L1651">        double p2 = p*p;</span>
+<span class="nc" id="L1652">        double p3 = p2*p;</span>
+<span class="nc" id="L1653">        double p4 = p2*p2;</span>
+<span class="nc" id="L1654">        double c = Math.cos(p);</span>
+<span class="nc" id="L1655">        double s = Math.sin(p);</span>
         
-<span class="nc" id="L1649">        double dXdPxx = - (pX*x*s)/p +</span>
+<span class="nc" id="L1657">        double dXdPxx = - (pX*x*s)/p +</span>
             ((2*pX*x + pY*y + pZ*z)*(1.-c) + (pX*pY*z - pX*pZ*y)*c)/p2 +
             ((-pX*pY*z + pX*pZ*y + pX*pX*(pY*y + pZ*z + pX*x))*s)/p3 +
             (2.*pX*pX*(pX*x + pY*y + pZ*z)*(c - 1.))/p4;
         
-<span class="nc" id="L1654">        double dXdPxy = (z*s - pY*x*s)/p +</span>
+<span class="nc" id="L1662">        double dXdPxy = (z*s - pY*x*s)/p +</span>
             (pX*y*(1.-c) + (pY*pY*z - pY*pZ*y)*c)/p2 +
             ((pX*pX*x + pX*pY*y + pX*pZ*z + pZ*y - pY*z)*pY*s)/p3 +
             (2.*pX*pY*(pX*x + pY*y + pZ*z)*(c - 1.))/p4;
         
-<span class="nc" id="L1659">        double dXdPxz = (-y*s - pZ*x*s)/p +</span>
+<span class="nc" id="L1667">        double dXdPxz = (-y*s - pZ*x*s)/p +</span>
             (pX*z*(1.-c) + (pZ*pY*z - pZ*pZ*y)*c)/p2 +
             ((pX*pX*x + pX*pY*y + pX*pZ*z + pZ*y - pY*z)*pZ*s)/p3 +
             (2.*pX*pZ*(pX*x + pZ*z + pY*y)*(c-1.))/p4;
         
-<span class="nc" id="L1664">        double dXdPyx = (-z*s - pX*y*s)/p +</span>
+<span class="nc" id="L1672">        double dXdPyx = (-z*s - pX*y*s)/p +</span>
             (pY*x*(1.-c) + (pX*pZ*x - pX*pX*z)*c)/p2 +
             ((pY*pY*y + pY*pZ*z + pY*pX*x + pX*z - pZ*x)*pX*s)/p3 +
             (2.*pY*pX*(pY*y + pX*x + pZ*z)*(c-1.))/p4;
         
-<span class="nc" id="L1669">        double dXdPyy = - (pY*y*s)/p +</span>
+<span class="nc" id="L1677">        double dXdPyy = - (pY*y*s)/p +</span>
             ((2*pY*y + pZ*z + pX*x)*(1.-c) + (pY*pZ*x - pY*pX*z)*c)/p2 +
             ((-pY*pZ*x + pY*pX*z + pY*pY*(pZ*z + pX*x + pY*y))*s)/p3 +
             (2.*pY*pY*(pY*y + pZ*z + pX*x)*(c - 1.))/p4;
         
-<span class="nc" id="L1674">        double dXdPyz = (x*s - pZ*y*s)/p +</span>
+<span class="nc" id="L1682">        double dXdPyz = (x*s - pZ*y*s)/p +</span>
             (pY*z*(1.-c) + (pZ*pZ*x - pZ*pX*z)*c)/p2 +
             ((pY*pY*y + pY*pZ*z + pY*pX*x + pX*z - pZ*x)*pZ*s)/p3 +
             (2.*pY*pZ*(pY*y + pZ*z + pX*x)*(c - 1.))/p4;
         
-<span class="nc" id="L1679">        double dXdPzx = (y*s - pX*z*s)/p +</span>
+<span class="nc" id="L1687">        double dXdPzx = (y*s - pX*z*s)/p +</span>
             (pZ*x*(1.-c) + (pX*pX*y - pX*pY*x)*c)/p2 +
             ((pZ*pZ*z + pZ*pX*x + pZ*pY*y + pY*x - pX*y)*pX*s)/p3 +
             (2.*pZ*pX*(pZ*z + pX*x + pY*y)*(c - 1.))/p4;
      
-<span class="nc" id="L1684">        double dXdPzy = (-x*s - pY*z*s)/p +</span>
+<span class="nc" id="L1692">        double dXdPzy = (-x*s - pY*z*s)/p +</span>
             (pZ*y*(1.-c) + (pY*pX*y - pY*pY*x)*c)/p2 +
             ((pZ*pZ*z + pZ*pX*x + pZ*pY*y + pY*x - pX*y)*pY*s)/p3 +
             (2.*pZ*pY*(pZ*z + pY*y + pX*x)*(c-1.))/p4;
         
-<span class="nc" id="L1689">        double dXdPzz = - (pZ*z*s)/p +</span>
+<span class="nc" id="L1697">        double dXdPzz = - (pZ*z*s)/p +</span>
             ((2*pZ*z + pX*x + pY*y)*(1.-c) + (pZ*pX*y - pZ*pY*x)*c)/p2 +
             ((-pZ*pX*y + pZ*pY*x + pZ*pZ*(pX*x + pY*y + pZ*z))*s)/p3 +
             (2.*pZ*pZ*(pZ*z + pX*x + pY*y)*(c - 1.))/p4;
         
-<span class="nc" id="L1694">        out[0][0] = dXdPxx;</span>
-<span class="nc" id="L1695">        out[0][1] = dXdPxy;</span>
-<span class="nc" id="L1696">        out[0][2] = dXdPxz;</span>
-<span class="nc" id="L1697">        out[1][0] = dXdPyx;</span>
-<span class="nc" id="L1698">        out[1][1] = dXdPyy;</span>
-<span class="nc" id="L1699">        out[1][2] = dXdPyz;</span>
-<span class="nc" id="L1700">        out[2][0] = dXdPzx;</span>
-<span class="nc" id="L1701">        out[2][1] = dXdPzy;</span>
-<span class="nc" id="L1702">        out[2][2] = dXdPzz;</span>
-<span class="nc" id="L1703">    }</span>
+<span class="nc" id="L1702">        out[0][0] = dXdPxx;</span>
+<span class="nc" id="L1703">        out[0][1] = dXdPxy;</span>
+<span class="nc" id="L1704">        out[0][2] = dXdPxz;</span>
+<span class="nc" id="L1705">        out[1][0] = dXdPyx;</span>
+<span class="nc" id="L1706">        out[1][1] = dXdPyy;</span>
+<span class="nc" id="L1707">        out[1][2] = dXdPyz;</span>
+<span class="nc" id="L1708">        out[2][0] = dXdPzx;</span>
+<span class="nc" id="L1709">        out[2][1] = dXdPzy;</span>
+<span class="nc" id="L1710">        out[2][2] = dXdPzz;</span>
+<span class="nc" id="L1711">    }</span>
     
     /**
      * NOTE: dFdPhi and dFdT include a partial derivative that is in the image reference frame.
@@ -1738,73 +1746,73 @@ public class BundleAdjustment {
         double[] rotAngles, double[][] rot, double[] trans, AuxiliaryArrays aa,
         double[][] outAIJ, double[][] outBIJ) {
                 
-<span class="nc bnc" id="L1741" title="All 4 branches missed.">        if (outAIJ.length != 2 || outAIJ[0].length != 9) {</span>
-<span class="nc" id="L1742">            throw new IllegalArgumentException(&quot;outAIJ size must be 2X9&quot;);</span>
+<span class="nc bnc" id="L1749" title="All 4 branches missed.">        if (outAIJ.length != 2 || outAIJ[0].length != 9) {</span>
+<span class="nc" id="L1750">            throw new IllegalArgumentException(&quot;outAIJ size must be 2X9&quot;);</span>
         }
-<span class="nc bnc" id="L1744" title="All 4 branches missed.">        if (outBIJ.length != 2 || outBIJ[0].length != 3) {</span>
-<span class="nc" id="L1745">            throw new IllegalArgumentException(&quot;outBIJ size must be 2X3&quot;);</span>
+<span class="nc bnc" id="L1752" title="All 4 branches missed.">        if (outBIJ.length != 2 || outBIJ[0].length != 3) {</span>
+<span class="nc" id="L1753">            throw new IllegalArgumentException(&quot;outBIJ size must be 2X3&quot;);</span>
         }
-<span class="nc bnc" id="L1747" title="All 2 branches missed.">        if (aa == null) {</span>
-<span class="nc" id="L1748">            throw new IllegalArgumentException(&quot;aa cannot be null&quot;);</span>
+<span class="nc bnc" id="L1755" title="All 2 branches missed.">        if (aa == null) {</span>
+<span class="nc" id="L1756">            throw new IllegalArgumentException(&quot;aa cannot be null&quot;);</span>
         }
         
-<span class="nc" id="L1751">        double[] xWCNI = Arrays.copyOf(xWCI, xWCI.length);</span>
+<span class="nc" id="L1759">        double[] xWCNI = Arrays.copyOf(xWCI, xWCI.length);</span>
         int i;
-<span class="nc bnc" id="L1753" title="All 2 branches missed.">        for (i = 0; i &lt; xWCI.length; ++i) {</span>
-<span class="nc" id="L1754">            xWCNI[i] /= xWCNI[2];</span>
+<span class="nc bnc" id="L1761" title="All 2 branches missed.">        for (i = 0; i &lt; xWCI.length; ++i) {</span>
+<span class="nc" id="L1762">            xWCNI[i] /= xWCNI[2];</span>
         }
 
         // 2X2.  Qu 2018 eqn (3.12)
-<span class="nc" id="L1758">        double[][] dCPdC = aa.a2X2; // this is in the image reference frame</span>
-<span class="nc" id="L1759">        pdCpIJCIJ(xWCNI, intr, k1, k2, dCPdC);</span>
+<span class="nc" id="L1766">        double[][] dCPdC = aa.a2X2; // this is in the image reference frame</span>
+<span class="nc" id="L1767">        pdCpIJCIJ(xWCNI, intr, k1, k2, dCPdC);</span>
         
         // 2X3.  Qu 2018 eqn (3.16)
-<span class="nc" id="L1762">        double[][] dCdX = aa.b2X3;</span>
-<span class="nc" id="L1763">        pdCIJXWIJ(xWCI, dCdX);</span>
+<span class="nc" id="L1770">        double[][] dCdX = aa.b2X3;</span>
+<span class="nc" id="L1771">        pdCIJXWIJ(xWCI, dCdX);</span>
         
         // 2X3.  Qu 2018 eqn (3.10)
-<span class="nc" id="L1766">        double[][] dCPdY = aa.c2X3;  // this is in the image reference frame</span>
-<span class="nc" id="L1767">        pdCpIJYJ(xWCNI, intr, k1, k2, dCPdY);</span>
+<span class="nc" id="L1774">        double[][] dCPdY = aa.c2X3;  // this is in the image reference frame</span>
+<span class="nc" id="L1775">        pdCpIJYJ(xWCNI, intr, k1, k2, dCPdY);</span>
         
         // 3X3.  Qu 2018 eqns (3.28 - 3.33)
-<span class="nc" id="L1770">        double[][] dXdP = aa.d3X3;</span>
-<span class="nc" id="L1771">        pdXWIJPhiJ(xWI, rotAngles, dXdP);</span>
+<span class="nc" id="L1778">        double[][] dXdP = aa.d3X3;</span>
+<span class="nc" id="L1779">        pdXWIJPhiJ(xWI, rotAngles, dXdP);</span>
        
         //========================================
         
         // [2X3].  Qu 2018 eqn (3.35)
-<span class="nc" id="L1776">        double[][] dFdT = aa.e2X3;</span>
-<span class="nc" id="L1777">        MatrixUtil.multiply(dCPdC, dCdX, dFdT);</span>
+<span class="nc" id="L1784">        double[][] dFdT = aa.e2X3;</span>
+<span class="nc" id="L1785">        MatrixUtil.multiply(dCPdC, dCdX, dFdT);</span>
         //dFdT = dCdX;// excluding the image reference frame term
 
         // [2X3].  Qu 2018 eqn (3.34)
-<span class="nc" id="L1781">        double[][] dFdPhi = aa.f2X3;</span>
-<span class="nc" id="L1782">        MatrixUtil.multiply(dFdT, dXdP, dFdPhi);</span>
+<span class="nc" id="L1789">        double[][] dFdPhi = aa.f2X3;</span>
+<span class="nc" id="L1790">        MatrixUtil.multiply(dFdT, dXdP, dFdPhi);</span>
 
         // [2X3]. Qu 2018 eqn (3.36)
-<span class="nc" id="L1785">        double[][] dFdY = dCPdY;</span>
+<span class="nc" id="L1793">        double[][] dFdY = dCPdY;</span>
     
         // [2X3].  Qu 2018 eqn (3.37)
-<span class="nc" id="L1788">        double[][] dFdX = aa.h2X3;</span>
-<span class="nc" id="L1789">        MatrixUtil.multiply(dFdT, rot, dFdX);</span>
+<span class="nc" id="L1796">        double[][] dFdX = aa.h2X3;</span>
+<span class="nc" id="L1797">        MatrixUtil.multiply(dFdT, rot, dFdX);</span>
         
-<span class="nc bnc" id="L1791" title="All 2 branches missed.">        if (useHomography == 1) {</span>
+<span class="nc bnc" id="L1799" title="All 2 branches missed.">        if (useHomography == 1) {</span>
             
             // replace dFdPhi and dFdT
             
-<span class="nc" id="L1795">            boolean useLeftHanded = true;</span>
-<span class="nc" id="L1796">            double[] h = new double[9];</span>
-<span class="nc" id="L1797">            populateCameraProjectionHomography(rot, trans, h, useLeftHanded);</span>
+<span class="nc" id="L1803">            boolean useLeftHanded = true;</span>
+<span class="nc" id="L1804">            double[] h = new double[9];</span>
+<span class="nc" id="L1805">            populateCameraProjectionHomography(rot, trans, h, useLeftHanded);</span>
             
-<span class="nc" id="L1799">            double[][] jF = MatrixUtil.zeros(2, 9);</span>
-<span class="nc" id="L1800">            PNP.calculateJF(xWI, h, jF);</span>
+<span class="nc" id="L1807">            double[][] jF = MatrixUtil.zeros(2, 9);</span>
+<span class="nc" id="L1808">            PNP.calculateJF(xWI, h, jF);</span>
             
             //J_g = dh/dp where h has 9 elements, and the number of parameters
             // jG is [9X6]
-<span class="nc" id="L1804">            double[][] jG = PNP.calculateJG(rotAngles);</span>
+<span class="nc" id="L1812">            double[][] jG = PNP.calculateJG(rotAngles);</span>
             
             // [2X9]*[9X6] = [2X6]  this is dF/dTrans and dF/dRot combined
-<span class="nc" id="L1807">            double[][] j = MatrixUtil.multiply(jF, jG);  </span>
+<span class="nc" id="L1815">            double[][] j = MatrixUtil.multiply(jF, jG);  </span>
             
             /*
             J_f: each block is [2X1] for x and y:
@@ -1830,25 +1838,25 @@ public class BundleAdjustment {
             where p=(thetax,thetay,thetaz,transx,transy,transz)
             */
             // transpose to right-handed system
-<span class="nc" id="L1833">            j = MatrixUtil.transpose(j);</span>
-<span class="nc bnc" id="L1834" title="All 2 branches missed.">            for (i = 0; i &lt; 2; ++i) {</span>
-<span class="nc" id="L1835">                System.arraycopy(dFdPhi[i], 0, outAIJ[i], 0, j[i].length);</span>
-<span class="nc" id="L1836">                System.arraycopy(dFdY[i], 0, outAIJ[i], 6, dFdY[i].length);</span>
-<span class="nc" id="L1837">                System.arraycopy(dFdX[i], 0, outBIJ[i], 0, dFdX[i].length);</span>
+<span class="nc" id="L1841">            j = MatrixUtil.transpose(j);</span>
+<span class="nc bnc" id="L1842" title="All 2 branches missed.">            for (i = 0; i &lt; 2; ++i) {</span>
+<span class="nc" id="L1843">                System.arraycopy(dFdPhi[i], 0, outAIJ[i], 0, j[i].length);</span>
+<span class="nc" id="L1844">                System.arraycopy(dFdY[i], 0, outAIJ[i], 6, dFdY[i].length);</span>
+<span class="nc" id="L1845">                System.arraycopy(dFdX[i], 0, outBIJ[i], 0, dFdX[i].length);</span>
             }
-<span class="nc" id="L1839">        } else {</span>
+<span class="nc" id="L1847">        } else {</span>
         
             //------
             // a holds camera parameters.  it's 2X9.  phi, t, y(=f, k1, f2)
             // b hold point parameters.    it's 2X3.  x
-<span class="nc bnc" id="L1844" title="All 2 branches missed.">            for (i = 0; i &lt; 2; ++i) {</span>
-<span class="nc" id="L1845">                System.arraycopy(dFdPhi[i], 0, outAIJ[i], 0, dFdPhi[i].length);</span>
-<span class="nc" id="L1846">                System.arraycopy(dFdT[i], 0, outAIJ[i], 3, dFdT[i].length);</span>
-<span class="nc" id="L1847">                System.arraycopy(dFdY[i], 0, outAIJ[i], 6, dFdY[i].length);</span>
-<span class="nc" id="L1848">                System.arraycopy(dFdX[i], 0, outBIJ[i], 0, dFdX[i].length);</span>
+<span class="nc bnc" id="L1852" title="All 2 branches missed.">            for (i = 0; i &lt; 2; ++i) {</span>
+<span class="nc" id="L1853">                System.arraycopy(dFdPhi[i], 0, outAIJ[i], 0, dFdPhi[i].length);</span>
+<span class="nc" id="L1854">                System.arraycopy(dFdT[i], 0, outAIJ[i], 3, dFdT[i].length);</span>
+<span class="nc" id="L1855">                System.arraycopy(dFdY[i], 0, outAIJ[i], 6, dFdY[i].length);</span>
+<span class="nc" id="L1856">                System.arraycopy(dFdX[i], 0, outBIJ[i], 0, dFdX[i].length);</span>
             }
         }
-<span class="nc" id="L1851">    }</span>
+<span class="nc" id="L1859">    }</span>
 
     /**
      *
@@ -1860,20 +1868,22 @@ public class BundleAdjustment {
         
         //extrRVecs is mImages*[1X3]
         
-<span class="fc" id="L1863">        int mImages = extrRVecs.length;</span>
+<span class="fc" id="L1871">        int mImages = extrRVecs.length;</span>
         
-<span class="fc" id="L1865">        double[][] rot = MatrixUtil.zeros(3, 3);</span>
+<span class="fc" id="L1873">        double[][] rot = MatrixUtil.zeros(3, 3);</span>
         
-<span class="fc" id="L1867">        BlockMatrixIsometric m = new BlockMatrixIsometric(MatrixUtil.zeros(3, 3*mImages), 3, 3);</span>
+<span class="fc" id="L1875">        BlockMatrixIsometric m = new BlockMatrixIsometric(MatrixUtil.zeros(3, 3*mImages), 3, 3);</span>
+
+<span class="fc" id="L1877">        boolean passive = true;</span>
 
         Rotation.RodriguesRotation rr;
         int i;
-<span class="fc bfc" id="L1871" title="All 2 branches covered.">        for (i = 0; i &lt; mImages; ++i) {</span>
-<span class="pc bpc" id="L1872" title="1 of 2 branches missed.">            if (useBouguetForRodrigues) {</span>
-<span class="nc" id="L1873">                rr = Rotation.createRodriguesRotationMatrixBouguet(extrRVecs[i]);</span>
-<span class="nc" id="L1874">                m.setBlock(rr.r, 0, i);</span>
+<span class="fc bfc" id="L1881" title="All 2 branches covered.">        for (i = 0; i &lt; mImages; ++i) {</span>
+<span class="pc bpc" id="L1882" title="1 of 2 branches missed.">            if (useBouguetForRodrigues) {</span>
+<span class="nc" id="L1883">                rr = Rotation.createRotationRodriguesBouguet(extrRVecs[i], passive);</span>
+<span class="nc" id="L1884">                m.setBlock(rr.r, 0, i);</span>
             } else {
-<span class="fc" id="L1876">                m.setBlock(Rotation.createRodriguesFormulaRotationMatrix(extrRVecs[i]), 0, i);</span>
+<span class="fc" id="L1886">                m.setBlock(Rotation.createRotationRodriguesFormula(extrRVecs[i], passive), 0, i);</span>
             }
 
             // SO3 still?
@@ -1881,7 +1891,7 @@ public class BundleAdjustment {
             //double[][] orthChk = MatrixUtil.createATransposedTimesA(rr.r);
             //log.info(String.format(&quot;orthChk=\n%s\ndet=%.3e&quot;, FormatArray.toString(orthChk,&quot;%.3e&quot;), detR));
         }
-<span class="fc" id="L1884">        return m;</span>
+<span class="fc" id="L1894">        return m;</span>
     }
 
     /**
@@ -1912,37 +1922,37 @@ public class BundleAdjustment {
         //   [1Xs]         *    ([1X1]*[sX1]             + [sX1])     = [1X1]
         //(delta params)^T *  (lambda * (delta params) + gradient)
         
-<span class="fc" id="L1915">        double[] dParams = new double[dC.length + dP.length];</span>
-<span class="fc" id="L1916">        System.arraycopy(dC, 0, dParams, 0, dC.length);</span>
-<span class="fc" id="L1917">        System.arraycopy(dP, 0, dParams, dC.length, dP.length);</span>
+<span class="fc" id="L1925">        double[] dParams = new double[dC.length + dP.length];</span>
+<span class="fc" id="L1926">        System.arraycopy(dC, 0, dParams, 0, dC.length);</span>
+<span class="fc" id="L1927">        System.arraycopy(dP, 0, dParams, dC.length, dP.length);</span>
 
-<span class="fc" id="L1919">        double[] gradient = new double[gradC.length + gradP.length];</span>
-<span class="fc" id="L1920">        System.arraycopy(gradC, 0, gradient, 0, gradC.length);</span>
-<span class="fc" id="L1921">        System.arraycopy(gradP, 0, gradient, gradC.length, gradP.length);</span>
-<span class="fc" id="L1922">        MatrixUtil.multiply(gradient, -1); // our gradC and gradP are g = (-J^T * f) while Lourakis uses g = (J^T * f)</span>
+<span class="fc" id="L1929">        double[] gradient = new double[gradC.length + gradP.length];</span>
+<span class="fc" id="L1930">        System.arraycopy(gradC, 0, gradient, 0, gradC.length);</span>
+<span class="fc" id="L1931">        System.arraycopy(gradP, 0, gradient, gradC.length, gradP.length);</span>
+<span class="fc" id="L1932">        MatrixUtil.multiply(gradient, -1); // our gradC and gradP are g = (-J^T * f) while Lourakis uses g = (J^T * f)</span>
 
-<span class="fc" id="L1924">        double[] denom = Arrays.copyOf(dParams, dParams.length);</span>
-<span class="fc" id="L1925">        MatrixUtil.multiply(denom, lambda);</span>
-<span class="fc" id="L1926">        denom = MatrixUtil.add(denom, gradient);</span>
+<span class="fc" id="L1934">        double[] denom = Arrays.copyOf(dParams, dParams.length);</span>
+<span class="fc" id="L1935">        MatrixUtil.multiply(denom, lambda);</span>
+<span class="fc" id="L1936">        denom = MatrixUtil.add(denom, gradient);</span>
       
-<span class="fc" id="L1928">        double d = MatrixUtil.innerProduct(dParams, denom);</span>
+<span class="fc" id="L1938">        double d = MatrixUtil.innerProduct(dParams, denom);</span>
             
-<span class="pc bpc" id="L1930" title="1 of 2 branches missed.">        if (Math.abs(d) &lt; eps) {</span>
-<span class="nc" id="L1931">            return Double.NEGATIVE_INFINITY;</span>
+<span class="pc bpc" id="L1940" title="1 of 2 branches missed.">        if (Math.abs(d) &lt; eps) {</span>
+<span class="nc" id="L1941">            return Double.NEGATIVE_INFINITY;</span>
         }
 
-<span class="fc" id="L1934">        double gain = (f - fTest)/d;</span>
+<span class="fc" id="L1944">        double gain = (f - fTest)/d;</span>
 
-<span class="fc" id="L1936">        return gain;</span>
+<span class="fc" id="L1946">        return gain;</span>
     }
     
     private boolean isNegligible(double[] c, double eps) {
-<span class="fc bfc" id="L1940" title="All 2 branches covered.">        for (int i = 0; i &lt; c.length; ++i) {</span>
-<span class="fc bfc" id="L1941" title="All 2 branches covered.">            if (Math.abs(c[i]) &gt; eps) {</span>
-<span class="fc" id="L1942">                return false;</span>
+<span class="fc bfc" id="L1950" title="All 2 branches covered.">        for (int i = 0; i &lt; c.length; ++i) {</span>
+<span class="fc bfc" id="L1951" title="All 2 branches covered.">            if (Math.abs(c[i]) &gt; eps) {</span>
+<span class="fc" id="L1952">                return false;</span>
             }
         }
-<span class="fc" id="L1945">        return true;</span>
+<span class="fc" id="L1955">        return true;</span>
     }
 
     /**
@@ -1963,16 +1973,16 @@ public class BundleAdjustment {
         //     x + delta x
         int i, j;
         
-<span class="fc" id="L1966">        int mImages = extrTrans.length;</span>
+<span class="fc" id="L1976">        int mImages = extrTrans.length;</span>
                 
-<span class="fc bfc" id="L1968" title="All 2 branches covered.">        for (j = 0; j &lt; mImages; ++j) {</span>
+<span class="fc bfc" id="L1978" title="All 2 branches covered.">        for (j = 0; j &lt; mImages; ++j) {</span>
             // vector perturbation for translation:
-<span class="fc bfc" id="L1970" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc bfc" id="L1980" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
                 //translation elements are indexes 3,4,5
-<span class="fc" id="L1972">                extrTrans[j][i] += updateSign*dC[j*9 + (i+3)];</span>
+<span class="fc" id="L1982">                extrTrans[j][i] += updateSign*dC[j*9 + (i+3)];</span>
             }
         }
-<span class="fc" id="L1975">    }</span>
+<span class="fc" id="L1985">    }</span>
 
     /**
      * update the focus parameters of the intrinsic matrices.
@@ -1988,34 +1998,34 @@ public class BundleAdjustment {
     private void updateIntrinsic(BlockMatrixIsometric intr, 
         double[] dC) {
         
-<span class="fc" id="L1991">        int nImages = intr.getA().length/3;</span>
+<span class="fc" id="L2001">        int nImages = intr.getA().length/3;</span>
         
-<span class="fc" id="L1993">        double[][] kIntr = MatrixUtil.zeros(3, 3);</span>
+<span class="fc" id="L2003">        double[][] kIntr = MatrixUtil.zeros(3, 3);</span>
         
         //NOTE: follow up on Szeliski text stating that updating the intrinsic parameters is more involved
         
         int j;
         
         // using addition for updates for now
-<span class="fc bfc" id="L2000" title="All 2 branches covered.">        for (j = 0; j &lt; nImages; ++j) {</span>
+<span class="fc bfc" id="L2010" title="All 2 branches covered.">        for (j = 0; j &lt; nImages; ++j) {</span>
             // focus is parameter index 6 within the 9 for each image in dC
-<span class="fc" id="L2002">            intr.getBlock(kIntr, j, 0);</span>
-<span class="fc" id="L2003">            kIntr[0][0] += updateSign*dC[j*9 + 6];</span>
-<span class="fc" id="L2004">            kIntr[1][1] += updateSign*dC[j*9 + 6];</span>
-<span class="fc" id="L2005">            intr.setBlock(kIntr, j, 0);</span>
+<span class="fc" id="L2012">            intr.getBlock(kIntr, j, 0);</span>
+<span class="fc" id="L2013">            kIntr[0][0] += updateSign*dC[j*9 + 6];</span>
+<span class="fc" id="L2014">            kIntr[1][1] += updateSign*dC[j*9 + 6];</span>
+<span class="fc" id="L2015">            intr.setBlock(kIntr, j, 0);</span>
         }
-<span class="fc" id="L2007">    }</span>
+<span class="fc" id="L2017">    }</span>
         
     private void updateRadialDistortion(double[][] kRadials, double[] dC) {
         
-<span class="fc" id="L2011">        int nImages = kRadials.length;</span>
+<span class="fc" id="L2021">        int nImages = kRadials.length;</span>
                 
         // using addition for updates for now
-<span class="fc bfc" id="L2014" title="All 2 branches covered.">        for (int i = 0; i &lt; nImages; ++i) {</span>
-<span class="fc" id="L2015">            kRadials[i][0] += updateSign*dC[i*9 + 7];</span>
-<span class="fc" id="L2016">            kRadials[i][1] += updateSign*dC[i*9 + 8];</span>
+<span class="fc bfc" id="L2024" title="All 2 branches covered.">        for (int i = 0; i &lt; nImages; ++i) {</span>
+<span class="fc" id="L2025">            kRadials[i][0] += updateSign*dC[i*9 + 7];</span>
+<span class="fc" id="L2026">            kRadials[i][1] += updateSign*dC[i*9 + 8];</span>
         }
-<span class="fc" id="L2018">    }</span>
+<span class="fc" id="L2028">    }</span>
 
     /**
      * update rotation matrix theta vectors with steps in dC.
@@ -2038,34 +2048,34 @@ public class BundleAdjustment {
 
         int i, j;
                         
-<span class="fc bfc" id="L2041" title="All 2 branches covered.">        for (j = 0; j &lt; extrRVecs.length; ++j) {</span>
+<span class="fc bfc" id="L2051" title="All 2 branches covered.">        for (j = 0; j &lt; extrRVecs.length; ++j) {</span>
             // apply perturbation to the rotation vector
-<span class="fc bfc" id="L2043" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L2044">                extrRVecs[j][i] += updateSign*dC[j*9 + i];</span>
+<span class="fc bfc" id="L2053" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L2054">                extrRVecs[j][i] += updateSign*dC[j*9 + i];</span>
             }
         }
-<span class="fc" id="L2047">    }</span>
+<span class="fc" id="L2057">    }</span>
     
     private void initDeltaPWithQu(double[] deltaP) {
         
-<span class="nc" id="L2051">        int nFeatures = deltaP.length/3;</span>
+<span class="nc" id="L2061">        int nFeatures = deltaP.length/3;</span>
                 
         /*Qu thesis eqn (3.38)
         
         3 delta x ~ 1e-8
         */
         int i /*features*/, j /*parameters*/;
-<span class="nc bnc" id="L2058" title="All 2 branches missed.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
+<span class="nc bnc" id="L2068" title="All 2 branches missed.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
             // i*3 + 0,1,2
-<span class="nc bnc" id="L2060" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
-<span class="nc" id="L2061">                deltaP[i*3 + j] = 1e-8;</span>
+<span class="nc bnc" id="L2070" title="All 2 branches missed.">            for (j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L2071">                deltaP[i*3 + j] = 1e-8;</span>
             }
         }
-<span class="nc" id="L2064">    }</span>
+<span class="nc" id="L2074">    }</span>
     
     private void initDeltaCWithQu(double[] deltaC) {
         
-<span class="nc" id="L2068">        int mImages = deltaC.length/9;</span>
+<span class="nc" id="L2078">        int mImages = deltaC.length/9;</span>
                 
         /*Qu thesis eqn (3.38)
         
@@ -2075,24 +2085,24 @@ public class BundleAdjustment {
         2 delta kRadial ~ 1e-3
         */
         int i /*parameter*/, j /*image*/;
-<span class="nc bnc" id="L2078" title="All 2 branches missed.">        for (j = 0; j &lt; mImages; ++j) {</span>
+<span class="nc bnc" id="L2088" title="All 2 branches missed.">        for (j = 0; j &lt; mImages; ++j) {</span>
             // j*9 + 0,1,2
-<span class="nc bnc" id="L2080" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc bnc" id="L2090" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
                 // delta theta
-<span class="nc" id="L2082">                deltaC[j*9 + i] = 1e-8;</span>
+<span class="nc" id="L2092">                deltaC[j*9 + i] = 1e-8;</span>
             }
             // j*9 + 3,4,5
-<span class="nc bnc" id="L2085" title="All 2 branches missed.">            for (i = 3; i &lt; 6; ++i) {</span>
+<span class="nc bnc" id="L2095" title="All 2 branches missed.">            for (i = 3; i &lt; 6; ++i) {</span>
                 // delta translation
-<span class="nc" id="L2087">                deltaC[j*9 + i] = 1e-5;</span>
+<span class="nc" id="L2097">                deltaC[j*9 + i] = 1e-5;</span>
             }
             // delta focus
-<span class="nc" id="L2090">            deltaC[j*9 + 6] = 1;</span>
+<span class="nc" id="L2100">            deltaC[j*9 + 6] = 1;</span>
             // delta radial coefficients
-<span class="nc" id="L2092">            deltaC[j*9 + 7] = 1e-8;</span>
-<span class="nc" id="L2093">            deltaC[j*9 + 8] = 1e-8;</span>
+<span class="nc" id="L2102">            deltaC[j*9 + 7] = 1e-8;</span>
+<span class="nc" id="L2103">            deltaC[j*9 + 8] = 1e-8;</span>
         }
-<span class="nc" id="L2095">    }</span>
+<span class="nc" id="L2105">    }</span>
     
     /**
      * update the coordinates for the features in the world scene.
@@ -2103,39 +2113,39 @@ public class BundleAdjustment {
      * The elements are ordered as follows: dX_0, dY_0, dZ_0, ... dX_n-1, dY_n-1, dZ_n-1. 
      */
     private void updateWorldC(double[][] coordsW, double[] deltaP) {
-<span class="fc" id="L2106">        int nFeatures = coordsW[0].length;</span>
+<span class="fc" id="L2116">        int nFeatures = coordsW[0].length;</span>
         
         int i;
-<span class="fc bfc" id="L2109" title="All 2 branches covered.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
-<span class="fc" id="L2110">            coordsW[0][i] += updateSign*deltaP[i*3 + 0];</span>
-<span class="fc" id="L2111">            coordsW[1][i] += updateSign*deltaP[i*3 + 1];</span>
-<span class="fc" id="L2112">            coordsW[2][i] += updateSign*deltaP[i*3 + 2];</span>
+<span class="fc bfc" id="L2119" title="All 2 branches covered.">        for (i = 0; i &lt; nFeatures; ++i) {</span>
+<span class="fc" id="L2120">            coordsW[0][i] += updateSign*deltaP[i*3 + 0];</span>
+<span class="fc" id="L2121">            coordsW[1][i] += updateSign*deltaP[i*3 + 1];</span>
+<span class="fc" id="L2122">            coordsW[2][i] += updateSign*deltaP[i*3 + 2];</span>
         }
-<span class="fc" id="L2114">    }</span>
+<span class="fc" id="L2124">    }</span>
     
     private boolean maxDiag(double[][] m, double[] outInitLambda) {
         int i;
-<span class="fc" id="L2118">        boolean updated = false;</span>
-<span class="fc bfc" id="L2119" title="All 2 branches covered.">        for (i = 0; i &lt; m.length; ++i) {</span>
-<span class="fc bfc" id="L2120" title="All 2 branches covered.">            if (outInitLambda[0] &lt; m[i][i]) {</span>
-<span class="fc" id="L2121">                outInitLambda[0] = m[i][i];</span>
-<span class="fc" id="L2122">                updated = true;</span>
+<span class="fc" id="L2128">        boolean updated = false;</span>
+<span class="fc bfc" id="L2129" title="All 2 branches covered.">        for (i = 0; i &lt; m.length; ++i) {</span>
+<span class="fc bfc" id="L2130" title="All 2 branches covered.">            if (outInitLambda[0] &lt; m[i][i]) {</span>
+<span class="fc" id="L2131">                outInitLambda[0] = m[i][i];</span>
+<span class="fc" id="L2132">                updated = true;</span>
             }
         }
-<span class="fc" id="L2125">        return updated;</span>
+<span class="fc" id="L2135">        return updated;</span>
     }
     private boolean max(double[][] m, double[] outInitLambda) {
         int i, j;
-<span class="nc" id="L2129">        boolean updated = false;</span>
-<span class="nc bnc" id="L2130" title="All 2 branches missed.">        for (i = 0; i &lt; m.length; ++i) {</span>
-<span class="nc bnc" id="L2131" title="All 2 branches missed.">            for (j = 0; j &lt; m[i].length; ++j) {</span>
-<span class="nc bnc" id="L2132" title="All 2 branches missed.">                if (outInitLambda[0] &lt; m[i][j]) {</span>
-<span class="nc" id="L2133">                    outInitLambda[0] = m[i][j];</span>
-<span class="nc" id="L2134">                    updated = true;</span>
+<span class="nc" id="L2139">        boolean updated = false;</span>
+<span class="nc bnc" id="L2140" title="All 2 branches missed.">        for (i = 0; i &lt; m.length; ++i) {</span>
+<span class="nc bnc" id="L2141" title="All 2 branches missed.">            for (j = 0; j &lt; m[i].length; ++j) {</span>
+<span class="nc bnc" id="L2142" title="All 2 branches missed.">                if (outInitLambda[0] &lt; m[i][j]) {</span>
+<span class="nc" id="L2143">                    outInitLambda[0] = m[i][j];</span>
+<span class="nc" id="L2144">                    updated = true;</span>
                 }
             }
         }
-<span class="nc" id="L2138">        return updated;</span>
+<span class="nc" id="L2148">        return updated;</span>
     }
 
     /**
@@ -2160,28 +2170,28 @@ public class BundleAdjustment {
     private double[][] transformPixelToCamera(int nFeatures, double[][] coordsI, 
         BlockMatrixIsometric intr, double[][] kRadial, boolean useR2R4) throws NotConvergedException, IOException {
         
-<span class="nc" id="L2163">        int mImages = coordsI[0].length/nFeatures;</span>
+<span class="nc" id="L2173">        int mImages = coordsI[0].length/nFeatures;</span>
         
-<span class="nc" id="L2165">        double[][] c = MatrixUtil.zeros(coordsI.length, coordsI[0].length);</span>
-<span class="nc" id="L2166">        double[][] x = MatrixUtil.zeros(3, nFeatures);</span>
+<span class="nc" id="L2175">        double[][] c = MatrixUtil.zeros(coordsI.length, coordsI[0].length);</span>
+<span class="nc" id="L2176">        double[][] x = MatrixUtil.zeros(3, nFeatures);</span>
         double[][] xc;
-<span class="nc" id="L2168">        double[][] kIntr = MatrixUtil.zeros(3, 3);</span>
+<span class="nc" id="L2178">        double[][] kIntr = MatrixUtil.zeros(3, 3);</span>
         
         int i, j, k;
-<span class="nc bnc" id="L2171" title="All 2 branches missed.">        for (j = 0; j &lt; mImages; ++j) {</span>
-<span class="nc" id="L2172">            MatrixUtil.copySubMatrix(coordsI, 0, 2, j*nFeatures, ((j+1)*nFeatures)-1, x);</span>
+<span class="nc bnc" id="L2181" title="All 2 branches missed.">        for (j = 0; j &lt; mImages; ++j) {</span>
+<span class="nc" id="L2182">            MatrixUtil.copySubMatrix(coordsI, 0, 2, j*nFeatures, ((j+1)*nFeatures)-1, x);</span>
             
-<span class="nc" id="L2174">            intr.getBlock(kIntr, j, 0);</span>
-<span class="nc" id="L2175">            xc = Camera.pixelToCameraCoordinates(x, kIntr, kRadial[j], useR2R4);</span>
+<span class="nc" id="L2184">            intr.getBlock(kIntr, j, 0);</span>
+<span class="nc" id="L2185">            xc = Camera.pixelToCameraCoordinates(x, kIntr, kRadial[j], useR2R4);</span>
 
-<span class="nc bnc" id="L2177" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="nc bnc" id="L2178" title="All 2 branches missed.">                for (k = 0; k &lt; nFeatures; ++k) {</span>
-<span class="nc" id="L2179">                    xc[i][k] /= xc[2][k];</span>
+<span class="nc bnc" id="L2187" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc bnc" id="L2188" title="All 2 branches missed.">                for (k = 0; k &lt; nFeatures; ++k) {</span>
+<span class="nc" id="L2189">                    xc[i][k] /= xc[2][k];</span>
                 }
-<span class="nc" id="L2181">                System.arraycopy(xc[i], 0, c[i], j*nFeatures, nFeatures);</span>
+<span class="nc" id="L2191">                System.arraycopy(xc[i], 0, c[i], j*nFeatures, nFeatures);</span>
             }
         }
-<span class="nc" id="L2184">        return c;</span>
+<span class="nc" id="L2194">        return c;</span>
     }
     
     /**
@@ -2193,16 +2203,16 @@ public class BundleAdjustment {
      */
     void populateCameraProjectionHomography(double[][] rot,
         double[] translation, double[][] outH) {
-<span class="nc" id="L2196">        outH[0][0] = rot[0][0];</span>
-<span class="nc" id="L2197">        outH[1][0] = rot[1][0];</span>
-<span class="nc" id="L2198">        outH[2][0] = rot[2][0];</span>
-<span class="nc" id="L2199">        outH[0][1] = rot[0][1];</span>
-<span class="nc" id="L2200">        outH[1][1] = rot[1][1];</span>
-<span class="nc" id="L2201">        outH[2][1] = rot[2][1];</span>
-<span class="nc" id="L2202">        outH[0][2] = translation[0];</span>
-<span class="nc" id="L2203">        outH[1][2] = translation[1];</span>
-<span class="nc" id="L2204">        outH[2][2] = translation[2];</span>
-<span class="nc" id="L2205">    }</span>
+<span class="nc" id="L2206">        outH[0][0] = rot[0][0];</span>
+<span class="nc" id="L2207">        outH[1][0] = rot[1][0];</span>
+<span class="nc" id="L2208">        outH[2][0] = rot[2][0];</span>
+<span class="nc" id="L2209">        outH[0][1] = rot[0][1];</span>
+<span class="nc" id="L2210">        outH[1][1] = rot[1][1];</span>
+<span class="nc" id="L2211">        outH[2][1] = rot[2][1];</span>
+<span class="nc" id="L2212">        outH[0][2] = translation[0];</span>
+<span class="nc" id="L2213">        outH[1][2] = translation[1];</span>
+<span class="nc" id="L2214">        outH[2][2] = translation[2];</span>
+<span class="nc" id="L2215">    }</span>
     /**
      * populate the homography matrix to transform world screen coordinates
      * to projected 2D coordinates in the camera reference frame.
@@ -2213,49 +2223,49 @@ public class BundleAdjustment {
      */
     void populateCameraProjectionHomography(double[][] rot,
         double[] translation, double[] outH, boolean useLeftHanded) {
-<span class="nc bnc" id="L2216" title="All 2 branches missed.">        if (useLeftHanded) {</span>
+<span class="nc bnc" id="L2226" title="All 2 branches missed.">        if (useLeftHanded) {</span>
             // Wetzstein lecture uses convention: &quot;looking down the negative z-axis&quot;
-<span class="nc" id="L2218">            outH[0] = rot[0][0];</span>
-<span class="nc" id="L2219">            outH[1] = rot[0][1];</span>
-<span class="nc" id="L2220">            outH[2] = translation[0];</span>
-<span class="nc" id="L2221">            outH[3] = rot[1][0];</span>
-<span class="nc" id="L2222">            outH[4] = rot[1][1];</span>
-<span class="nc" id="L2223">            outH[5] = translation[1];</span>
-<span class="nc" id="L2224">            outH[6] = rot[2][0]; //-</span>
-<span class="nc" id="L2225">            outH[7] = rot[2][1]; //-</span>
-<span class="nc" id="L2226">            outH[8] = translation[2]; //-</span>
-        } else {
 <span class="nc" id="L2228">            outH[0] = rot[0][0];</span>
-<span class="nc" id="L2229">            outH[1] = rot[1][0];</span>
-<span class="nc" id="L2230">            outH[3] = rot[2][0];</span>
-<span class="nc" id="L2231">            outH[4] = rot[0][1];</span>
-<span class="nc" id="L2232">            outH[6] = rot[1][1];</span>
-<span class="nc" id="L2233">            outH[7] = rot[2][1];</span>
-<span class="nc" id="L2234">            outH[2] = translation[0];</span>
-<span class="nc" id="L2235">            outH[5] = translation[1];</span>
-<span class="nc" id="L2236">            outH[8] = translation[2];</span>
+<span class="nc" id="L2229">            outH[1] = rot[0][1];</span>
+<span class="nc" id="L2230">            outH[2] = translation[0];</span>
+<span class="nc" id="L2231">            outH[3] = rot[1][0];</span>
+<span class="nc" id="L2232">            outH[4] = rot[1][1];</span>
+<span class="nc" id="L2233">            outH[5] = translation[1];</span>
+<span class="nc" id="L2234">            outH[6] = rot[2][0]; //-</span>
+<span class="nc" id="L2235">            outH[7] = rot[2][1]; //-</span>
+<span class="nc" id="L2236">            outH[8] = translation[2]; //-</span>
+        } else {
+<span class="nc" id="L2238">            outH[0] = rot[0][0];</span>
+<span class="nc" id="L2239">            outH[1] = rot[1][0];</span>
+<span class="nc" id="L2240">            outH[3] = rot[2][0];</span>
+<span class="nc" id="L2241">            outH[4] = rot[0][1];</span>
+<span class="nc" id="L2242">            outH[6] = rot[1][1];</span>
+<span class="nc" id="L2243">            outH[7] = rot[2][1];</span>
+<span class="nc" id="L2244">            outH[2] = translation[0];</span>
+<span class="nc" id="L2245">            outH[5] = translation[1];</span>
+<span class="nc" id="L2246">            outH[8] = translation[2];</span>
         }
-<span class="nc" id="L2238">    }</span>
+<span class="nc" id="L2248">    }</span>
 
     private boolean hasNaN(double[] b) {
-<span class="fc bfc" id="L2241" title="All 2 branches covered.">        for (double a : b) {</span>
-<span class="pc bpc" id="L2242" title="1 of 2 branches missed.">            if (Double.isNaN(a)) {</span>
-<span class="nc" id="L2243">                return true;</span>
+<span class="fc bfc" id="L2251" title="All 2 branches covered.">        for (double a : b) {</span>
+<span class="pc bpc" id="L2252" title="1 of 2 branches missed.">            if (Double.isNaN(a)) {</span>
+<span class="nc" id="L2253">                return true;</span>
             }
         }
-<span class="fc" id="L2246">        return false;</span>
+<span class="fc" id="L2256">        return false;</span>
     }
 
     private boolean hasNaN(double[][] a) {
         int i, j;
-<span class="nc bnc" id="L2251" title="All 2 branches missed.">        for (i = 0; i &lt; a.length; ++i) {</span>
-<span class="nc bnc" id="L2252" title="All 2 branches missed.">            for(j = 0; j &lt; a[0].length; ++j) {</span>
-<span class="nc bnc" id="L2253" title="All 2 branches missed.">                if (Double.isNaN(a[i][j])) {</span>
-<span class="nc" id="L2254">                    return true;</span>
+<span class="nc bnc" id="L2261" title="All 2 branches missed.">        for (i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L2262" title="All 2 branches missed.">            for(j = 0; j &lt; a[0].length; ++j) {</span>
+<span class="nc bnc" id="L2263" title="All 2 branches missed.">                if (Double.isNaN(a[i][j])) {</span>
+<span class="nc" id="L2264">                    return true;</span>
                 }
             }
         }
-<span class="nc" id="L2258">        return false;</span>
+<span class="nc" id="L2268">        return false;</span>
     }
 
     static class AuxiliaryArrays {
@@ -2282,25 +2292,25 @@ public class BundleAdjustment {
     }
 
     private static void createATransposedTimesA(double[][] a, double[][] out) {
-<span class="pc bpc" id="L2285" title="2 of 4 branches missed.">        if (a == null || a.length == 0) {</span>
-<span class="nc" id="L2286">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
+<span class="pc bpc" id="L2295" title="2 of 4 branches missed.">        if (a == null || a.length == 0) {</span>
+<span class="nc" id="L2296">            throw new IllegalArgumentException(&quot;m cannot be null or empty&quot;);</span>
         }
-<span class="fc" id="L2288">        int m = a.length;</span>
-<span class="fc" id="L2289">        int n = a[0].length;</span>
-<span class="pc bpc" id="L2290" title="2 of 4 branches missed.">        if (out.length != n || out[0].length != n) {</span>
-<span class="nc" id="L2291">            throw new IllegalArgumentException(&quot;out must be size a[0].length X a[0].length&quot;);</span>
+<span class="fc" id="L2298">        int m = a.length;</span>
+<span class="fc" id="L2299">        int n = a[0].length;</span>
+<span class="pc bpc" id="L2300" title="2 of 4 branches missed.">        if (out.length != n || out[0].length != n) {</span>
+<span class="nc" id="L2301">            throw new IllegalArgumentException(&quot;out must be size a[0].length X a[0].length&quot;);</span>
         }
         int outCol, i, j;
         double sum;
-<span class="fc bfc" id="L2295" title="All 2 branches covered.">        for (i = 0; i &lt; n; i++) {</span>
-<span class="fc bfc" id="L2296" title="All 2 branches covered.">            for (outCol = 0; outCol &lt; n; outCol++) {</span>
-<span class="fc" id="L2297">                sum = 0;</span>
-<span class="fc bfc" id="L2298" title="All 2 branches covered.">                for (j = 0; j &lt; m; j++) {</span>
-<span class="fc" id="L2299">                    sum += (a[j][outCol] * a[j][i]);</span>
+<span class="fc bfc" id="L2305" title="All 2 branches covered.">        for (i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L2306" title="All 2 branches covered.">            for (outCol = 0; outCol &lt; n; outCol++) {</span>
+<span class="fc" id="L2307">                sum = 0;</span>
+<span class="fc bfc" id="L2308" title="All 2 branches covered.">                for (j = 0; j &lt; m; j++) {</span>
+<span class="fc" id="L2309">                    sum += (a[j][outCol] * a[j][i]);</span>
                 }
-<span class="fc" id="L2301">                out[outCol][i] = sum;</span>
+<span class="fc" id="L2311">                out[outCol][i] = sum;</span>
             }
         }
-<span class="fc" id="L2304">    }</span>
+<span class="fc" id="L2314">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

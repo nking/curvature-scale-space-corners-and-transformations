@@ -1,0 +1,495 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OpticalFlow.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.transform</a> &gt; <span class="el_source">OpticalFlow.java</span></div><h1>OpticalFlow.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.transform;
+
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.matrix.MatrixUtil;
+import algorithms.misc.Histogram;
+import algorithms.misc.MiscMath0;
+import algorithms.util.FormatArray;
+import algorithms.util.PolygonAndPointPlotter;
+import no.uib.cipr.matrix.DenseMatrix;
+import no.uib.cipr.matrix.EVD;
+import no.uib.cipr.matrix.NotConvergedException;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * various optical flow algorithms.
+ *
+ * TODO: consider implementing Baker-Matthews for KLT tracker
+ */
+<span class="nc" id="L25">public class OpticalFlow {</span>
+
+<span class="fc" id="L27">    private static final Level LEVEL = Level.FINE;</span>
+    private static final Logger log;
+    static {
+<span class="fc" id="L30">        log = Logger.getLogger(CameraCalibration.class.getSimpleName());</span>
+<span class="fc" id="L31">        log.setLevel(LEVEL);</span>
+<span class="fc" id="L32">    }</span>
+
+    /**
+     an algorithm that estimates the motion between 2 images, assuming constancy of brightness and short elapsed times.
+     The algorithm can be used for small displacements between images.
+     The algorithm is extremely sensitive to the size of the input images.
+     &lt;pre&gt;
+     to help determine the best image size to use for this algorithm, here are some empirically derived numbers from
+     unit tests:
+         image width 32, maxV=[32,*), alpha=0.1, maxIter=100, epsSq=1E-2, up to dx=14
+         image width 64, maxV=[64,*), alpha=0.1, maxIter=100, epsSq=1E-2, up to dx=16
+         image width 64, maxV=[64,*), alpha=0.1, maxIter=1000, epsSq=1E-4, up to dx=53
+         image width 128, maxV=[128,*), alpha=0.1, maxIter=100, epsSq=1E-2, up to dx=9
+         image width 128, maxV=[128,*), alpha=0.1, maxIter=100, epsSq=[1E-4, 1E-3], up to dx=30
+         image width 128, maxV=[128,*), alpha=0.1, maxIter=1000, epsSq=1E-4, up to dx=101
+         image width 128, maxV=[128,*), alpha=0.1, maxIter=[1000, 10000], epsSq=1E-3, up to dx=31
+         image width 255, maxV=[128,*), alpha=0.1, maxIter=[1000, 200000] epsSq=[1E-10, 1E-3], up to dx=2
+
+     summary of those results:
+         ---------------------------------------------------
+         motion    image dimension for fastest calculations
+         -------  -----------------------------------------
+         14 pix       32
+         53 pix       64
+         101 pix      128
+
+     &lt;/pre&gt;
+     &lt;pre&gt;
+     references for the algorithm details:
+
+     cmu lectures for Computer Vision 16-385, lectures 14 by Kris Kitani
+
+     Horn, B.K. and Schunck, B.G., 1980. Determining optical flow.
+
+     boundary condition handling was adopted from:
+     Meinhardt-Llopis, Pérez, and Kondermann, &quot;Horn-Schunck Optical Flow with a Multi-Scale Strategy&quot;,
+     Image Processing On Line, 3 (2013), pp. 151–172. https://doi.org/10.5201/ipol.2013.20
+     &lt;/pre&gt;
+     uses default values of alpha=1, epsSq=1E-9, maxIter=1000, uInit=0, vInit=0
+     * @param im1 image array.  for best results, consider the image to be integers, that is, signal range should be &gt; 1
+     *            i.e, [0, 255]
+     * @param im2 image array taken shortly after im1 in time.
+     * @return u and v as motion between im1 and im2 in units of pixels.  u is dx/dt and v is dy/dt.
+     */
+    public static List&lt;double[][]&gt; hornSchunck(double[][] im1, double[][] im2) {
+<span class="nc" id="L77">        return hornSchunck(im1, im2, 0, 0, 0.1, 1000, 1E-4);</span>
+    }
+
+    /**
+     an algorithm that estimates the motion between 2 images, assuming constancy of brightness and short elapsed times.
+     The algorithm can be used for small displacements between images that are mostly smooth gradients.
+     The algorithm is extremely sensitive to the size of the input images.
+     &lt;pre&gt;
+     to help determine the best image size to use for this algorithm, here are some empirically derived numbers from
+     unit tests:
+         image width 32, maxV=[32,*), alpha=0.1, maxIter=100, epsSq=1E-2, up to dx=14
+         image width 64, maxV=[64,*), alpha=0.1, maxIter=100, epsSq=1E-2, up to dx=16
+         image width 64, maxV=[64,*), alpha=0.1, maxIter=1000, epsSq=1E-4, up to dx=53
+         image width 128, maxV=[128,*), alpha=0.1, maxIter=100, epsSq=1E-2, up to dx=9
+         image width 128, maxV=[128,*), alpha=0.1, maxIter=100, epsSq=[1E-4, 1E-3], up to dx=30
+         image width 128, maxV=[128,*), alpha=0.1, maxIter=1000, epsSq=1E-4, up to dx=101
+         image width 128, maxV=[128,*), alpha=0.1, maxIter=[1000, 10000], epsSq=1E-3, up to dx=31
+         image width 255, maxV=[128,*), alpha=0.1, maxIter=[1000, 200000] epsSq=[1E-10, 1E-3], up to dx=2
+
+     summary of those results:
+         ---------------------------------------------------
+         motion    image dimension for fastest calculations
+         -------  -----------------------------------------
+         14 pix       32
+         53 pix       64
+         101 pix      128
+
+     &lt;/pre&gt;
+     &lt;pre&gt;
+     references for the algorithm details:
+
+     cmu lectures for Computer Vision 16-385, lectures 14 by Kris Kitani
+
+     Horn, B.K. and Schunck, B.G., 1980. Determining optical flow.
+
+     boundary condition handling was adopted from:
+     Meinhardt-Llopis, Pérez, and Kondermann, &quot;Horn-Schunck Optical Flow with a Multi-Scale Strategy&quot;,
+     Image Processing On Line, 3 (2013), pp. 151–172. https://doi.org/10.5201/ipol.2013.20
+     &lt;/pre&gt;
+     uses default values of alpha=1, epsSq=1E-9, maxIter=1000, uInit=0, vInit=0
+     * @param im1 image array.  for best results, consider the image to be integers, that is, signal range should be &gt; 1
+     *            i.e, [0, 255] etc.
+     * @param im2 image array taken shortly after im1 in time.
+     * @param uInit initial guess for u.
+     * @param vInit initial guess for v.
+     * @param alpha a weight parameter used in the updates of u and v internally.  must be &gt; 0.
+     *              for best results should be in range [1,10].
+     *              alpha=0.1 is recommended.
+     * @param maxIter maximum number of iterations to perform.  if u,v square differences do not converge to
+     *                &lt;= epsSq, up to maxIter iterations are performed.
+     * @param epsSq the condition for convergence.  sum of the square differences of u,v from previous iteration
+     *              less than epsSq is convergence.
+     * @return
+     */
+    public static List&lt;double[][]&gt; hornSchunck(double[][] im1, double[][] im2,
+                                               final double uInit, final double vInit,
+                                               final double alpha, final int maxIter, final double epsSq) {
+
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (alpha &lt;= 0) {</span>
+<span class="nc" id="L136">            throw new IllegalArgumentException(&quot;alpha must be &gt; 0&quot;);</span>
+        }
+<span class="fc" id="L138">        int h = im1.length;</span>
+<span class="fc" id="L139">        int w = im1[0].length;</span>
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">        if (im2.length != h || im2[0].length != w) {</span>
+<span class="nc" id="L141">            throw new IllegalArgumentException(&quot;im2 and im2 should have same dimensions&quot;);</span>
+        }
+
+        // image gradients
+<span class="fc" id="L145">        double[][] gX = hsGradX(im1, im2);</span>
+<span class="fc" id="L146">        double[][] gY = hsGradY(im1, im2);</span>
+        // temporal differences
+<span class="fc" id="L148">        double[][] gT = hsGradT(im1, im2);</span>
+
+        //double denom = (1./lambda) + dIx*dIx + dIy*dIy;
+        //double denom = alpha*alpha + gX*gX + gY*gY;
+<span class="fc" id="L152">        double[][] denom = new double[h][w];</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">        for (int r = 0; r &lt; h; ++r) {</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            for (int c = 0; c &lt; w; ++c) {</span>
+<span class="fc" id="L155">                denom[r][c] = (alpha*alpha + gX[r][c]*gX[r][c] + gY[r][c]*gY[r][c]);</span>
+            }
+        }
+
+<span class="fc" id="L159">        double[][] u = new double[h][w];</span>
+<span class="fc" id="L160">        double[][] v = new double[h][w];</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        if (uInit != 0) {</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">            for (double[] uI : u) {</span>
+<span class="nc" id="L163">                Arrays.fill(uI, uInit);</span>
+            }
+        }
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">        if (vInit != 0) {</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">            for (double[] vI : v) {</span>
+<span class="nc" id="L168">                Arrays.fill(vI, vInit);</span>
+            }
+        }
+
+<span class="fc" id="L172">        double[][] uAvg = new double[h][w];</span>
+<span class="fc" id="L173">        double[][] vAvg = new double[h][w];</span>
+
+<span class="fc" id="L175">        int nIter = 0;</span>
+
+        // smaller values of lambda for smoother flow
+        //double lambda = 0.5;//1./(3.*3.);//1./(15.*15.);
+        // alpha squared models an addition of moise
+        //Math.pow(MiscMath0.mean(MatrixUtil.rowMeans(im1)), 2);
+        //System.out.println(&quot;gX mean^2=&quot; + Math.pow(MiscMath0.mean(MatrixUtil.rowMeans(gX)), 2));
+        //System.out.println(&quot;gT mean^2=&quot; + Math.pow(MiscMath0.mean(MatrixUtil.rowMeans(gT)), 2));
+        //System.out.println(&quot;im1 max^2=&quot; + Math.pow(MiscMath0.findMax(im1), 2));
+
+<span class="fc" id="L185">        boolean hasConverged = false;</span>
+
+<span class="fc" id="L187">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+
+<span class="fc" id="L189">        double[][] prevU = null;</span>
+<span class="fc" id="L190">        double[][] prevV = null;</span>
+
+<span class="fc" id="L192">        double sumDiff = 0;</span>
+<span class="pc bpc" id="L193" title="1 of 6 branches missed.">        while (nIter == 0 || nIter &lt; maxIter &amp;&amp; !hasConverged) {</span>
+<span class="fc" id="L194">            sumDiff = 0;</span>
+<span class="fc" id="L195">            ++nIter;</span>
+
+<span class="fc" id="L197">            hsConvolve(uAvg, u);</span>
+<span class="fc" id="L198">            hsConvolve(vAvg, v);</span>
+
+<span class="fc bfc" id="L200" title="All 2 branches covered.">            for (int r = 0; r &lt; h; ++r) {</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">                for (int c = 0; c &lt; w; ++c) {</span>
+<span class="fc" id="L202">                    double numer = (gX[r][c] * uAvg[r][c]) + (gY[r][c] * vAvg[r][c]) + gT[r][c];</span>
+<span class="fc" id="L203">                    double nd = numer/denom[r][c];</span>
+<span class="fc" id="L204">                    u[r][c] = uAvg[r][c] - gX[r][c] * nd;</span>
+<span class="fc" id="L205">                    v[r][c] = vAvg[r][c] - gY[r][c] * nd;</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">                    if (prevU != null) {</span>
+<span class="fc" id="L207">                        sumDiff += (Math.pow(u[r][c] - prevU[r][c], 2) + Math.pow(v[r][c] - prevV[r][c], 2));</span>
+                    }
+                }
+            }
+<span class="fc bfc" id="L211" title="All 2 branches covered.">            if (prevU != null) {</span>
+<span class="fc" id="L212">                sumDiff /= (h * w);</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">                hasConverged = (sumDiff &lt; epsSq);</span>
+            }
+<span class="fc" id="L215">            prevU = MatrixUtil.copy(u);</span>
+<span class="fc" id="L216">            prevV = MatrixUtil.copy(v);</span>
+        }
+
+<span class="fc" id="L219">        log.fine(&quot;nIter=&quot; + nIter + &quot;, sumDiff=&quot; + sumDiff);</span>
+
+<span class="fc" id="L221">        List&lt;double[][]&gt; out = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L222">        out.add(u);</span>
+<span class="fc" id="L223">        out.add(v);</span>
+<span class="fc" id="L224">        return out;</span>
+
+        /*
+        from cmu lectures for Computer Vision 16-385, lectures 14 by Kris Kitani
+        1. Precompute image gradients
+             StructureTensorD for each image
+        2. Precompute temporal gradients
+             frame differencing
+        3. Initialize flow field
+             u=dx/dy, v=dy/dt
+             init u=0, v=0
+        4. While not converged:
+        Compute flow field updates for each pixel:
+           u_est_{k,l} = u_{k,l}
+                          - (I_x * u_{k,l} + I_y * v_{k,l} + I_t) * I_x
+                          / ((1/lambda) + (I_x)^2) + (I_y)^2))
+           v_est_{k,l} = v_{k,l}
+                         - (I_x * u_{k,l} + I_y * v_{k,l} + I_t) * I_y
+                          / ((1/lambda) + (I_x)^2) + (I_y)^2))
+         */
+    }
+
+    /**
+     * calculate the flow of im1 over patches of dimension pathDimension where the patch centers are given as x,y coordinates.
+     * The flow u,v is returned for each patch.
+     * Corners make good patch centers.
+     &lt;pre&gt;
+     reference for the algorithm details:
+         cmu lectures for Computer Vision 16-385, lectures 14 by Kris Kitani
+
+         https://en.wikipedia.org/wiki/Lucas%E2%80%93Kanade_method
+     &lt;/pre&gt;
+     &lt;pre&gt;
+     Some unit test results on a diagonal gradient image, printed here as information about estimatable motion range
+     in an image size under ideal conditions:
+
+     using the median of the calculated u's, v's as the estimated u (=dx/dt) over all patches:
+     m = image length = image width.
+     max value is maximum pixel intensity in test image.
+
+             m     patchDim   max value    allowing error m/10   nPatches  can calc up to max u
+             32      5         32             3                     21         23
+             64      5         64             6                     53         57
+             128     5         128            12                    117        120
+             256     5         256            25                    245        250   (largest error=7)
+             512     5         512            51                    501        506   (largest error=7)
+             1024    5         1024           102                   1013       1018  (largest error=7)
+     &lt;/pre&gt;
+     * TODO: consider overloading method for features specified in some format
+     * @param im1 image array.  for best results, should hold values similar to an image range [0, 255], etc.
+     * @param im2 image array taken shortly after im1 in time.
+     * @param patchCenters x,y coordinates of patch centers in format of size [nPatches x 2], e.g.
+     *                     patchCenters[0][0] = x0, patchCenters[0][1] = y0,
+     *                     patchCenters[1][0] = x1, patchCenters[1][1] = y1, ...
+     *        Note, patchCenters +- pathDimension/2 should be within bounds of image.
+     * @param patchDimension the width of a square patch to determine flow within. e.g. if patchDimension is 5,
+     *                       the flow is determined in 5x5 patches.  should be &gt;= 3.
+     * @return list of uv pairs, one for each patchCenter.
+     */
+    public static List&lt;double[]&gt; lucasKanade(double[][] im1, double[][] im2, int[][] patchCenters, int patchDimension) throws NotConvergedException, IOException {
+<span class="fc" id="L284">        int h = im1.length;</span>
+<span class="fc" id="L285">        int w = im1[0].length;</span>
+<span class="pc bpc" id="L286" title="2 of 4 branches missed.">        if (im2.length != h || im2[0].length != w) {</span>
+<span class="nc" id="L287">            throw new IllegalArgumentException(&quot;im2 and im2 should have same dimensions&quot;);</span>
+        }
+
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">        if (patchDimension &lt; 3) {</span>
+<span class="nc" id="L291">            throw new IllegalArgumentException(&quot;patchDimension should be &gt;= 3&quot;);</span>
+        }
+
+<span class="fc" id="L294">        List&lt;double[]&gt; uvList = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L296">        double thresh = 0.04;</span>
+
+        // image gradients
+<span class="fc" id="L299">        double[][] gX = hsGradX(im1, im2);</span>
+<span class="fc" id="L300">        double[][] gY = hsGradY(im1, im2);</span>
+        // temporal differences
+<span class="fc" id="L302">        double[][] gT = hsGradT(im1, im2);</span>
+
+<span class="fc" id="L304">        double[] u = new double[patchCenters.length];</span>
+<span class="fc" id="L305">        double[] v = new double[patchCenters.length];</span>
+<span class="fc" id="L306">        int uvI = 0;</span>
+
+<span class="fc bfc" id="L308" title="All 2 branches covered.">        for (int[] pc : patchCenters) {</span>
+            // build A [patchDimension*patchDimension x 2]
+
+<span class="fc" id="L311">            double[][] A = new double[2][2];</span>
+            // build b [patchDimension]
+<span class="fc" id="L313">            double[] b = new double[2];</span>
+
+<span class="fc bfc" id="L315" title="All 2 branches covered.">            for (int dX = -patchDimension/2; dX &lt;= patchDimension/2; ++dX) {</span>
+<span class="pc bpc" id="L316" title="3 of 4 branches missed.">                if ((patchDimension &amp; 1) != 1 &amp;&amp; dX == patchDimension/2) continue;</span>
+<span class="fc" id="L317">                int c = pc[0] + dX;</span>
+<span class="pc bpc" id="L318" title="2 of 4 branches missed.">                if (c &lt; 0 || c &gt;= im2[0].length)</span>
+<span class="nc" id="L319">                    throw new IllegalArgumentException(&quot;col &quot; + c + &quot; out of bounds of width: &quot; + c);</span>
+<span class="fc bfc" id="L320" title="All 2 branches covered.">                for (int dY = -patchDimension/2; dY &lt;= patchDimension/2; ++dY) {</span>
+<span class="pc bpc" id="L321" title="3 of 4 branches missed.">                    if ((patchDimension &amp; 1) != 1 &amp;&amp; dY == patchDimension/2) continue;</span>
+<span class="fc" id="L322">                    int r = pc[1] + dY;</span>
+<span class="pc bpc" id="L323" title="2 of 4 branches missed.">                    if (r &lt; 0 || r &gt;= im2.length)</span>
+<span class="nc" id="L324">                        throw new IllegalArgumentException(&quot;row &quot; + r + &quot; out of bounds of height: &quot; + r);</span>
+
+<span class="fc" id="L326">                    A[0][0] += (gX[r][c] * gX[r][c]);</span>
+<span class="fc" id="L327">                    A[0][1] += (gX[r][c] * gY[r][c]);</span>
+<span class="fc" id="L328">                    A[1][1] += (gY[r][c] * gY[r][c]);</span>
+<span class="fc" id="L329">                    b[0] += gX[r][c] * gT[r][c];</span>
+<span class="fc" id="L330">                    b[1] += gY[r][c] * gT[r][c];</span>
+                } // end for loop dY
+            }// end for loop dX
+<span class="fc" id="L333">            A[1][0] = A[0][1];</span>
+<span class="fc" id="L334">            b[0] *= -1;</span>
+<span class="fc" id="L335">            b[1] *= -1;</span>
+
+            //xEst = pseudoInv(A) * b // [2x2] * [2x1] = [2X1]
+
+            //A^T*A should be invertible
+            //A^T*A should not be too small (length &gt;= 2)
+            // eigenvalue1/eigenvalue2 should not be too large
+
+            // can use Harris corners response &gt; 0 to ensure good patch to include
+<span class="fc" id="L344">            double detA = MatrixUtil.determinant(A);</span>
+<span class="fc" id="L345">            double trA = MatrixUtil.trace(A);</span>
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">            boolean cont = (detA - thresh * trA * trA) &gt; 0;</span>
+
+            /* or that there is power in eigen[1], hence rank =2
+            double[][] ATA = MatrixUtil.createATransposedTimesA(A);
+            EVD evd = no.uib.cipr.matrix.EVD.factorize(new DenseMatrix(ATA));
+            double[] eigenValues = evd.getRealEigenvalues();
+            boolean cont2 = eigenValues[eigenValues.length - 1] &gt;= thresh;
+            */
+<span class="pc bpc" id="L354" title="1 of 2 branches missed.">            if (!cont)</span>
+<span class="nc" id="L355">                continue;</span>
+
+<span class="fc" id="L357">            double[] uv = MatrixUtil.multiplyMatrixByColumnVector(MatrixUtil.pseudoinverseFullRowRank(A), b);</span>
+<span class="fc" id="L358">            uvList.add(uv);</span>
+
+<span class="fc" id="L360">            u[uvI] = uv[0];</span>
+<span class="fc" id="L361">            v[uvI] = uv[1];</span>
+<span class="fc" id="L362">            ++uvI;</span>
+        }
+
+<span class="fc" id="L365">        return uvList;</span>
+    }
+
+    protected static double[][] strictColumnDiff(double[][] a) {
+<span class="nc" id="L369">        double[][] b = new double[a.length][a[0].length];</span>
+<span class="nc bnc" id="L370" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L371" title="All 2 branches missed.">            for (int j = 1; j &lt; b.length; ++j) {</span>
+<span class="nc" id="L372">                b[i][j] = a[i][j] - a[i][j-1];</span>
+            }
+        }
+<span class="nc" id="L375">        return b;</span>
+    }
+
+    /**
+     * extract value from x w/ boundary replication when out of bounds.
+     * method adopted from
+     &lt;pre&gt;
+     boundary condition handling was adopted from:
+     Meinhardt-Llopis, Pérez, and Kondermann, &quot;Horn-Schunck Optical Flow with a Multi-Scale Strategy&quot;,
+     Image Processing On Line, 3 (2013), pp. 151–172. https://doi.org/10.5201/ipol.2013.20
+     &lt;/pre&gt;
+     * @param x
+     * @param col
+     * @param row
+     * @return
+     */
+    protected static double p(double[][] x, int row, int col) {
+<span class="fc" id="L392">        int w = x[0].length;</span>
+<span class="fc" id="L393">        int h = x.length;</span>
+<span class="fc bfc" id="L394" title="All 2 branches covered.">        if (col &lt; 0) col = 0;</span>
+<span class="fc bfc" id="L395" title="All 2 branches covered.">        if (row &lt; 0) row = 0;</span>
+<span class="fc bfc" id="L396" title="All 2 branches covered.">        if (col &gt;= w) col = w - 1;</span>
+<span class="fc bfc" id="L397" title="All 2 branches covered.">        if (row &gt;= h) row = h - 1;</span>
+<span class="fc" id="L398">        return x[row][col];</span>
+    }
+
+    /**
+     create y gradient
+     &lt;pre&gt;
+     Horn &amp; Schmunck 1980, Sect 7
+     &lt;/pre&gt;
+     * @param im1
+     * @param im2
+     * @return
+     */
+    protected static double[][] hsGradY(double[][] im1, double[][] im2) {
+<span class="fc" id="L411">        int h = im1.length;</span>
+<span class="fc" id="L412">        int w = im1[0].length;</span>
+<span class="fc" id="L413">        double[][] b = new double[h][w];</span>
+
+<span class="fc bfc" id="L415" title="All 2 branches covered.">        for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc bfc" id="L416" title="All 2 branches covered.">            for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc" id="L417">                b[j][i] = p(im1, j+1,i) - p(im1, j, i)</span>
+<span class="fc" id="L418">                        + p(im1,j+1,i+1) - p(im1,j,i+1)</span>
+<span class="fc" id="L419">                        + p(im2, j+1,i) - p(im2, j, i)</span>
+<span class="fc" id="L420">                        + p(im2,j+1,i+1) - p(im2,j,i+1);</span>
+<span class="fc" id="L421">                b[j][i] /= 4.;</span>
+            }
+        }
+<span class="fc" id="L424">        return b;</span>
+    }
+
+    protected static double[][] strictRowDiff(double[][] a) {
+<span class="nc" id="L428">        double[][] b = new double[a.length][a[0].length];</span>
+<span class="nc bnc" id="L429" title="All 2 branches missed.">        for (int i =1; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L430" title="All 2 branches missed.">            for (int j = 0; j &lt; b.length; ++j) {</span>
+<span class="nc" id="L431">                b[i][j] = a[i][j] - a[i-1][j];</span>
+            }
+        }
+<span class="nc" id="L434">        return b;</span>
+    }
+
+    //Horn &amp; Schmunck 1980, Sect 7
+    protected static double[][] hsGradX(double[][] im1, double[][] im2) {
+<span class="fc" id="L439">        int h = im1.length;</span>
+<span class="fc" id="L440">        int w = im1[0].length;</span>
+<span class="fc" id="L441">        double[][] b = new double[h][w];</span>
+
+<span class="fc bfc" id="L443" title="All 2 branches covered.">        for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc bfc" id="L444" title="All 2 branches covered.">            for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc" id="L445">                b[j][i] = p(im1, j,i+1) - p(im1, j, i)</span>
+<span class="fc" id="L446">                        + p(im1, j+1, i+1) - p(im1, j+1, i)</span>
+<span class="fc" id="L447">                        + p(im2, i+1,j) - p(im2, j, i)</span>
+<span class="fc" id="L448">                        + p(im2, j+1, i+1) - p(im2, j+1, i);</span>
+<span class="fc" id="L449">                b[j][i] /= 4.;</span>
+            }
+        }
+<span class="fc" id="L452">        return b;</span>
+    }
+
+    //Horn &amp; Schmunck 1980, Sect 7
+    protected static double[][] hsGradT(double[][] im1, double[][] im2) {
+<span class="fc" id="L457">        int h = im1.length;</span>
+<span class="fc" id="L458">        int w = im1[0].length;</span>
+<span class="fc" id="L459">        double[][] b = new double[h][w];</span>
+
+<span class="fc bfc" id="L461" title="All 2 branches covered.">        for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc bfc" id="L462" title="All 2 branches covered.">            for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc" id="L463">                b[j][i] = p(im2,j,i) - p(im1,j,i)</span>
+<span class="fc" id="L464">                        + p(im2,j,i+1) - p(im1,j,i+1)</span>
+<span class="fc" id="L465">                        + p(im2,j+1,i) - p(im1,j+1,i)</span>
+<span class="fc" id="L466">                        + p(im2,j+1,i+1) - p(im1,j+1,i+1);</span>
+<span class="fc" id="L467">                b[j][i] /= 4.;</span>
+            }
+        }
+
+<span class="fc" id="L471">        return b;</span>
+    }
+
+    /**
+     * weighted sum over the 8 neighbors.
+     * Horn, Schunck 1980  section 8
+     * @param out
+     * @param in
+     */
+    private static void hsConvolve(double[][] out, double[][] in) {
+<span class="fc" id="L481">        int h = in.length;</span>
+<span class="fc" id="L482">        int w = in[0].length;</span>
+<span class="fc bfc" id="L483" title="All 2 branches covered.">        for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc bfc" id="L484" title="All 2 branches covered.">            for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc" id="L485">                out[j][i] = (p(in, j-1, i) + p(in,j+1,i)</span>
+<span class="fc" id="L486">                        + p(in,j,i-1) + p(in,j,i+1))/6.;</span>
+<span class="fc" id="L487">                out[j][i] += (p(in, j-1, i-1) + p(in,j-1,i+1)</span>
+<span class="fc" id="L488">                        + p(in,j+1,i-1) + p(in,j+1,i+1))/12.;</span>
+            }
+        }
+<span class="fc" id="L491">    }</span>
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

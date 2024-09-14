@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ShiTomasi.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.features</a> &gt; <span class="el_source">ShiTomasi.java</span></div><h1>ShiTomasi.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.features;
+
+import algorithms.imageProcessing.ImageProcessor;
+import algorithms.imageProcessing.StructureTensorD;
+import algorithms.matrix.MatrixUtil;
+import algorithms.sort.MiscSorter;
+
+import java.util.Arrays;
+
+<span class="nc" id="L10">public class ShiTomasi {</span>
+
+    /**
+     * returns the 2nd strongest eigenvalues of structure tensor matrix:
+     &lt;pre&gt;
+       Z = [gX^2  gX*gY]
+           [gXgY  gY^2 ]
+
+       where gX and gY are the gradients.
+     &lt;/pre&gt;
+     Note that row-major notation is used.
+     * @param a
+     * @param  outEigs is indexed by (row*a.length) + col and holds values that are the 2nd strongest eigenvalue for the
+     *                 structure tensor at each point a[row][col].
+     */
+    static void tensorSecondEigenvalues(double[][] a, double[] outEigs) {
+
+<span class="fc" id="L27">        StructureTensorD t = new StructureTensorD(a, 1.0f, false);</span>
+        //double[][] gTX = t.getDX();
+        //double[][] gTY = t.getDY();
+
+<span class="fc" id="L31">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L32">        double[][] gTX = MatrixUtil.copy(a);</span>
+<span class="fc" id="L33">        double[][] gTY = MatrixUtil.copy(a);</span>
+        // {0, -1, 1} should match the paper diff in method sumSteepestDescErrImageProduct if change back to it
+<span class="fc" id="L35">        imageProcessor.applyKernel1D(gTX, new double[]{0, 1, -1}, false);</span>
+<span class="fc" id="L36">        imageProcessor.applyKernel1D(gTY, new double[]{0, 1, -1}, true);</span>
+
+<span class="fc" id="L38">        double[][] z = new double[2][2];</span>
+        double gX, gY;
+<span class="fc" id="L40">        double[] eigI = null;</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        for (int row = 0, idx=0; row &lt; a.length; ++row) {</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">            for (int col = 0; col &lt; a[row].length; ++col, ++idx) {</span>
+<span class="fc" id="L43">                gX = gTX[row][col];</span>
+<span class="fc" id="L44">                gY = gTY[row][col];</span>
+
+<span class="fc" id="L46">                z[0][0] = gX*gX;</span>
+<span class="fc" id="L47">                z[0][1] = gX*gY;</span>
+<span class="fc" id="L48">                z[1][0] = z[0][1];</span>
+<span class="fc" id="L49">                z[1][1] = gY*gY;</span>
+
+<span class="fc" id="L51">                eigI = MatrixUtil.eigenvalues2X2(z);</span>
+<span class="fc" id="L52">                outEigs[idx] = eigI[1];</span>
+            }
+        }
+<span class="fc" id="L55">    }</span>
+
+    /**
+     * returns the nPoints of 2nd strongest eigenvalues of the structure tensor of each point.
+     * @param a
+     * @param nPoints number of points to return
+     * @param outMinMax is populated with the 2nd strongest eigenvalues for the first and the last points
+     *                  for the coordinate list returned.
+     * @return the strongest 2nd strongest eigenvalues of the structure tensor of each point if not == 0.
+     */
+    public static int[][] goodFeatureCoordinates(double[][] a, int nPoints, double[] outMinMax) {
+
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">        if (outMinMax.length != 2) {</span>
+<span class="nc" id="L68">            throw  new IllegalArgumentException(&quot;outMinMax length must be 2&quot;);</span>
+        }
+
+<span class="fc" id="L71">        int w = a[0].length;</span>
+<span class="fc" id="L72">        int h = a.length;</span>
+<span class="fc" id="L73">        int wh = w*h;</span>
+<span class="fc" id="L74">        double[] vals = new double[wh];</span>
+<span class="fc" id="L75">        tensorSecondEigenvalues(a, vals);</span>
+
+<span class="fc" id="L77">        int[] idxs =  MiscSorter.mergeSortDecreasing(vals);</span>
+
+<span class="fc" id="L79">        int[][] xy = new int[nPoints][2];</span>
+<span class="fc" id="L80">        int iP = 0;</span>
+        int idx, y, x;
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        for (int i = 0; i &lt; nPoints; ++i) {</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">            if (vals[i] == 0.) continue;</span>
+<span class="nc" id="L84">            idx = idxs[i];</span>
+<span class="nc" id="L85">            y = idx / w;</span>
+<span class="nc" id="L86">            x = idx % w;</span>
+<span class="nc" id="L87">            xy[iP][0] = x;</span>
+<span class="nc" id="L88">            xy[iP][1] = y;</span>
+<span class="nc" id="L89">            ++iP;</span>
+        }
+<span class="fc" id="L91">        xy = Arrays.copyOf(xy, iP);</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        if (iP == 0) {</span>
+<span class="fc" id="L93">            Arrays.fill(outMinMax, 0);</span>
+        } else {
+<span class="nc" id="L95">            outMinMax[0] = vals[0];</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">            if (iP &gt; 1) {</span>
+<span class="nc" id="L97">                outMinMax[1] = vals[iP - 1];</span>
+            }
+        }
+
+<span class="fc" id="L101">        return xy;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

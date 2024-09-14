@@ -303,10 +303,10 @@ Also, the summed table of the chord differences is only along columns.
 <span class="fc" id="L303">                start++;</span>
             }
 <span class="fc" id="L305">            stop = interval2.max();</span>
-<span class="pc bpc" id="L306" title="1 of 2 branches missed.">            if (existing.contains(stop)) {</span>
-<span class="nc" id="L307">                junctions.add(stop);</span>
-<span class="nc" id="L308">    System.out.println(&quot;junction: &quot; + p.getX(stop) + &quot; , &quot; + p.getY(stop));</span>
-<span class="nc" id="L309">                stop--;</span>
+<span class="fc bfc" id="L306" title="All 2 branches covered.">            if (existing.contains(stop)) {</span>
+<span class="fc" id="L307">                junctions.add(stop);</span>
+<span class="fc" id="L308">    System.out.println(&quot;junction: &quot; + p.getX(stop) + &quot; , &quot; + p.getY(stop));</span>
+<span class="fc" id="L309">                stop--;</span>
             }
 <span class="pc bpc" id="L311" title="1 of 2 branches missed.">            if (debug) {</span>
 <span class="nc" id="L312">                System.out.println(&quot;*** final: &quot; + </span>

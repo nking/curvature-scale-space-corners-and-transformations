@@ -878,9 +878,7 @@ import no.uib.cipr.matrix.NotConvergedException;
     
     /**
      * update rotation matrix r with deltaTheta.
-     * the approach used avoids singularities and the need to restore 
-     * the constraint afterwards (i.e., constraint restoration is built in).
-     * 
+     *
      * @param r
      * @param thetas input and output array holding euler rotation angles 
      *    theta_x, theta_y, theta_
@@ -891,8 +889,17 @@ import no.uib.cipr.matrix.NotConvergedException;
         // EE382-Visual localization &amp; Perception, “Lecture 08- Nonlinear least square &amp; RANSAC”
         // http://drone.sjtu.edu.cn/dpzou/teaching/course/lecture07-08-nonlinear_least_square_ransac.pdf
         // parameter perturbations for a Lie group such as rotation are:
-        //     R * (I - [delta x]_x) where [delta x]_x is the skew-symetric matrix of delta_x 
-        
+        //     R * (I - [delta x]_x) where [delta x]_x is the skew-symmetric matrix of delta_x
+
+<span class="nc" id="L894">        double[][] dR = MatrixUtil.skewSymmetric(deltaTheta);</span>
+<span class="nc bnc" id="L895" title="All 2 branches missed.">        for (int i = 0; i &lt;3; ++i) {</span>
+<span class="nc" id="L896">            dR[i][i] = 1 - dR[i][i];</span>
+        }
+<span class="nc" id="L898">        double[][] r2 = MatrixUtil.multiply(r, dR);</span>
+<span class="nc bnc" id="L899" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L900">            System.arraycopy(r2[i], 0, r[i], 0, 3);</span>
+        }
+
         // T. Barfoot, et al. 2010, 
         // Pose estimation using linearized rotations and quaternion algebra, 
         // Acta Astronautica (2010), doi:10.1016/j.actaastro.2010.06.049
@@ -901,19 +908,27 @@ import no.uib.cipr.matrix.NotConvergedException;
         //     where C is rotation matrix r
         //           calculated as C(theta) = 
         //     and deltaPhi = sTheta * deltaTheta
-        
+
+        /*
         //double[][] out;// = MatrixUtil.zeros(3, 3);
-<span class="nc" id="L906">        double[] qUpdated = Rotation.applySingularitySafeRotationPerturbationQuaternion(thetas, deltaTheta);</span>
-        
+        // NOTE: deltaTheta elements should be &lt; about 0.25 for small angle perturbations requirement
+         Rotation.applySingularitySafeRotationPerturbation(thetas, deltaTheta, EulerSequence seq, true)
+        Rotation.RotationPerturbationQuaternion rPQ =
+                (Rotation.RotationPerturbationQuaternion)Rotation
+                        .applySingularitySafeRotationPerturbation(thetas, deltaTheta, true);
+        double[] qUpdated = rPQ.quaternion;
+
+        //TODO: revisit all of this class
+
         // [4X4]
-<span class="nc" id="L909">        double[][] qR = Rotation.createRotationMatrixFromQuaternion4(qUpdated);</span>
-<span class="nc" id="L910">        qR = MatrixUtil.transpose(qR);</span>
+        double[][] qR = Rotation.createRotation4FromQuaternion(qUpdated);
+        qR = MatrixUtil.transpose(qR);
         
         // rotation is [0:2, 0:2] of qR  
                 
         // update in-out variable r
-<span class="nc bnc" id="L915" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L916">            System.arraycopy(qR[i], 0, r[i], 0, 3);</span>
+        for (int i = 0; i &lt; 3; ++i) {
+            System.arraycopy(qR[i], 0, r[i], 0, 3);
         }
 
         // ---- update theta ----        
@@ -921,15 +936,14 @@ import no.uib.cipr.matrix.NotConvergedException;
         //    vector consistent with the rotation matrix,
         //    but the value is a little different that updating theta with delta theta
         //    by addition.
-<span class="nc" id="L924">        double[] thetaExtracted = Rotation.extractThetaFromZYX(r);</span>
-<span class="nc" id="L925">        System.arraycopy(thetaExtracted, 0, thetas, 0, thetas.length);</span>
+        double[] thetaExtracted = Rotation.extractThetaFromZYX(r);
+        System.arraycopy(thetaExtracted, 0, thetas, 0, thetas.length);
         
-        /*
-        for (int i = 0; i &lt; 3; ++i) {
-            thetas[i] += deltaTheta[i];
-        }*/
-        
-<span class="nc" id="L932">    }</span>
+        //for (int i = 0; i &lt; 3; ++i) {
+        //    thetas[i] += deltaTheta[i];
+        //}
+        */
+<span class="nc" id="L946">    }</span>
 
     /**
      * initialize the first parameter steps with small values suggested
@@ -946,26 +960,26 @@ import no.uib.cipr.matrix.NotConvergedException;
         delta x ~ 1e-8
         */
         int i;
-<span class="nc bnc" id="L949" title="All 2 branches missed.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc bnc" id="L963" title="All 2 branches missed.">        for (i = 0; i &lt; 3; ++i) {</span>
             // delta theta
-<span class="nc" id="L951">            deltaP[i] = 1e-8;</span>
+<span class="nc" id="L965">            deltaP[i] = 1e-8;</span>
         }
-<span class="nc bnc" id="L953" title="All 2 branches missed.">        for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc bnc" id="L967" title="All 2 branches missed.">        for (i = 0; i &lt; 3; ++i) {</span>
             // delta translation
-<span class="nc" id="L955">            deltaP[3+i] = 1e-5;</span>
+<span class="nc" id="L969">            deltaP[3+i] = 1e-5;</span>
         }
         
-<span class="nc" id="L958">    }</span>
+<span class="nc" id="L972">    }</span>
 
     private static double maxDiag(double[][] jTJ) {
-<span class="nc" id="L961">        double max = Double.NEGATIVE_INFINITY;</span>
+<span class="nc" id="L975">        double max = Double.NEGATIVE_INFINITY;</span>
         //Arrays.fill(max, Double.NEGATIVE_INFINITY);
-<span class="nc bnc" id="L963" title="All 2 branches missed.">        for (int i = 0; i &lt; jTJ.length; ++i) {</span>
-<span class="nc bnc" id="L964" title="All 2 branches missed.">            if (jTJ[i][i] &gt; max) {</span>
-<span class="nc" id="L965">                max = jTJ[i][i];</span>
+<span class="nc bnc" id="L977" title="All 2 branches missed.">        for (int i = 0; i &lt; jTJ.length; ++i) {</span>
+<span class="nc bnc" id="L978" title="All 2 branches missed.">            if (jTJ[i][i] &gt; max) {</span>
+<span class="nc" id="L979">                max = jTJ[i][i];</span>
             }
         }
-<span class="nc" id="L968">        return max;</span>
+<span class="nc" id="L982">        return max;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

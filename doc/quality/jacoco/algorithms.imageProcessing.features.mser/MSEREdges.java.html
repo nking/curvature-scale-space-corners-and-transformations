@@ -970,8 +970,8 @@ public class MSEREdges {
                     //    type, (int)(r.moments_[0]/r.area_),
                     //    (int)(r.moments_[1]/r.area_), r.level_,
                     //    avgLevel);
-<span class="pc bpc" id="L973" title="1 of 2 branches missed.">                    if (avgLevel &gt; 240) {//230?</span>
-<span class="nc" id="L974">                        pt0Regions.remove(i);</span>
+<span class="fc bfc" id="L973" title="All 2 branches covered.">                    if (avgLevel &gt; 240) {//230?</span>
+<span class="fc" id="L974">                        pt0Regions.remove(i);</span>
                     }
                 }
             }
@@ -2309,11 +2309,11 @@ public class MSEREdges {
                 //       that is one off from image border, a fake edge
                 //       is added to the values and those fake edges are
                 //       negative numbers starting at -1
-<span class="fc" id="L2312">                TIntObjectMap&lt;TIntList&gt; umEPIdxMap</span>
-<span class="fc" id="L2313">                    = findEndpoints(segment, mpIdxMap,</span>
-<span class="fc" id="L2314">                        clrImg.getWidth(), clrImg.getHeight());</span>
+<span class="fc" id="L2312">                TIntObjectMap&lt;TIntList&gt; umEPIdxMap = findEndpoints(segment, mpIdxMap, clrImg.getWidth(), clrImg.getHeight());</span>
 
-<span class="pc bnc" id="L2316" title="All 2 branches missed.">                assert (!umEPIdxMap.isEmpty());</span>
+<span class="fc bfc" id="L2314" title="All 2 branches covered.">                if (umEPIdxMap.isEmpty()) {</span>
+<span class="fc" id="L2315">                    continue;</span>
+                }
 
                 // for any 2 entries in umEPIdxMap
                 //   if the set difference operation results in 2 edge

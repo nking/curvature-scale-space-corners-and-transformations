@@ -10,6 +10,8 @@ import java.util.logging.Logger;
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.NotConvergedException;
 import no.uib.cipr.matrix.SVD;
+import java.util.Map;
+import java.util.List;
 
 /**
  * given correspondence between two images (in camera reference frame, a.k.a. calibrated coordinates)
@@ -24,7 +26,7 @@ import no.uib.cipr.matrix.SVD;
  *
  * @author nichole
  */
-<span class="pc" id="L27">public class Triangulation {</span>
+<span class="pc" id="L29">public class Triangulation {</span>
 
     public static class WCSPt {
         /**
@@ -57,113 +59,117 @@ import no.uib.cipr.matrix.SVD;
      * @param k2 intrinsic camera matrix for image 2 in units of pixels.
      * @param r2 the rotation matrix for the extrinsic camera matrix for image 2.
      * @param t2 the translation vector for the extrinsic camera matrix for image 2.
-     * @param x1c the camera 1 set of correspondence points.  format is 3 x N where
+     * @param x1 the camera 1 set of correspondence points.  format is 3 x N where
      * N is the number of points.  all points are observations of real world point X
-     *           and should be in camera reference frame.
-     * @param x2c the camera 2 set of correspondence points.  format is 3 x N where
+     *           and should be in image reference frame.
+     * @param x2 the camera 2 set of correspondence points.  format is 3 x N where
      *      * N is the number of points.  all points are observations of real world point X
-     *      *           and should be in camera reference frame.
+     *      *           and should be in image reference frame.
      * @return the point coordinates in world coordinate reference frame
      */
     public static WCSPt calculateWCSPoint(
             double[][] k1, double[][] r1, double[] t1,
             double[][] k2, double[][] r2, double[] t2,
-            double[][] x1c, double[][] x2c) {
+            double[][] x1, double[][] x2) {
         
-<span class="pc bpc" id="L73" title="2 of 4 branches missed.">        if (k1.length != 3 || k1[0].length != 3) {</span>
-<span class="nc" id="L74">            throw new IllegalArgumentException(&quot;k1 must be 3 x 3&quot;);</span>
+<span class="pc bpc" id="L75" title="2 of 4 branches missed.">        if (k1.length != 3 || k1[0].length != 3) {</span>
+<span class="nc" id="L76">            throw new IllegalArgumentException(&quot;k1 must be 3 x 3&quot;);</span>
         }
-<span class="pc bpc" id="L76" title="2 of 4 branches missed.">        if (k2.length != 3 || k2[0].length != 3) {</span>
-<span class="nc" id="L77">            throw new IllegalArgumentException(&quot;k2 must be 3 x 3&quot;);</span>
+<span class="pc bpc" id="L78" title="2 of 4 branches missed.">        if (k2.length != 3 || k2[0].length != 3) {</span>
+<span class="nc" id="L79">            throw new IllegalArgumentException(&quot;k2 must be 3 x 3&quot;);</span>
         }
-<span class="pc bpc" id="L79" title="2 of 4 branches missed.">        if (r1.length != 3 || r1[0].length != 3) {</span>
-<span class="nc" id="L80">            throw new IllegalArgumentException(&quot;r1 must be 3 x 3&quot;);</span>
+<span class="pc bpc" id="L81" title="2 of 4 branches missed.">        if (r1.length != 3 || r1[0].length != 3) {</span>
+<span class="nc" id="L82">            throw new IllegalArgumentException(&quot;r1 must be 3 x 3&quot;);</span>
         }
-<span class="pc bpc" id="L82" title="2 of 4 branches missed.">        if (r2.length != 3 || r2[0].length != 3) {</span>
-<span class="nc" id="L83">            throw new IllegalArgumentException(&quot;r2 must be 3 x 3&quot;);</span>
+<span class="pc bpc" id="L84" title="2 of 4 branches missed.">        if (r2.length != 3 || r2[0].length != 3) {</span>
+<span class="nc" id="L85">            throw new IllegalArgumentException(&quot;r2 must be 3 x 3&quot;);</span>
         }
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">        if (t1.length != 3 ) {</span>
-<span class="nc" id="L86">            throw new IllegalArgumentException(&quot;t1 must be length 3&quot;);</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        if (t1.length != 3 ) {</span>
+<span class="nc" id="L88">            throw new IllegalArgumentException(&quot;t1 must be length 3&quot;);</span>
         }
-<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (t2.length != 3 ) {</span>
-<span class="nc" id="L89">            throw new IllegalArgumentException(&quot;t2 must be length 3&quot;);</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (t2.length != 3 ) {</span>
+<span class="nc" id="L91">            throw new IllegalArgumentException(&quot;t2 must be length 3&quot;);</span>
         }
-<span class="pc bpc" id="L91" title="2 of 4 branches missed.">        if (x1c.length != 3 || x2c.length != 3) {</span>
-<span class="nc" id="L92">            throw new IllegalArgumentException(&quot;x1.length must be 3 and so must x2.length&quot;);</span>
+<span class="pc bpc" id="L93" title="2 of 4 branches missed.">        if (x1.length != 3 || x2.length != 3) {</span>
+<span class="nc" id="L94">            throw new IllegalArgumentException(&quot;x1.length must be 3 and so must x2.length&quot;);</span>
         }
-<span class="fc" id="L94">        int n = x1c[0].length;</span>
-<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        if (x2c[0].length != n) {</span>
-<span class="nc" id="L96">            throw new IllegalArgumentException(&quot;x1 and x2 must be same dimensions&quot;);</span>
+<span class="fc" id="L96">        int n = x1[0].length;</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (x2[0].length != n) {</span>
+<span class="nc" id="L98">            throw new IllegalArgumentException(&quot;x1 and x2 must be same dimensions&quot;);</span>
         }
 
         // 3 x 4
-<span class="fc" id="L100">        double[][] camera1 = Camera.createCamera(k1, r1, t1);</span>
+<span class="fc" id="L102">        double[][] camera1 = Camera.createCamera(k1, r1, t1);</span>
         
-<span class="fc" id="L102">        double[][] camera2 = Camera.createCamera(k2, r2, t2);</span>
+<span class="fc" id="L104">        double[][] camera2 = Camera.createCamera(k2, r2, t2);</span>
         
-<span class="fc" id="L104">        return calculateWCSPoint(camera1, camera2, x1c, x2c);</span>
+<span class="fc" id="L106">        return calculateWCSPoint(camera1, camera2, x1, x2);</span>
     }
-    
+
     /**
-     given the projection matrices and matching correspondence of points between the 2 cameras
+     * given the projection matrices and matching correspondence of points between the 2 cameras
      * (measurements of the same object, that is, as a single 3D point is returned) calculate the real world
      * coordinate of the observations.
+
+     x1, y1 must be in image reference frame for this method.
+     &lt;pre&gt;
+
+     following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+     &lt;/pre&gt;
+     * @param camera1 camera parameters for image 1.   the size is 3X4
      *
-     * &lt;pre&gt;
-     *     NOTE the projection matrix is formed using P = K * [ R | t ]
-     *     and x = alpha * P * X
-     *     so x1 and x2 should be in camera coordinates.
+     * @param camera2 camera parameters for image 2. the size is 3X4.
      *
-     * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
-     * &lt;/pre&gt;
-     * @param camera1 camera matrix for image 1.   the size is 3X4.
-     *                the data are used to construct P = K * [ R | t ].
-     * @param camera2 camera matrix for image 2. the size is 3X4.
-     *                the data are used to construct P = K * [ R | t ].
-     * @param x1c the set of measurements of 1 real world point X from image 1 in camera coordinate reference frame.
+     * @param x1 the set of measurements of 1 real world point X from camera 1 in image coordinates.
      * The corresponding measurements of the same point in camera 2 are in x2.
      * format is 3 x N where N is the number of measurements.
-     *
-     * @param x2c the set of measurements of 1 real world point X from image 2 in camera coordinate reference frame.
-     *      * The corresponding measurements of the same point in camera 1 are in x2.
-     *      * format is 3 x N where N is the number of measurements.
-     *
+     * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
+     * If the data are not perfect, need more than 1 pair for best fit.
+     * @param x2 the set of measurements of 1 real world point X from camera 2 in image coordinates.
+     * The corresponding measurements of the same point in camera 1 are in x1.
+     * format is 3 x N where N is the number of measurements.
+     * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
+     * If the data are not perfect, need more than 1 pair for best fit.
      * @return the 3D coordinate of the point in world scene.  note that
      * the entire array can be normalized by the last element.
      */
     public static WCSPt calculateWCSPoint(
         CameraParameters camera1, CameraParameters camera2,
-        double[][] x1c, double[][] x2c) {
+        double[][] x1, double[][] x2) {
         
-<span class="nc" id="L138">        return calculateWCSPoint(camera1.getIntrinsicParameters().getIntrinsic(),</span>
-<span class="nc" id="L139">            camera1.getExtrinsicParameters().getRotation(),</span>
-<span class="nc" id="L140">            camera1.getExtrinsicParameters().getTranslation(),</span>
-<span class="nc" id="L141">            camera2.getIntrinsicParameters().getIntrinsic(),</span>
-<span class="nc" id="L142">            camera2.getExtrinsicParameters().getRotation(),</span>
-<span class="nc" id="L143">            camera2.getExtrinsicParameters().getTranslation(),</span>
-            x1c, x2c);
+<span class="nc" id="L140">        return calculateWCSPoint(camera1.getIntrinsicParameters().getIntrinsic(),</span>
+<span class="nc" id="L141">            camera1.getExtrinsicParameters().getRotation(),</span>
+<span class="nc" id="L142">            camera1.getExtrinsicParameters().getTranslation(),</span>
+<span class="nc" id="L143">            camera2.getIntrinsicParameters().getIntrinsic(),</span>
+<span class="nc" id="L144">            camera2.getExtrinsicParameters().getRotation(),</span>
+<span class="nc" id="L145">            camera2.getExtrinsicParameters().getTranslation(),</span>
+            x1, x2);
     }
-    
+
     /**
-     given the projection matrices and matching correspondence of points between the 2 images
+     * given the projection matrices and matching correspondence of points between the 2 cameras
      * (measurements of the same object, that is, as a single 3D point is returned) calculate the real world
      * coordinate of the observations.
      *
-     * &lt;pre&gt;
-     *     P = K * [ R | t ], and x1 and x2 must be in camera coordinate reference frame.
-     *
-     * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
-     * &lt;/pre&gt;
-     * @param camera1 camera matrix for image 1.   the size is 3X4.
-     *                P = K * [ R | t ].
+     &lt;pre&gt;
+     if x1 and x2 are in camera coordinates, then Pi = [Ri | Ti] must be used.
+     if x1 and x2 are in image coordinates, then Pi = Ki * [Ri | Ti] must be used.
+     where Ki is intrinsic camera matrix for camera i, R is the rotation matrix for camera i, and i is
+     the translation vector for camera i.
+     following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+     &lt;/pre&gt;
+     * @param camera1 camera matrix for image 1.   the size is 3X4
+     *               if x1 and x2 are in camera coordinates, then P1 = [R1 | T1] must be used.
+     *       if x1 and x2 are in image coordinates, then P1 = K1 * [R1 | T1] must be used.
      * @param camera2 camera matrix for image 2. the size is 3X4.
-     *                P = K * [ R | t ].
-     * @param x1c the set of measurements of 1 real world point X from camera 1 in camera coordinates.
+     *                 if x1 and x2 are in camera coordinates, then P2 = [R2 | T2] must be used.
+     *        if x1 and x2 are in image coordinates, then P2 = K2 * [R2 | T2] must be used.
+     * @param x1c the set of measurements of 1 real world point X from camera 1 in camera coordinates or image coords.
      * The corresponding measurements of the same point in camera 2 are in x2.
      * format is 3 x N where N is the number of measurements.
      * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
      * If the data are not perfect, need more than 1 pair for best fit.
-     * @param x2c the set of measurements of 1 real world point X from camera 2 in camera coordinates.
+     * @param x2c the set of measurements of 1 real world point X from camera 2 in camera coordinates or image coords.
      * The corresponding measurements of the same point in camera 1 are in x1.
      * format is 3 x N where N is the number of measurements.
      * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
@@ -175,7 +181,7 @@ import no.uib.cipr.matrix.SVD;
         CameraProjection camera1, CameraProjection camera2,
         double[][] x1c, double[][] x2c) {
         
-<span class="nc" id="L178">        return calculateWCSPoint(camera1.getP(), camera2.getP(), x1c, x2c);</span>
+<span class="nc" id="L184">        return calculateWCSPoint(camera1.getP(), camera2.getP(), x1c, x2c);</span>
     }
     
      /**
@@ -183,49 +189,47 @@ import no.uib.cipr.matrix.SVD;
       * (measurements of the same object, that is, as a single 3D point is returned) calculate the real world
       * coordinate of the observations.
      *
-     * &lt;pre&gt;
-      *     P = K * [ R | t ], and x1 and x2 must be in camera coordinates(pixels).
-      *
-      *     NOTE: sometimes the rotation is applied before translation, then P = K * [ R | -R*t].
-      *     This method uses the projection matrix rows and does not decompose it into K and R components
-      *     so the assumed order of transformations does not affect this method.
-      *
-     * following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
-     * &lt;/pre&gt;
+     &lt;pre&gt;
+           if x1 and x2 are in camera coordinates, then Pi = [Ri | Ti] must be used.
+           if x1 and x2 are in image coordinates, then Pi = Ki * [Ri | Ti] must be used.
+           where Ki is intrinsic camera matrix for camera i, R is the rotation matrix for camera i, and i is
+           the translation vector for camera i.
+      following http://www.cs.cmu.edu/~16385/s17/Slides/11.4_Triangulation.pdf
+      &lt;/pre&gt;
      * @param camera1 camera matrix for image 1.   the size is 3X4
-      *                P = K * [ R | t ].
+      *               if x1 and x2 are in camera coordinates, then P1 = [R1 | T1] must be used.
+      *       if x1 and x2 are in image coordinates, then P1 = K1 * [R1 | T1] must be used.
      * @param camera2 camera matrix for image 2. the size is 3X4.
-      *                 P = K * [ R | t ].
-     * @param x1c the set of measurements of 1 real world point X from camera 1 in camera coordinates.
+      *                 if x1 and x2 are in camera coordinates, then P2 = [R2 | T2] must be used.
+      *        if x1 and x2 are in image coordinates, then P2 = K2 * [R2 | T2] must be used.
+     * @param x1c the set of measurements of 1 real world point X from camera 1 in camera coordinates or image coords.
      * The corresponding measurements of the same point in camera 2 are in x2.
      * format is 3 x N where N is the number of measurements.
      * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
      * If the data are not perfect, need more than 1 pair for best fit.
-     * @param x2c the set of measurements of 1 real world point X from camera 2 in camera coordinates.
+     * @param x2c the set of measurements of 1 real world point X from camera 2 in camera coordinates or image coords.
      * The corresponding measurements of the same point in camera 1 are in x1.
      * format is 3 x N where N is the number of measurements.
      * If the data are perfect, only need 1 pair of correspondence (i.e. x1[*,0] and x2[*,0]),
      * If the data are not perfect, need more than 1 pair for best fit.
      * @return the 3D coordinate of the point in world scene.  note that
      * the entire array can be normalized by the last element.
-     * @return the 3D coordinate of the point in world scene.  note that
-     * the entire array can be normalized by the last element.
      */
     public static WCSPt calculateWCSPoint(double[][] camera1, double[][] camera2,
                                           double[][] x1c, double[][] x2c) {
         
-<span class="pc bpc" id="L217" title="2 of 4 branches missed.">        if (camera1.length != 3 || camera1[0].length != 4) {</span>
-<span class="nc" id="L218">            throw new IllegalArgumentException(&quot;camera1 must be 3 x 4&quot;);</span>
+<span class="pc bpc" id="L221" title="2 of 4 branches missed.">        if (camera1.length != 3 || camera1[0].length != 4) {</span>
+<span class="nc" id="L222">            throw new IllegalArgumentException(&quot;camera1 must be 3 x 4&quot;);</span>
         }
-<span class="pc bpc" id="L220" title="2 of 4 branches missed.">        if (camera2.length != 3 || camera2[0].length != 4) {</span>
-<span class="nc" id="L221">            throw new IllegalArgumentException(&quot;camera2 must be 3 x 4&quot;);</span>
+<span class="pc bpc" id="L224" title="2 of 4 branches missed.">        if (camera2.length != 3 || camera2[0].length != 4) {</span>
+<span class="nc" id="L225">            throw new IllegalArgumentException(&quot;camera2 must be 3 x 4&quot;);</span>
         }
-<span class="pc bpc" id="L223" title="2 of 4 branches missed.">        if (x1c.length != 3 || x2c.length != 3) {</span>
-<span class="nc" id="L224">            throw new IllegalArgumentException(&quot;x1.length must be 3 and so must x2.length&quot;);</span>
+<span class="pc bpc" id="L227" title="2 of 4 branches missed.">        if (x1c.length != 3 || x2c.length != 3) {</span>
+<span class="nc" id="L228">            throw new IllegalArgumentException(&quot;x1.length must be 3 and so must x2.length&quot;);</span>
         }
-<span class="fc" id="L226">        int n = x1c[0].length;</span>
-<span class="pc bpc" id="L227" title="1 of 2 branches missed.">        if (x2c[0].length != n) {</span>
-<span class="nc" id="L228">            throw new IllegalArgumentException(&quot;x1 and x2 must be same dimensions&quot;);</span>
+<span class="fc" id="L230">        int n = x1c[0].length;</span>
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">        if (x2c[0].length != n) {</span>
+<span class="nc" id="L232">            throw new IllegalArgumentException(&quot;x1 and x2 must be same dimensions&quot;);</span>
         }
       
         /*
@@ -266,7 +270,7 @@ import no.uib.cipr.matrix.SVD;
         since data are noisy, these equalities need to be solved as best fit:
         
         x1 = P1 * X1  and  x2 = P2 * X2
-            where x1 and x2 are in homogeneous coordinates
+            where x1 and x2 are in homogenous coordinates
         
         similarity relation: same direction ray, but have a scale factor alpha
         
@@ -345,58 +349,59 @@ import no.uib.cipr.matrix.SVD;
                 
         double u1x, u1y, u2x, u2y;
         double[] tmp;
-<span class="fc" id="L348">        double[][] a = new double[4*n][4];</span>
+<span class="fc" id="L352">        double[][] a = new double[4*n][4];</span>
         int i, j;
-<span class="fc bfc" id="L350" title="All 2 branches covered.">        for (i = 0, j = 0; i &lt; n; ++i, j+=4) {</span>
-<span class="fc" id="L351">            u1x = x1c[0][i];</span>
-<span class="fc" id="L352">            u1y = x1c[1][i];</span>
-<span class="fc" id="L353">            u2x = x2c[0][i];</span>
-<span class="fc" id="L354">            u2y = x2c[1][i];</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">        for (i = 0, j = 0; i &lt; n; ++i, j+=4) {</span>
+<span class="fc" id="L355">            u1x = x1c[0][i];</span>
+<span class="fc" id="L356">            u1y = x1c[1][i];</span>
+<span class="fc" id="L357">            u2x = x2c[0][i];</span>
+<span class="fc" id="L358">            u2y = x2c[1][i];</span>
                         
             //y1 * p1vec[2]^T - p1vec[1]^T
-<span class="fc" id="L357">            tmp = Arrays.copyOf(camera1[2], 4);</span>
-<span class="fc" id="L358">            MatrixUtil.multiply(tmp, u1y);</span>
-<span class="fc" id="L359">            a[j] = MatrixUtil.subtract(tmp, camera1[1]);</span>
+<span class="fc" id="L361">            tmp = Arrays.copyOf(camera1[2], 4);</span>
+<span class="fc" id="L362">            MatrixUtil.multiply(tmp, u1y);</span>
+<span class="fc" id="L363">            a[j] = MatrixUtil.subtract(tmp, camera1[1]);</span>
             
             //p1vec[0]^T - x1 * p1vec[2]^T
-<span class="fc" id="L362">            tmp = Arrays.copyOf(camera1[2], 4);</span>
-<span class="fc" id="L363">            MatrixUtil.multiply(tmp, u1x);</span>
-<span class="fc" id="L364">            a[j+1] = MatrixUtil.subtract(camera1[0], tmp);</span>
+<span class="fc" id="L366">            tmp = Arrays.copyOf(camera1[2], 4);</span>
+<span class="fc" id="L367">            MatrixUtil.multiply(tmp, u1x);</span>
+<span class="fc" id="L368">            a[j+1] = MatrixUtil.subtract(camera1[0], tmp);</span>
             
             //y2 * p2vec[2]^T - p2vec[1]^T
-<span class="fc" id="L367">            tmp = Arrays.copyOf(camera2[2], 4);</span>
-<span class="fc" id="L368">            MatrixUtil.multiply(tmp, u2y);</span>
-<span class="fc" id="L369">            a[j+2] = MatrixUtil.subtract(tmp, camera2[1]);</span>
+<span class="fc" id="L371">            tmp = Arrays.copyOf(camera2[2], 4);</span>
+<span class="fc" id="L372">            MatrixUtil.multiply(tmp, u2y);</span>
+<span class="fc" id="L373">            a[j+2] = MatrixUtil.subtract(tmp, camera2[1]);</span>
             
             //p2vec[0]^T - x2 * p2vec[2]^T
-<span class="fc" id="L372">            tmp = Arrays.copyOf(camera2[2], 4);</span>
-<span class="fc" id="L373">            MatrixUtil.multiply(tmp, u2x);</span>
-<span class="fc" id="L374">            a[j+3] = MatrixUtil.subtract(camera2[0], tmp);</span>
+<span class="fc" id="L376">            tmp = Arrays.copyOf(camera2[2], 4);</span>
+<span class="fc" id="L377">            MatrixUtil.multiply(tmp, u2x);</span>
+<span class="fc" id="L378">            a[j+3] = MatrixUtil.subtract(camera2[0], tmp);</span>
         }
         
         // A is  4*N X 4
         // A^T*A is 4 X 4
-<span class="fc" id="L379">        double[][] aTa = MatrixUtil.createATransposedTimesA(a);</span>
-<span class="pc bnc" id="L380" title="All 2 branches missed.">        assert(aTa.length == 4);</span>
-<span class="pc bnc" id="L381" title="All 2 branches missed.">        assert(aTa[0].length == 4);</span>
+<span class="fc" id="L383">        double[][] aTa = MatrixUtil.createATransposedTimesA(a);</span>
+<span class="pc bnc" id="L384" title="All 2 branches missed.">        assert(aTa.length == 4);</span>
+<span class="pc bnc" id="L385" title="All 2 branches missed.">        assert(aTa[0].length == 4);</span>
         
         //NOTE: SVD(A).V is the same as SVD(A^TA).V
         
-<span class="fc" id="L385">        SVD svd = null;</span>
+<span class="fc" id="L389">        SVD svd = null;</span>
         try {
-<span class="fc" id="L387">            svd = SVD.factorize(new DenseMatrix(aTa));</span>
-<span class="nc" id="L388">        } catch (NotConvergedException ex) {</span>
-<span class="nc" id="L389">            Logger.getLogger(Triangulation.class.getName()).log(Level.SEVERE, null, ex);</span>
-<span class="nc" id="L390">            return null;</span>
-<span class="fc" id="L391">        }</span>
+<span class="fc" id="L391">            svd = SVD.factorize(new DenseMatrix(aTa));</span>
+<span class="nc" id="L392">        } catch (NotConvergedException ex) {</span>
+<span class="nc" id="L393">            Logger.getLogger(Triangulation.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L394">            return null;</span>
+<span class="fc" id="L395">        }</span>
         
-<span class="fc" id="L393">        double[][] vT = MatrixUtil.convertToRowMajor(svd.getVt());</span>
-<span class="pc bnc" id="L394" title="All 2 branches missed.">        assert(vT.length == 4);</span>
-<span class="pc bnc" id="L395" title="All 2 branches missed.">        assert(vT[0].length == 4);</span>
+<span class="fc" id="L397">        double[][] vT = MatrixUtil.convertToRowMajor(svd.getVt());</span>
+<span class="pc bnc" id="L398" title="All 2 branches missed.">        assert(vT.length == 4);</span>
+<span class="pc bnc" id="L399" title="All 2 branches missed.">        assert(vT[0].length == 4);</span>
         
-        // eigenvector corresponding to smallest eigenvector is last row in svd.V^T
-<span class="fc" id="L398">        double[] X = Arrays.copyOf(vT[vT.length - 1], vT[0].length);</span>
-        
+        // eigenvector corresponding to the smallest eigenvalue is last row in svd.V^T
+<span class="fc" id="L402">        double[] X = Arrays.copyOf(vT[vT.length - 1], vT[0].length);</span>
+<span class="fc" id="L403">        MatrixUtil.multiply(X, 1./X[X.length - 1]);</span>
+
         /*
         System.out.printf(&quot;x1=\n%s\n&quot;, FormatArray.toString(x1, &quot;%.4e&quot;));
         System.out.printf(&quot;camera1=\n%s\n&quot;, FormatArray.toString(camera1, &quot;%.4e&quot;));
@@ -407,13 +412,17 @@ import no.uib.cipr.matrix.SVD;
         
         // can see that the constraint ||X||^2 = 1 is preserved
                 
-<span class="fc" id="L410">        double[] x1Rev = MatrixUtil.multiplyMatrixByColumnVector(camera1, X);</span>
-<span class="fc" id="L411">        double[] x2Rev = MatrixUtil.multiplyMatrixByColumnVector(camera2, X);        </span>
-<span class="fc" id="L412">        double alpha = ((1./x1Rev[2]) + (1./x2Rev[2]))/2.;</span>
+<span class="fc" id="L415">        double[] x1Rev = MatrixUtil.multiplyMatrixByColumnVector(camera1, X);</span>
+<span class="fc" id="L416">        double[] x2Rev = MatrixUtil.multiplyMatrixByColumnVector(camera2, X);        </span>
+<span class="fc" id="L417">        double alpha = ((1./x1Rev[2]) + (1./x2Rev[2]))/2.;</span>
         
-<span class="fc" id="L414">        MatrixUtil.multiply(x1Rev, 1./x1Rev[2]);</span>
-<span class="fc" id="L415">        MatrixUtil.multiply(x2Rev, 1./x2Rev[2]);</span>
-        
+<span class="fc" id="L419">        MatrixUtil.multiply(x1Rev, 1./x1Rev[2]);</span>
+<span class="fc" id="L420">        MatrixUtil.multiply(x2Rev, 1./x2Rev[2]);</span>
+
+        // TODO: consider quality check and correction:  if any points in x1Rev or x2Rev are &lt; 0,
+        // TODO: compare x1Rev to x1C, etc
+        // TODO: backwards project x1C to XW1 and x2C to XW2 and if they are not the same, take the mean of them
+
         /*
         System.out.printf(&quot;x1Rev=\n%s\n&quot;, FormatArray.toString(x1Rev, &quot;%.4e&quot;));
         System.out.printf(&quot;x1=\n%s\n&quot;, FormatArray.toString(MatrixUtil.extractColumn(x1, 0), &quot;%.4e&quot;));
@@ -424,11 +433,94 @@ import no.uib.cipr.matrix.SVD;
         //System.out.printf(&quot;alpha=\n%.3e\n&quot;, alpha);
         //MatrixUtil.multiply(X, alpha);
 
-<span class="fc" id="L427">        WCSPt w = new WCSPt();</span>
-<span class="fc" id="L428">        w.X = X;</span>
-<span class="fc" id="L429">        w.alpha = alpha;</span>
+<span class="fc" id="L436">        WCSPt w = new WCSPt();</span>
+<span class="fc" id="L437">        w.X = X;</span>
+<span class="fc" id="L438">        w.alpha = alpha;</span>
 
-<span class="fc" id="L431">        return w;</span>
+<span class="fc" id="L440">        return w;</span>
+    }
+
+    /**
+     * for a feature, given image coordinates of the features, camera matrices, and a map from image coordinate index to camera,
+     * calculate the location of the point in 3D WCS.
+     * @param imageToCameraIndexMap a map from xs index to camera matrix index
+     * @param cameras the camera matrices
+     * @param x a 3 x n matrix of image coordinates of a point in n images.
+     * @return
+     */
+    public static WCSPt calculateWCSPoint(Map&lt;Integer, Integer&gt; imageToCameraIndexMap,
+                                          List&lt;CameraProjection&gt; cameras, double[][] x) {
+<span class="pc bpc" id="L453" title="1 of 2 branches missed.">        if (x.length != 3) {</span>
+<span class="nc" id="L454">            throw new IllegalArgumentException(&quot;x.length must be 3&quot;);</span>
+        }
+<span class="fc" id="L456">        int n = x[0].length;</span>
+<span class="pc bpc" id="L457" title="1 of 2 branches missed.">        if (n &lt; 2) {</span>
+<span class="nc" id="L458">            throw new IllegalArgumentException(&quot;x[0].length must be &gt;= 2&quot;);</span>
+        }
+
+        double ux, uy;
+        CameraProjection p;
+        double[] tmp;
+<span class="fc" id="L464">        double[][] a = new double[n * 2][4];</span>
+        int i;
+<span class="fc bfc" id="L466" title="All 2 branches covered.">        for (i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L467">            ux = x[0][i];</span>
+<span class="fc" id="L468">            uy = x[1][i];</span>
+<span class="fc" id="L469">            p = cameras.get(imageToCameraIndexMap.get(i));</span>
+
+            //y1 * p1vec[2]^T - p1vec[1]^T
+<span class="fc" id="L472">            tmp = Arrays.copyOf(p.getP()[2], 4);</span>
+<span class="fc" id="L473">            MatrixUtil.multiply(tmp, uy);</span>
+<span class="fc" id="L474">            a[2*i] = MatrixUtil.subtract(tmp, p.getP()[1]);</span>
+
+            //p1vec[0]^T - x1 * p1vec[2]^T
+<span class="fc" id="L477">            tmp = Arrays.copyOf(p.getP()[2], 4);</span>
+<span class="fc" id="L478">            MatrixUtil.multiply(tmp, ux);</span>
+<span class="fc" id="L479">            a[2*i+1] = MatrixUtil.subtract(p.getP()[0], tmp);</span>
+        }
+
+        // A is  4*N X 4
+        // A^T*A is 4 X 4
+<span class="fc" id="L484">        double[][] aTa = MatrixUtil.createATransposedTimesA(a);</span>
+<span class="pc bnc" id="L485" title="All 2 branches missed.">        assert(aTa.length == 4);</span>
+<span class="pc bnc" id="L486" title="All 2 branches missed.">        assert(aTa[0].length == 4);</span>
+
+        //NOTE: SVD(A).V is the same as SVD(A^TA).V
+
+<span class="fc" id="L490">        SVD svd = null;</span>
+        try {
+<span class="fc" id="L492">            svd = SVD.factorize(new DenseMatrix(aTa));</span>
+<span class="nc" id="L493">        } catch (NotConvergedException ex) {</span>
+<span class="nc" id="L494">            Logger.getLogger(Triangulation.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="nc" id="L495">            return null;</span>
+<span class="fc" id="L496">        }</span>
+
+<span class="fc" id="L498">        double[][] vT = MatrixUtil.convertToRowMajor(svd.getVt());</span>
+<span class="pc bnc" id="L499" title="All 2 branches missed.">        assert(vT.length == 4);</span>
+<span class="pc bnc" id="L500" title="All 2 branches missed.">        assert(vT[0].length == 4);</span>
+
+        // eigenvector corresponding to the smallest eigenvalue is last row in svd.V^T
+<span class="fc" id="L503">        double[] X = Arrays.copyOf(vT[vT.length - 1], vT[0].length);</span>
+<span class="fc" id="L504">        MatrixUtil.multiply(X, 1./X[X.length - 1]);</span>
+
+        // can see that the constraint ||X||^2 = 1 is preserved
+
+<span class="fc" id="L508">        double alpha = 0;</span>
+<span class="fc bfc" id="L509" title="All 2 branches covered.">        for (i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L510">            p = cameras.get(imageToCameraIndexMap.get(i));</span>
+<span class="fc" id="L511">            double[] xRev = MatrixUtil.multiplyMatrixByColumnVector(p.getP(), X);</span>
+<span class="fc" id="L512">            alpha += (1./xRev[2]);</span>
+        }
+<span class="fc" id="L514">        alpha /= n;</span>
+
+        //System.out.printf(&quot;alpha=\n%.3e\n&quot;, alpha);
+        //MatrixUtil.multiply(X, alpha);
+
+<span class="fc" id="L519">        WCSPt w = new WCSPt();</span>
+<span class="fc" id="L520">        w.X = X;</span>
+<span class="fc" id="L521">        w.alpha = alpha;</span>
+
+<span class="fc" id="L523">        return w;</span>
     }
 
     /*

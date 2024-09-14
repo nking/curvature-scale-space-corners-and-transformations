@@ -54,21 +54,23 @@ public class StructureTensorD {
 
     private final float sigma;
 
+    private final double[][] dX;
+
     private final double[][] dXSq;
+
+    private final double[][] dY;
 
     private final double[][] dYSq;
 
     private final double[][] dXdY;
 
     // optional:
-    private final double[][] dX;
     private final double[][] d2X;
-    private final double[][] dY;
     private final double[][] d2Y;
 
     // created on demand
-<span class="fc" id="L70">    private double[][] detA = null;</span>
-<span class="fc" id="L71">    private double[][] traceA = null;</span>
+<span class="fc" id="L72">    private double[][] detA = null;</span>
+<span class="fc" id="L73">    private double[][] traceA = null;</span>
 
     /**
      * create sobel x and y derivatives (== first deriv gaussians w/ sigma =
@@ -76,98 +78,100 @@ public class StructureTensorD {
      * If create2ndDerivs is true, the second derivatives needed for curvature
      * are calculated too.
      *
+     * Note that column-major data is assumed, so if have row-major data and context, then
+     * use the opposite variable when accessing results.  e.g. if image context is row major,
+     * then use dY = getDX() and dX = getDY() etc.
+     *
      * @param image assumed to be row major format
      * @param sigma
      * @param create2ndDerivs
      */
-<span class="fc" id="L83">    public StructureTensorD(double[][] image, float sigma, boolean create2ndDerivs) {</span>
+<span class="fc" id="L89">    public StructureTensorD(double[][] image, float sigma, boolean create2ndDerivs) {</span>
 
-<span class="fc" id="L85">        this.sigma = sigma;</span>
+<span class="fc" id="L91">        this.sigma = sigma;</span>
         
         // --- create Sobel derivatives (gaussian 1st deriv sqrt(2)/2 = 0.707)----
-<span class="fc" id="L88">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L94">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
         // switch X and Y sobel operations to match scipy (column major to row major or vice versa)
 
         // NOTE: may need to revisit this
-<span class="fc" id="L93">        double norm = 4.f;//(0.707f * (double)Math.sqrt(2. * Math.PI));</span>
+<span class="fc" id="L99">        double norm = 0.5;//(0.707f * Math.sqrt(2. * Math.PI));</span>
         
-<span class="fc" id="L95">        double[][] gX = imageProcessor.copy(image);</span>
-<span class="fc" id="L96">        imageProcessor.applySobelX(gX);</span>
-<span class="fc" id="L97">        MatrixUtil.multiply(gX, norm);</span>
+<span class="fc" id="L101">        double[][] gX = imageProcessor.copy(image);</span>
+<span class="fc" id="L102">        imageProcessor.applySobelX(gX);</span>
+<span class="fc" id="L103">        MatrixUtil.multiply(gX, norm);</span>
 
-<span class="fc" id="L99">        double[][] gY = imageProcessor.copy(image);</span>
-<span class="fc" id="L100">        imageProcessor.applySobelY(gY);</span>
-<span class="fc" id="L101">        MatrixUtil.multiply(gY, norm);</span>
-        
+<span class="fc" id="L105">        double[][] gY = imageProcessor.copy(image);</span>
+<span class="fc" id="L106">        imageProcessor.applySobelY(gY);</span>
+<span class="fc" id="L107">        MatrixUtil.multiply(gY, norm);</span>
+
+<span class="fc" id="L109">        dX = gX;</span>
+<span class="fc" id="L110">        dY = gY;</span>
+
         // --- create structure tensors ----
-<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        double[] kernel = (sigma &gt; 0) ? MiscMath0.convertFloatToDouble(Gaussian1D.getKernel(sigma)) : null;</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">        double[] kernel = (sigma &gt; 0) ? MiscMath0.convertFloatToDouble(Gaussian1D.getKernel(sigma)) : null;</span>
         
         //Axx
-<span class="fc" id="L107">        dXSq = MatrixUtil.pointwiseMultiplication(gX, gX);</span>
-<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (kernel != null) {</span>
-<span class="fc" id="L109">            imageProcessor.applyKernelTwo1Ds(dXSq, kernel);</span>
+<span class="fc" id="L116">        dXSq = MatrixUtil.pointwiseMultiplication(gX, gX);</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if (kernel != null) {</span>
+<span class="fc" id="L118">            imageProcessor.applyKernelTwo1Ds(dXSq, kernel);</span>
         }
         
         //Ayy
-<span class="fc" id="L113">        dYSq = MatrixUtil.pointwiseMultiplication(gY, gY);</span>
-<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        if (kernel != null) {</span>
-<span class="fc" id="L115">            imageProcessor.applyKernelTwo1Ds(dYSq, kernel);</span>
+<span class="fc" id="L122">        dYSq = MatrixUtil.pointwiseMultiplication(gY, gY);</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (kernel != null) {</span>
+<span class="fc" id="L124">            imageProcessor.applyKernelTwo1Ds(dYSq, kernel);</span>
         }
         
         //Axy
-<span class="fc" id="L119">        dXdY = MatrixUtil.pointwiseMultiplication(gX, gY);</span>
-<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if (kernel != null) {</span>
-<span class="fc" id="L121">            imageProcessor.applyKernelTwo1Ds(dXdY, kernel);</span>
+<span class="fc" id="L128">        dXdY = MatrixUtil.pointwiseMultiplication(gX, gY);</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">        if (kernel != null) {</span>
+<span class="fc" id="L130">            imageProcessor.applyKernelTwo1Ds(dXdY, kernel);</span>
         }
-        
-<span class="pc bpc" id="L124" title="1 of 2 branches missed.">        if (create2ndDerivs) {</span>
-            
-<span class="nc" id="L126">            dX = gX;</span>
-<span class="nc" id="L127">            dY = gY;</span>
-            
+
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (create2ndDerivs) {</span>
+
             // for curvature, need d/dy(dy) and d/dx(dx)
-<span class="nc bnc" id="L130" title="All 2 branches missed.">            kernel = (sigma &gt; 0) ?</span>
-<span class="nc" id="L131">                    MiscMath0.convertFloatToDouble(Gaussian1DFirstDeriv.getKernel(sigma)) :</span>
-<span class="nc" id="L132">                    MiscMath0.convertFloatToDouble(Gaussian1DFirstDeriv.getKernel(SIGMA.ZEROPOINTSEVENONE));</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">            kernel = (sigma &gt; 0) ?</span>
+<span class="nc" id="L137">                    MiscMath0.convertFloatToDouble(Gaussian1DFirstDeriv.getKernel(sigma)) :</span>
+<span class="nc" id="L138">                    MiscMath0.convertFloatToDouble(Gaussian1DFirstDeriv.getKernel(SIGMA.ZEROPOINTSEVENONE));</span>
             
-<span class="nc" id="L134">            d2X = imageProcessor.copy(gX);</span>
-<span class="nc" id="L135">            d2Y = imageProcessor.copy(gY);</span>
+<span class="nc" id="L140">            d2X = imageProcessor.copy(gX);</span>
+<span class="nc" id="L141">            d2Y = imageProcessor.copy(gY);</span>
         
-<span class="nc" id="L137">            imageProcessor.applyKernel1D(d2X, kernel, true);</span>
-<span class="nc" id="L138">            imageProcessor.applyKernel1D(d2Y, kernel, false);</span>
+<span class="nc" id="L143">            imageProcessor.applyKernel1D(d2X, kernel, true);</span>
+<span class="nc" id="L144">            imageProcessor.applyKernel1D(d2Y, kernel, false);</span>
         
         } else {
-<span class="fc" id="L141">            dX = null;</span>
-<span class="fc" id="L142">            d2X = null;</span>
-<span class="fc" id="L143">            dY = null;</span>
-<span class="fc" id="L144">            d2Y = null;</span>
+<span class="fc" id="L147">            d2X = null;</span>
+<span class="fc" id="L148">            d2Y = null;</span>
         }
-<span class="fc" id="L146">    }</span>
+<span class="fc" id="L150">    }</span>
    
     public double[][] getDeterminant() {
         
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        if (detA == null) {</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">        if (detA == null) {</span>
                         
             // detA = Axx * Ayy - Axy ** 2
             
-<span class="fc" id="L154">            double[][] axxyy = MatrixUtil.pointwiseMultiplication(dXSq, dYSq);</span>
+<span class="fc" id="L158">            double[][] axxyy = MatrixUtil.pointwiseMultiplication(dXSq, dYSq);</span>
 
-<span class="fc" id="L156">            double[][] axyxy = MatrixUtil.pointwiseMultiplication(dXdY, dXdY);</span>
+<span class="fc" id="L160">            double[][] axyxy = MatrixUtil.pointwiseMultiplication(dXdY, dXdY);</span>
 
-<span class="fc" id="L158">            detA = MatrixUtil.pointwiseSubtract(axxyy, axyxy);</span>
+<span class="fc" id="L162">            detA = MatrixUtil.pointwiseSubtract(axxyy, axyxy);</span>
         }
         
-<span class="fc" id="L161">        return detA;</span>
+<span class="fc" id="L165">        return detA;</span>
     }
     
     public double[][] getTrace() {
         
-<span class="pc bpc" id="L166" title="1 of 2 branches missed.">        if (traceA == null) {</span>
-<span class="fc" id="L167">            traceA = MatrixUtil.pointwiseAdd(dXSq, dYSq);</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        if (traceA == null) {</span>
+<span class="fc" id="L171">            traceA = MatrixUtil.pointwiseAdd(dXSq, dYSq);</span>
         }
         
-<span class="fc" id="L170">        return traceA;</span>
+<span class="fc" id="L174">        return traceA;</span>
     }
     
     /**
@@ -176,7 +180,7 @@ public class StructureTensorD {
      * @return 
      */
     public double[][] getDXSquared() {
-<span class="nc" id="L179">        return dXSq;</span>
+<span class="nc" id="L183">        return dXSq;</span>
     }
     
     /**
@@ -184,7 +188,7 @@ public class StructureTensorD {
      * @return 
      */
     public double[][] getDYSquared() {
-<span class="nc" id="L187">        return dYSq;</span>
+<span class="nc" id="L191">        return dYSq;</span>
     }
     
     /**
@@ -192,23 +196,23 @@ public class StructureTensorD {
      * @return 
      */
     public double[][] getDXDY() {
-<span class="nc" id="L195">        return dXdY;</span>
+<span class="nc" id="L199">        return dXdY;</span>
     }
     
     public double[][] getDX() {
-<span class="nc" id="L199">        return dX;</span>
+<span class="nc" id="L203">        return dX;</span>
     }
     
     public double[][] getDY() {
-<span class="nc" id="L203">        return dY;</span>
+<span class="nc" id="L207">        return dY;</span>
     }
     
     public double[][] getDDX() {
-<span class="nc" id="L207">        return d2X;</span>
+<span class="nc" id="L211">        return d2X;</span>
     }
     
     public double[][] getDDY() {
-<span class="nc" id="L211">        return d2Y;</span>
+<span class="nc" id="L215">        return d2Y;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

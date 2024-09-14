@@ -2,10 +2,13 @@
 
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.VeryLongBitString;
+import algorithms.util.PairInt;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
-import java.util.ArrayList;
-import java.util.List;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+
+import java.util.*;
 
 /**
 MSER.java and Region.java are java ports of the C++ MSER
@@ -66,7 +69,7 @@ thread needs to have its own MSER class instance.
 * the greyscale level increases to pass the maximum value of 255.
 * 
 * processing involves comparison of an accumulated region to 
-* it's parent and child where the comparison is the fractional 
+* its parent and child where the comparison is the fractional
 * difference in the areas (to determine whether the current
 * region is a minimum in a small sample of the growth rate).
 * 
@@ -93,7 +96,7 @@ public class MSER {
     private double minDiversity_;
     private boolean eight_;
     
-<span class="fc" id="L96">    private List&lt;Region&gt; regionStack = new ArrayList&lt;Region&gt;();</span>
+<span class="fc" id="L99">    private List&lt;Region&gt; regionStack = new ArrayList&lt;Region&gt;();</span>
 
     /**
     constructor w/ the following default values:
@@ -119,17 +122,17 @@ public class MSER {
     param[in] eight Use 8-connected pixels instead of 4-connected.
                (default eight = false).
     */
-<span class="fc" id="L122">    public MSER() {</span>
+<span class="fc" id="L125">    public MSER() {</span>
 
-<span class="fc" id="L124">        int delta = 2;</span>
-<span class="fc" id="L125">        double minArea = 0.0001;</span>
-<span class="fc" id="L126">        double maxArea = 0.5;</span>
-<span class="fc" id="L127">        double maxVariation = 0.5;</span>
-<span class="fc" id="L128">        double minDiversity = 0.33;</span>
-<span class="fc" id="L129">        boolean eight = false;</span>
+<span class="fc" id="L127">        int delta = 2;</span>
+<span class="fc" id="L128">        double minArea = 0.0001;</span>
+<span class="fc" id="L129">        double maxArea = 0.5;</span>
+<span class="fc" id="L130">        double maxVariation = 0.5;</span>
+<span class="fc" id="L131">        double minDiversity = 0.33;</span>
+<span class="fc" id="L132">        boolean eight = false;</span>
 
-<span class="fc" id="L131">        init(delta, minArea, maxArea, maxVariation, minDiversity, eight);</span>
-<span class="fc" id="L132">    }</span>
+<span class="fc" id="L134">        init(delta, minArea, maxArea, maxVariation, minDiversity, eight);</span>
+<span class="fc" id="L135">    }</span>
 
     /**
     @param delta DELTA parameter of the MSER algorithm.
@@ -154,44 +157,44 @@ public class MSER {
     @param eight Use 8-connected pixels instead of 4-connected.
     */
     public MSER(int delta, double minArea, double maxArea,
-<span class="fc" id="L157">        double maxVariation, double minDiversity, boolean eight) {</span>
+<span class="fc" id="L160">        double maxVariation, double minDiversity, boolean eight) {</span>
 
-<span class="fc" id="L159">        init(delta, minArea, maxArea, maxVariation, minDiversity, eight);</span>
-<span class="fc" id="L160">    }</span>
+<span class="fc" id="L162">        init(delta, minArea, maxArea, maxVariation, minDiversity, eight);</span>
+<span class="fc" id="L163">    }</span>
 
     private void init(int delta, double minArea, double maxArea,
         double maxVariation, double minDiversity,
         boolean eight) {
 
-<span class="pc bpc" id="L166" title="1 of 2 branches missed.">        if (delta &lt;= 0) {</span>
-<span class="nc" id="L167">            throw new IllegalArgumentException(&quot;delta must be &gt; 0&quot;);</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        if (delta &lt;= 0) {</span>
+<span class="nc" id="L170">            throw new IllegalArgumentException(&quot;delta must be &gt; 0&quot;);</span>
         }
-<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        if (minArea &lt; 0.0) {</span>
-<span class="nc" id="L170">            throw new IllegalArgumentException(&quot;minArea must be &gt;= 0&quot;);</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        if (minArea &lt; 0.0) {</span>
+<span class="nc" id="L173">            throw new IllegalArgumentException(&quot;minArea must be &gt;= 0&quot;);</span>
         }
-<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        if (maxArea &gt; 1.0) {</span>
-<span class="nc" id="L173">            throw new IllegalArgumentException(&quot;maxArea must be &lt;= 1&quot;);</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">        if (maxArea &gt; 1.0) {</span>
+<span class="nc" id="L176">            throw new IllegalArgumentException(&quot;maxArea must be &lt;= 1&quot;);</span>
         }
-<span class="pc bpc" id="L175" title="1 of 2 branches missed.">        if (minArea &gt;= maxArea) {</span>
-<span class="nc" id="L176">            throw new IllegalArgumentException(&quot;minArea must be &lt; maxArea&quot;);</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">        if (minArea &gt;= maxArea) {</span>
+<span class="nc" id="L179">            throw new IllegalArgumentException(&quot;minArea must be &lt; maxArea&quot;);</span>
         }
-<span class="pc bpc" id="L178" title="1 of 2 branches missed.">        if (maxVariation &lt;= 0.0) {</span>
-<span class="nc" id="L179">            throw new IllegalArgumentException(&quot;maxVariation must be &gt; 0&quot;);</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        if (maxVariation &lt;= 0.0) {</span>
+<span class="nc" id="L182">            throw new IllegalArgumentException(&quot;maxVariation must be &gt; 0&quot;);</span>
         }
-<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        if (minDiversity &lt; 0.0) {</span>
-<span class="nc" id="L182">            throw new IllegalArgumentException(&quot;minDiversity must be &lt; 0&quot;);</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        if (minDiversity &lt; 0.0) {</span>
+<span class="nc" id="L185">            throw new IllegalArgumentException(&quot;minDiversity must be &lt; 0&quot;);</span>
         }
-<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        if (minDiversity &gt;= 1) {</span>
-<span class="nc" id="L185">            throw new IllegalArgumentException(&quot;minDiversity must be &lt; 1&quot;);</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        if (minDiversity &gt;= 1) {</span>
+<span class="nc" id="L188">            throw new IllegalArgumentException(&quot;minDiversity must be &lt; 1&quot;);</span>
         }
         
-<span class="fc" id="L188">        this.eight_ = eight;</span>
-<span class="fc" id="L189">        this.delta_ = delta;</span>
-<span class="fc" id="L190">        this.minArea_ = minArea;</span>
-<span class="fc" id="L191">        this.maxArea_ = maxArea;</span>
-<span class="fc" id="L192">        this.maxVariation_ = maxVariation;</span>
-<span class="fc" id="L193">        this.minDiversity_ = minDiversity;</span>
-<span class="fc" id="L194">    }</span>
+<span class="fc" id="L191">        this.eight_ = eight;</span>
+<span class="fc" id="L192">        this.delta_ = delta;</span>
+<span class="fc" id="L193">        this.minArea_ = minArea;</span>
+<span class="fc" id="L194">        this.maxArea_ = maxArea;</span>
+<span class="fc" id="L195">        this.maxVariation_ = maxVariation;</span>
+<span class="fc" id="L196">        this.minDiversity_ = minDiversity;</span>
+<span class="fc" id="L197">    }</span>
 
     /**
       Extracts maximally stable extremal regions from a
@@ -207,9 +210,9 @@ public class MSER {
     public void operator(int[] bits, int width, int height,
         List&lt;Region&gt; regions) {
 
-<span class="pc bpc" id="L210" title="1 of 2 branches missed.">        if (bits.length &gt; ((1 &lt;&lt; 27) - 1)) {</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">        if (bits.length &gt; ((1 &lt;&lt; 27) - 1)) {</span>
             
-<span class="nc" id="L212">            throw new IllegalArgumentException(&quot;bits.length must be less than &quot;</span>
+<span class="nc" id="L215">            throw new IllegalArgumentException(&quot;bits.length must be less than &quot;</span>
                 + &quot; 2^27 currently.  just need to edit a variable to&quot;
                 + &quot; use long instead.  upper limit to bits.length would then&quot;
                 + &quot; be 31 bits - 1, limited by java language array length limit&quot;);
@@ -220,36 +223,36 @@ public class MSER {
         //    the component stack. Push
         //    a dummy-component onto the stack, with grey-level
         //    higher than any allowed in the image.
-<span class="fc" id="L223">        VeryLongBitString accessible = new VeryLongBitString(width * height);</span>
+<span class="fc" id="L226">        VeryLongBitString accessible = new VeryLongBitString(width * height);</span>
         
         // priority queue of boundary pixels, priority = -greylevel
-<span class="fc" id="L226">        TIntList[] boundaryPixels = new TIntArrayList[256];</span>
-<span class="fc bfc" id="L227" title="All 2 branches covered.">        for (int i = 0; i &lt; 256; ++i) {</span>
-<span class="fc" id="L228">            boundaryPixels[i] = new TIntArrayList();</span>
+<span class="fc" id="L229">        TIntList[] boundaryPixels = new TIntArrayList[256];</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">        for (int i = 0; i &lt; 256; ++i) {</span>
+<span class="fc" id="L231">            boundaryPixels[i] = new TIntArrayList();</span>
         }
-<span class="fc" id="L230">        VeryLongBitString boundaryPixelsIdx = new VeryLongBitString(256);</span>
+<span class="fc" id="L233">        VeryLongBitString boundaryPixelsIdx = new VeryLongBitString(256);</span>
         
-<span class="fc" id="L232">        int priority = 256;</span>
+<span class="fc" id="L235">        int priority = 256;</span>
         
         // stack of components (max size is number of grey levels, 256)
-<span class="fc" id="L235">        List&lt;Region&gt; regionStack = new ArrayList&lt;Region&gt;(256);</span>
-<span class="fc" id="L236">        regionStack.add(new Region());</span>
+<span class="fc" id="L238">        List&lt;Region&gt; regionStack = new ArrayList&lt;Region&gt;(256);</span>
+<span class="fc" id="L239">        regionStack.add(new Region());</span>
 
         // 2. Make the source pixel (with its first edge) the current pixel, 
         //    mark it as accessible and
         //    store the grey-level of it in the variable current level.
-<span class="fc" id="L241">        int curPixel = 0;</span>
-<span class="fc" id="L242">        int curEdge = 0;</span>
-<span class="fc" id="L243">        int curLevel = bits[0];</span>
+<span class="fc" id="L244">        int curPixel = 0;</span>
+<span class="fc" id="L245">        int curEdge = 0;</span>
+<span class="fc" id="L246">        int curLevel = bits[0];</span>
         // set bit 0
-<span class="fc" id="L245">        accessible.setBit(0);</span>
+<span class="fc" id="L248">        accessible.setBit(0);</span>
         
         //System.out.println(&quot;curPixel &quot; + curPixel + &quot; level=&quot; + curLevel + &quot; priority=&quot; + priority);
         //System.out.println(&quot;accessible &quot; + 0);
 
         // 3. Push an empty component with current level onto the component stack.
         //step_3:
-<span class="fc" id="L252">        regionStack.add(new Region(curLevel, curPixel));</span>
+<span class="fc" id="L255">        regionStack.add(new Region(curLevel, curPixel));</span>
 
         // 4. Explore the remaining edges to the neighbors of the current pixel, 
         // in order, as follows:
@@ -263,87 +266,95 @@ public class MSER {
         //       consider the new pixel and its grey-level and go to 3.
         int x, y, neighborPixel;
         boolean s3;
+
+<span class="fc" id="L270">        LinkedHashSet&lt;Integer&gt; debugXY = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">        for (int pix = 0; pix &lt; width*height; ++pix) {</span>
+<span class="fc" id="L272">            debugXY.add(pix);</span>
+        }
+
         while (true) {
 
-<span class="fc" id="L268">            x = curPixel % width;</span>
-<span class="fc" id="L269">            y = curPixel / width;</span>
+<span class="fc" id="L277">            x = curPixel % width;</span>
+<span class="fc" id="L278">            y = curPixel / width;</span>
 
-<span class="fc" id="L271">            s3 = false;</span>
+<span class="fc" id="L280">            debugXY.remove(curPixel);</span>
 
-<span class="fc bfc" id="L273" title="All 4 branches covered.">            for (; curEdge &lt; (eight_ ? 8 : 4); ++curEdge) {</span>
+<span class="fc" id="L282">            s3 = false;</span>
 
-<span class="fc" id="L275">                neighborPixel = curPixel;</span>
+<span class="fc bfc" id="L284" title="All 4 branches covered.">            for (; curEdge &lt; (eight_ ? 8 : 4); ++curEdge) {</span>
 
-<span class="fc bfc" id="L277" title="All 2 branches covered.">                if (eight_) {</span>
+<span class="fc" id="L286">                neighborPixel = curPixel;</span>
+
+<span class="fc bfc" id="L288" title="All 2 branches covered.">                if (eight_) {</span>
                     //pix = (row * w) + col
-<span class="fc bfc" id="L279" title="All 8 branches covered.">                    switch (curEdge) {</span>
-<span class="fc bfc" id="L280" title="All 2 branches covered.">                        case 0: if (x &lt; width - 1) neighborPixel = curPixel + 1; break; </span>
-<span class="fc bfc" id="L281" title="All 4 branches covered.">                        case 1: if ((x &lt; width - 1) &amp;&amp; (y &gt; 0)) neighborPixel = curPixel - width + 1; break;</span>
-<span class="fc bfc" id="L282" title="All 2 branches covered.">                        case 2: if (y &gt; 0) neighborPixel = curPixel - width; break; </span>
-<span class="fc bfc" id="L283" title="All 4 branches covered.">                        case 3: if ((x &gt; 0) &amp;&amp; (y &gt; 0)) neighborPixel = curPixel - width - 1; break; </span>
-<span class="fc bfc" id="L284" title="All 2 branches covered.">                        case 4: if (x &gt; 0) neighborPixel = curPixel - 1; break; </span>
-<span class="fc bfc" id="L285" title="All 4 branches covered.">                        case 5: if ((x &gt; 0) &amp;&amp; (y &lt; height - 1)) neighborPixel = curPixel + width - 1; break;</span>
-<span class="fc bfc" id="L286" title="All 2 branches covered.">                        case 6: if (y &lt; height - 1) neighborPixel = curPixel + width; break; </span>
-<span class="fc bfc" id="L287" title="All 4 branches covered.">                        default: if ((x &lt; width - 1) &amp;&amp; (y &lt; height - 1)) neighborPixel = curPixel + width + 1; break; </span>
+<span class="fc bfc" id="L290" title="All 8 branches covered.">                    switch (curEdge) {</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">                        case 0: if (x &lt; width - 1) neighborPixel = curPixel + 1; break; </span>
+<span class="fc bfc" id="L292" title="All 4 branches covered.">                        case 1: if ((x &lt; width - 1) &amp;&amp; (y &gt; 0)) neighborPixel = curPixel - width + 1; break;</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">                        case 2: if (y &gt; 0) neighborPixel = curPixel - width; break; </span>
+<span class="fc bfc" id="L294" title="All 4 branches covered.">                        case 3: if ((x &gt; 0) &amp;&amp; (y &gt; 0)) neighborPixel = curPixel - width - 1; break; </span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">                        case 4: if (x &gt; 0) neighborPixel = curPixel - 1; break; </span>
+<span class="fc bfc" id="L296" title="All 4 branches covered.">                        case 5: if ((x &gt; 0) &amp;&amp; (y &lt; height - 1)) neighborPixel = curPixel + width - 1; break;</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">                        case 6: if (y &lt; height - 1) neighborPixel = curPixel + width; break; </span>
+<span class="fc bfc" id="L298" title="All 4 branches covered.">                        default: if ((x &lt; width - 1) &amp;&amp; (y &lt; height - 1)) neighborPixel = curPixel + width + 1; break; </span>
                     }
                 } else {
-<span class="fc bfc" id="L290" title="All 4 branches covered.">                    switch (curEdge) {</span>
-<span class="fc bfc" id="L291" title="All 2 branches covered.">                        case 0: if (x &lt; width - 1) neighborPixel = curPixel + 1; break; </span>
-<span class="fc bfc" id="L292" title="All 2 branches covered.">                        case 1: if (y &lt; height - 1) neighborPixel = curPixel + width; break; </span>
-<span class="fc bfc" id="L293" title="All 2 branches covered.">                        case 2: if (x &gt; 0) neighborPixel = curPixel - 1; break; </span>
-<span class="fc bfc" id="L294" title="All 2 branches covered.">                        default: if (y &gt; 0) neighborPixel = curPixel - width; break; </span>
+<span class="fc bfc" id="L301" title="All 4 branches covered.">                    switch (curEdge) {</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">                        case 0: if (x &lt; width - 1) neighborPixel = curPixel + 1; break; </span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">                        case 1: if (y &lt; height - 1) neighborPixel = curPixel + width; break; </span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">                        case 2: if (x &gt; 0) neighborPixel = curPixel - 1; break; </span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">                        default: if (y &gt; 0) neighborPixel = curPixel - width; break; </span>
                     }
                 }
 
-<span class="fc bfc" id="L298" title="All 2 branches covered.">                if (neighborPixel != curPixel</span>
-<span class="fc bfc" id="L299" title="All 2 branches covered.">                    &amp;&amp; accessible.isNotSet(neighborPixel)) {</span>
+<span class="fc bfc" id="L309" title="All 4 branches covered.">                if (neighborPixel != curPixel &amp;&amp; accessible.isNotSet(neighborPixel)) {</span>
 
-<span class="fc" id="L301">                    int neighborLevel = bits[neighborPixel];</span>
-<span class="fc" id="L302">                    accessible.setBit(neighborPixel);</span>
+<span class="fc" id="L311">                    int neighborLevel = bits[neighborPixel];</span>
+<span class="fc" id="L312">                    accessible.setBit(neighborPixel);</span>
                     
                     //System.out.println(&quot; accessible nb=&quot; + neighborPixel + &quot; nblvl=&quot; + neighborLevel);
                     
-<span class="fc bfc" id="L306" title="All 2 branches covered.">                    if (neighborLevel &gt;= curLevel) {</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">                    if (neighborLevel &gt;= curLevel) {</span>
              
                         // implicitly '|' with curEdge=-1, then implicitly read
                         //   as next being 0
-<span class="fc" id="L310">                        boundaryPixels[neighborLevel].add(neighborPixel &lt;&lt; 4);</span>
-<span class="fc" id="L311">                        boundaryPixelsIdx.setBit(neighborLevel);</span>
+<span class="fc" id="L320">                        boundaryPixels[neighborLevel].add(neighborPixel &lt;&lt; 4);</span>
+<span class="fc" id="L321">                        boundaryPixelsIdx.setBit(neighborLevel);</span>
                
-<span class="fc bfc" id="L313" title="All 2 branches covered.">                        if (neighborLevel &lt; priority) {</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">                        if (neighborLevel &lt; priority) {</span>
                             // always handle a smaller grey level next
-<span class="fc" id="L315">                            priority = neighborLevel;</span>
+<span class="fc" id="L325">                            priority = neighborLevel;</span>
                         }
                     } else {
                         
                         // always handle a smaller grey level next,
                         // so process neighbor and put current level as priority
 
-<span class="fc" id="L322">                        boundaryPixels[curLevel].add((curPixel &lt;&lt; 4) | (curEdge + 1));</span>
-<span class="fc" id="L323">                        boundaryPixelsIdx.setBit(curLevel);</span>
+<span class="fc" id="L332">                        boundaryPixels[curLevel].add((curPixel &lt;&lt; 4) | (curEdge + 1));</span>
+<span class="fc" id="L333">                        boundaryPixelsIdx.setBit(curLevel);</span>
     
-<span class="fc bfc" id="L325" title="All 2 branches covered.">                        if (curLevel &lt; priority) {</span>
-<span class="fc" id="L326">                            priority = curLevel;</span>
+<span class="fc bfc" id="L335" title="All 2 branches covered.">                        if (curLevel &lt; priority) {</span>
+<span class="fc" id="L336">                            priority = curLevel;</span>
                         }
-<span class="fc" id="L328">                        curPixel = neighborPixel;</span>
-<span class="fc" id="L329">                        curEdge = 0;</span>
-<span class="fc" id="L330">                        curLevel = neighborLevel;</span>
+<span class="fc" id="L338">                        curPixel = neighborPixel;</span>
+
+<span class="fc" id="L340">                        curEdge = 0;</span>
+<span class="fc" id="L341">                        curLevel = neighborLevel;</span>
 
                         //System.out.println(&quot;curPixel &quot; + curPixel + &quot; level=&quot; + curLevel + &quot; priority=&quot; + priority);
                         
                         //continue step_3;
-<span class="fc" id="L335">                        s3 = true;</span>
+<span class="fc" id="L346">                        s3 = true;</span>
                         
-<span class="fc" id="L337">                        break;</span>
+<span class="fc" id="L348">                        break;</span>
                     }
                 }
             } // end for loop over curEdge
 
-<span class="fc bfc" id="L342" title="All 2 branches covered.">            if (s3) {</span>
+<span class="fc bfc" id="L353" title="All 2 branches covered.">            if (s3) {</span>
 
-<span class="fc" id="L344">                regionStack.add(new Region(curLevel, curPixel));</span>
+<span class="fc" id="L355">                regionStack.add(new Region(curLevel, curPixel));</span>
 
-<span class="fc" id="L346">                continue;</span>
+<span class="fc" id="L357">                continue;</span>
             }
             /*the above code outlined for quick look at major branches:
             while (true) {
@@ -372,71 +383,180 @@ public class MSER {
 
             // 5. Accumulate the current pixel to the component at the top of the stack (water
             // saturates the current pixel).
-<span class="fc" id="L375">            regionStack.get(regionStack.size() - 1).accumulate(x, y);</span>
+<span class="fc" id="L386">            regionStack.get(regionStack.size() - 1).accumulate(x, y);</span>
 
             // 6. Pop the heap of boundary pixels. If the heap is empty, 
             //    we are done. 
             //    If the returned pixel is at the same grey-level as the 
             //    previous, go to 4.
-<span class="fc bfc" id="L381" title="All 2 branches covered.">            if (priority == 256) {</span>
+<span class="fc bfc" id="L392" title="All 2 branches covered.">            if (priority == 256) {</span>
 
-<span class="fc" id="L383">                regionStack.get(regionStack.size() - 1)</span>
-<span class="fc" id="L384">                    .detect(delta_, (int)(minArea_ * width * height),</span>
+<span class="fc" id="L394">                regionStack.get(regionStack.size() - 1).detect(delta_, (int)(minArea_ * width * height),</span>
                         (int)(maxArea_ * width * height),
                         maxVariation_, minDiversity_, regions);
 
-<span class="fc" id="L388">                return;</span>
+<span class="fc" id="L398">                return;</span>
             }
 
-<span class="fc" id="L391">            int sz = boundaryPixels[priority].size();  </span>
-<span class="fc" id="L392">            int highestPriorityBP = boundaryPixels[priority].removeAt(sz - 1);</span>
-<span class="fc bfc" id="L393" title="All 2 branches covered.">            if (boundaryPixels[priority].isEmpty()) {</span>
-<span class="fc" id="L394">                boundaryPixelsIdx.clearBit(priority);</span>
+<span class="fc" id="L401">            int sz = boundaryPixels[priority].size();</span>
+
+            //NLK: added handling for case where boundaryPixels is completely empty
+            //---------------------
+<span class="fc" id="L405">            int tmp = priority;</span>
+<span class="fc bfc" id="L406" title="All 4 branches covered.">            while ( tmp &gt;= 0 &amp;&amp; boundaryPixels[tmp].isEmpty()) {</span>
+<span class="fc" id="L407">                sz = boundaryPixels[tmp--].size();</span>
+            }
+<span class="fc bfc" id="L409" title="All 2 branches covered.">            if (sz == 0) {</span>
+                // all boundary pixels are empty, so increment curPixel and continue
+<span class="fc" id="L411">                int prevPixel = curPixel;</span>
+
+                // using code under line 288 above for choosing next pixel,
+<span class="fc" id="L414">                int notVisited = nextCurPixel(eight_, curPixel, height, width, debugXY);</span>
+
+<span class="pc bpc" id="L416" title="1 of 2 branches missed.">                if (notVisited == -1) {</span>
+                    //precess regions and end?
+<span class="nc" id="L418">                    regionStack.get(regionStack.size() - 1)</span>
+<span class="nc" id="L419">                            .detect(delta_, (int) (minArea_ * width * height),</span>
+                                    (int) (maxArea_ * width * height),
+                                    maxVariation_, minDiversity_, regions);
+<span class="nc" id="L422">                    return;</span>
+                }
+<span class="fc" id="L424">                curPixel = notVisited;</span>
+
+<span class="fc bfc" id="L426" title="All 4 branches covered.">                if (priority == 255 || accessible.getNSetBits() == bits.length) {</span>
+<span class="fc" id="L427">                    priority = 256;</span>
+                } else {
+<span class="fc" id="L429">                    priority = 255;</span>
+                }
+<span class="fc" id="L431">                curLevel = bits[curPixel];</span>
+
+<span class="fc" id="L433">                processStack(curLevel, prevPixel, regionStack);</span>
+
+<span class="fc" id="L435">                continue;</span>
+            }
+            // ---------------
+
+<span class="fc" id="L439">            int highestPriorityBP = boundaryPixels[priority].removeAt(sz - 1);</span>
+<span class="fc bfc" id="L440" title="All 2 branches covered.">            if (boundaryPixels[priority].isEmpty()) {</span>
+<span class="fc" id="L441">                boundaryPixelsIdx.clearBit(priority);</span>
             }
             // decode (curPixel &lt;&lt; 4) | (curEdge + 1):
-<span class="fc" id="L397">            curPixel = highestPriorityBP &gt;&gt; 4;</span>
-<span class="fc" id="L398">            curEdge = highestPriorityBP &amp; 15; // &lt;--- NOTE: +1 remains here as incrementation for next loop value</span>
+<span class="fc" id="L444">            curPixel = highestPriorityBP &gt;&gt; 4;</span>
+<span class="fc" id="L445">            curEdge = highestPriorityBP &amp; 15; // &lt;--- NOTE: +1 remains here as incrementation for next loop value</span>
            
-<span class="pc bpc" id="L400" title="1 of 4 branches missed.">            if (priority &lt; 256 &amp;&amp; boundaryPixels[priority].isEmpty()) {</span>
+<span class="pc bpc" id="L447" title="1 of 4 branches missed.">            if (priority &lt; 256 &amp;&amp; boundaryPixels[priority].isEmpty()) {</span>
 
-<span class="fc" id="L402">                int prev = priority;</span>
+<span class="fc" id="L449">                int prev = priority;</span>
                 //fix for case priority &lt;= 0
-<span class="fc bfc" id="L404" title="All 2 branches covered.">                if (priority &gt; 0) {</span>
-<span class="fc" id="L405">                    priority = boundaryPixelsIdx.nextHighestBitSet(priority - 1);</span>
+<span class="fc bfc" id="L451" title="All 2 branches covered.">                if (priority &gt; 0) {</span>
+<span class="fc" id="L452">                    priority = boundaryPixelsIdx.nextHighestBitSet(priority - 1);</span>
                 } else {
-<span class="fc" id="L407">                    priority = boundaryPixelsIdx.nextHighestBitSet(0);</span>
+<span class="fc" id="L454">                    priority = boundaryPixelsIdx.nextHighestBitSet(0);</span>
                     //System.out.printf(&quot;*DEBUG: boundaryPixelsIdx(0)=%d\n&quot;, priority);
                     //System.out.flush();
                 }
 
-<span class="fc bfc" id="L412" title="All 2 branches covered.">                if (priority == -1) {</span>
-<span class="pc bpc" id="L413" title="1 of 4 branches missed.">                    if (prev == 255 || accessible.getNSetBits() == bits.length) {</span>
-<span class="fc" id="L414">                        priority = 256;</span>
+<span class="fc bfc" id="L459" title="All 2 branches covered.">                if (priority == -1) {</span>
+<span class="pc bpc" id="L460" title="1 of 4 branches missed.">                    if (prev == 255 || accessible.getNSetBits() == bits.length) {</span>
+<span class="fc" id="L461">                        priority = 256;</span>
                     } else {
-<span class="nc" id="L416">                        priority = 255;</span>
+<span class="nc" id="L463">                        priority = 255;</span>
                     }
                 }             
             }
             //System.out.println(&quot;curPixel &quot; + curPixel + &quot; level=&quot; + curLevel + &quot; priority=&quot; + priority);
 
-<span class="fc" id="L422">            int newPixelGreyLevel = bits[curPixel];</span>
+<span class="fc" id="L469">            int newPixelGreyLevel = bits[curPixel];</span>
 
-<span class="fc bfc" id="L424" title="All 2 branches covered.">            if (newPixelGreyLevel != curLevel) {</span>
+<span class="fc bfc" id="L471" title="All 2 branches covered.">            if (newPixelGreyLevel != curLevel) {</span>
 
-<span class="fc" id="L426">                curLevel = newPixelGreyLevel;</span>
+<span class="fc" id="L473">                curLevel = newPixelGreyLevel;</span>
  
                 // 7. The returned pixel is at a higher grey-level, so we must 
                 // now process all components on the component stack until we 
                 // reach the higher grey-level. This is done with the 
                 // processStack sub-routine, see below.
                 // Then go to 4.
-<span class="fc" id="L433">                processStack(newPixelGreyLevel, curPixel, regionStack);</span>
+<span class="fc" id="L480">                processStack(newPixelGreyLevel, curPixel, regionStack);</span>
             }
             /*System.out.println(&quot;Regions:&quot;);
             for (Region r : regionStack) {
                 System.out.println(r.toString());
             }*/
-<span class="fc" id="L439">        }// end outer while loop</span>
+<span class="fc" id="L486">        }// end outer while loop</span>
+    }
+
+    // debugXY contains unvisited pixels
+    private int nextCurPixel(boolean eight, int curPixel, int height, int width, LinkedHashSet&lt;Integer&gt; debugXY) {
+<span class="pc bpc" id="L491" title="1 of 2 branches missed.">        if(debugXY.isEmpty()) {</span>
+<span class="nc" id="L492">            return -1;</span>
+        }
+<span class="fc" id="L494">        int nXY = width*height;</span>
+
+<span class="fc" id="L496">        int x = curPixel % width;</span>
+<span class="fc" id="L497">        int y = curPixel / width;</span>
+<span class="fc" id="L498">        int pix = -1;</span>
+<span class="fc bfc" id="L499" title="All 2 branches covered.">        if (eight) {</span>
+            // eight neighbor model
+<span class="fc bfc" id="L501" title="All 2 branches covered.">            for (int i = 0; i &lt; 8; ++i) {</span>
+<span class="fc" id="L502">                pix = -1;</span>
+<span class="pc bpc" id="L503" title="1 of 9 branches missed.">                switch (i) {</span>
+                    case 0:
+<span class="fc bfc" id="L505" title="All 2 branches covered.">                        if (x &lt; width - 1) pix = curPixel + 1;</span>
+                        break;
+                    case 1:
+<span class="fc bfc" id="L508" title="All 4 branches covered.">                        if ((x &lt; width - 1) &amp;&amp; (y &gt; 0)) pix = curPixel - width + 1;</span>
+                        break;
+                    case 2:
+<span class="fc bfc" id="L511" title="All 2 branches covered.">                        if (y &gt; 0) pix = curPixel - width;</span>
+                        break;
+                    case 3:
+<span class="pc bpc" id="L514" title="1 of 4 branches missed.">                        if ((x &gt; 0) &amp;&amp; (y &gt; 0)) pix = curPixel - width - 1;</span>
+                        break;
+                    case 4:
+<span class="pc bpc" id="L517" title="1 of 2 branches missed.">                        if (x &gt; 0) pix = curPixel - 1;</span>
+                        break;
+                    case 5:
+<span class="pc bpc" id="L520" title="1 of 4 branches missed.">                        if ((x &gt; 0) &amp;&amp; (y &lt; height - 1)) pix = curPixel + width - 1;</span>
+                        break;
+                    case 6:
+<span class="fc bfc" id="L523" title="All 2 branches covered.">                        if (y &lt; height - 1) pix = curPixel + width;</span>
+                        break;
+                    case 7:
+<span class="fc bfc" id="L526" title="All 4 branches covered.">                        if ((x &lt; width - 1) &amp;&amp; (y &lt; height - 1)) pix = curPixel + width + 1;</span>
+                        break;
+                    default:
+<span class="nc" id="L529">                        return -1;</span>
+                }
+<span class="fc bfc" id="L531" title="All 2 branches covered.">                if (pix == -1) continue;</span>
+<span class="fc bfc" id="L532" title="All 2 branches covered.">                if (debugXY.contains(pix)) return pix;</span>
+            }
+        } else {
+            // 4 neighbor model
+<span class="fc bfc" id="L536" title="All 2 branches covered.">            for (int i = 0; i &lt; 4; ++i) {</span>
+<span class="fc" id="L537">                pix = -1;</span>
+<span class="pc bpc" id="L538" title="1 of 5 branches missed.">                switch (i) {</span>
+                    case 0:
+<span class="fc bfc" id="L540" title="All 2 branches covered.">                        if (x &lt; width - 1) pix = curPixel + 1;</span>
+                        break;
+                    case 1:
+<span class="fc bfc" id="L543" title="All 2 branches covered.">                        if  (y &lt; height - 1) pix = curPixel + width;</span>
+                        break;
+                    case 2:
+<span class="fc bfc" id="L546" title="All 2 branches covered.">                        if (x &gt; 0) pix = curPixel - 1;</span>
+                        break;
+                    case 3:
+<span class="fc bfc" id="L549" title="All 2 branches covered.">                        if (y &gt; 0) pix = curPixel - width;</span>
+                        break;
+                    default:
+<span class="nc" id="L552">                        return -1;</span>
+                }
+<span class="fc bfc" id="L554" title="All 2 branches covered.">                if (pix == -1) continue;</span>
+<span class="fc bfc" id="L555" title="All 2 branches covered.">                if (debugXY.contains(pix)) return pix;</span>
+            }
+        }
+        // hackish way to proceed: pick smallest pixValue not in debugXY
+<span class="fc" id="L559">        return debugXY.iterator().next();</span>
     }
 
     private void processStack(int newPixelGreyLevel, int pixel,
@@ -447,7 +567,7 @@ public class MSER {
         // second component on the stack.
         do {
             
-<span class="fc" id="L450">            Region top = regionStack.remove(regionStack.size() - 1);</span>
+<span class="fc" id="L570">            Region top = regionStack.remove(regionStack.size() - 1);</span>
 
             // 2. If newPixelGreyLevel is smaller than the grey-level on the 
             //    second component on the stack, set the top of stack 
@@ -455,17 +575,17 @@ public class MSER {
             //    (This occurs when the new pixel is at a grey-level for which 
             //    there is not yet a component instantiated, so we let the top 
             //    of stack be that level by just changing its grey-level.
-<span class="fc" id="L458">            if (newPixelGreyLevel &lt; </span>
-<span class="fc bfc" id="L459" title="All 2 branches covered.">                regionStack.get(regionStack.size() - 1).level_) {</span>
+<span class="fc" id="L578">            if (newPixelGreyLevel &lt; </span>
+<span class="fc bfc" id="L579" title="All 2 branches covered.">                regionStack.get(regionStack.size() - 1).level_) {</span>
 
                 // NOTE, this slight change in methods used by Charles Dubout results
-                // in the history of top being added to new node correclty
+                // in the history of top being added to new node correctly
                 // without additional logic
-<span class="fc" id="L464">                regionStack.add(new Region(newPixelGreyLevel, pixel));</span>
+<span class="fc" id="L584">                regionStack.add(new Region(newPixelGreyLevel, pixel));</span>
             
-<span class="fc" id="L466">                regionStack.get(regionStack.size() - 1).merge(top);</span>
+<span class="fc" id="L586">                regionStack.get(regionStack.size() - 1).merge(top);</span>
 
-<span class="fc" id="L468">                return;</span>
+<span class="fc" id="L588">                return;</span>
             }
 
             // 3. Remove the top of stack and merge it into the second component
@@ -480,13 +600,13 @@ public class MSER {
             // be the winner if its
             // current size is larger than the previous size of second on stack.
             
-<span class="fc" id="L483">            regionStack.get(regionStack.size() - 1).merge(top);</span>
+<span class="fc" id="L603">            regionStack.get(regionStack.size() - 1).merge(top);</span>
             
         } // 4. If(newPixelGreyLevel&gt;top of stack grey-level) go to 1.
-<span class="fc" id="L486">        while (newPixelGreyLevel &gt; </span>
-<span class="pc bpc" id="L487" title="1 of 2 branches missed.">            regionStack.get(regionStack.size() - 1).level_);</span>
+<span class="fc" id="L606">        while (newPixelGreyLevel &gt; </span>
+<span class="fc bfc" id="L607" title="All 2 branches covered.">            regionStack.get(regionStack.size() - 1).level_);</span>
         
-<span class="fc" id="L489">    }</span>
+<span class="fc" id="L609">    }</span>
 
     /**
      * given 8 bit image, calculate the MSER regions using the default 
@@ -497,19 +617,19 @@ public class MSER {
      */
     public List&lt;List&lt;Region&gt;&gt; findRegions(GreyscaleImage img) {
 
-<span class="nc bnc" id="L500" title="All 2 branches missed.">        if (img.getMax() &gt; ((1 &lt;&lt;8) - 1)) {</span>
-<span class="nc" id="L501">            throw new IllegalArgumentException(&quot;img must be an 8 bit image&quot;);</span>
+<span class="nc bnc" id="L620" title="All 2 branches missed.">        if (img.getMax() &gt; ((1 &lt;&lt;8) - 1)) {</span>
+<span class="nc" id="L621">            throw new IllegalArgumentException(&quot;img must be an 8 bit image&quot;);</span>
         }
         
-<span class="nc" id="L504">        int width = img.getWidth();</span>
-<span class="nc" id="L505">        int height = img.getHeight();</span>
+<span class="nc" id="L624">        int width = img.getWidth();</span>
+<span class="nc" id="L625">        int height = img.getHeight();</span>
 
-<span class="nc" id="L507">        int[] greyscale = new int[width * height];</span>
-<span class="nc bnc" id="L508" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
-<span class="nc" id="L509">            greyscale[i] = img.getValue(i);</span>
+<span class="nc" id="L627">        int[] greyscale = new int[width * height];</span>
+<span class="nc bnc" id="L628" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="nc" id="L629">            greyscale[i] = img.getValue(i);</span>
         }
     
-<span class="nc" id="L512">        return findRegions(greyscale, width, height);</span>
+<span class="nc" id="L632">        return findRegions(greyscale, width, height);</span>
     }
     
     /**
@@ -535,19 +655,19 @@ public class MSER {
         int delta, double minArea, double maxArea, double maxVariation,
         double minDiversity) {
 
-<span class="nc bnc" id="L538" title="All 2 branches missed.">        if (img.getMax() &gt; ((1 &lt;&lt;8) - 1)) {</span>
-<span class="nc" id="L539">            throw new IllegalArgumentException(&quot;img must be an 8 bit image&quot;);</span>
+<span class="nc bnc" id="L658" title="All 2 branches missed.">        if (img.getMax() &gt; ((1 &lt;&lt;8) - 1)) {</span>
+<span class="nc" id="L659">            throw new IllegalArgumentException(&quot;img must be an 8 bit image&quot;);</span>
         }
         
-<span class="nc" id="L542">        int width = img.getWidth();</span>
-<span class="nc" id="L543">        int height = img.getHeight();</span>
+<span class="nc" id="L662">        int width = img.getWidth();</span>
+<span class="nc" id="L663">        int height = img.getHeight();</span>
 
-<span class="nc" id="L545">        int[] greyscale = new int[width * height];</span>
-<span class="nc bnc" id="L546" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
-<span class="nc" id="L547">            greyscale[i] = img.getValue(i);</span>
+<span class="nc" id="L665">        int[] greyscale = new int[width * height];</span>
+<span class="nc bnc" id="L666" title="All 2 branches missed.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="nc" id="L667">            greyscale[i] = img.getValue(i);</span>
         }
     
-<span class="nc" id="L550">        return findRegions(greyscale, width, height, delta, minArea, maxArea, </span>
+<span class="nc" id="L670">        return findRegions(greyscale, width, height, delta, minArea, maxArea, </span>
             maxVariation, minDiversity);
     }
     
@@ -557,19 +677,19 @@ public class MSER {
     
     public static int[] readIntoArray(GreyscaleImage img) {
         
-<span class="pc bpc" id="L560" title="1 of 2 branches missed.">        if (img.getMax() &gt; ((1 &lt;&lt;8) - 1)) {</span>
-<span class="nc" id="L561">            throw new IllegalArgumentException(&quot;img must be an 8 bit image&quot;);</span>
+<span class="pc bpc" id="L680" title="1 of 2 branches missed.">        if (img.getMax() &gt; ((1 &lt;&lt;8) - 1)) {</span>
+<span class="nc" id="L681">            throw new IllegalArgumentException(&quot;img must be an 8 bit image&quot;);</span>
         }
         
-<span class="fc" id="L564">        int width = img.getWidth();</span>
-<span class="fc" id="L565">        int height = img.getHeight();</span>
+<span class="fc" id="L684">        int width = img.getWidth();</span>
+<span class="fc" id="L685">        int height = img.getHeight();</span>
 
-<span class="fc" id="L567">        int[] greyscale = new int[width * height];</span>
-<span class="fc bfc" id="L568" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
-<span class="fc" id="L569">            greyscale[i] = img.getValue(i);</span>
+<span class="fc" id="L687">        int[] greyscale = new int[width * height];</span>
+<span class="fc bfc" id="L688" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="fc" id="L689">            greyscale[i] = img.getValue(i);</span>
         }
         
-<span class="fc" id="L572">        return greyscale;</span>
+<span class="fc" id="L692">        return greyscale;</span>
     }
     
     /**
@@ -582,19 +702,19 @@ public class MSER {
     public List&lt;List&lt;Region&gt;&gt; findRegions(GreyscaleImage img, Threshold 
         threshold) {
         
-<span class="pc bpc" id="L585" title="1 of 2 branches missed.">        if (img.getMax() &gt; ((1 &lt;&lt;8) - 1)) {</span>
-<span class="nc" id="L586">            throw new IllegalArgumentException(&quot;img must be an 8 bit image&quot;);</span>
+<span class="pc bpc" id="L705" title="1 of 2 branches missed.">        if (img.getMax() &gt; ((1 &lt;&lt;8) - 1)) {</span>
+<span class="nc" id="L706">            throw new IllegalArgumentException(&quot;img must be an 8 bit image&quot;);</span>
         }
 
-<span class="fc" id="L589">        int width = img.getWidth();</span>
-<span class="fc" id="L590">        int height = img.getHeight();</span>
+<span class="fc" id="L709">        int width = img.getWidth();</span>
+<span class="fc" id="L710">        int height = img.getHeight();</span>
 
-<span class="fc" id="L592">        int[] greyscale = new int[width * height];</span>
-<span class="fc bfc" id="L593" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
-<span class="fc" id="L594">            greyscale[i] = img.getValue(i);</span>
+<span class="fc" id="L712">        int[] greyscale = new int[width * height];</span>
+<span class="fc bfc" id="L713" title="All 2 branches covered.">        for (int i = 0; i &lt; img.getNPixels(); ++i) {</span>
+<span class="fc" id="L714">            greyscale[i] = img.getValue(i);</span>
         }
     
-<span class="fc" id="L597">        return findRegions(greyscale, width, height, threshold);</span>
+<span class="fc" id="L717">        return findRegions(greyscale, width, height, threshold);</span>
     }
     
     /**
@@ -606,7 +726,7 @@ public class MSER {
      */
     public List&lt;List&lt;Region&gt;&gt; findRegions(int[] greyscale, int width,
         int height) {
-<span class="fc" id="L609">        return findRegions(greyscale, width, height, </span>
+<span class="fc" id="L729">        return findRegions(greyscale, width, height, </span>
             Threshold.DEFAULT);
     }
     
@@ -622,22 +742,22 @@ public class MSER {
     public List&lt;List&lt;Region&gt;&gt; findRegions(int[] greyscale, int width,
         int height, Threshold threshold) {
         
-<span class="fc" id="L625">        int delta = 2;</span>
+<span class="fc" id="L745">        int delta = 2;</span>
         double minArea;
-<span class="fc" id="L627">        double maxArea = 0.25;//0.1;</span>
-<span class="fc" id="L628">        double maxVariation = 0.5;</span>
-<span class="fc" id="L629">        double minDiversity = 0.5;</span>
-<span class="fc bfc" id="L630" title="All 2 branches covered.">        if (threshold.equals(Threshold.LEAST_SENSITIVE)) {</span>
-<span class="fc" id="L631">            minArea = 0.1;</span>
-<span class="fc bfc" id="L632" title="All 2 branches covered.">        } else if (threshold.equals(Threshold.LESS_SENSITIVE)) {</span>
-<span class="fc" id="L633">            minArea = 0.01;</span>
-<span class="fc bfc" id="L634" title="All 2 branches covered.">        } else if (threshold.equals(Threshold.SLIGHTLY_LESS_SENSITIVE)) {</span>
-<span class="fc" id="L635">            minArea = 0.001;</span>
+<span class="fc" id="L747">        double maxArea = 0.25;//0.1;</span>
+<span class="fc" id="L748">        double maxVariation = 0.5;</span>
+<span class="fc" id="L749">        double minDiversity = 0.5;</span>
+<span class="fc bfc" id="L750" title="All 2 branches covered.">        if (threshold.equals(Threshold.LEAST_SENSITIVE)) {</span>
+<span class="fc" id="L751">            minArea = 0.1;</span>
+<span class="pc bpc" id="L752" title="1 of 2 branches missed.">        } else if (threshold.equals(Threshold.LESS_SENSITIVE)) {</span>
+<span class="nc" id="L753">            minArea = 0.01;</span>
+<span class="pc bpc" id="L754" title="1 of 2 branches missed.">        } else if (threshold.equals(Threshold.SLIGHTLY_LESS_SENSITIVE)) {</span>
+<span class="nc" id="L755">            minArea = 0.001;</span>
         } else {
-<span class="fc" id="L637">            minArea = 0.0005;</span>
+<span class="fc" id="L757">            minArea = 0.0005;</span>
         }
 
-<span class="fc" id="L640">        return findRegions(greyscale, width, height, delta, minArea, maxArea, </span>
+<span class="fc" id="L760">        return findRegions(greyscale, width, height, delta, minArea, maxArea, </span>
             maxVariation, minDiversity);
         
     }
@@ -653,36 +773,36 @@ public class MSER {
     public List&lt;Region&gt; findRegionsPos(int[] greyscale, int width,
         int height, Threshold threshold) {
         
-<span class="nc" id="L656">        int delta = 2;</span>
+<span class="fc" id="L776">        int delta = 2;</span>
         double minArea;
-<span class="nc" id="L658">        double maxArea = 0.25;//0.1;</span>
-<span class="nc" id="L659">        double maxVariation = 0.5;</span>
-<span class="nc" id="L660">        double minDiversity = 0.5;</span>
-<span class="nc bnc" id="L661" title="All 2 branches missed.">        if (threshold.equals(Threshold.LEAST_SENSITIVE)) {</span>
-<span class="nc" id="L662">            minArea = 0.1;</span>
-<span class="nc bnc" id="L663" title="All 2 branches missed.">        } else if (threshold.equals(Threshold.LESS_SENSITIVE)) {</span>
-<span class="nc" id="L664">            minArea = 0.01;</span>
-<span class="nc bnc" id="L665" title="All 2 branches missed.">        } else if (threshold.equals(Threshold.SLIGHTLY_LESS_SENSITIVE)) {</span>
-<span class="nc" id="L666">            minArea = 0.001;</span>
+<span class="fc" id="L778">        double maxArea = 0.25;//0.1;</span>
+<span class="fc" id="L779">        double maxVariation = 0.5;</span>
+<span class="fc" id="L780">        double minDiversity = 0.5;</span>
+<span class="pc bpc" id="L781" title="1 of 2 branches missed.">        if (threshold.equals(Threshold.LEAST_SENSITIVE)) {</span>
+<span class="nc" id="L782">            minArea = 0.1;</span>
+<span class="fc bfc" id="L783" title="All 2 branches covered.">        } else if (threshold.equals(Threshold.LESS_SENSITIVE)) {</span>
+<span class="fc" id="L784">            minArea = 0.01;</span>
+<span class="pc bpc" id="L785" title="1 of 2 branches missed.">        } else if (threshold.equals(Threshold.SLIGHTLY_LESS_SENSITIVE)) {</span>
+<span class="nc" id="L786">            minArea = 0.001;</span>
         } else {
-<span class="nc" id="L668">            minArea = 0.0005;</span>
+<span class="fc" id="L788">            minArea = 0.0005;</span>
         }
         
-<span class="nc" id="L671">        MSER mser8 = new MSER(delta, minArea, maxArea, maxVariation, </span>
+<span class="fc" id="L791">        MSER mser8 = new MSER(delta, minArea, maxArea, maxVariation, </span>
             minDiversity, true);
         
-<span class="nc" id="L674">        List&lt;Region&gt; regions = new ArrayList&lt;Region&gt;();</span>
+<span class="fc" id="L794">        List&lt;Region&gt; regions = new ArrayList&lt;Region&gt;();</span>
 
-<span class="nc" id="L676">        mser8.operator(greyscale, width, height, regions);</span>
+<span class="fc" id="L796">        mser8.operator(greyscale, width, height, regions);</span>
         
-<span class="nc" id="L678">        long stop = System.currentTimeMillis();</span>
+<span class="fc" id="L798">        long stop = System.currentTimeMillis();</span>
 
         //System.out.println(
         //    &quot;Extracted &quot; + (regions.get(0).size() + regions.get(1).size())
         //    + &quot; regions  (&quot; + width + 'x' + height + &quot;) in &quot;
         //    + ((stop - start) / 1000) + &quot;s.&quot;);
 
-<span class="nc" id="L685">        return regions;</span>
+<span class="fc" id="L805">        return regions;</span>
         
     }
     
@@ -699,46 +819,48 @@ public class MSER {
     public List&lt;Region&gt; findRegionsNeg(int[] greyscale, int width,
         int height, Threshold threshold) {
         
-<span class="fc" id="L702">        int delta = 2;</span>
+<span class="fc" id="L822">        int delta = 2;</span>
         double minArea;
-<span class="fc" id="L704">        double maxArea = 0.25;//0.1;</span>
-<span class="fc" id="L705">        double maxVariation = 0.5;</span>
-<span class="fc" id="L706">        double minDiversity = 0.5;</span>
-<span class="fc bfc" id="L707" title="All 2 branches covered.">        if (threshold.equals(Threshold.LEAST_SENSITIVE)) {</span>
-<span class="fc" id="L708">            minArea = 0.1;</span>
-<span class="pc bpc" id="L709" title="1 of 2 branches missed.">        } else if (threshold.equals(Threshold.LESS_SENSITIVE)) {</span>
-<span class="nc" id="L710">            minArea = 0.01;</span>
-<span class="pc bpc" id="L711" title="1 of 2 branches missed.">        } else if (threshold.equals(Threshold.SLIGHTLY_LESS_SENSITIVE)) {</span>
-<span class="fc" id="L712">            minArea = 0.001;</span>
+<span class="fc" id="L824">        double maxArea = 0.25;//0.1;</span>
+<span class="fc" id="L825">        double maxVariation = 0.5;</span>
+<span class="fc" id="L826">        double minDiversity = 0.5;</span>
+<span class="pc bpc" id="L827" title="1 of 2 branches missed.">        if (threshold.equals(Threshold.LEAST_SENSITIVE)) {</span>
+<span class="nc" id="L828">            minArea = 0.1;</span>
+<span class="fc bfc" id="L829" title="All 2 branches covered.">        } else if (threshold.equals(Threshold.LESS_SENSITIVE)) {</span>
+<span class="fc" id="L830">            minArea = 0.01;</span>
+<span class="pc bpc" id="L831" title="1 of 2 branches missed.">        } else if (threshold.equals(Threshold.SLIGHTLY_LESS_SENSITIVE)) {</span>
+<span class="nc" id="L832">            minArea = 0.001;</span>
             //NOTE: temporary edit...might change
-<span class="fc" id="L714">            minDiversity = 0.995;</span>
+<span class="nc" id="L834">            minDiversity = 0.995;</span>
         } else {
-<span class="nc" id="L716">            minArea = 0.0005;</span>
+<span class="fc" id="L836">            minArea = 0.0005;</span>
         }
         
-<span class="fc" id="L719">        MSER mser4 = new MSER(delta, minArea, maxArea, maxVariation, </span>
+<span class="fc" id="L839">        MSER mser4 = new MSER(delta, minArea, maxArea, maxVariation, </span>
             minDiversity, false);
 
-<span class="fc" id="L722">        List&lt;Region&gt; regions = new ArrayList&lt;Region&gt;();</span>
+<span class="fc" id="L842">        List&lt;Region&gt; regions = new ArrayList&lt;Region&gt;();</span>
+
+<span class="fc" id="L844">        greyscale = Arrays.copyOf(greyscale, greyscale.length);</span>
    
         // Invert the pixel values
-<span class="fc bfc" id="L725" title="All 2 branches covered.">        for (int i = 0; i &lt; width * height; ++i) {</span>
-<span class="fc" id="L726">            greyscale[i] = ~greyscale[i];</span>
-<span class="pc bpc" id="L727" title="1 of 2 branches missed.">            if (greyscale[i] &lt; 0) {</span>
-<span class="fc" id="L728">                greyscale[i] += 256;</span>
+<span class="fc bfc" id="L847" title="All 2 branches covered.">        for (int i = 0; i &lt; width * height; ++i) {</span>
+<span class="fc" id="L848">            greyscale[i] = ~greyscale[i];</span>
+<span class="pc bpc" id="L849" title="1 of 2 branches missed.">            if (greyscale[i] &lt; 0) {</span>
+<span class="fc" id="L850">                greyscale[i] += 256;</span>
             }
         }
 
-<span class="fc" id="L732">        mser4.operator(greyscale, width, height, regions);</span>
+<span class="fc" id="L854">        mser4.operator(greyscale, width, height, regions);</span>
 
-<span class="fc" id="L734">        long stop = System.currentTimeMillis();</span>
+<span class="fc" id="L856">        long stop = System.currentTimeMillis();</span>
 
         //System.out.println(
         //    &quot;Extracted &quot; + (regions.get(0).size() + regions.get(1).size())
         //    + &quot; regions  (&quot; + width + 'x' + height + &quot;) in &quot;
         //    + ((stop - start) / 1000) + &quot;s.&quot;);
 
-<span class="fc" id="L741">        return regions;</span>
+<span class="fc" id="L863">        return regions;</span>
     }
     
     /**
@@ -778,26 +900,27 @@ public class MSER {
         // Extract MSER
         //long start = System.currentTimeMillis();
 
-<span class="fc" id="L781">        MSER mser8 = new MSER(delta, minArea, maxArea, maxVariation, </span>
+<span class="fc" id="L903">        MSER mser8 = new MSER(delta, minArea, maxArea, maxVariation, </span>
             minDiversity, true);
-<span class="fc" id="L783">        MSER mser4 = new MSER(delta, minArea, maxArea, maxVariation, </span>
+<span class="fc" id="L905">        MSER mser4 = new MSER(delta, minArea, maxArea, maxVariation, </span>
             minDiversity, false);
 
-<span class="fc" id="L786">        List&lt;List&lt;Region&gt;&gt; regions = new ArrayList&lt;List&lt;Region&gt;&gt;(2);</span>
-<span class="fc" id="L787">        regions.add(new ArrayList&lt;Region&gt;());</span>
-<span class="fc" id="L788">        regions.add(new ArrayList&lt;Region&gt;());</span>
+<span class="fc" id="L908">        List&lt;List&lt;Region&gt;&gt; regions = new ArrayList&lt;List&lt;Region&gt;&gt;(2);</span>
+<span class="fc" id="L909">        regions.add(new ArrayList&lt;Region&gt;());</span>
+<span class="fc" id="L910">        regions.add(new ArrayList&lt;Region&gt;());</span>
 
-<span class="fc" id="L790">        mser8.operator(greyscale, width, height, regions.get(0));</span>
+<span class="fc" id="L912">        mser8.operator(greyscale, width, height, regions.get(0));</span>
    
         // Invert the pixel values
-<span class="fc bfc" id="L793" title="All 2 branches covered.">        for (int i = 0; i &lt; width * height; ++i) {</span>
-<span class="fc" id="L794">            greyscale[i] = ~greyscale[i];</span>
-<span class="pc bpc" id="L795" title="1 of 2 branches missed.">            if (greyscale[i] &lt; 0) {</span>
-<span class="fc" id="L796">                greyscale[i] += 256;</span>
+<span class="fc" id="L915">        greyscale = Arrays.copyOf(greyscale, greyscale.length);</span>
+<span class="fc bfc" id="L916" title="All 2 branches covered.">        for (int i = 0; i &lt; width * height; ++i) {</span>
+<span class="fc" id="L917">            greyscale[i] = ~greyscale[i];</span>
+<span class="pc bpc" id="L918" title="1 of 2 branches missed.">            if (greyscale[i] &lt; 0) {</span>
+<span class="fc" id="L919">                greyscale[i] += 256;</span>
             }
         }
 
-<span class="fc" id="L800">        mser4.operator(greyscale, width, height, regions.get(1));</span>
+<span class="fc" id="L923">        mser4.operator(greyscale, width, height, regions.get(1));</span>
 
         //long stop = System.currentTimeMillis();
 
@@ -806,7 +929,7 @@ public class MSER {
         //    + &quot; regions  (&quot; + width + 'x' + height + &quot;) in &quot;
         //    + ((stop - start) / 1000) + &quot;s.&quot;);
 
-<span class="fc" id="L809">        return regions;</span>
+<span class="fc" id="L932">        return regions;</span>
     }
 }
 

@@ -2,6 +2,8 @@
 
 import algorithms.util.PairInt;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * space conserving image data holder.
@@ -10,7 +12,7 @@ import java.awt.image.BufferedImage;
  * 
  * @author nichole
  */
-<span class="fc" id="L13">public class Image {</span>
+<span class="fc" id="L15">public class Image {</span>
     
     //TODO:  add alpha when needed
         
@@ -66,62 +68,62 @@ import java.awt.image.BufferedImage;
      * @param theWidth
      * @param theHeight
      */
-<span class="fc" id="L69">    public Image (int theWidth, int theHeight) {</span>
+<span class="fc" id="L71">    public Image (int theWidth, int theHeight) {</span>
         
-<span class="pc bpc" id="L71" title="2 of 4 branches missed.">        if (theWidth &gt; 46340 || theWidth &lt; 0) {</span>
-<span class="nc" id="L72">            throw new IllegalArgumentException(&quot;theWidth must be between 0 &quot;</span>
+<span class="pc bpc" id="L73" title="2 of 4 branches missed.">        if (theWidth &gt; 46340 || theWidth &lt; 0) {</span>
+<span class="nc" id="L74">            throw new IllegalArgumentException(&quot;theWidth must be between 0 &quot;</span>
             + &quot; and 46340&quot;);
         }
-<span class="pc bpc" id="L75" title="2 of 4 branches missed.">        if (theHeight &gt; 46340 || theHeight &lt; 0) {</span>
-<span class="nc" id="L76">            throw new IllegalArgumentException(&quot;theHeight must be between 0 &quot;</span>
+<span class="pc bpc" id="L77" title="2 of 4 branches missed.">        if (theHeight &gt; 46340 || theHeight &lt; 0) {</span>
+<span class="nc" id="L78">            throw new IllegalArgumentException(&quot;theHeight must be between 0 &quot;</span>
             + &quot; and 46340&quot;);
         }
         
-<span class="fc" id="L80">        String arch = System.getProperty(&quot;sun.arch.data.model&quot;);</span>
+<span class="fc" id="L82">        String arch = System.getProperty(&quot;sun.arch.data.model&quot;);</span>
         
-<span class="pc bpc" id="L82" title="2 of 4 branches missed.">        is64Bit = ((arch != null) &amp;&amp; arch.equals(&quot;64&quot;)) ? true : false;</span>
+<span class="pc bpc" id="L84" title="2 of 4 branches missed.">        is64Bit = ((arch != null) &amp;&amp; arch.equals(&quot;64&quot;)) ? true : false;</span>
         
-<span class="fc" id="L84">        nPixels = theWidth * theHeight;</span>
+<span class="fc" id="L86">        nPixels = theWidth * theHeight;</span>
         
-<span class="fc" id="L86">        width = theWidth;</span>
+<span class="fc" id="L88">        width = theWidth;</span>
         
-<span class="fc" id="L88">        height = theHeight;</span>
+<span class="fc" id="L90">        height = theHeight;</span>
         
-<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (is64Bit) {</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        if (is64Bit) {</span>
             
-<span class="fc" id="L92">            itemByteLength = 8;</span>
+<span class="fc" id="L94">            itemByteLength = 8;</span>
             
-<span class="fc" id="L94">            len = (nPixels/itemByteLength) + 1;</span>
+<span class="fc" id="L96">            len = (nPixels/itemByteLength) + 1;</span>
             
-<span class="fc" id="L96">            rL = new long[len];</span>
+<span class="fc" id="L98">            rL = new long[len];</span>
 
-<span class="fc" id="L98">            gL = new long[len];</span>
+<span class="fc" id="L100">            gL = new long[len];</span>
 
-<span class="fc" id="L100">            bL = new long[len];</span>
+<span class="fc" id="L102">            bL = new long[len];</span>
             
-<span class="fc" id="L102">            r = null;</span>
-<span class="fc" id="L103">            g = null;</span>
-<span class="fc" id="L104">            b = null;</span>
+<span class="fc" id="L104">            r = null;</span>
+<span class="fc" id="L105">            g = null;</span>
+<span class="fc" id="L106">            b = null;</span>
             
         } else {
             
-<span class="nc" id="L108">            itemByteLength = 4;</span>
+<span class="nc" id="L110">            itemByteLength = 4;</span>
             
-<span class="nc" id="L110">            len = (nPixels/itemByteLength) + 1;</span>
+<span class="nc" id="L112">            len = (nPixels/itemByteLength) + 1;</span>
                 
-<span class="nc" id="L112">            r = new int[len];</span>
+<span class="nc" id="L114">            r = new int[len];</span>
 
-<span class="nc" id="L114">            g = new int[len];</span>
+<span class="nc" id="L116">            g = new int[len];</span>
 
-<span class="nc" id="L116">            b = new int[len];</span>
+<span class="nc" id="L118">            b = new int[len];</span>
             
-<span class="nc" id="L118">            rL = null;</span>
-<span class="nc" id="L119">            gL = null;</span>
-<span class="nc" id="L120">            bL = null;</span>
+<span class="nc" id="L120">            rL = null;</span>
+<span class="nc" id="L121">            gL = null;</span>
+<span class="nc" id="L122">            bL = null;</span>
         }
         
-<span class="fc" id="L123">        init();</span>
-<span class="fc" id="L124">    }</span>
+<span class="fc" id="L125">        init();</span>
+<span class="fc" id="L126">    }</span>
     
     /**
      * package protected constructor for use in testing.
@@ -129,64 +131,64 @@ import java.awt.image.BufferedImage;
      * @param theWidth
      * @param theHeight
      */
-<span class="fc" id="L132">    Image (int theWidth, int theHeight, boolean use32Bit) {</span>
+<span class="fc" id="L134">    Image (int theWidth, int theHeight, boolean use32Bit) {</span>
            
-<span class="pc bpc" id="L134" title="2 of 4 branches missed.">        if (theWidth &gt; 46340 || theWidth &lt; 0) {</span>
-<span class="nc" id="L135">            throw new IllegalArgumentException(&quot;theWidth must be between 0 &quot;</span>
+<span class="pc bpc" id="L136" title="2 of 4 branches missed.">        if (theWidth &gt; 46340 || theWidth &lt; 0) {</span>
+<span class="nc" id="L137">            throw new IllegalArgumentException(&quot;theWidth must be between 0 &quot;</span>
             + &quot; and 46340&quot;);
         }
-<span class="pc bpc" id="L138" title="2 of 4 branches missed.">        if (theHeight &gt; 46340 || theHeight &lt; 0) {</span>
-<span class="nc" id="L139">            throw new IllegalArgumentException(&quot;theHeight must be between 0 &quot;</span>
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">        if (theHeight &gt; 46340 || theHeight &lt; 0) {</span>
+<span class="nc" id="L141">            throw new IllegalArgumentException(&quot;theHeight must be between 0 &quot;</span>
             + &quot; and 46340&quot;);
         }
         
-<span class="fc bfc" id="L143" title="All 2 branches covered.">        is64Bit = !use32Bit;</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        is64Bit = !use32Bit;</span>
         
-<span class="fc" id="L145">        nPixels = theWidth * theHeight;</span>
+<span class="fc" id="L147">        nPixels = theWidth * theHeight;</span>
         
-<span class="fc" id="L147">        width = theWidth;</span>
+<span class="fc" id="L149">        width = theWidth;</span>
         
-<span class="fc" id="L149">        height = theHeight;</span>
+<span class="fc" id="L151">        height = theHeight;</span>
         
-<span class="fc bfc" id="L151" title="All 2 branches covered.">        if (is64Bit) {</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">        if (is64Bit) {</span>
             
-<span class="fc" id="L153">            itemByteLength = 8;</span>
+<span class="fc" id="L155">            itemByteLength = 8;</span>
             
-<span class="fc" id="L155">            len = (nPixels/itemByteLength) + 1;</span>
+<span class="fc" id="L157">            len = (nPixels/itemByteLength) + 1;</span>
             
-<span class="fc" id="L157">            rL = new long[len];</span>
+<span class="fc" id="L159">            rL = new long[len];</span>
 
-<span class="fc" id="L159">            gL = new long[len];</span>
+<span class="fc" id="L161">            gL = new long[len];</span>
 
-<span class="fc" id="L161">            bL = new long[len];</span>
+<span class="fc" id="L163">            bL = new long[len];</span>
             
-<span class="fc" id="L163">            r = null;</span>
-<span class="fc" id="L164">            g = null;</span>
-<span class="fc" id="L165">            b = null;</span>
+<span class="fc" id="L165">            r = null;</span>
+<span class="fc" id="L166">            g = null;</span>
+<span class="fc" id="L167">            b = null;</span>
             
         } else {
             
-<span class="fc" id="L169">            itemByteLength = 4;</span>
+<span class="fc" id="L171">            itemByteLength = 4;</span>
             
-<span class="fc" id="L171">            len = (nPixels/itemByteLength) + 1;</span>
+<span class="fc" id="L173">            len = (nPixels/itemByteLength) + 1;</span>
                 
-<span class="fc" id="L173">            r = new int[len];</span>
+<span class="fc" id="L175">            r = new int[len];</span>
 
-<span class="fc" id="L175">            g = new int[len];</span>
+<span class="fc" id="L177">            g = new int[len];</span>
 
-<span class="fc" id="L177">            b = new int[len];</span>
+<span class="fc" id="L179">            b = new int[len];</span>
             
-<span class="fc" id="L179">            rL = null;</span>
-<span class="fc" id="L180">            gL = null;</span>
-<span class="fc" id="L181">            bL = null;</span>
+<span class="fc" id="L181">            rL = null;</span>
+<span class="fc" id="L182">            gL = null;</span>
+<span class="fc" id="L183">            bL = null;</span>
         }
         
-<span class="fc" id="L184">        init();</span>
-<span class="fc" id="L185">    }</span>
+<span class="fc" id="L186">        init();</span>
+<span class="fc" id="L187">    }</span>
     
     protected void init() {
         // not used for base class
-<span class="fc" id="L189">    }</span>
+<span class="fc" id="L191">    }</span>
     
     /**
      * given the pixel index which is a number representing
@@ -201,9 +203,9 @@ import java.awt.image.BufferedImage;
      */
     protected int getRowNumber(int pixelIdx) {
         
-<span class="nc" id="L204">        int nthElement = (pixelIdx/itemByteLength);</span>
+<span class="nc" id="L206">        int nthElement = (pixelIdx/itemByteLength);</span>
         
-<span class="nc" id="L206">        return nthElement;</span>
+<span class="nc" id="L208">        return nthElement;</span>
     }
     
     /**
@@ -214,15 +216,15 @@ import java.awt.image.BufferedImage;
      * @return 
      */
     public int getInternalIndex(int col, int row) {
-<span class="pc bpc" id="L217" title="2 of 4 branches missed.">        if ((col &lt; 0) || (col &gt; (width - 1))) {</span>
-<span class="nc" id="L218">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L219" title="2 of 4 branches missed.">        if ((col &lt; 0) || (col &gt; (width - 1))) {</span>
+<span class="nc" id="L220">            throw new IllegalArgumentException(</span>
                 &quot;col is out of bounds: col=&quot; + col + &quot; w=&quot; + width);
         }
-<span class="pc bpc" id="L221" title="2 of 4 branches missed.">        if ((row &lt; 0) || (row &gt; (height - 1))) {</span>
-<span class="nc" id="L222">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L223" title="2 of 4 branches missed.">        if ((row &lt; 0) || (row &gt; (height - 1))) {</span>
+<span class="nc" id="L224">            throw new IllegalArgumentException(</span>
                 &quot;row is out of bounds: row=&quot; + row + &quot; h=&quot; + height);
         }
-<span class="fc" id="L225">        return (row * width) + col;</span>
+<span class="fc" id="L227">        return (row * width) + col;</span>
     }
     
     /**
@@ -232,7 +234,7 @@ import java.awt.image.BufferedImage;
      * @return 
      */
     public int getInternalIndex(PairInt p) {
-<span class="fc" id="L235">        return getInternalIndex(p.getX(), p.getY());</span>
+<span class="fc" id="L237">        return getInternalIndex(p.getX(), p.getY());</span>
     }
   
     /**
@@ -245,10 +247,10 @@ import java.awt.image.BufferedImage;
      */
     public void setRGB(int col, int row, int rPix, int gPix, int bPix) {
         
-<span class="fc" id="L248">        int idx = getInternalIndex(col, row);</span>
+<span class="fc" id="L250">        int idx = getInternalIndex(col, row);</span>
        
-<span class="fc" id="L250">        setRGB(idx, rPix, gPix, bPix);</span>
-<span class="fc" id="L251">    }</span>
+<span class="fc" id="L252">        setRGB(idx, rPix, gPix, bPix);</span>
+<span class="fc" id="L253">    }</span>
     
     /**
      * set the r, g, and b values for the pixel at location with col and row
@@ -259,76 +261,76 @@ import java.awt.image.BufferedImage;
      */
     public void setRGB(int pixIdx, int rPix, int gPix, int bPix) {
         
-<span class="pc bpc" id="L262" title="2 of 4 branches missed.">        if ((pixIdx &lt; 0) || (pixIdx &gt; (nPixels - 1))) {</span>
-<span class="nc" id="L263">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L264" title="2 of 4 branches missed.">        if ((pixIdx &lt; 0) || (pixIdx &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L265">            throw new IllegalArgumentException(</span>
                 &quot;col and/or are out of bounds&quot;);
         }
         
-<span class="pc bpc" id="L267" title="2 of 4 branches missed.">        if ((rPix &gt; 255) || (rPix &lt; 0)){</span>
-<span class="nc" id="L268">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L269" title="2 of 4 branches missed.">        if ((rPix &gt; 255) || (rPix &lt; 0)){</span>
+<span class="nc" id="L270">            throw new IllegalArgumentException(</span>
                 &quot;values must be between 0 and 255, inclusive. rPix=&quot; + rPix);
         }
-<span class="pc bpc" id="L271" title="2 of 4 branches missed.">        if ((gPix &gt; 255) || (gPix &lt; 0)){</span>
-<span class="nc" id="L272">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L273" title="2 of 4 branches missed.">        if ((gPix &gt; 255) || (gPix &lt; 0)){</span>
+<span class="nc" id="L274">            throw new IllegalArgumentException(</span>
                 &quot;values must be between 0 and 255, inclusive. gPix=&quot; + gPix);
         }
-<span class="pc bpc" id="L275" title="2 of 4 branches missed.">        if ((bPix &gt; 255) || (bPix &lt; 0)){</span>
-<span class="nc" id="L276">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L277" title="2 of 4 branches missed.">        if ((bPix &gt; 255) || (bPix &lt; 0)){</span>
+<span class="nc" id="L278">            throw new IllegalArgumentException(</span>
                 &quot;values must be between 0 and 255, inclusive. bPix=&quot; + bPix);
         }
         
-<span class="fc" id="L280">        int elementIdx = pixIdx/itemByteLength;</span>
+<span class="fc" id="L282">        int elementIdx = pixIdx/itemByteLength;</span>
         
-<span class="fc" id="L282">        int byteNumber = pixIdx - (elementIdx*itemByteLength);</span>
+<span class="fc" id="L284">        int byteNumber = pixIdx - (elementIdx*itemByteLength);</span>
                 
-<span class="fc bfc" id="L284" title="All 2 branches covered.">        if (is64Bit) {</span>
-<span class="fc" id="L285">            rL[elementIdx] = set64BitValue(rL[elementIdx], rPix, byteNumber);</span>
-<span class="fc" id="L286">            gL[elementIdx] = set64BitValue(gL[elementIdx], gPix, byteNumber);</span>
-<span class="fc" id="L287">            bL[elementIdx] = set64BitValue(bL[elementIdx], bPix, byteNumber);            </span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">        if (is64Bit) {</span>
+<span class="fc" id="L287">            rL[elementIdx] = set64BitValue(rL[elementIdx], rPix, byteNumber);</span>
+<span class="fc" id="L288">            gL[elementIdx] = set64BitValue(gL[elementIdx], gPix, byteNumber);</span>
+<span class="fc" id="L289">            bL[elementIdx] = set64BitValue(bL[elementIdx], bPix, byteNumber);            </span>
         } else {
-<span class="fc" id="L289">            r[elementIdx] = set32BitValue(r[elementIdx], rPix, byteNumber);</span>
-<span class="fc" id="L290">            g[elementIdx] = set32BitValue(g[elementIdx], gPix, byteNumber);</span>
-<span class="fc" id="L291">            b[elementIdx] = set32BitValue(b[elementIdx], bPix, byteNumber);  </span>
+<span class="fc" id="L291">            r[elementIdx] = set32BitValue(r[elementIdx], rPix, byteNumber);</span>
+<span class="fc" id="L292">            g[elementIdx] = set32BitValue(g[elementIdx], gPix, byteNumber);</span>
+<span class="fc" id="L293">            b[elementIdx] = set32BitValue(b[elementIdx], bPix, byteNumber);  </span>
         }
         
-<span class="fc" id="L294">    }</span>
+<span class="fc" id="L296">    }</span>
     
     protected long set64BitValue(long rowValue, int setValue, int byteNumber) {
         
-<span class="fc" id="L298">        long shift = 8L * (long)byteNumber;</span>
+<span class="fc" id="L300">        long shift = 8L * (long)byteNumber;</span>
         
-<span class="fc" id="L300">        long prevValue = (rowValue &gt;&gt; shift) &amp; 255L;</span>
+<span class="fc" id="L302">        long prevValue = (rowValue &gt;&gt; shift) &amp; 255L;</span>
         
-<span class="fc" id="L302">        long shifted = (prevValue &amp; 255L) &lt;&lt; shift;</span>
+<span class="fc" id="L304">        long shifted = (prevValue &amp; 255L) &lt;&lt; shift;</span>
         
-<span class="fc" id="L304">        rowValue -= shifted;</span>
+<span class="fc" id="L306">        rowValue -= shifted;</span>
         
-<span class="fc" id="L306">        shifted = (setValue &amp; 255L) &lt;&lt; shift;</span>
+<span class="fc" id="L308">        shifted = (setValue &amp; 255L) &lt;&lt; shift;</span>
                 
-<span class="fc" id="L308">        rowValue += shifted;</span>
+<span class="fc" id="L310">        rowValue += shifted;</span>
                 
-<span class="pc bnc" id="L310" title="All 2 branches missed.">        assert(((rowValue &gt;&gt; shift) &amp; 255L) == setValue);</span>
+<span class="pc bnc" id="L312" title="All 2 branches missed.">        assert(((rowValue &gt;&gt; shift) &amp; 255L) == setValue);</span>
         
-<span class="fc" id="L312">        return rowValue;</span>
+<span class="fc" id="L314">        return rowValue;</span>
     }
     
     protected int set32BitValue(int rowValue, int setValue, int byteNumber) {
             
-<span class="fc" id="L317">        int shift = 8 * byteNumber;</span>
+<span class="fc" id="L319">        int shift = 8 * byteNumber;</span>
         
-<span class="fc" id="L319">        int prevValue = (rowValue &gt;&gt; shift) &amp; 255;</span>
+<span class="fc" id="L321">        int prevValue = (rowValue &gt;&gt; shift) &amp; 255;</span>
         
-<span class="fc" id="L321">        int shifted = (prevValue &amp; 255) &lt;&lt; shift;</span>
+<span class="fc" id="L323">        int shifted = (prevValue &amp; 255) &lt;&lt; shift;</span>
         
-<span class="fc" id="L323">        rowValue -= shifted;</span>
+<span class="fc" id="L325">        rowValue -= shifted;</span>
         
-<span class="fc" id="L325">        shifted = (setValue &amp; 255) &lt;&lt; shift;</span>
+<span class="fc" id="L327">        shifted = (setValue &amp; 255) &lt;&lt; shift;</span>
                 
-<span class="fc" id="L327">        rowValue += shifted;</span>
+<span class="fc" id="L329">        rowValue += shifted;</span>
                 
-<span class="pc bnc" id="L329" title="All 2 branches missed.">        assert(((rowValue &gt;&gt; shift) &amp; 255) == setValue);</span>
+<span class="pc bnc" id="L331" title="All 2 branches missed.">        assert(((rowValue &gt;&gt; shift) &amp; 255) == setValue);</span>
         
-<span class="fc" id="L331">        return rowValue;</span>
+<span class="fc" id="L333">        return rowValue;</span>
     }
     
     /**
@@ -339,33 +341,33 @@ import java.awt.image.BufferedImage;
      */
     public void setRGB(int col, int row, int rgb) {
         
-<span class="fc" id="L342">        int idx = getInternalIndex(col, row);</span>
+<span class="fc" id="L344">        int idx = getInternalIndex(col, row);</span>
         
-<span class="pc bpc" id="L344" title="2 of 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (nPixels - 1))) {</span>
-<span class="nc" id="L345">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L346" title="2 of 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L347">            throw new IllegalArgumentException(</span>
                 &quot;col and/or are out of bounds&quot;);
         }
        
-<span class="fc" id="L349">        int rPix = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
-<span class="fc" id="L350">        int gPix = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
-<span class="fc" id="L351">        int bPix = rgb &amp; 0xFF;</span>
+<span class="fc" id="L351">        int rPix = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
+<span class="fc" id="L352">        int gPix = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="fc" id="L353">        int bPix = rgb &amp; 0xFF;</span>
         
-<span class="fc" id="L353">        setRGB(col, row, rPix, gPix, bPix);</span>
+<span class="fc" id="L355">        setRGB(col, row, rPix, gPix, bPix);</span>
         
-<span class="fc" id="L355">    }</span>
+<span class="fc" id="L357">    }</span>
         
     protected int get32BitValue(int rowValue, int byteNumber) {
                 
-<span class="fc" id="L359">        return (rowValue &gt;&gt; (byteNumber * 8)) &amp; 255;</span>
+<span class="fc" id="L361">        return (rowValue &gt;&gt; (byteNumber * 8)) &amp; 255;</span>
     }
     
     protected int get64BitValue(long rowValue, int byteNumber) {
                 
-<span class="fc" id="L364">        long shift = 8L * (long)byteNumber;</span>
+<span class="fc" id="L366">        long shift = 8L * (long)byteNumber;</span>
         
-<span class="fc" id="L366">        long byteValue = (rowValue &gt;&gt; shift) &amp; 255L;</span>
+<span class="fc" id="L368">        long byteValue = (rowValue &gt;&gt; shift) &amp; 255L;</span>
         
-<span class="fc" id="L368">        return (int)byteValue;</span>
+<span class="fc" id="L370">        return (int)byteValue;</span>
     }
     
     /**
@@ -374,7 +376,7 @@ import java.awt.image.BufferedImage;
      * @return 
      */
     public int getR(PairInt p) {
-<span class="fc" id="L377">        return getR(p.getX(), p.getY());</span>
+<span class="fc" id="L379">        return getR(p.getX(), p.getY());</span>
     }
     
     /**
@@ -383,7 +385,7 @@ import java.awt.image.BufferedImage;
      * @return 
      */
     public int getG(PairInt p) {
-<span class="fc" id="L386">        return getG(p.getX(), p.getY());</span>
+<span class="fc" id="L388">        return getG(p.getX(), p.getY());</span>
     }
     
     /**
@@ -392,7 +394,7 @@ import java.awt.image.BufferedImage;
      * @return 
      */
     public int getB(PairInt p) {
-<span class="fc" id="L395">        return getB(p.getX(), p.getY());</span>
+<span class="fc" id="L397">        return getB(p.getX(), p.getY());</span>
     }
     
     
@@ -404,21 +406,21 @@ import java.awt.image.BufferedImage;
      */
     public int getR(int col, int row) {
                 
-<span class="fc" id="L407">        int idx = getInternalIndex(col, row);</span>
+<span class="fc" id="L409">        int idx = getInternalIndex(col, row);</span>
        
-<span class="pc bpc" id="L409" title="2 of 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (nPixels - 1))) {</span>
-<span class="nc" id="L410">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L411" title="2 of 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L412">            throw new IllegalArgumentException(</span>
                 &quot;col and/or are out of bounds&quot;);
         }
         
-<span class="fc" id="L414">        int elementIdx = idx/itemByteLength;</span>
+<span class="fc" id="L416">        int elementIdx = idx/itemByteLength;</span>
         
-<span class="fc" id="L416">        int byteNumber = idx - (elementIdx*itemByteLength);</span>
+<span class="fc" id="L418">        int byteNumber = idx - (elementIdx*itemByteLength);</span>
         
-<span class="fc bfc" id="L418" title="All 2 branches covered.">        if (is64Bit) {</span>
-<span class="fc" id="L419">            return get64BitValue(rL[elementIdx], byteNumber);</span>
+<span class="fc bfc" id="L420" title="All 2 branches covered.">        if (is64Bit) {</span>
+<span class="fc" id="L421">            return get64BitValue(rL[elementIdx], byteNumber);</span>
         } else {
-<span class="fc" id="L421">            return get32BitValue(r[elementIdx], byteNumber);</span>
+<span class="fc" id="L423">            return get32BitValue(r[elementIdx], byteNumber);</span>
         }
         
     }
@@ -431,21 +433,21 @@ import java.awt.image.BufferedImage;
      */
     public int getB(int col, int row) {
         
-<span class="fc" id="L434">        int idx = getInternalIndex(col, row);</span>
+<span class="fc" id="L436">        int idx = getInternalIndex(col, row);</span>
        
-<span class="pc bpc" id="L436" title="2 of 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (nPixels - 1))) {</span>
-<span class="nc" id="L437">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L438" title="2 of 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L439">            throw new IllegalArgumentException(</span>
                 &quot;col and/or are out of bounds&quot;);
         }
         
-<span class="fc" id="L441">        int elementIdx = idx/itemByteLength;</span>
+<span class="fc" id="L443">        int elementIdx = idx/itemByteLength;</span>
         
-<span class="fc" id="L443">        int byteNumber = idx - (elementIdx*itemByteLength);</span>
+<span class="fc" id="L445">        int byteNumber = idx - (elementIdx*itemByteLength);</span>
         
-<span class="fc bfc" id="L445" title="All 2 branches covered.">        if (is64Bit) {</span>
-<span class="fc" id="L446">            return get64BitValue(bL[elementIdx], byteNumber);</span>
+<span class="fc bfc" id="L447" title="All 2 branches covered.">        if (is64Bit) {</span>
+<span class="fc" id="L448">            return get64BitValue(bL[elementIdx], byteNumber);</span>
         } else {
-<span class="fc" id="L448">            return get32BitValue(b[elementIdx], byteNumber);</span>
+<span class="fc" id="L450">            return get32BitValue(b[elementIdx], byteNumber);</span>
         }
     }
     
@@ -457,21 +459,21 @@ import java.awt.image.BufferedImage;
      */
     public int getG(int col, int row) {
         
-<span class="fc" id="L460">        int idx = getInternalIndex(col, row);</span>
+<span class="fc" id="L462">        int idx = getInternalIndex(col, row);</span>
        
-<span class="pc bpc" id="L462" title="2 of 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (nPixels - 1))) {</span>
-<span class="nc" id="L463">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L464" title="2 of 4 branches missed.">        if ((idx &lt; 0) || (idx &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L465">            throw new IllegalArgumentException(</span>
                 &quot;col and/or are out of bounds&quot;);
         }
         
-<span class="fc" id="L467">        int elementIdx = idx/itemByteLength;</span>
+<span class="fc" id="L469">        int elementIdx = idx/itemByteLength;</span>
         
-<span class="fc" id="L469">        int byteNumber = idx - (elementIdx*itemByteLength);</span>
+<span class="fc" id="L471">        int byteNumber = idx - (elementIdx*itemByteLength);</span>
         
-<span class="fc bfc" id="L471" title="All 2 branches covered.">        if (is64Bit) {</span>
-<span class="fc" id="L472">            return get64BitValue(gL[elementIdx], byteNumber);</span>
+<span class="fc bfc" id="L473" title="All 2 branches covered.">        if (is64Bit) {</span>
+<span class="fc" id="L474">            return get64BitValue(gL[elementIdx], byteNumber);</span>
         } else {
-<span class="fc" id="L474">            return get32BitValue(g[elementIdx], byteNumber);</span>
+<span class="fc" id="L476">            return get32BitValue(g[elementIdx], byteNumber);</span>
         }
     }
     
@@ -482,19 +484,19 @@ import java.awt.image.BufferedImage;
      */
     public int getR(int pixelIndex) {
                
-<span class="pc bpc" id="L485" title="2 of 4 branches missed.">        if ((pixelIndex &lt; 0) || (pixelIndex &gt; (nPixels - 1))) {</span>
-<span class="nc" id="L486">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L487" title="2 of 4 branches missed.">        if ((pixelIndex &lt; 0) || (pixelIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L488">            throw new IllegalArgumentException(</span>
                 &quot;pixelIndex is out of bounds&quot;);
         }
         
-<span class="fc" id="L490">        int elementIdx = pixelIndex/itemByteLength;</span>
+<span class="fc" id="L492">        int elementIdx = pixelIndex/itemByteLength;</span>
         
-<span class="fc" id="L492">        int byteNumber = pixelIndex - (elementIdx*itemByteLength);</span>
+<span class="fc" id="L494">        int byteNumber = pixelIndex - (elementIdx*itemByteLength);</span>
         
-<span class="fc bfc" id="L494" title="All 2 branches covered.">        if (is64Bit) {</span>
-<span class="fc" id="L495">            return get64BitValue(rL[elementIdx], byteNumber);</span>
+<span class="fc bfc" id="L496" title="All 2 branches covered.">        if (is64Bit) {</span>
+<span class="fc" id="L497">            return get64BitValue(rL[elementIdx], byteNumber);</span>
         } else {
-<span class="fc" id="L497">            return get32BitValue(r[elementIdx], byteNumber);</span>
+<span class="fc" id="L499">            return get32BitValue(r[elementIdx], byteNumber);</span>
         }
     }
     
@@ -505,19 +507,19 @@ import java.awt.image.BufferedImage;
      */
     public int getB(int pixelIndex) {
         
-<span class="pc bpc" id="L508" title="2 of 4 branches missed.">        if ((pixelIndex &lt; 0) || (pixelIndex &gt; (nPixels - 1))) {</span>
-<span class="nc" id="L509">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L510" title="2 of 4 branches missed.">        if ((pixelIndex &lt; 0) || (pixelIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L511">            throw new IllegalArgumentException(</span>
                 &quot;pixelIndex is out of bounds&quot;);
         }
         
-<span class="fc" id="L513">        int elementIdx = pixelIndex/itemByteLength;</span>
+<span class="fc" id="L515">        int elementIdx = pixelIndex/itemByteLength;</span>
         
-<span class="fc" id="L515">        int byteNumber = pixelIndex - (elementIdx*itemByteLength);</span>
+<span class="fc" id="L517">        int byteNumber = pixelIndex - (elementIdx*itemByteLength);</span>
         
-<span class="fc bfc" id="L517" title="All 2 branches covered.">        if (is64Bit) {</span>
-<span class="fc" id="L518">            return get64BitValue(bL[elementIdx], byteNumber);</span>
+<span class="fc bfc" id="L519" title="All 2 branches covered.">        if (is64Bit) {</span>
+<span class="fc" id="L520">            return get64BitValue(bL[elementIdx], byteNumber);</span>
         } else {
-<span class="fc" id="L520">            return get32BitValue(b[elementIdx], byteNumber);</span>
+<span class="fc" id="L522">            return get32BitValue(b[elementIdx], byteNumber);</span>
         }
     }
     
@@ -528,19 +530,19 @@ import java.awt.image.BufferedImage;
      */
     public int getG(int pixelIndex) {
 
-<span class="pc bpc" id="L531" title="2 of 4 branches missed.">        if ((pixelIndex &lt; 0) || (pixelIndex &gt; (nPixels - 1))) {</span>
-<span class="nc" id="L532">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L533" title="2 of 4 branches missed.">        if ((pixelIndex &lt; 0) || (pixelIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L534">            throw new IllegalArgumentException(</span>
                 &quot;pixelIndex is out of bounds&quot;);
         }
         
-<span class="fc" id="L536">        int elementIdx = pixelIndex/itemByteLength;</span>
+<span class="fc" id="L538">        int elementIdx = pixelIndex/itemByteLength;</span>
         
-<span class="fc" id="L538">        int byteNumber = pixelIndex - (elementIdx*itemByteLength);</span>
+<span class="fc" id="L540">        int byteNumber = pixelIndex - (elementIdx*itemByteLength);</span>
         
-<span class="fc bfc" id="L540" title="All 2 branches covered.">        if (is64Bit) {</span>
-<span class="fc" id="L541">            return get64BitValue(gL[elementIdx], byteNumber);</span>
+<span class="fc bfc" id="L542" title="All 2 branches covered.">        if (is64Bit) {</span>
+<span class="fc" id="L543">            return get64BitValue(gL[elementIdx], byteNumber);</span>
         } else {
-<span class="fc" id="L543">            return get32BitValue(g[elementIdx], byteNumber);</span>
+<span class="fc" id="L545">            return get32BitValue(g[elementIdx], byteNumber);</span>
         }
     }
     
@@ -552,21 +554,21 @@ import java.awt.image.BufferedImage;
      */
     public int getRGB(int col, int row) {
     
-<span class="fc" id="L555">        int pixelIndex = getInternalIndex(col, row);</span>
+<span class="fc" id="L557">        int pixelIndex = getInternalIndex(col, row);</span>
         
-<span class="pc bpc" id="L557" title="2 of 4 branches missed.">        if ((pixelIndex &lt; 0) || (pixelIndex &gt; (nPixels - 1))) {</span>
-<span class="nc" id="L558">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L559" title="2 of 4 branches missed.">        if ((pixelIndex &lt; 0) || (pixelIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L560">            throw new IllegalArgumentException(</span>
                 &quot;internalIndex is out of bounds:&quot;);
         }
         
-<span class="fc" id="L562">        int rPix = getR(pixelIndex);</span>
-<span class="fc" id="L563">        int gPix = getG(pixelIndex);</span>
-<span class="fc" id="L564">        int bPix = getB(pixelIndex);</span>
+<span class="fc" id="L564">        int rPix = getR(pixelIndex);</span>
+<span class="fc" id="L565">        int gPix = getG(pixelIndex);</span>
+<span class="fc" id="L566">        int bPix = getB(pixelIndex);</span>
         
-<span class="fc" id="L566">        int rgb = (((rPix &amp; 0x0ff) &lt;&lt; 16) </span>
+<span class="fc" id="L568">        int rgb = (((rPix &amp; 0x0ff) &lt;&lt; 16) </span>
             | ((gPix &amp; 0x0ff) &lt;&lt; 8) | (bPix &amp; 0x0ff));
         
-<span class="fc" id="L569">        return rgb;</span>
+<span class="fc" id="L571">        return rgb;</span>
     }
     
     /**
@@ -575,19 +577,19 @@ import java.awt.image.BufferedImage;
      */
     public Image copyImage() {
        
-<span class="fc bfc" id="L578" title="All 2 branches covered.">        Image img2 = new Image(width, height, !is64Bit);</span>
+<span class="fc bfc" id="L580" title="All 2 branches covered.">        Image img2 = new Image(width, height, !is64Bit);</span>
         
-<span class="fc bfc" id="L580" title="All 2 branches covered.">        if (is64Bit) {</span>
-<span class="fc" id="L581">            System.arraycopy(rL, 0, img2.rL, 0, len);</span>
-<span class="fc" id="L582">            System.arraycopy(gL, 0, img2.gL, 0, len);</span>
-<span class="fc" id="L583">            System.arraycopy(bL, 0, img2.bL, 0, len);</span>
+<span class="fc bfc" id="L582" title="All 2 branches covered.">        if (is64Bit) {</span>
+<span class="fc" id="L583">            System.arraycopy(rL, 0, img2.rL, 0, len);</span>
+<span class="fc" id="L584">            System.arraycopy(gL, 0, img2.gL, 0, len);</span>
+<span class="fc" id="L585">            System.arraycopy(bL, 0, img2.bL, 0, len);</span>
         } else {
-<span class="fc" id="L585">            System.arraycopy(r, 0, img2.r, 0, len);</span>
-<span class="fc" id="L586">            System.arraycopy(g, 0, img2.g, 0, len);</span>
-<span class="fc" id="L587">            System.arraycopy(b, 0, img2.b, 0, len);</span>
+<span class="fc" id="L587">            System.arraycopy(r, 0, img2.r, 0, len);</span>
+<span class="fc" id="L588">            System.arraycopy(g, 0, img2.g, 0, len);</span>
+<span class="fc" id="L589">            System.arraycopy(b, 0, img2.b, 0, len);</span>
         }
        
-<span class="fc" id="L590">        return img2;</span>
+<span class="fc" id="L592">        return img2;</span>
     }
     
     /**
@@ -600,80 +602,80 @@ import java.awt.image.BufferedImage;
      */
     public Image copySubImage(int x0, int x1, int y0, int y1) {
         
-<span class="pc bpc" id="L603" title="2 of 4 branches missed.">        if (x0 &lt; 0 || x0 &gt; width){</span>
-<span class="nc" id="L604">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L605" title="2 of 4 branches missed.">        if (x0 &lt; 0 || x0 &gt; width){</span>
+<span class="nc" id="L606">            throw new IllegalArgumentException(</span>
                 &quot;x0 is out of bounds&quot;);
-<span class="pc bpc" id="L606" title="2 of 4 branches missed.">        } else if (x1 &lt; 0 || x1 &gt; width){</span>
-<span class="nc" id="L607">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L608" title="2 of 4 branches missed.">        } else if (x1 &lt; 0 || x1 &gt; width){</span>
+<span class="nc" id="L609">            throw new IllegalArgumentException(</span>
                 &quot;x1 is out of bounds&quot;);
-<span class="pc bpc" id="L609" title="1 of 2 branches missed.">        } else if (x1 &lt;= x0) {</span>
-<span class="nc" id="L610">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L611" title="1 of 2 branches missed.">        } else if (x1 &lt;= x0) {</span>
+<span class="nc" id="L612">            throw new IllegalArgumentException(</span>
                 &quot;x1 must be larger than x0&quot;);
         }
-<span class="pc bpc" id="L613" title="2 of 4 branches missed.">        if (y0 &lt; 0 || y0 &gt; height){</span>
-<span class="nc" id="L614">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L615" title="2 of 4 branches missed.">        if (y0 &lt; 0 || y0 &gt; height){</span>
+<span class="nc" id="L616">            throw new IllegalArgumentException(</span>
                 &quot;y0 is out of bounds&quot;);
-<span class="pc bpc" id="L616" title="2 of 4 branches missed.">        } else if (y1 &lt; 0 || y1 &gt; height){</span>
-<span class="nc" id="L617">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L618" title="2 of 4 branches missed.">        } else if (y1 &lt; 0 || y1 &gt; height){</span>
+<span class="nc" id="L619">            throw new IllegalArgumentException(</span>
                 &quot;y1 is out of bounds&quot;);
-<span class="pc bpc" id="L619" title="1 of 2 branches missed.">        } else if (y1 &lt;= y0) {</span>
-<span class="nc" id="L620">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L621" title="1 of 2 branches missed.">        } else if (y1 &lt;= y0) {</span>
+<span class="nc" id="L622">            throw new IllegalArgumentException(</span>
                 &quot;y1 must be larger than y0&quot;);
         }
         
-<span class="fc" id="L624">        int w = x1 - x0;</span>
-<span class="fc" id="L625">        int h = y1 - y0;</span>
+<span class="fc" id="L626">        int w = x1 - x0;</span>
+<span class="fc" id="L627">        int h = y1 - y0;</span>
        
-<span class="fc" id="L627">        Image img2 = createNewImage(w, h);</span>
+<span class="fc" id="L629">        Image img2 = createNewImage(w, h);</span>
         
-<span class="fc bfc" id="L629" title="All 2 branches covered.">        for (int i = x0; i &lt; x1; ++i) {</span>
-<span class="fc bfc" id="L630" title="All 2 branches covered.">            for (int j = y0; j &lt; y1; ++j) {</span>
-<span class="fc" id="L631">                int pixIdx = getInternalIndex(i, j);</span>
-<span class="fc" id="L632">                int r = getR(pixIdx);</span>
-<span class="fc" id="L633">                int g = getG(pixIdx);</span>
-<span class="fc" id="L634">                int b = getB(pixIdx);</span>
-<span class="fc" id="L635">                img2.setRGB(i - x0, j - y0, r, g, b);</span>
+<span class="fc bfc" id="L631" title="All 2 branches covered.">        for (int i = x0; i &lt; x1; ++i) {</span>
+<span class="fc bfc" id="L632" title="All 2 branches covered.">            for (int j = y0; j &lt; y1; ++j) {</span>
+<span class="fc" id="L633">                int pixIdx = getInternalIndex(i, j);</span>
+<span class="fc" id="L634">                int r = getR(pixIdx);</span>
+<span class="fc" id="L635">                int g = getG(pixIdx);</span>
+<span class="fc" id="L636">                int b = getB(pixIdx);</span>
+<span class="fc" id="L637">                img2.setRGB(i - x0, j - y0, r, g, b);</span>
             }
         }
        
-<span class="fc" id="L639">        return img2;</span>
+<span class="fc" id="L641">        return img2;</span>
     }
     
     protected Image createNewImage(int width, int height) {
-<span class="pc bpc" id="L643" title="1 of 2 branches missed.">        return new Image(width, height, !is64Bit);</span>
+<span class="pc bpc" id="L645" title="1 of 2 branches missed.">        return new Image(width, height, !is64Bit);</span>
     }
     
     public int[] getRValues() {
         
-<span class="nc" id="L648">        int[] values = new int[nPixels];</span>
+<span class="nc" id="L650">        int[] values = new int[nPixels];</span>
         
-<span class="nc bnc" id="L650" title="All 2 branches missed.">        for (int i = 0; i &lt; nPixels; ++i) {</span>
-<span class="nc" id="L651">            values[i] = getR(i);</span>
+<span class="nc bnc" id="L652" title="All 2 branches missed.">        for (int i = 0; i &lt; nPixels; ++i) {</span>
+<span class="nc" id="L653">            values[i] = getR(i);</span>
         }
         
-<span class="nc" id="L654">        return values;</span>
+<span class="nc" id="L656">        return values;</span>
     }
     
     public int[] getGValues() {
         
-<span class="nc" id="L659">        int[] values = new int[nPixels];</span>
+<span class="nc" id="L661">        int[] values = new int[nPixels];</span>
         
-<span class="nc bnc" id="L661" title="All 2 branches missed.">        for (int i = 0; i &lt; nPixels; ++i) {</span>
-<span class="nc" id="L662">            values[i] = getG(i);</span>
+<span class="nc bnc" id="L663" title="All 2 branches missed.">        for (int i = 0; i &lt; nPixels; ++i) {</span>
+<span class="nc" id="L664">            values[i] = getG(i);</span>
         }
         
-<span class="nc" id="L665">        return values;</span>
+<span class="nc" id="L667">        return values;</span>
     }
     
     public int[] getBValues() {
         
-<span class="nc" id="L670">        int[] values = new int[nPixels];</span>
+<span class="nc" id="L672">        int[] values = new int[nPixels];</span>
         
-<span class="nc bnc" id="L672" title="All 2 branches missed.">        for (int i = 0; i &lt; nPixels; ++i) {</span>
-<span class="nc" id="L673">            values[i] = getB(i);</span>
+<span class="nc bnc" id="L674" title="All 2 branches missed.">        for (int i = 0; i &lt; nPixels; ++i) {</span>
+<span class="nc" id="L675">            values[i] = getB(i);</span>
         }
         
-<span class="nc" id="L676">        return values;</span>
+<span class="nc" id="L678">        return values;</span>
     }
     
     /**
@@ -682,19 +684,19 @@ import java.awt.image.BufferedImage;
      */
     public ImageExt copyToImageExt() {
        
-<span class="fc bfc" id="L685" title="All 2 branches covered.">        ImageExt img2 = new ImageExt(width, height, !is64Bit);</span>
+<span class="fc bfc" id="L687" title="All 2 branches covered.">        ImageExt img2 = new ImageExt(width, height, !is64Bit);</span>
         
-<span class="fc bfc" id="L687" title="All 2 branches covered.">        if (is64Bit) {</span>
-<span class="fc" id="L688">            System.arraycopy(rL, 0, img2.rL, 0, len);</span>
-<span class="fc" id="L689">            System.arraycopy(gL, 0, img2.gL, 0, len);</span>
-<span class="fc" id="L690">            System.arraycopy(bL, 0, img2.bL, 0, len);</span>
+<span class="fc bfc" id="L689" title="All 2 branches covered.">        if (is64Bit) {</span>
+<span class="fc" id="L690">            System.arraycopy(rL, 0, img2.rL, 0, len);</span>
+<span class="fc" id="L691">            System.arraycopy(gL, 0, img2.gL, 0, len);</span>
+<span class="fc" id="L692">            System.arraycopy(bL, 0, img2.bL, 0, len);</span>
         } else {
-<span class="fc" id="L692">            System.arraycopy(r, 0, img2.r, 0, len);</span>
-<span class="fc" id="L693">            System.arraycopy(g, 0, img2.g, 0, len);</span>
-<span class="fc" id="L694">            System.arraycopy(b, 0, img2.b, 0, len);</span>
+<span class="fc" id="L694">            System.arraycopy(r, 0, img2.r, 0, len);</span>
+<span class="fc" id="L695">            System.arraycopy(g, 0, img2.g, 0, len);</span>
+<span class="fc" id="L696">            System.arraycopy(b, 0, img2.b, 0, len);</span>
         }
        
-<span class="fc" id="L697">        return img2;</span>
+<span class="fc" id="L699">        return img2;</span>
     }
     
     /**
@@ -712,83 +714,83 @@ import java.awt.image.BufferedImage;
         BufferedImage.
         */
         
-<span class="fc" id="L715">        BufferedImage outputImage = new BufferedImage(width, height, </span>
+<span class="fc" id="L717">        BufferedImage outputImage = new BufferedImage(width, height, </span>
             BufferedImage.TYPE_BYTE_GRAY);
         
-<span class="fc bfc" id="L718" title="All 2 branches covered.">        for (int i = 0; i &lt; width; i++) {</span>
-<span class="fc bfc" id="L719" title="All 2 branches covered.">            for (int j = 0; j &lt; height; j++) {</span>
-<span class="fc" id="L720">                int rgbValue = getRGB(i, j);</span>
-<span class="fc" id="L721">                outputImage.setRGB(i, j, rgbValue);</span>
+<span class="fc bfc" id="L720" title="All 2 branches covered.">        for (int i = 0; i &lt; width; i++) {</span>
+<span class="fc bfc" id="L721" title="All 2 branches covered.">            for (int j = 0; j &lt; height; j++) {</span>
+<span class="fc" id="L722">                int rgbValue = getRGB(i, j);</span>
+<span class="fc" id="L723">                outputImage.setRGB(i, j, rgbValue);</span>
             }
         }
         
-<span class="fc bfc" id="L725" title="All 2 branches covered.">        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :</span>
-<span class="fc" id="L726">            GreyscaleImage.Type.Bits32;</span>
+<span class="fc bfc" id="L727" title="All 2 branches covered.">        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :</span>
+<span class="fc" id="L728">            GreyscaleImage.Type.Bits32;</span>
         
-<span class="fc" id="L728">        GreyscaleImage out = new GreyscaleImage(width, height, type);</span>
+<span class="fc" id="L730">        GreyscaleImage out = new GreyscaleImage(width, height, type);</span>
         
-<span class="fc bfc" id="L730" title="All 2 branches covered.">        for (int i = 0; i &lt; width; i++) {</span>
-<span class="fc bfc" id="L731" title="All 2 branches covered.">            for (int j = 0; j &lt; height; j++) {</span>
+<span class="fc bfc" id="L732" title="All 2 branches covered.">        for (int i = 0; i &lt; width; i++) {</span>
+<span class="fc bfc" id="L733" title="All 2 branches covered.">            for (int j = 0; j &lt; height; j++) {</span>
                 
                 // presumably, this is already combined?
                 // or does it need separation into rgb and then averaged?
                 
-<span class="fc" id="L736">                int rgb = outputImage.getRGB(i, j);</span>
+<span class="fc" id="L738">                int rgb = outputImage.getRGB(i, j);</span>
                                 
-<span class="fc" id="L738">                int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
-<span class="fc" id="L739">                int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
-<span class="fc" id="L740">                int b = rgb &amp; 0xFF;  </span>
+<span class="fc" id="L740">                int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
+<span class="fc" id="L741">                int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="fc" id="L742">                int b = rgb &amp; 0xFF;  </span>
                     
-<span class="fc" id="L742">                int v = Math.round((r + g + b)/3.f);</span>
+<span class="fc" id="L744">                int v = Math.round((r + g + b)/3.f);</span>
                 
-<span class="pc bnc" id="L744" title="All 2 branches missed.">                assert(v &lt;= 255);</span>
-<span class="pc bnc" id="L745" title="All 2 branches missed.">                assert(v &gt;= 0);</span>
+<span class="pc bnc" id="L746" title="All 2 branches missed.">                assert(v &lt;= 255);</span>
+<span class="pc bnc" id="L747" title="All 2 branches missed.">                assert(v &gt;= 0);</span>
                 
-<span class="fc" id="L747">                out.setValue(i, j, v);</span>
+<span class="fc" id="L749">                out.setValue(i, j, v);</span>
             }
         }
         
-<span class="fc" id="L751">        return out;</span>
+<span class="fc" id="L753">        return out;</span>
     }
     
     public GreyscaleImage copyToGreyscale2() {
         
-<span class="pc bpc" id="L756" title="1 of 2 branches missed.">        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :</span>
-<span class="pc" id="L757">            GreyscaleImage.Type.Bits32;</span>
+<span class="pc bpc" id="L758" title="1 of 2 branches missed.">        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :</span>
+<span class="pc" id="L759">            GreyscaleImage.Type.Bits32;</span>
         
-<span class="fc" id="L759">        GreyscaleImage out = new GreyscaleImage(width, height, type);</span>
+<span class="fc" id="L761">        GreyscaleImage out = new GreyscaleImage(width, height, type);</span>
         
-<span class="fc bfc" id="L761" title="All 2 branches covered.">        for (int i = 0; i &lt; width; i++) {</span>
-<span class="fc bfc" id="L762" title="All 2 branches covered.">            for (int j = 0; j &lt; height; j++) {</span>
+<span class="fc bfc" id="L763" title="All 2 branches covered.">        for (int i = 0; i &lt; width; i++) {</span>
+<span class="fc bfc" id="L764" title="All 2 branches covered.">            for (int j = 0; j &lt; height; j++) {</span>
                 
                 // presumably, this is already combined?
                 // or does it need separation into rgb and then averaged?
                 
-<span class="fc" id="L767">                int rgb = getRGB(i, j);</span>
+<span class="fc" id="L769">                int rgb = getRGB(i, j);</span>
                                 
-<span class="fc" id="L769">                int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
-<span class="fc" id="L770">                int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
-<span class="fc" id="L771">                int b = rgb &amp; 0xFF;  </span>
+<span class="fc" id="L771">                int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
+<span class="fc" id="L772">                int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="fc" id="L773">                int b = rgb &amp; 0xFF;  </span>
                 
                 // from wikipedia, srgb conversion
-<span class="fc" id="L774">                double yLinear = 0.2126 * r + 0.7152 * g + 0.0722 * b;</span>
+<span class="fc" id="L776">                double yLinear = 0.2126 * r + 0.7152 * g + 0.0722 * b;</span>
                 /*if (yLinear &gt; 0.0031308) {
                     yLinear = 1.033 * Math.pow(yLinear, 1./2.4) - 0.055f;
                 } else {
                     yLinear *= 12.92;
                 }*/
-<span class="fc" id="L780">                int v = (int)Math.round(yLinear);</span>
+<span class="fc" id="L782">                int v = (int)Math.round(yLinear);</span>
                     
                 //int v = Math.round((r + g + b)/3.f);
                 
-<span class="pc bnc" id="L784" title="All 2 branches missed.">                assert(v &lt;= 255);</span>
-<span class="pc bnc" id="L785" title="All 2 branches missed.">                assert(v &gt;= 0);</span>
+<span class="pc bnc" id="L786" title="All 2 branches missed.">                assert(v &lt;= 255);</span>
+<span class="pc bnc" id="L787" title="All 2 branches missed.">                assert(v &gt;= 0);</span>
                 
-<span class="fc" id="L787">                out.setValue(i, j, v);</span>
+<span class="fc" id="L789">                out.setValue(i, j, v);</span>
             }
         }
         
-<span class="fc" id="L791">        return out;</span>
+<span class="fc" id="L793">        return out;</span>
     }
     
     /**
@@ -798,23 +800,23 @@ import java.awt.image.BufferedImage;
      */
     public GreyscaleImage copyRedToGreyscale() {
         
-<span class="pc bpc" id="L801" title="1 of 2 branches missed.">        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :</span>
-<span class="pc" id="L802">            GreyscaleImage.Type.Bits32;</span>
+<span class="pc bpc" id="L803" title="1 of 2 branches missed.">        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :</span>
+<span class="pc" id="L804">            GreyscaleImage.Type.Bits32;</span>
         
-<span class="fc" id="L804">        GreyscaleImage out = new GreyscaleImage(width, height, type);</span>
+<span class="fc" id="L806">        GreyscaleImage out = new GreyscaleImage(width, height, type);</span>
         
-<span class="fc bfc" id="L806" title="All 2 branches covered.">        for (int i = 0; i &lt; width; i++) {</span>
-<span class="fc bfc" id="L807" title="All 2 branches covered.">            for (int j = 0; j &lt; height; j++) {</span>
+<span class="fc bfc" id="L808" title="All 2 branches covered.">        for (int i = 0; i &lt; width; i++) {</span>
+<span class="fc bfc" id="L809" title="All 2 branches covered.">            for (int j = 0; j &lt; height; j++) {</span>
                 
-<span class="fc" id="L809">                int rgb = getRGB(i, j);</span>
+<span class="fc" id="L811">                int rgb = getRGB(i, j);</span>
                                 
-<span class="fc" id="L811">                int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
+<span class="fc" id="L813">                int r = (rgb &gt;&gt; 16) &amp; 0xFF;</span>
                                     
-<span class="fc" id="L813">                out.setValue(i, j, r);</span>
+<span class="fc" id="L815">                out.setValue(i, j, r);</span>
             }
         }
         
-<span class="fc" id="L817">        return out;</span>
+<span class="fc" id="L819">        return out;</span>
     }
     
     /**
@@ -824,23 +826,23 @@ import java.awt.image.BufferedImage;
      */
     public GreyscaleImage copyGreenToGreyscale() {
         
-<span class="pc bpc" id="L827" title="1 of 2 branches missed.">        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :</span>
-<span class="pc" id="L828">            GreyscaleImage.Type.Bits32;</span>
+<span class="pc bpc" id="L829" title="1 of 2 branches missed.">        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :</span>
+<span class="pc" id="L830">            GreyscaleImage.Type.Bits32;</span>
         
-<span class="fc" id="L830">        GreyscaleImage out = new GreyscaleImage(width, height, type);</span>
+<span class="fc" id="L832">        GreyscaleImage out = new GreyscaleImage(width, height, type);</span>
         
-<span class="fc bfc" id="L832" title="All 2 branches covered.">        for (int i = 0; i &lt; width; i++) {</span>
-<span class="fc bfc" id="L833" title="All 2 branches covered.">            for (int j = 0; j &lt; height; j++) {</span>
+<span class="fc bfc" id="L834" title="All 2 branches covered.">        for (int i = 0; i &lt; width; i++) {</span>
+<span class="fc bfc" id="L835" title="All 2 branches covered.">            for (int j = 0; j &lt; height; j++) {</span>
                 
-<span class="fc" id="L835">                int rgb = getRGB(i, j);</span>
+<span class="fc" id="L837">                int rgb = getRGB(i, j);</span>
                                 
-<span class="fc" id="L837">                int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
+<span class="fc" id="L839">                int g = (rgb &gt;&gt; 8) &amp; 0xFF;</span>
                                     
-<span class="fc" id="L839">                out.setValue(i, j, g);</span>
+<span class="fc" id="L841">                out.setValue(i, j, g);</span>
             }
         }
         
-<span class="fc" id="L843">        return out;</span>
+<span class="fc" id="L845">        return out;</span>
     }
     
     /**
@@ -850,23 +852,23 @@ import java.awt.image.BufferedImage;
      */
     public GreyscaleImage copyBlueToGreyscale() {
         
-<span class="pc bpc" id="L853" title="1 of 2 branches missed.">        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :</span>
-<span class="pc" id="L854">            GreyscaleImage.Type.Bits32;</span>
+<span class="pc bpc" id="L855" title="1 of 2 branches missed.">        GreyscaleImage.Type type = is64Bit ? GreyscaleImage.Type.Bits64 :</span>
+<span class="pc" id="L856">            GreyscaleImage.Type.Bits32;</span>
         
-<span class="fc" id="L856">        GreyscaleImage out = new GreyscaleImage(width, height, type);</span>
+<span class="fc" id="L858">        GreyscaleImage out = new GreyscaleImage(width, height, type);</span>
         
-<span class="fc bfc" id="L858" title="All 2 branches covered.">        for (int i = 0; i &lt; width; i++) {</span>
-<span class="fc bfc" id="L859" title="All 2 branches covered.">            for (int j = 0; j &lt; height; j++) {</span>
+<span class="fc bfc" id="L860" title="All 2 branches covered.">        for (int i = 0; i &lt; width; i++) {</span>
+<span class="fc bfc" id="L861" title="All 2 branches covered.">            for (int j = 0; j &lt; height; j++) {</span>
                 
-<span class="fc" id="L861">                int rgb = getRGB(i, j);</span>
+<span class="fc" id="L863">                int rgb = getRGB(i, j);</span>
                                 
-<span class="fc" id="L863">                int b = rgb &amp; 0xFF;  </span>
+<span class="fc" id="L865">                int b = rgb &amp; 0xFF;  </span>
                                     
-<span class="fc" id="L865">                out.setValue(i, j, b);</span>
+<span class="fc" id="L867">                out.setValue(i, j, b);</span>
             }
         }
         
-<span class="fc" id="L869">        return out;</span>
+<span class="fc" id="L871">        return out;</span>
     }
     
     /**
@@ -877,48 +879,48 @@ import java.awt.image.BufferedImage;
      */
     public void resetTo(Image copyThis) {
         
-<span class="pc bpc" id="L880" title="1 of 2 branches missed.">        if (copyThis.getNPixels() != nPixels) {</span>
-<span class="nc" id="L881">            throw new IllegalArgumentException(&quot;cannot convert this fixed &quot; </span>
+<span class="pc bpc" id="L882" title="1 of 2 branches missed.">        if (copyThis.getNPixels() != nPixels) {</span>
+<span class="nc" id="L883">            throw new IllegalArgumentException(&quot;cannot convert this fixed &quot; </span>
                 + &quot;image size to the size of copyThis&quot;);
         }
         
-<span class="pc bpc" id="L885" title="1 of 2 branches missed.">        if (copyThis.width != width) {</span>
-<span class="nc" id="L886">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L887" title="1 of 2 branches missed.">        if (copyThis.width != width) {</span>
+<span class="nc" id="L888">            throw new IllegalArgumentException(</span>
                 &quot;copyThis.width must be same as this width&quot;);
         }
-<span class="pc bpc" id="L889" title="1 of 2 branches missed.">        if (copyThis.height != height) {</span>
-<span class="nc" id="L890">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L891" title="1 of 2 branches missed.">        if (copyThis.height != height) {</span>
+<span class="nc" id="L892">            throw new IllegalArgumentException(</span>
                 &quot;copyThis.height must be same as this width&quot;);
         }
         
-<span class="pc bpc" id="L894" title="1 of 4 branches missed.">        if (is64Bit &amp;&amp; copyThis.is64Bit) {</span>
-<span class="fc" id="L895">            System.arraycopy(copyThis.rL, 0, rL, 0, copyThis.len);</span>
-<span class="fc" id="L896">            System.arraycopy(copyThis.gL, 0, gL, 0, copyThis.len);</span>
-<span class="fc" id="L897">            System.arraycopy(copyThis.bL, 0, bL, 0, copyThis.len);</span>
-<span class="pc bpc" id="L898" title="2 of 4 branches missed.">        } else if (!is64Bit &amp;&amp; !is64Bit) {</span>
-<span class="fc" id="L899">            System.arraycopy(copyThis.r, 0, r, 0, copyThis.len);</span>
-<span class="fc" id="L900">            System.arraycopy(copyThis.g, 0, g, 0, copyThis.len);</span>
-<span class="fc" id="L901">            System.arraycopy(copyThis.b, 0, b, 0, copyThis.len);</span>
+<span class="pc bpc" id="L896" title="1 of 4 branches missed.">        if (is64Bit &amp;&amp; copyThis.is64Bit) {</span>
+<span class="fc" id="L897">            System.arraycopy(copyThis.rL, 0, rL, 0, copyThis.len);</span>
+<span class="fc" id="L898">            System.arraycopy(copyThis.gL, 0, gL, 0, copyThis.len);</span>
+<span class="fc" id="L899">            System.arraycopy(copyThis.bL, 0, bL, 0, copyThis.len);</span>
+<span class="pc bpc" id="L900" title="2 of 4 branches missed.">        } else if (!is64Bit &amp;&amp; !is64Bit) {</span>
+<span class="fc" id="L901">            System.arraycopy(copyThis.r, 0, r, 0, copyThis.len);</span>
+<span class="fc" id="L902">            System.arraycopy(copyThis.g, 0, g, 0, copyThis.len);</span>
+<span class="fc" id="L903">            System.arraycopy(copyThis.b, 0, b, 0, copyThis.len);</span>
         } else {
-<span class="nc bnc" id="L903" title="All 2 branches missed.">            for (int i = 0; i &lt; copyThis.getNPixels(); ++i) {</span>
-<span class="nc" id="L904">                this.setRGB(i, copyThis.getR(i), copyThis.getG(i), </span>
-<span class="nc" id="L905">                    copyThis.getB(i));</span>
+<span class="nc bnc" id="L905" title="All 2 branches missed.">            for (int i = 0; i &lt; copyThis.getNPixels(); ++i) {</span>
+<span class="nc" id="L906">                this.setRGB(i, copyThis.getR(i), copyThis.getG(i), </span>
+<span class="nc" id="L907">                    copyThis.getB(i));</span>
             }
         }
-<span class="fc" id="L908">    }</span>
+<span class="fc" id="L910">    }</span>
     
     public Image createWithDimensions() {
        
-<span class="fc" id="L912">        Image img2 = new Image(width, height, is64Bit);</span>
+<span class="fc" id="L914">        Image img2 = new Image(width, height, is64Bit);</span>
         
-<span class="fc" id="L914">        return img2;</span>
+<span class="fc" id="L916">        return img2;</span>
     }
     
     public Image createWithDimensions(int theWidth, int theHeight) {
        
-<span class="nc" id="L919">        Image img2 = new Image(theWidth, theHeight, is64Bit);</span>
+<span class="nc" id="L921">        Image img2 = new Image(theWidth, theHeight, is64Bit);</span>
         
-<span class="nc" id="L921">        return img2;</span>
+<span class="nc" id="L923">        return img2;</span>
     }
     
     /**
@@ -930,47 +932,93 @@ import java.awt.image.BufferedImage;
      */
     public void fill(int red, int green, int blue) {
         
-<span class="pc bpc" id="L933" title="2 of 4 branches missed.">        if (red &lt; 0 || (red &gt; 255)) {</span>
-<span class="nc" id="L934">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L935" title="2 of 4 branches missed.">        if (red &lt; 0 || (red &gt; 255)) {</span>
+<span class="nc" id="L936">            throw new IllegalArgumentException(</span>
                 &quot;red must be between 0 and 255 inclusive&quot;); 
         }
-<span class="pc bpc" id="L937" title="2 of 4 branches missed.">        if (green &lt; 0 || (green &gt; 255)) {</span>
-<span class="nc" id="L938">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L939" title="2 of 4 branches missed.">        if (green &lt; 0 || (green &gt; 255)) {</span>
+<span class="nc" id="L940">            throw new IllegalArgumentException(</span>
                 &quot;green must be between 0 and 255 inclusive&quot;); 
         }
-<span class="pc bpc" id="L941" title="2 of 4 branches missed.">        if (blue &lt; 0 || (blue &gt; 255)) {</span>
-<span class="nc" id="L942">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L943" title="2 of 4 branches missed.">        if (blue &lt; 0 || (blue &gt; 255)) {</span>
+<span class="nc" id="L944">            throw new IllegalArgumentException(</span>
                 &quot;blue must be between 0 and 255 inclusive&quot;); 
         }
         
         //TODO: improve to use Arrays.fill on n &lt; length for bytes per item
        
-<span class="fc bfc" id="L948" title="All 2 branches covered.">        for (int i = 0; i &lt; width; i ++) {</span>
-<span class="fc bfc" id="L949" title="All 2 branches covered.">            for (int j = 0; j &lt; height; ++j) {</span>
-<span class="fc" id="L950">                setRGB(i, j, red, green, blue);</span>
+<span class="fc bfc" id="L950" title="All 2 branches covered.">        for (int i = 0; i &lt; width; i ++) {</span>
+<span class="fc bfc" id="L951" title="All 2 branches covered.">            for (int j = 0; j &lt; height; ++j) {</span>
+<span class="fc" id="L952">                setRGB(i, j, red, green, blue);</span>
             }
         }
-<span class="fc" id="L953">    }</span>
+<span class="fc" id="L955">    }</span>
+
+    /**
+     * export red, blue and green frames to 1 double[][] each, in format col major, that is red[i][j] is red[x][y]
+     * where x and y are the pixel coordinates.
+     * @return
+     */
+    public List&lt;double[][]&gt; exportColMajor() {
+<span class="fc" id="L963">        double[][] r = new double[width][height];</span>
+<span class="fc" id="L964">        double[][] g = new double[width][height];</span>
+<span class="fc" id="L965">        double[][] b = new double[width][height];</span>
+<span class="fc bfc" id="L966" title="All 2 branches covered.">        for (int x = 0; x &lt; width; ++x) {</span>
+<span class="fc bfc" id="L967" title="All 2 branches covered.">            for (int y = 0; y &lt; height; ++y) {</span>
+<span class="fc" id="L968">                r[x][y] = getR(x, y);</span>
+<span class="fc" id="L969">                g[x][y] = getG(x, y);</span>
+<span class="fc" id="L970">                b[x][y] = getB(x, y);</span>
+            }
+        }
+<span class="fc" id="L973">        List&lt;double[][]&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L974">        list.add(r);</span>
+<span class="fc" id="L975">        list.add(g);</span>
+<span class="fc" id="L976">        list.add(b);</span>
+<span class="fc" id="L977">        return list;</span>
+    }
+
+    /**
+     * export red, blue and green frames to 1 double[][] each, in format row major, that is red[i][j] is red[y][x]
+     * where x and y are the pixel coordinates.
+     * @return
+     */
+    public List&lt;double[][]&gt; exportRowMajor() {
+<span class="fc" id="L986">        double[][] r = new double[height][width];</span>
+<span class="fc" id="L987">        double[][] g = new double[height][width];</span>
+<span class="fc" id="L988">        double[][] b = new double[height][width];</span>
+<span class="fc bfc" id="L989" title="All 2 branches covered.">        for (int x = 0; x &lt; width; ++x) {</span>
+<span class="fc bfc" id="L990" title="All 2 branches covered.">            for (int y = 0; y &lt; height; ++y) {</span>
+<span class="fc" id="L991">                r[y][x] = getR(x, y);</span>
+<span class="fc" id="L992">                g[y][x] = getG(x, y);</span>
+<span class="fc" id="L993">                b[y][x] = getB(x, y);</span>
+            }
+        }
+<span class="fc" id="L996">        List&lt;double[][]&gt; list = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L997">        list.add(r);</span>
+<span class="fc" id="L998">        list.add(g);</span>
+<span class="fc" id="L999">        list.add(b);</span>
+<span class="fc" id="L1000">        return list;</span>
+    }
 
     /**
      * @return the width
      */
     public int getWidth() {
-<span class="fc" id="L959">        return width;</span>
+<span class="fc" id="L1007">        return width;</span>
     }
 
     /**
      * @return the height
      */
     public int getHeight() {
-<span class="fc" id="L966">        return height;</span>
+<span class="fc" id="L1014">        return height;</span>
     }
 
     /**
      * @return the nPixels
      */
     public int getNPixels() {
-<span class="fc" id="L973">        return nPixels;</span>
+<span class="fc" id="L1021">        return nPixels;</span>
     }
     
     /**
@@ -980,8 +1028,8 @@ import java.awt.image.BufferedImage;
      */
     public int getCol(int internalIndex) {
         
-<span class="pc bpc" id="L983" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
-<span class="nc" id="L984">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L1031" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L1032">            throw new IllegalArgumentException(</span>
                 &quot;internalIndex is out of bounds:&quot;);
         }
    
@@ -989,7 +1037,7 @@ import java.awt.image.BufferedImage;
         
         //int col = internalIndex - (row * width);
         
-<span class="fc" id="L992">        return internalIndex % width;</span>
+<span class="fc" id="L1040">        return internalIndex % width;</span>
     }
     
     /**
@@ -999,29 +1047,29 @@ import java.awt.image.BufferedImage;
      */
     public int getRow(int internalIndex) {
         
-<span class="pc bpc" id="L1002" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
-<span class="nc" id="L1003">            throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L1050" title="2 of 4 branches missed.">        if ((internalIndex &lt; 0) || (internalIndex &gt; (nPixels - 1))) {</span>
+<span class="nc" id="L1051">            throw new IllegalArgumentException(</span>
                 &quot;internalIndex is out of bounds:&quot;);
         }
    
-<span class="fc" id="L1007">        int row = internalIndex/width;</span>
+<span class="fc" id="L1055">        int row = internalIndex/width;</span>
         
-<span class="fc" id="L1009">        return row;</span>
+<span class="fc" id="L1057">        return row;</span>
     }
     
     public void debugPrint() {
-<span class="fc" id="L1013">        StringBuilder sb = new StringBuilder();</span>
-<span class="fc bfc" id="L1014" title="All 2 branches covered.">        for (int row = 0; row &lt; height; ++row) {</span>
-<span class="fc bfc" id="L1015" title="All 2 branches covered.">            for (int col = 0; col &lt; width; ++col) {</span>
-<span class="fc" id="L1016">                int r = getR(col, row);</span>
-<span class="fc" id="L1017">                int g = getG(col, row);</span>
-<span class="fc" id="L1018">                int b = getB(col, row);</span>
-<span class="fc" id="L1019">                String str = String.format(&quot;(%3d %3d %3d) &quot;, r, g, b);</span>
-<span class="fc" id="L1020">                sb.append(str);</span>
+<span class="fc" id="L1061">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L1062" title="All 2 branches covered.">        for (int row = 0; row &lt; height; ++row) {</span>
+<span class="fc bfc" id="L1063" title="All 2 branches covered.">            for (int col = 0; col &lt; width; ++col) {</span>
+<span class="fc" id="L1064">                int r = getR(col, row);</span>
+<span class="fc" id="L1065">                int g = getG(col, row);</span>
+<span class="fc" id="L1066">                int b = getB(col, row);</span>
+<span class="fc" id="L1067">                String str = String.format(&quot;(%3d %3d %3d) &quot;, r, g, b);</span>
+<span class="fc" id="L1068">                sb.append(str);</span>
             }
-<span class="fc" id="L1022">            sb.append(&quot;\n&quot;);</span>
+<span class="fc" id="L1070">            sb.append(&quot;\n&quot;);</span>
         }
-<span class="fc" id="L1024">        System.out.println(sb.toString());</span>
-<span class="fc" id="L1025">    }</span>
+<span class="fc" id="L1072">        System.out.println(sb.toString());</span>
+<span class="fc" id="L1073">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
