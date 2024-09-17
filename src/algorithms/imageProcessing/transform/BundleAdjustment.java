@@ -111,7 +111,8 @@ public class BundleAdjustment {
     }
     
     /**
-     * NOTE: this method could use improvements and more testing.
+     * TODO: consider revising one day.  coordsI is expected to be densely populated even if internally, a reduced camera
+     * matrix is used.
      *
      * given world scene features, the features observed in images,
      * initial camera calibration and extrinsic parameters, use the 
@@ -605,7 +606,8 @@ public class BundleAdjustment {
                 lambdaF *= 2;
             }
 
-            log.info(String.format("new lambda=%.11e\n", lambda));
+            log.info(String.format("new lambda=%.11e  (eps=%f), deltaCStop=%b, gradCStop=%b  gainRatio=%f\n",
+                    lambda, eps, deltaCStop, gradCStop, gainRatio));
 
             // check for convergence
             if (deltaCStop || gradCStop
@@ -740,6 +742,7 @@ public class BundleAdjustment {
     }
 
     /**
+     * TODO: consider revising one day.  coordsI is expected to be densely populated for this use.
      * solve for bundle adjustment data structures needed by the Levenberg-Marquardt
      * algorithm to refine the intrinsic and extrinsic camera parameters.
      * The algorithms uses the sparse structure of the jacobian to reduce

@@ -65,16 +65,22 @@ import algorithms.util.FormatArray;
  *     E * e1 = 0
  *     l2 = E * x1
  *     l1 = E^T * x2
- *     li^T * ei = 0
- *     li^T * xi = 0
+ *     x1^T * l1 = 0
+ *     x2^T * l2 = 0
  *
  * The fundamental matrix is the projective solution for transformation
  * between 2 images of the same objects in pixel coordinates.
  *
  *     E = K2^T * F * K1
- *     F = K^-T * E * K^-1
- *                  where K is the intrinsic camera matrix.
- *       = K^-T * [T]_x * R * K^-1  if det(K) ~ 1 else apply a scale factor too.
+ *     F = K2^-T * E * K1^-1 where K is the intrinsic camera matrix.
+ *       = K2^-T * [T]_x * R * K1^-1  if det(K) ~ 1 else apply a scale factor too.
+ *
+ *    can also be written
+ *      F = K2^-T * E * K1^-1
+ *        = ([e_2]_x * K2)  * ([T]_X)^-1 * E * K1^-1
+ *        = (K2^-T * [T]_x) * ([T]_X)^-1 * E * K1^-1
+ *
+ *
  *
  * Present below is the solution for having 7 matched points between images
  * and the solution for having 8 or more matched points between the images.
@@ -390,6 +396,8 @@ public class EpipolarTransformer {
     /**
      * calculate the epipolar projection.  no normalizations and de-normalizations are handled internally.
      * if the camera calibration is known, the essential matrix is returned.
+     *
+     * one can check the final fit using e2^T * F = 0 where e2 is epipole2.
      * @param leftXY the left image coordinates of the feature correspondences
      * @param rightXY the right image coordinates of the feature correspondences
      * @param calibrated whether or not the camera calibration is known.  if true, the essential matrix is returned.
@@ -489,6 +497,7 @@ public class EpipolarTransformer {
     /**
      * calculate the epipolar projection given 7 pairs of points.  all normalizations and de-normalizations are handled internally.
      * if the camera calibration is known, the essential matrix is returned.
+     * one can check the final fit using e2^T * F = 0 where e2 is epipole2.
      * @param leftXY the left image coordinates of the feature correspondences
      * @param rightXY the right image coordinates of the feature correspondences
      * @return the fundamental matrix (or essential matrix) of the epipolar projection.
@@ -862,7 +871,9 @@ public class EpipolarTransformer {
      * with a chirality check.  returns a list of the filtered solutions.
      * NOTE that for best results, the method should be given unit standard
      * normalized coordinates.
-     * references are:
+     * one can check the final fit using e2^T * F = 0 where e2 is epipole2.
+     <pre>
+      references are:
         (1) the the Hartley & Zisserman matlab code vgg_F_from_7pts_2img
         from a version of http://www.robots.ox.ac.uk/~vgg/hzbook/code/ which is part
         of the supplementary material for their book "Multiple View Geometry in Computer Vision
@@ -872,7 +883,8 @@ public class EpipolarTransformer {
         (3) Torr, P. H. S. and Murray, D. (1997). 
         "The development and comparison of robust methods for estimating the 
         fundamental matrix. International Journal of Computer Vision", 24(3):271–300.
-     * @param leftXY
+     </pre>
+      @param leftXY
      * @param rightXY
      * 
      * @return
