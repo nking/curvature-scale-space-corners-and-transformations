@@ -1643,7 +1643,7 @@ import java.util.Arrays;
         //        V(:,12) = -V(:,12);
         //RR = -RR;
         //end;
-<span class="pc bpc" id="L1646" title="1 of 2 branches missed.">        if (MatrixUtil.determinant(RR) &lt; 0) {</span>
+<span class="fc bfc" id="L1646" title="All 2 branches covered.">        if (MatrixUtil.determinant(RR) &lt; 0) {</span>
 <span class="fc" id="L1647">            MatrixUtil.multiply(orth, -1);</span>
 <span class="fc" id="L1648">            MatrixUtil.multiply(RR, -1);</span>
         }

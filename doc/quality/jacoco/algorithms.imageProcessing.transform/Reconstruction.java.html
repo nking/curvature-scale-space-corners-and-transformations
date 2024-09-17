@@ -3769,42 +3769,42 @@ import no.uib.cipr.matrix.SVD;
         
         int i;
 <span class="pc bpc" id="L3771" title="1 of 2 branches missed.">        if (Math.abs(det1 - 1.) &lt; eps) {</span>
-<span class="nc" id="L3772">            System.out.printf(&quot;using +U\n&quot;);</span>
-<span class="nc bnc" id="L3773" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L3774">                System.arraycopy(rr1[i], 0, r1Out[i], 0, rr1[i].length);</span>
+<span class="fc" id="L3772">            System.out.printf(&quot;using +U\n&quot;);</span>
+<span class="fc bfc" id="L3773" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L3774">                System.arraycopy(rr1[i], 0, r1Out[i], 0, rr1[i].length);</span>
             }
-<span class="pc bpc" id="L3776" title="1 of 2 branches missed.">        } else if (Math.abs(det2 - 1.) &lt; eps) {</span>
-<span class="fc" id="L3777">            System.out.printf(&quot;using -U\n&quot;);</span>
-<span class="fc" id="L3778">            useUPos = false;</span>
-<span class="fc bfc" id="L3779" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L3780">                System.arraycopy(rr2[i], 0, r1Out[i], 0, rr2[i].length);</span>
+<span class="nc bnc" id="L3776" title="All 2 branches missed.">        } else if (Math.abs(det2 - 1.) &lt; eps) {</span>
+<span class="nc" id="L3777">            System.out.printf(&quot;using -U\n&quot;);</span>
+<span class="nc" id="L3778">            useUPos = false;</span>
+<span class="nc bnc" id="L3779" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L3780">                System.arraycopy(rr2[i], 0, r1Out[i], 0, rr2[i].length);</span>
             }
         } else {
 <span class="nc" id="L3783">            throw new IllegalStateException(&quot;neither rotation matrix is SO(3)&quot;);</span>
         }
 <span class="pc bpc" id="L3785" title="1 of 2 branches missed.">        if (Math.abs(det3 - 1.) &lt; eps) {</span>
-<span class="nc bnc" id="L3786" title="All 2 branches missed.">            if (!useUPos) {</span>
+<span class="pc bpc" id="L3786" title="1 of 2 branches missed.">            if (!useUPos) {</span>
 <span class="nc" id="L3787">                throw new IllegalStateException(&quot;expecting to need +U&quot;);</span>
             }
-<span class="nc" id="L3789">            System.out.printf(&quot;using +U\n&quot;);</span>
-<span class="nc bnc" id="L3790" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L3791">                System.arraycopy(rr3[i], 0, r2Out[i], 0, rr3[i].length);</span>
+<span class="fc" id="L3789">            System.out.printf(&quot;using +U\n&quot;);</span>
+<span class="fc bfc" id="L3790" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L3791">                System.arraycopy(rr3[i], 0, r2Out[i], 0, rr3[i].length);</span>
             }
-<span class="pc bpc" id="L3793" title="1 of 2 branches missed.">        } else if (Math.abs(det4 - 1.) &lt; eps) {</span>
-<span class="pc bpc" id="L3794" title="1 of 2 branches missed.">            if (useUPos) {</span>
+<span class="nc bnc" id="L3793" title="All 2 branches missed.">        } else if (Math.abs(det4 - 1.) &lt; eps) {</span>
+<span class="nc bnc" id="L3794" title="All 2 branches missed.">            if (useUPos) {</span>
 <span class="nc" id="L3795">                throw new IllegalStateException(&quot;expecting to need -U&quot;);</span>
             }
-<span class="fc" id="L3797">            System.out.printf(&quot;using -U\n&quot;);</span>
-<span class="fc bfc" id="L3798" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L3799">                System.arraycopy(rr4[i], 0, r2Out[i], 0, rr4[i].length);</span>
+<span class="nc" id="L3797">            System.out.printf(&quot;using -U\n&quot;);</span>
+<span class="nc bnc" id="L3798" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L3799">                System.arraycopy(rr4[i], 0, r2Out[i], 0, rr4[i].length);</span>
             }
         } else {
 <span class="nc" id="L3802">            throw new IllegalStateException(&quot;neither rotation matrix is SO(3)&quot;);</span>
         }
         
 <span class="pc bpc" id="L3805" title="1 of 2 branches missed.">        if (!useUPos) {</span>
-<span class="fc bfc" id="L3806" title="All 2 branches covered.">            for (i = 0; i &lt; 3; ++i) {</span>
-<span class="fc" id="L3807">                System.arraycopy(uNeg[i], 0, u[i], 0, uNeg[i].length);</span>
+<span class="nc bnc" id="L3806" title="All 2 branches missed.">            for (i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L3807">                System.arraycopy(uNeg[i], 0, u[i], 0, uNeg[i].length);</span>
             }
         }
 <span class="fc" id="L3810">    }</span>

@@ -811,7 +811,7 @@ Note that Shuster 1993 use the active, LH, CW rotations of the object while refe
 
         double[][] tmp1, tmp2;
 
-<span class="pc bpc" id="L814" title="1 of 2 branches missed.">        if (theta &gt; 1e-30) {</span>
+<span class="fc bfc" id="L814" title="All 2 branches covered.">        if (theta &gt; 1e-30) {</span>
 
 <span class="fc" id="L816">            double[] n = Arrays.copyOf(rotVec, rotVec.length);</span>
 <span class="fc" id="L817">            MatrixUtil.multiply(n, 1./theta);</span>
@@ -833,15 +833,15 @@ Note that Shuster 1993 use the active, LH, CW rotations of the object while refe
 
 <span class="fc" id="L834">        } else {</span>
 
-<span class="nc" id="L836">            double[][] sr = MatrixUtil.skewSymmetric(rotVec);</span>
-<span class="nc" id="L837">            double theta2 = theta*theta;</span>
+<span class="fc" id="L836">            double[][] sr = MatrixUtil.skewSymmetric(rotVec);</span>
+<span class="fc" id="L837">            double theta2 = theta*theta;</span>
 
             //R = eye(3) + (1-theta2/6.)*Sr + (.5-theta2/24.)*dot(Sr,Sr)
-<span class="nc" id="L840">            tmp1 = MatrixUtil.copy(sr);</span>
-<span class="nc" id="L841">            MatrixUtil.multiply(tmp1, (1. - theta2)/6.);</span>
+<span class="fc" id="L840">            tmp1 = MatrixUtil.copy(sr);</span>
+<span class="fc" id="L841">            MatrixUtil.multiply(tmp1, (1. - theta2)/6.);</span>
 
-<span class="nc" id="L843">            tmp2 = MatrixUtil.multiply(sr, sr);</span>
-<span class="nc" id="L844">            MatrixUtil.multiply(tmp2, 0.5 - theta2/24.);</span>
+<span class="fc" id="L843">            tmp2 = MatrixUtil.multiply(sr, sr);</span>
+<span class="fc" id="L844">            MatrixUtil.multiply(tmp2, 0.5 - theta2/24.);</span>
 
         }
 
@@ -1183,9 +1183,9 @@ Note that Shuster 1993 use the active, LH, CW rotations of the object while refe
         //theta = norm(rotVec);
 <span class="fc" id="L1184">        double theta = MatrixUtil.lPSum(rotVec, 2);</span>
         //if theta &lt; eps
-<span class="pc bpc" id="L1186" title="1 of 2 branches missed.">        if (theta &lt; eps) {</span>
+<span class="fc bfc" id="L1186" title="All 2 branches covered.">        if (theta &lt; eps) {</span>
             //R = eye(3);
-<span class="nc" id="L1188">            R = MatrixUtil.createIdentityMatrix(3);</span>
+<span class="fc" id="L1188">            R = MatrixUtil.createIdentityMatrix(3);</span>
             //dRdin = [0 0 0;
             //0 0 1;
             //0 -1 0;
@@ -1195,25 +1195,25 @@ Note that Shuster 1993 use the active, LH, CW rotations of the object while refe
             //0 1 0;
             //-1 0 0;
             //0 0 0];
-<span class="nc" id="L1198">            dRdin = new double[9][];</span>
-<span class="nc" id="L1199">            dRdin[0] = new double[]{0, 0, 0};</span>
-<span class="nc" id="L1200">            dRdin[1] = new double[]{0, 0, 1};</span>
-<span class="nc" id="L1201">            dRdin[2] = new double[]{0, -1, 0};</span>
-<span class="nc" id="L1202">            dRdin[3] = new double[]{0, 0, -1};</span>
-<span class="nc" id="L1203">            dRdin[4] = new double[]{0, 0, 0};</span>
-<span class="nc" id="L1204">            dRdin[5] = new double[]{1, 0, 0};</span>
-<span class="nc" id="L1205">            dRdin[6] = new double[]{0, 1, 0};</span>
-<span class="nc" id="L1206">            dRdin[7] = new double[]{-1, 0, 0};</span>
-<span class="nc" id="L1207">            dRdin[8] = new double[]{0, 0, 0};</span>
+<span class="fc" id="L1198">            dRdin = new double[9][];</span>
+<span class="fc" id="L1199">            dRdin[0] = new double[]{0, 0, 0};</span>
+<span class="fc" id="L1200">            dRdin[1] = new double[]{0, 0, 1};</span>
+<span class="fc" id="L1201">            dRdin[2] = new double[]{0, -1, 0};</span>
+<span class="fc" id="L1202">            dRdin[3] = new double[]{0, 0, -1};</span>
+<span class="fc" id="L1203">            dRdin[4] = new double[]{0, 0, 0};</span>
+<span class="fc" id="L1204">            dRdin[5] = new double[]{1, 0, 0};</span>
+<span class="fc" id="L1205">            dRdin[6] = new double[]{0, 1, 0};</span>
+<span class="fc" id="L1206">            dRdin[7] = new double[]{-1, 0, 0};</span>
+<span class="fc" id="L1207">            dRdin[8] = new double[]{0, 0, 0};</span>
 
             //out = R;
             //dout = dRdin;
-<span class="nc" id="L1211">            RodriguesRotation rRot = new RodriguesRotation();</span>
-<span class="nc" id="L1212">            rRot.r = R;</span>
-<span class="nc" id="L1213">            rRot.dRdR = dRdin;</span>
-<span class="nc" id="L1214">            rRot.rotVec = Arrays.copyOf(rotVec, rotVec.length);</span>
+<span class="fc" id="L1211">            RodriguesRotation rRot = new RodriguesRotation();</span>
+<span class="fc" id="L1212">            rRot.r = R;</span>
+<span class="fc" id="L1213">            rRot.dRdR = dRdin;</span>
+<span class="fc" id="L1214">            rRot.rotVec = Arrays.copyOf(rotVec, rotVec.length);</span>
 
-<span class="nc" id="L1216">            return rRot;</span>
+<span class="fc" id="L1216">            return rRot;</span>
         }
 
         //%m3 = [rotVec,theta]
@@ -3129,40 +3129,40 @@ Note that Shuster 1993 use the active, LH, CW rotations of the object while refe
     }
 
     static double[] _extractRotationVectorFromQuaternionBarfoot(double[] q) {
-<span class="nc bnc" id="L3132" title="All 2 branches missed.">        if (q.length != 4) {</span>
+<span class="pc bpc" id="L3132" title="1 of 2 branches missed.">        if (q.length != 4) {</span>
 <span class="nc" id="L3133">            throw new IllegalArgumentException(&quot;q must be length 4&quot;);</span>
         }
         // extracting from eqn (7.14) of Barfoot book
         // scalar term = cos(angle/2);  acos(q[3])= angle/2
-<span class="nc" id="L3137">        double[] axis = new double[3];</span>
-<span class="nc" id="L3138">        double angle = extractAngleAxisFromBarfootQuaternion(q, axis);</span>
-<span class="nc bnc" id="L3139" title="All 2 branches missed.">        if (angle == 0) {</span>
-<span class="nc" id="L3140">            return new double[]{0, 0, 0};</span>
+<span class="fc" id="L3137">        double[] axis = new double[3];</span>
+<span class="fc" id="L3138">        double angle = extractAngleAxisFromBarfootQuaternion(q, axis);</span>
+<span class="fc bfc" id="L3139" title="All 2 branches covered.">        if (angle == 0) {</span>
+<span class="fc" id="L3140">            return new double[]{0, 0, 0};</span>
         }
-<span class="nc" id="L3142">        return createRotationVectorFromAngleAxis(axis, angle);</span>
+<span class="fc" id="L3142">        return createRotationVectorFromAngleAxis(axis, angle);</span>
     }
     private static double extractAngleAxisFromBarfootQuaternion(double[] q, double[] outAxis) {
-<span class="nc bnc" id="L3145" title="All 2 branches missed.">        if (q.length != 4) {</span>
+<span class="pc bpc" id="L3145" title="1 of 2 branches missed.">        if (q.length != 4) {</span>
 <span class="nc" id="L3146">            throw new IllegalArgumentException(&quot;q must be length 4&quot;);</span>
         }
-<span class="nc bnc" id="L3148" title="All 2 branches missed.">        if (outAxis.length != 3) {</span>
+<span class="pc bpc" id="L3148" title="1 of 2 branches missed.">        if (outAxis.length != 3) {</span>
 <span class="nc" id="L3149">            throw new IllegalArgumentException(&quot;outAxis must be length 3&quot;);</span>
         }
         // extracting from eqn (7.14) of Barfoot book
         // scalar term = cos(angle/2);  acos(q[3])= angle/2
         double angle;
-<span class="nc" id="L3154">        angle = 2 * Math.acos(q[3]);</span>
+<span class="fc" id="L3154">        angle = 2 * Math.acos(q[3]);</span>
         // wikipedia states it is more mathematically stable to use:
         //angle = 2 * Math.atan2(MatrixUtil.lPSum(Arrays.copyOf(q, 3), 2), q[3]);
-<span class="nc" id="L3157">        System.arraycopy(q, 0, outAxis, 0, 3);</span>
-<span class="nc bnc" id="L3158" title="All 2 branches missed.">        if (angle == 0) {</span>
-<span class="nc" id="L3159">            return 0;</span>
+<span class="fc" id="L3157">        System.arraycopy(q, 0, outAxis, 0, 3);</span>
+<span class="fc bfc" id="L3158" title="All 2 branches covered.">        if (angle == 0) {</span>
+<span class="fc" id="L3159">            return 0;</span>
         }
-<span class="nc" id="L3161">        double s = Math.sin(angle/2);</span>
-<span class="nc bnc" id="L3162" title="All 2 branches missed.">        for (int i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L3163">            outAxis[i] /= s;</span>
+<span class="fc" id="L3161">        double s = Math.sin(angle/2);</span>
+<span class="fc bfc" id="L3162" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L3163">            outAxis[i] /= s;</span>
         }
-<span class="nc" id="L3165">        return angle;</span>
+<span class="fc" id="L3165">        return angle;</span>
     }
         
     public static class AuxiliaryArrays {

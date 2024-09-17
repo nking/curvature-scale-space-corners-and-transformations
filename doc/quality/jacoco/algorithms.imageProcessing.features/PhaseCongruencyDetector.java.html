@@ -986,24 +986,24 @@ import java.util.logging.Logger;
 <span class="fc" id="L986">            int count = 0;</span>
 <span class="fc bfc" id="L987" title="All 2 branches covered.">            for (int i = 0; i &lt; n; ++i) {</span>
 <span class="fc" id="L988">                TLongSet groupPixs = groupList.get(i);</span>
-<span class="fc bfc" id="L989" title="All 2 branches covered.">                if (groupPixs.size() &gt; sizeLimit) {</span>
+<span class="pc bpc" id="L989" title="1 of 2 branches missed.">                if (groupPixs.size() &gt; sizeLimit) {</span>
 <span class="fc" id="L990">                    continue;</span>
                 }
-<span class="fc" id="L992">                int sumD = 0;</span>
-<span class="fc" id="L993">                int countD = 0;</span>
+<span class="nc" id="L992">                int sumD = 0;</span>
+<span class="nc" id="L993">                int countD = 0;</span>
                 
-<span class="fc" id="L995">                TLongIterator iter3 = groupPixs.iterator();</span>
-<span class="fc bfc" id="L996" title="All 2 branches covered.">                while (iter3.hasNext()) {</span>
-<span class="fc" id="L997">                    long pixIdx = iter3.next();</span>
-<span class="fc" id="L998">                    ph.toPixelCoords(pixIdx, h, xy);</span>
-<span class="pc bpc" id="L999" title="3 of 4 branches missed.">                    if (noisePoints.contains(new PairInt(xy[1], xy[0])) </span>
+<span class="nc" id="L995">                TLongIterator iter3 = groupPixs.iterator();</span>
+<span class="nc bnc" id="L996" title="All 2 branches missed.">                while (iter3.hasNext()) {</span>
+<span class="nc" id="L997">                    long pixIdx = iter3.next();</span>
+<span class="nc" id="L998">                    ph.toPixelCoords(pixIdx, h, xy);</span>
+<span class="nc bnc" id="L999" title="All 4 branches missed.">                    if (noisePoints.contains(new PairInt(xy[1], xy[0])) </span>
                         &amp;&amp; dt[xy[1]][xy[0]] &gt; 0) {
 <span class="nc" id="L1001">                        sumD += dt[xy[1]][xy[0]];</span>
 <span class="nc" id="L1002">                        countD++;</span>
                     }
-<span class="fc" id="L1004">                }</span>
+<span class="nc" id="L1004">                }</span>
                 
-<span class="pc bpc" id="L1006" title="1 of 2 branches missed.">                if (countD &gt; 0) {</span>
+<span class="nc bnc" id="L1006" title="All 2 branches missed.">                if (countD &gt; 0) {</span>
 <span class="nc" id="L1007">                    indexes[count] = i;</span>
 <span class="nc" id="L1008">                    sumD /= countD;</span>
 <span class="nc" id="L1009">                    dist[count] = sumD;</span>
