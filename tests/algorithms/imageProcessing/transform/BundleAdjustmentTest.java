@@ -8,6 +8,7 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,10 +35,38 @@ public class BundleAdjustmentTest extends TestCase {
     public BundleAdjustmentTest() {
     }
 
+    public void test0() throws Exception {
+
+        String varFileName = "54camsvarKD.txt";
+        String ptsFileName = "54pts.txt";
+        int nCameraParams = 17;
+        //String varFileName = "9camsvarK.txt";
+        //String ptsFileName = "9pts.txt";
+        //int nCameraParams = 12;
+        SBADataReader.BundleAdjustmentData data = SBADataReader.readSBAFileIntersection(
+                varFileName, ptsFileName, nCameraParams);
+
+        SBADataReader.writeForCeresSolver(data, "54cams_balformat.txt");
+
+        SBADataReader.BundleAdjustmentData dataInit = data.copy();
+
+        boolean useR2R4 = true;
+        int nMaxIter = 100;
+        boolean useBouguetForRodrigues = false;
+
+        BundleAdjustment ba = new BundleAdjustment();
+        //ba.setUseHomography();
+        ba.solveSparsely(data.coordsI, data.coordsW, data.imageFeaturesMap,
+                data.intr, data.extrRotVecs, data.extrTrans,
+                data.kRadials, nMaxIter, useR2R4, useBouguetForRodrigues);
+
+        int t = 2;
+
+    }
     /**
      * Test of solveUsingSparse method, of class BundleAdjustment.
      */
-    public void testSolveUsingSparse_ZhangData() throws Exception {
+    public void estSolveUsingSparse_ZhangData() throws Exception {
 
         // this shows that the refinement methods need improvements
         

@@ -16,6 +16,7 @@ import java.util.Arrays;
 public class EpipolarNormalizationHelperTest extends TestCase {
 
     public void test0() throws IOException, NotConvergedException {
+
         /*
         these numbers are from SciPy unit test
          test_fundamental_matrix_estimation() in file
@@ -25,6 +26,9 @@ public class EpipolarNormalizationHelperTest extends TestCase {
          https://github.com/scikit-image/scikit-image/blob/025757f8d5a1ece2687781000560aad79047b6c3/LICENSE.txt
 
          They reference the "COLMAP SfM library".
+
+         updated location:
+         https://github.com/scikit-image/scikit-image/blob/main/skimage/transform/tests/test_geometric.py
          */
         /*
         src = np.array([1.839035, 1.924743, 0.543582,  0.375221,
@@ -69,19 +73,6 @@ public class EpipolarNormalizationHelperTest extends TestCase {
         eFM = MatrixUtil.transpose(eFM);
         // [3X3]
 
-        //x2'^T * F * x1 = 0. // [N X 3]*[3 X 3]*[3 X N] = [N X N]
-        double[][] check = MatrixUtil.multiply(MatrixUtil.transpose(x2),
-                MatrixUtil.multiply(eFM, x1));
-        int i;
-        double[] ms;
-        // "check"'s columns have means ~ 3E-3 and stdev ~ 0.1
-        for (i = 0; i < check.length; ++i) {
-            ms = MiscMath0.getAvgAndStDev(check[i]);
-            System.out.printf("row %d: mean, stdev=%s\n", i, FormatArray.toString(ms, "%.3e"));
-            ms = MiscMath0.getAvgAndStDev(MatrixUtil.extractColumn(check, i));
-            System.out.printf("col %d: mean, stdev=%s\n", i, FormatArray.toString(ms, "%.3e"));
-        }
-
         // expected essential matrix
         double[][] eEM = new double[3][];
         eEM[0] = new double[]{-0.0811666, 0.255449, -0.0478999};
@@ -91,6 +82,8 @@ public class EpipolarNormalizationHelperTest extends TestCase {
 
         double[][] x1c = MatrixUtil.copy(x1);
         double[][] t1 = EpipolarNormalizationHelper.unitStandardNormalize(x1c);
+        int i, j;
+        double[] ms;
         double tol = 1E-7;
         // assert the mean and stdev of x1c by rows
         for (i = 0; i < 2; ++i) {
@@ -109,7 +102,6 @@ public class EpipolarNormalizationHelperTest extends TestCase {
         double[][] x1cD = MatrixUtil.copy(x1c);
         double[][] x2cD = MatrixUtil.copy(x2c);
         EpipolarNormalizationHelper.denormalize(x1cD, x2cD, t1, t2);
-        int j;
         for (i = 0; i < x1cD.length; ++i) {
             for (j = 0; j < x1cD[0].length; ++j) {
                 assertTrue(Math.abs(x1[i][j] - x1cD[i][j]) < 1E-7);
@@ -121,77 +113,116 @@ public class EpipolarNormalizationHelperTest extends TestCase {
             }
         }
 
+        // match with tolerance in case change to use scale std of (nDim-1) instead of 1.
+        double[][] eFMN = new double[][] {
+                {-0.6164932107421747, -0.24156493615453212, -0.18595938005677867},
+            {0.7071491331679607, 0.09063380472040895, 0.10699368212780982},
+            {0.06211595906961463, -0.05257531441824141, -0.02511815364621099}
+        };
+
+        double[][] eEMN = new double[][] {
+                {-0.26126038710558697, -0.4012125745099643, -0.24919857450237587},
+                {0.4946767953545696, -0.18522911621742388, -0.06691716621987827},
+                {0.10676310049702824, -0.22582818112148015, -0.1204101792395726}
+        };
+
         EpipolarTransformer tr = new EpipolarTransformer();
         double[][] fm0 = tr.calculateEpipolarProjection2(x1, x2, false);
         double[][] fmN = tr.calculateEpipolarProjection2(x1c, x2c, false);
         double[][] fmD = MatrixUtil.copy(fmN);
         EpipolarNormalizationHelper.denormalizeFM(fmD, t1, t2);
 
-        // compare the fms to eFM, but normalizes them all by element[2][2] first
-        double[][] fm0c = MatrixUtil.copy(fm0);
-        MatrixUtil.multiply(fm0c, 1./fm0c[1][0]);
-        double[][] fmNc = MatrixUtil.copy(fmN);
-        MatrixUtil.multiply(fmNc, 1./fmNc[1][0]);
-        double[][] fmDc = MatrixUtil.copy(fmD);
-        MatrixUtil.multiply(fmDc, 1./fmDc[1][0]);
-
-        double[][] efmc = MatrixUtil.copy(eFM);
-        MatrixUtil.multiply(efmc, 1./efmc[1][0]);
-
-        // efmc matches the solution where we did not normalize the data x1 and x2
-
-        double[][] diff = MatrixUtil.pointwiseSubtract(efmc, fm0c);
-        double fs = MatrixUtil.frobeniusNorm(diff);
-        assertTrue(fs < 0.1);
-
-        //-----
-
         double[][] em0 = tr.calculateEpipolarProjection2(x1, x2, true);
         double[][] emN = tr.calculateEpipolarProjection2(x1c, x2c, true);
-
         double[][] emD = MatrixUtil.copy(emN);
-
         EpipolarNormalizationHelper.denormalizeFM(emD, t1, t2);
 
-        // compare the fms to eFM, but normalizes them all by element[2][2] first
-        double[][] em0c = MatrixUtil.copy(em0);
-        MatrixUtil.multiply(em0c, 1./em0c[1][0]);
-        double[][] emNc = MatrixUtil.copy(emN);
-        MatrixUtil.multiply(emNc, 1./emNc[1][0]);
-        double[][] emDc = MatrixUtil.copy(emD);
-        MatrixUtil.multiply(emDc, 1./emDc[1][0]);
-
-        double[][] eemc = MatrixUtil.copy(eEM);
-        MatrixUtil.multiply(eemc, 1./eemc[1][0]);
-
-        diff = MatrixUtil.pointwiseSubtract(eemc, em0c);
-        fs = MatrixUtil.frobeniusNorm(diff);
-        assertTrue(fs < 1);
-
-        // in the absence of noise checkN is 0.
-
-        //x2^T * E * x1 = 0. // [N X 3]*[3 X 3]*[3 X N] = [N X N]
-        double[][] checkN = MatrixUtil.multiply(MatrixUtil.transpose(x2c),
-                MatrixUtil.multiply(emN, x1c));
-
-        for (i = 0; i < checkN.length; ++i) {
-            ms = MiscMath0.getAvgAndStDev(checkN[i]);
-            System.out.printf("row %d: mean, stdev = %s\n", i, FormatArray.toString(ms, "%.3e"));
-            ms = MiscMath0.getAvgAndStDev(MatrixUtil.extractColumn(checkN, i));
-            System.out.printf("col %d: mean, stdev= %s\n", i, FormatArray.toString(ms, "%.3e"));
+        tol = 0.5;
+        for (i = 0; i < 6; ++i) {
+            double[][] c;
+            double[][] e;
+            if (i < 3) {
+                e = eFM;
+            } else {
+                e = eEM;
+            }
+            if (i == 1 || i == 4) continue;
+            switch(i) {
+                case 0 : c = fm0; break;
+                case 1 : c = fmN; break;
+                case 2 : c = fmD; break;
+                case 3 : c = em0; break;
+                case 4 : c = emN; break;
+                default : c = emD; break;
+            }
+            double[][] diff = MatrixUtil.pointwiseSubtract(e, c);
+            double fs = MatrixUtil.frobeniusNorm(diff);
+            //System.out.printf("%d) fs=%.4e\n", i, fs);
+            assertTrue(fs < tol);
         }
 
-        /*
-        System.out.printf("em0 =\n%s\n", FormatArray.toString(em0, "%.6f"));
-        System.out.printf("expected EM =\n%s\n", FormatArray.toString(eEM, "%.6f"));
-        System.out.printf("em0c =\n%s\n", FormatArray.toString(em0c, "%.6f"));
-        */
+        // check epipolar lines
 
-        /*System.out.printf("denorm x1 =\n%s\n", FormatArray.toString(x1cD, "%.6f"));
-        System.out.printf("x1 =\n%s\n", FormatArray.toString(x1, "%.6f"));
-        System.out.printf("denorm x2 =\n%s\n", FormatArray.toString(x2cD, "%.6f"));
-        System.out.printf("x2 =\n%s\n", FormatArray.toString(x2, "%.6f"));
-        */
+        // l2 = F * x1
+        // l1 = F^T * x2
+        // x2^T * F * x1 = 0
+        // e2^T * F = 0
+        // F * e1 = 0
+        // l2 = F * x1
+        // l1 = F^T * x2
+
+        tol = 15;
+
+        for (i = 0; i < 6; ++i) {
+            if (i == 1 || i == 4) continue;
+
+            double[][] _x1, _x2;
+            double[][] _fOrEM;
+            switch(i) {
+                case 0 : _x1=x1; _x2=x2; _fOrEM=fm0; break;
+                case 1 : _x1=x1c; _x2=x2c; _fOrEM=fmN; break;
+                case 2 : _x1=x1; _x2=x2; _fOrEM=fmD; break;
+                case 3 : _x1=x1; _x2=x2; _fOrEM=em0; break;
+                case 4 : _x1=x1c; _x2=x2c; _fOrEM=emN; break;
+                default : _x1=x1; _x2=x2; _fOrEM=emD; break;
+            }
+
+            // 3x3  3xN = 3XN
+            double[][] l1 = MatrixUtil.multiply( MatrixUtil.transpose(_fOrEM), _x2);
+            double[][] l2 = MatrixUtil.multiply( _fOrEM, _x1);
+
+            // e1 = e1e2[0]
+            // e2 = e1e2[1]
+            double[][] e1e2 = EpipolarTransformer.calculateEpipoles(new DenseMatrix(_fOrEM));
+
+            // x1^T * l1 = 0   which is x1^T * F^T * x2 = 0
+            // x2^T * l2 = 0   which is x2^T * F * x1 = 0 and same as (x1^T * F^T * x2)^T
+            // e2^T * F = 0  <=== alot faster to look at and gives same result
+
+            // these test data points might have outliers in them.
+
+            // the matrices which were calculated with unit standard points, have x1TL1 and e2TF closer to 0
+
+            double[][] x1TL1 = MatrixUtil.multiply( MatrixUtil.transpose(_x1), l1);
+            //double[][] x2TL2 = MatrixUtil.multiply( MatrixUtil.transpose(_x2), l2);
+            double[] e2TF = MatrixUtil.multiplyRowVectorByMatrix(e1e2[0], _fOrEM);
+
+            double fs = MatrixUtil.frobeniusNorm(x1TL1);
+            //System.out.printf("%d) x1TL1 fs=%.4e\n", i, fs);
+
+            double norm = MatrixUtil.lPSum(e2TF, 2);
+            //System.out.printf("%d) e2TF norm=%.4e\n", i, fs);
+
+            for (double[] row : x1TL1) {
+                for (double element : row) {
+                    assertTrue(Math.abs(element) < tol);
+                }
+            }
+
+            for (double element : e2TF) {
+                assertTrue(Math.abs(element) < tol);
+            }
+        }
 
     }
 
@@ -283,7 +314,7 @@ public class EpipolarNormalizationHelperTest extends TestCase {
         double[] skewTT = MatrixUtil.multiplyMatrixByColumnVector(skewSymT, trans12);
         assertTrue(MiscMath.areEqual(new double[]{0, 0, 0}, skewTT, 1E-11));
 
-        //F = K^-T * E * K^-1
+        //F = K2^-T * E * K1^-1
         double[][] kInv = Camera.createIntrinsicCameraMatrixInverse(K);
         double[][] eFM = MatrixUtil.multiply(
                 MatrixUtil.multiply(MatrixUtil.transpose(kInv), eEM), kInv);
@@ -323,18 +354,14 @@ public class EpipolarNormalizationHelperTest extends TestCase {
 
         EpipolarTransformer tr = new EpipolarTransformer();
         double[][] fm0 = tr.calculateEpipolarProjection2(xIm1, xIm2, false);
-        MatrixUtil.multiply(fm0, 1./fm0[2][2]);
         double[][] fmN = tr.calculateEpipolarProjection2(x1c, x2c, false);
         double[][] fmD = MatrixUtil.copy(fmN);
         EpipolarNormalizationHelper.denormalizeFM(fmD, t1, t2);
-        MatrixUtil.multiply(fmD, 1./fmD[2][2]);
 
         double[][] em0 = tr.calculateEpipolarProjection2(xr1, xr2, true);
-        MatrixUtil.multiply(em0, 1./em0[2][2]);
         double[][] emN = tr.calculateEpipolarProjection2(xr1, xr2, true);
         double[][] emD = MatrixUtil.copy(emN);
         EpipolarNormalizationHelper.denormalizeFM(emD, t1, t2);
-        MatrixUtil.multiply(emD, 1./emD[2][2]);
 
         // e1 is right null space (from V)
         // e2 is left null space (from U)
@@ -358,6 +385,7 @@ public class EpipolarNormalizationHelperTest extends TestCase {
         int t = 2;
 
     }
+
     static double[][] masksRotationMatrix(double[] omega, double theta, boolean passive) {
         double[][] omegaHat = MatrixUtil.skewSymmetric(omega);
         double normOmega = MatrixUtil.lPSum(omega, 2);
