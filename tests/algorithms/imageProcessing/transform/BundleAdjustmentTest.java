@@ -46,7 +46,7 @@ public class BundleAdjustmentTest extends TestCase {
         SBADataReader.BundleAdjustmentData data = SBADataReader.readSBAFileIntersection(
                 varFileName, ptsFileName, nCameraParams);
 
-        SBADataReader.writeForCeresSolver(data, "54cams_balformat.txt");
+        //SBADataReader.writeForCeresSolver(data, "54cams_balformat.txt");
 
         SBADataReader.BundleAdjustmentData dataInit = data.copy();
 
@@ -66,7 +66,7 @@ public class BundleAdjustmentTest extends TestCase {
     /**
      * Test of solveUsingSparse method, of class BundleAdjustment.
      */
-    public void estSolveUsingSparse_ZhangData() throws Exception {
+    public void testSolveUsingSparse_ZhangData() throws Exception {
 
         // this shows that the refinement methods need improvements
         
