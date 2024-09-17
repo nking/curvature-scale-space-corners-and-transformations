@@ -46,7 +46,7 @@ public class BundleAdjustmentTest extends TestCase {
         SBADataReader.BundleAdjustmentData data = SBADataReader.readSBAFileIntersection(
                 varFileName, ptsFileName, nCameraParams);
 
-        //SBADataReader.writeForCeresSolver(data, "54cams_balformat.txt");
+        //SBADataReader.writeForCeresSolver(data, "55cams_balformat.txt");
 
         SBADataReader.BundleAdjustmentData dataInit = data.copy();
 

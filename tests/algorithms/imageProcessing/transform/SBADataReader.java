@@ -152,7 +152,7 @@ public class SBADataReader {
 
             // for this camera write all points:  cam_idx  pt_idx xC yC
             for (pIdx = 0; pIdx < nPts; ++pIdx) {
-                writer.write(String.format("%d %d %.6e %.6e\n", cIdx, pIdx, xC[0][pIdx], xC[1][pIdx]));
+                writer.write(String.format("%d %d %.6g %.6g\n", cIdx, pIdx, xC[0][pIdx], xC[1][pIdx]));
                 ++i;
             }
         }
@@ -164,31 +164,31 @@ public class SBADataReader {
         for (cIdx = 0; cIdx < data.numCameras; ++cIdx) {
             v3 = data.extrRotVecs[cIdx];
             for (int k = 0; k < 3; ++k) {
-                writer.write(String.format("%.11e\n", v3[k]));
+                writer.write(String.format("%.11g\n", v3[k]));
             }
 
             v3 = data.extrTrans[cIdx];
             for (int k = 0; k < 3; ++k) {
-                writer.write(String.format("%.11e\n", v3[k]));
+                writer.write(String.format("%.11g\n", v3[k]));
             }
 
             data.intr.getBlock(intr, cIdx, 0);
             double f =  (intr[0][0] + intr[1][1])/2.;
-            writer.write(String.format("%.11e\n", f));
+            writer.write(String.format("%.11g\n", f));
 
             v3 = data.kRadials[cIdx];
             for (int k = 0; k < 2; ++k) {
-                writer.write(String.format("%.11e\n", v3[k]));
+                writer.write(String.format("%.11g\n", v3[k]));
             }
         }
 
         //     then the remaining are the 3 WCS points for each numObs
         for (pIdx = 0; pIdx < nPts; ++pIdx) {
             for (int k = 0; k < 2; ++k) {
-                writer.write(String.format("%.11e\n", data.coordsW[k][pIdx]));
+                writer.write(String.format("%.11g\n", data.coordsW[k][pIdx]));
             }
             // for BAL dataset, we need -Z
-            writer.write(String.format("%.11e\n", -data.coordsW[2][pIdx]));
+            writer.write(String.format("%.11g\n", -data.coordsW[2][pIdx]));
         }
         writer.flush();
         writer.close();
