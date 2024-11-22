@@ -70,7 +70,10 @@ public class Grover {
         
         //NOTE: none of the quantum api methods has to check for unique
         //   quantum numbers before making a change, that is they do not 
-        //   necessarily check pauli exclusion principle, or check for Cooper pairs
+        //   necessarily check pauli exclusion principle, or check for Cooper pairs.
+	//   TODO: walk through consistency for bosons and fermions where needed.
+	//   Bose-Einstein statistics are used for photons (bosons) and
+	//   Fermi-Dirac statistics and Pauli-Excl principle are used for fermions (particles).
         
         /*
          function f(x)
