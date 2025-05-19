@@ -20,6 +20,9 @@ based upon algorithm in paper
     of Outer Contours: by Donoser
   
      - called IS-Match, integral shape match
+     - finds the best matching segments between 2 closed curves.
+     - NOTE: to find the for a query and multiple targets, use the
+       ...editing here to consider vector embedding approaches...
      - a silhouette of ordered points are sampled
          making it an "order preserved assignment problem".
        - a chord angle descriptor is local and global and
@@ -32,9 +35,10 @@ based upon algorithm in paper
          total matched and the summed differences of angles.
        - the final result returned is the sequences and
          the total fraction matched and summed absolute differences,
-         instead of the Salukwadze distance of a Paretto frontier.
+         using the Salukwadze distance of a Paretto frontier.
 
        * point sampling:
+         For best results, the curves should have at least 30 points.
          (a) same number of points over each contour
              - can handle similarity transforms.
                disadvantage is that it is less able to
@@ -61,14 +65,20 @@ based upon algorithm in paper
                    overrideSamplingDistance(dp)
                unit test using dp of 1 and 2 work well
 
-       This version of the code follows the paper algorithm in that
-       it uses summed area table instead of summed column table
-       as PartialShapeMatcher.java does.
-       This very has a faster runtime, but is less precise.
-  
        The runtime complexity for building the integral
        image is O(n*m*n) where m and n are the number of sampled
        points on the input shapes.
+
+       The runtime complexity for the search depends upon the search choice:
+          FAST: r.t.c. O(M*N).  this is the default.
+          ALL_BLOCK_SIZES: r.t.c. O(M*N*R*DR)
+          DETAILED: same as ALL_BLOCK_SIZES but iterates and filters to continue selecting
+              next best unmatched part of path.  NOTE: this is not implemented yet.
+          EXHAUSTIVE: the largest r.t.c. is exponential from recursively assembling all full curve matches
+              composed of different block sizes and different number of gaps.  for 1 GB RAM max heap,
+              one should use this only if number of points in the curve is around 20 or less.  If you have
+              more RAM, use jvm args to set heap size min and max higher and then you'll have a higher point
+              limit.
 
        <emph>The runtime complexity for the search of the
        integral image of summed differences and analysis,
@@ -92,11 +102,6 @@ based upon algorithm in paper
  
  <em>NOTE: You may need to pre-process the shape points
      for example, smooth the boundary.</em>
-    
- <em>NOTE: You may want to use the Euclidean setting to avoid some
-     of the ambiguities of the articulated search using this faster but less
-     precise search.</em>
-     
  <pre>
      This method:  
         PairIntArray p = imageProcessor
@@ -124,8 +129,28 @@ public class PartialShapeMatcher2 {
     // for a fit to a line, consider 1E-9
     private float thresh = 1.f;//(float)(Math.PI/180.) * 10.f;
 
-    private int minLength = 7;//3;
-        
+    private int minLength = 3;
+
+    private int topK = 1;
+
+    /**
+     * FAST: r.t.c. O(M*N).  this is the default.
+     * ALL_BLOCK_SIZES: O(M*N*R*DR)
+     * DETAILED: same as ALL_BLOCK_SIZES but iterates and filters to continue selecting
+     * next best unmatched part of path.  NOTE: this is not implemented yet.
+     * EXHAUSTIVE: the largest r.t.c. from recursively assembling all full curve matches
+     * composed of different block sizes and different number of gaps.  for 1 GB RAM max heap,
+     * one should use this only if number of points in the curve is around 20 or less.  If you have
+     * more RAM, use jvm args to set heap size min and max higher and then you'll have a higher point
+     * limit.
+     */
+    private static enum SEARCH {
+        FAST, ALL_BLOCK_SIZES,
+        //DETAILED,
+        EXHAUSTIVE
+    }
+    private SEARCH search = SEARCH.FAST;
+
     protected Logger log = Logger.getLogger(this.getClass().getName());
 
     private boolean debug = false;
@@ -133,7 +158,7 @@ public class PartialShapeMatcher2 {
     /**
      * override the threshold for using a chord differernce value
      * for the average value.   
-     * By default it is set to 1.
+     * By default the threshhold is set to 1.
      * @param t  threshhold to use
      */
     public void _overrideToThreshhold(float t) {
@@ -168,6 +193,38 @@ public class PartialShapeMatcher2 {
     }
 
     /**
+     * change from the default fast search of r.t.c. O(M*N) to an ALL_BLOCK_SIZES search
+     * with r.t.c. roughly  O(M*N*R*DR) where the block size R spans from the minimumLength (default 7) to
+     * the maximum length N and uses a delta R that is log(N).
+     */
+    public void overrideToSearchAllBlockSizes(){
+        this.search = SEARCH.ALL_BLOCK_SIZES;
+    }
+
+    /**
+     * change from the default fast search of r.t.c. O(M*N) to an exhaustive search which has
+     * the largest r.t.c. from recursively assembling all full curve matches
+     * composed of different block sizes and different number of gaps.  for 1 GB RAM max heap,
+     * one should use this only if number of points in the curve is around 20 or less.  If you have
+     * more RAM, use jvm args to increase heap size min and max higher and then you'll have a higher point
+     * limit than 20.
+     */
+    public void overrideToSearchExhaustive(){
+        this.search = SEARCH.EXHAUSTIVE;
+    }
+
+    /**
+     * return topK results.  By default topK is 1.
+     * @param k the number of results to return
+     */
+    public void overrideTopK(int k) {
+        if (k < 0) {
+            throw new IllegalArgumentException("k must be >= 1");
+        }
+        topK = k;
+    }
+
+    /**
      * use this to enable the debug log comments and plots
      */
     public void setToDebug() {
@@ -194,18 +251,12 @@ public class PartialShapeMatcher2 {
         uses a Gaussian smoothing of 2 sigma,
         but a smaller sigma can be specified.
       </pre>
-     The runtime complexity is O(m*n* log(m*n) * small term) where m is the number of points on P after
-     any scaling or resampling,
-     * and n is the number of points on Q after any scaling or resampling.  The log(m*n) term is
-     * from choosing that to be the number of block sizes.
-     * The small term is O(log(m*n* log(m*n))) which is from sorting the matched curve ranges by their
-     * Salukwdze distances.
-     *
+     temporarily using exhaustive search.
      @param p a closed curve to match to q.  note that the format does not expect that start == stop point.
      @param q a closed curve to match to p.  Note that the format does not expect that start == stop point.
      @return the matched intervals.
     */
-    public Match match(PairIntArray p, PairIntArray q) throws Exception {
+    public List<Match.Points> match(PairIntArray p, PairIntArray q) throws Exception {
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN()
             + " useSameNumberOfPoints=" + useSameNumberOfPoints
@@ -285,7 +336,7 @@ public class PartialShapeMatcher2 {
         return chordDiffs;
     }
     
-    private Match matchSameNumber(PairIntArray p, PairIntArray q) throws Exception {
+    private List<Match.Points> matchSameNumber(PairIntArray p, PairIntArray q) throws Exception {
 
         log.fine("p.n=" + p.getN() + " q.n=" + q.getN());
 
@@ -312,21 +363,17 @@ public class PartialShapeMatcher2 {
         
         log.fine("pSub.n=" + pSub.getN() + " qSub.n=" + qSub.getN());
 
-        Match rSub = match0(pSub, qSub);
+        List<Match.Points> points = match0(pSub, qSub);
         
-        if (rSub == null) {
+        if (points == null) {
             return null;
         }
 
-        for (int i = 0; i < rSub.starts1.size(); ++i) {
-            rSub.starts1.set(i, rSub.starts1.get(i) * pDp);
-            rSub.stops1.set(i, rSub.stops1.get(i) * pDp);
-            rSub.starts2.set(i, rSub.starts2.get(i) * qDp);
-            rSub.stops2.set(i, rSub.stops2.get(i) * qDp);
+        for (Match.Points a : points) {
+            a.scale(pDp, qDp);
         }
-        rSub.recalcStats();
 
-        return rSub;
+        return points;
     }
     
     private TDoubleList calculateChordDiffs0(PairIntArray p, PairIntArray q,
@@ -361,7 +408,7 @@ public class PartialShapeMatcher2 {
         return chordDiffs;
     }
     
-    private Match match0(PairIntArray p, PairIntArray q) throws Exception {
+    private List<Match.Points> match0(PairIntArray p, PairIntArray q) throws Exception {
 
         if (p == null || p.getN() < 2) {
             throw new IllegalArgumentException("p must have at "
@@ -377,34 +424,32 @@ public class PartialShapeMatcher2 {
 
         //md[0:n2-1][0:n1-1][0:n1-1]
         float[][][] md;
-        Match r;
+        List<Match.Points> points;
         if (p.getN() <= q.getN()) {
             md = createDifferenceMatrices(p, q);
             applySummedAreaTableConversion(md);
-            r = match0(md, p, q);
-            if (r != null) {
+            points = match0(md, p, q);
+            if (points != null) {
                 if (debug) {
                     System.out.println("not transposed");
                 }
-                assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));
             }
         } else {
             md = createDifferenceMatrices(q, p);
             applySummedAreaTableConversion(md);
-            r = match0(md, q, p);
-            if (r != null) {
-                if (debug) {
-                    System.out.println("transpose");
-                }
-                r = r.transpose();
-                assert(assertIndexesWithinBounds(r, p.getN(), q.getN()));
+            points = match0(md, q, p);
+            if (debug) {
+                System.out.println("transpose");
+            }
+            for (Match.Points _points : points) {
+                _points.interchange();
             }
         }
 
-        return r;
+        return points;
     }
 
-    private Match match0(float[][][] md, PairIntArray p, PairIntArray q) throws Exception {
+    private List<Match.Points> match0(float[][][] md, PairIntArray p, PairIntArray q) throws Exception {
 
         if (p == null || p.getN() < 2) {
             throw new IllegalArgumentException("p must have at "
@@ -445,8 +490,14 @@ public class PartialShapeMatcher2 {
         of the whole to calculate the Salukwdze distance 
         of the Paretto frontier.
         */
+        List<Match> matches = findMinima(md, n1, n2);
 
-        return findMinimum(md, n1, n2);
+        List<Match.Points> points = new ArrayList<>();
+        for (Match m : matches) {
+            points.add(new Match.Points(m));
+        }
+
+        return points;
     }
     
     /**
@@ -534,14 +585,6 @@ public class PartialShapeMatcher2 {
     }
 
     /**
-     * find the best matching ordered segments of possibly different block sizes and gaps between
-     * closed curve 1 and closed curve 2, where the best result from each offset diff image
-     * is returned.  The offset diff images are md[offset].
-     * The runtime complexity is O(m*n* log(m*n) * small term) where m is the paper's A1 dimension along 1 axis,
-     * and n is the paper's A2 dimension along 1 axis.  m is the number of points on P after any scaling or resampling,
-     * and n is the number of points on Q after any scaling or resampling.  the log(m*n) term is
-     * from choosing that to be the number os block sizes.
-     * The small term is O(log(m*n* log(m*n))) which is from sorting the matched curve ranges.
      *
      * @param md the M X N X N integral sum of chord differences following the paper.
      * @param n1 the number of points in closed curve 1
@@ -550,7 +593,7 @@ public class PartialShapeMatcher2 {
      * The offset diff images are md[offset].  Note that the variable maxChordSum has been updated in each.
      * @throws Exception
      */
-    private Match findMinimum(float[][][] md, int n1, int n2) throws Exception {
+    private List<Match> findMinima(float[][][] md, int n1, int n2) throws Exception {
 
         //q.n is >= p.n, that is n2 >= n1
         
@@ -596,31 +639,55 @@ public class PartialShapeMatcher2 {
         md[0:n2-1][0:n1-1][0:n1-1]
         */
 
-        // starting another approach.
-        // for each position on A1 diagonal i,
-        //    make combinations of blocks with same position on next offset images
-        //    etc, sequentially matching or skipping and moving onto next offset image.
-        // a recursion can fill all of these combinations.
-        // then can use salukwdze comparator to find best among them.
-        int n = md[0].length;
-        double nIntervals = Math.log(n)/Math.log(2);
-        int dR = (int)Math.ceil((n - minLength)/nIntervals);
-        if (dR == 0) {
-            dR = 1;
+        if (search.equals(SEARCH.FAST)) {
+            return fastMinimaSearch(md, n1, n2);
+        } else if (search.equals(SEARCH.ALL_BLOCK_SIZES)) {
+            return allBlockSizesMinimaSearch(md, n1, n2);
+        } else if (search.equals(SEARCH.EXHAUSTIVE)) {
+            return exhaustiveMinimaSearch(md, n1, n2);
+        } else {
+            throw new IllegalStateException(String.format("%s not implemented\n", search));
         }
+    }
 
-        int rUpper = n;
-        int nR = ((n - minLength)/dR) + 1;
+    private List<Match> fastMinimaSearch(float[][][] md, int n1, int n2) throws Exception {
         List<Match> candidates = new ArrayList<>();
 
-        System.out.printf("nR=%d, dR=%d\n", nR, dR);
+        int M = md.length;
+        int N = md[0].length;
 
-        // n*m* log(m*n)
-        recursion(md, 0, rUpper, minLength, dR, candidates, new Match(n), new SummedAreaTable(), new float[2]);
+        SummedAreaTable st = new SummedAreaTable();
+        float[] outC = new float[2];
+        float weight;
 
-        if (debug) {
-            Set<Match> unique = new HashSet<>(candidates);
-            System.out.printf("n=%d, nR=%d, nCandidates=%d, nUnique=%d\n", n, nR, candidates.size(), unique.size());
+        // block sizes from minLength to N.
+        // dR is the number of block sizes.  setting that to log(n).  consider fewer.
+        int nIntervals = Math.max(1, (int)(Math.log(N)/Math.log(2)));
+        int dR = Math.max(1, (N - minLength)/nIntervals);
+        System.out.printf("df = %d\n", dR);
+
+        Match curM;
+        for (int offset = 0; offset < M; ++offset) {
+            for (int iDiag = 0; iDiag < N; ++iDiag) {
+                if (N - iDiag < minLength) {
+                    break;
+                }
+                st.extractWindowFromSummedAreaTable(md[offset], iDiag, N - 1, iDiag, N - 1, outC);
+                if (outC[1] < 1) {
+                    continue;
+                }
+                weight = outC[0] / outC[1];
+                if (weight > thresh) {
+                    continue;
+                }
+                curM = new Match(n1, n2);
+                curM.add(iDiag, offset, N - iDiag, weight, 0);
+                candidates.add(curM);
+            }
+        }
+
+        if (candidates.isEmpty()) {
+            return candidates;
         }
 
         // set maxChordSum in all
@@ -634,11 +701,116 @@ public class PartialShapeMatcher2 {
 
         Collections.sort(candidates);
 
-        return candidates.get(0);
+        return candidates.subList(0, topK);
+    }
+
+    private List<Match> allBlockSizesMinimaSearch(float[][][] md, int n1, int n2) throws Exception {
+        List<Match> candidates = new ArrayList<>();
+
+        int M = md.length;
+        int N = md[0].length;
+
+        SummedAreaTable st = new SummedAreaTable();
+        float[] outC = new float[2];
+        float weight;
+
+        // block sizes from minLength to N.
+        // dR is the number of block sizes.  setting that to log(n).  consider fewer.
+        int nIntervals = Math.max(1, (int)(Math.log(N)/Math.log(2)));
+        int dR = Math.max(1, (N - minLength)/nIntervals);
+        System.out.printf("df = %d\n", dR);
+
+        Match curM;
+        for (int offset = 0; offset < M; ++offset) {
+            for (int iDiag = 0; iDiag < N; ++iDiag) {
+                for (int r = minLength; r < N; r += dR) {
+                    if (iDiag + r - 1 >= N) {
+                        break;
+                    }
+                    st.extractWindowFromSummedAreaTable(md[offset], iDiag, iDiag + r - 1, iDiag, iDiag + r - 1, outC);
+                    if (outC[1] < 1) {
+                        continue;
+                    }
+                    weight = outC[0] / outC[1];
+                    if (weight > thresh) {
+                        continue;
+                    }
+                    curM = new Match(n1, n2);
+                    curM.add(iDiag, offset, r, weight, 0);
+                    candidates.add(curM);
+                }
+            }
+        }
+
+        if (candidates.isEmpty()) {
+            return candidates;
+        }
+
+        // set maxChordSum in all
+        double maxChordSum = Double.NEGATIVE_INFINITY;
+        for (Match m : candidates) {
+            maxChordSum = Math.max(maxChordSum, m.diffChordSum);
+        }
+        for (Match m : candidates) {
+            m.maxChordSum = maxChordSum;
+        }
+
+        Collections.sort(candidates);
+
+        return candidates.subList(0, topK);
+    }
+
+    private List<Match> exhaustiveMinimaSearch(float[][][] md, int n1, int n2) throws Exception {
+
+        // starting another approach.
+        // for each position on A1 diagonal i,
+        //    make combinations of blocks with same position on next offset images
+        //    etc, sequentially matching or skipping and moving onto next offset image.
+        // a recursion can fill all of these combinations.
+        // then can use salukwdze comparator to find best among them.
+        int n = md[0].length;
+        double nIntervals = Math.log(n)/Math.log(2);
+        nIntervals = 1;
+        int dR = (int)Math.ceil((float)(n - minLength)/nIntervals);
+        if (dR == 0) {
+            dR = 1;
+        }
+
+        int rUpper = n;
+        int nR = ((n - minLength)/dR) + 1;
+        List<Match> candidates = new ArrayList<>();
+
+        System.out.printf("\nnR=%d, dR=%d\n", nR, dR);
+
+        // n*m* log(n)
+        recursion(md, 0, rUpper, minLength, dR, candidates, new Match(n1, n2),
+                new SummedAreaTable(), new float[2], 0);
+
+        if (debug) {
+            Set<Match> unique = new HashSet<>(candidates);
+            System.out.printf("n=%d, nR=%d, nCandidates=%d, nUnique=%d\n", n, nR, candidates.size(), unique.size());
+        }
+
+        if (candidates.isEmpty()) {
+            return candidates;
+        }
+
+        // set maxChordSum in all
+        double maxChordSum = Double.NEGATIVE_INFINITY;
+        for (Match m : candidates) {
+            maxChordSum = Math.max(maxChordSum, m.diffChordSum);
+        }
+        for (Match m : candidates) {
+            m.maxChordSum = maxChordSum;
+        }
+
+        Collections.sort(candidates);
+
+        return candidates.subList(0, topK);
     }
 
     private void recursion(float[][][] md, int iDiag, int r, final int rMin, final int dR, List<Match> out,
-        Match curM, final SummedAreaTable st, final float[] outC) {
+        Match curM, final SummedAreaTable st, final float[] outC, int rangeNum) {
 
         int n = md[0].length;
         // base case:  end of the diagonal.
@@ -654,12 +826,15 @@ public class PartialShapeMatcher2 {
                 return;
             }
             iDiag = 0;
-            curM = new Match(curM.nMaxMatchable);
+            curM = new Match(curM.n1, curM.n2);
+            rangeNum = 0;
         }
+
+        // uses implicit backtracking to save memory
 
         // skip i.
         // there will be more than one curM that ends as all skipped
-        recursion(md, iDiag + 1, r, rMin, dR, out, curM, st, outC);
+        recursion(md, iDiag + 1, r, rMin, dR, out, curM, st, outC, rangeNum);
 
         float weight;
         for (int offset = 0; offset < md.length; ++offset) {
@@ -675,30 +850,9 @@ public class PartialShapeMatcher2 {
             //    it being adjacent means that a larger block starting at higher index should have covered
             //        this case.  in other words, by skipping 1, we avoid adjacent blocks on the diagonal
             //        that were already covered by previous larger block match.
-            curM.add(iDiag, offset, r, weight);
-            recursion(md, iDiag + r + 1, r, rMin, dR, out, curM, st, outC);
+            curM.add(iDiag, offset, r, weight, rangeNum);
+            recursion(md, iDiag + r + 1, r, rMin, dR, out, curM, st, outC, rangeNum + 1);
         }
-    }
-
-    private boolean assertIndexesWithinBounds(Match result,
-        int n1, int n2) {
-        
-        for (int i = 0; i < result.starts1.size(); ++i) {
-            if (result.starts1.get(i) >= n1 || result.starts1.get(i) < 0) {
-                return false;
-            }
-            if (result.stops1.get(i) >= n1 || result.stops1.get(i) < 0) {
-                return false;
-            }
-            if (result.starts2.get(i) >= n2 || result.starts2.get(i) < 0) {
-                return false;
-            }
-            if (result.stops2.get(i) >= n2 || result.stops2.get(i) < 0) {
-                return false;
-            }
-        }
-        
-        return true;
     }
 
     private PairIntArray reverseXY(PairIntArray matchedIndexes) {
