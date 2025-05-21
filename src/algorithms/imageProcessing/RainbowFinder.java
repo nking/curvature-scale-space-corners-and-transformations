@@ -1,7 +1,7 @@
 package algorithms.imageProcessing;
 
 import algorithms.QuickSort;
-import algorithms.SubsetChooser;
+import algorithms.combPerm.SubsetChooser;
 import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.compGeometry.ParabolaLeastSquares;
 import algorithms.imageProcessing.Sky.SkyObject;

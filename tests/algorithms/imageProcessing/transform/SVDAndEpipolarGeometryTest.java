@@ -8,7 +8,7 @@ import algorithms.matrix.MatrixUtil;
 import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.statistics.Standardization;
 import algorithms.util.FormatArray;
-import algorithms.util.LinearRegression;
+import algorithms.statistics.LinearRegression;
 import algorithms.util.ResourceFinder;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;

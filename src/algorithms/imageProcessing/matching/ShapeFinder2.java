@@ -80,7 +80,7 @@ public class ShapeFinder2 {
      * in one image of pyramid2 and it is assumed that one such pair will have
      * template and true match of nearly the same scale.
      * On other words, this instance of ShapeFinder might not hold the true
-     * match at same scale, but another instance (holding other scles of the
+     * match at same scale, but another instance (holding other scales of the
      * pyramids) should if the true match is
      * present.
      *

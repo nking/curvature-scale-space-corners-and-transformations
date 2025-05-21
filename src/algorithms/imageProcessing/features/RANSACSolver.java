@@ -1,6 +1,6 @@
 package algorithms.imageProcessing.features;
 
-import algorithms.SubsetChooser;
+import algorithms.combPerm.SubsetChooser;
 import algorithms.imageProcessing.matching.ErrorType;
 import algorithms.imageProcessing.transform.Distances;
 import algorithms.imageProcessing.transform.EpipolarTransformationFit;

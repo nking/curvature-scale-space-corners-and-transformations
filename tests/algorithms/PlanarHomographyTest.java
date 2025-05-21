@@ -8,7 +8,7 @@ import algorithms.imageProcessing.transform.CameraCalibration;
 import algorithms.util.FormatArray;
 import junit.framework.TestCase;
 import no.uib.cipr.matrix.NotConvergedException;
-
+import algorithms.combPerm.SubsetChooser;
 import java.util.Arrays;
 import java.util.Random;
 

@@ -2,7 +2,9 @@ package algorithms.util;
 
 import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.misc.MiscMath;
+import algorithms.misc.MiscMath0;
 import algorithms.statistics.CDFStandardNormal;
+import algorithms.statistics.LinearRegression;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -83,7 +85,11 @@ public class LinearRegressionTest extends TestCase {
         
         
         LinearRegression instance = new LinearRegression();
-        instance.plotTheLinearRegression(dxdy.getX(), dxdy.getY());
+        float[] xMinMax = MiscMath0.getMinMax(dxdy.getX());
+        float[] yMinMax = MiscMath0.getMinMax(dxdy.getY());
+        instance.plotTheLinearRegression(dxdy.getX(), dxdy.getY(),
+                (int)Math.floor(xMinMax[0]), (int)Math.ceil(xMinMax[1]),
+                (int)Math.floor(yMinMax[0]), (int)Math.ceil(yMinMax[1]));
         
         float[] yInterceptAndSlope = 
             instance.calculateTheilSenEstimatorParams(dxdy.getX(), dxdy.getY());
@@ -163,7 +169,11 @@ public class LinearRegressionTest extends TestCase {
         }
         
         LinearRegression instance = new LinearRegression();
-        instance.plotTheLinearRegression(dxdy.getX(), dxdy.getY());
+        float[] xMinMax = MiscMath0.getMinMax(dxdy.getX());
+        float[] yMinMax = MiscMath0.getMinMax(dxdy.getY());
+        instance.plotTheLinearRegression(dxdy.getX(), dxdy.getY(),
+                (int)Math.floor(xMinMax[0]), (int)Math.ceil(xMinMax[1]),
+                (int)Math.floor(yMinMax[0]), (int)Math.ceil(yMinMax[1]));
         
         float[] yInterceptAndSlope = 
             instance.calculateTheilSenEstimatorParams(dxdy.getX(), dxdy.getY());
@@ -235,7 +245,11 @@ public class LinearRegressionTest extends TestCase {
         PairFloatArray dxdy = generateLine(0, yIntercept1, slope, s, 10, 100);
         
         LinearRegression instance = new LinearRegression();
-        instance.plotTheLinearRegression(dxdy.getX(), dxdy.getY());
+        float[] xMinMax = MiscMath0.getMinMax(dxdy.getX());
+        float[] yMinMax = MiscMath0.getMinMax(dxdy.getY());
+        instance.plotTheLinearRegression(dxdy.getX(), dxdy.getY(),
+                (int)Math.floor(xMinMax[0]), (int)Math.ceil(xMinMax[1]),
+                (int)Math.floor(yMinMax[0]), (int)Math.ceil(yMinMax[1]));
         
         float[] yInterceptAndSlope = 
             instance.calculateTheilSenEstimatorParams(dxdy.getX(), dxdy.getY());
@@ -256,7 +270,11 @@ public class LinearRegressionTest extends TestCase {
         readThielSenTestData(dxdy);
         
         LinearRegression instance = new LinearRegression();
-        instance.plotTheLinearRegression(dxdy.getX(), dxdy.getY());
+        float[] xMinMax = MiscMath0.getMinMax(dxdy.getX());
+        float[] yMinMax = MiscMath0.getMinMax(dxdy.getY());
+        instance.plotTheLinearRegression(dxdy.getX(), dxdy.getY(),
+                (int)Math.floor(xMinMax[0]), (int)Math.ceil(xMinMax[1]),
+                (int)Math.floor(yMinMax[0]), (int)Math.ceil(yMinMax[1]));
         
         float[] yInterceptAndSlope = 
             instance.calculateTheilSenEstimatorParams(dxdy.getX(), dxdy.getY());

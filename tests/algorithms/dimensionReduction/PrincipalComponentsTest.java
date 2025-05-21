@@ -1,8 +1,8 @@
 package algorithms.dimensionReduction;
 
-import algorithms.correlation.BruteForce;
-import algorithms.correlation.MultivariateDistance;
-import algorithms.correlation.UnivariateDistance;
+import algorithms.statistics.BruteForce;
+import algorithms.statistics.MultivariateDistance;
+import algorithms.statistics.UnivariateDistance;
 import algorithms.dimensionReduction.PrincipalComponents.PCAStats;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscMath0;

@@ -9,7 +9,7 @@ import algorithms.imageProcessing.Image;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.misc.MiscDebug;
-import algorithms.util.LinearRegression;
+import algorithms.statistics.LinearRegression;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 import gnu.trove.list.TFloatList;

@@ -2,6 +2,9 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.SummedAreaTable;
+import algorithms.misc.NumberTheory;
+import algorithms.signalProcessing.Bilinear;
+import algorithms.signalProcessing.CurveResampler;
 import algorithms.util.PairIntArray;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
@@ -272,142 +275,91 @@ public class PartialShapeMatcher2 {
                 + " memory");
         }
 
-        if (useSameNumberOfPoints) {
-            return matchSameNumber(p, q);
-        }
-                
-        if (dp == 1) {
-            return match0(p, q);
-        }
-     
-        PairIntArray pSub = new PairIntArray(p.getN()/dp);
-        PairIntArray qSub = new PairIntArray(q.getN()/dp);
-    
-        for (int i = 0; i < p.getN(); i += dp) {
-            pSub.add(p.getX(i), p.getY(i));
-        }
-        
-        for (int i = 0; i < q.getN(); i += dp) {
-            qSub.add(q.getX(i), q.getY(i));
-        }
-        
-        log.info("pSub.n=" + pSub.getN() + " qSub.n=" + qSub.getN());
-        
-        return match0(pSub, qSub);
-    }
+        final int n1 = p.getN();
+        final int n2 = q.getN();
 
-    private TDoubleList calculateChordDiffsSameNumber(PairIntArray p, 
-        PairIntArray q, PairIntArray matchedIndexes) {
-        
-        log.fine("p.n=" + p.getN() + " q.n=" + q.getN());
-
-        if (p.getN() < 2 || q.getN() < 2) {
-            throw new IllegalArgumentException("p and q must "
-            + " have at least dp*2 points = " + (dp * 2));
+        boolean interchange = n2 < n1;
+        if (interchange) {
+            PairIntArray tmp = p;
+            p = q;
+            q = p;
         }
 
-        int nSampl = Math.min(p.getN(), q.getN())/dp;
+        // resample if needed:
+        PairIntArray p2 = null;
 
-        PairIntArray pSub = new PairIntArray(nSampl);
-        PairIntArray qSub = new PairIntArray(nSampl);
-        PairIntArray idxsSub = new PairIntArray(nSampl);
-        
-        int pDp = p.getN()/nSampl;
-        int qDp = q.getN()/nSampl;
-    
-        for (int i = 0; i < p.getN(); i += pDp) {
-            pSub.add(p.getX(i), p.getY(i));
-        }
-        
-        for (int i = 0; i < q.getN(); i += qDp) {
-            qSub.add(q.getX(i), q.getY(i));
-        }
-        
-        for (int i = 0; i < idxsSub.getN(); ++i) {
-            int idx1 = matchedIndexes.getX(i)/pDp;
-            int idx2 = matchedIndexes.getY(i)/qDp;
-            idxsSub.add(idx1, idx2);
-        }
-        
-        log.fine("pSub.n=" + pSub.getN() + " qSub.n=" + qSub.getN());
-        
-        TDoubleList chordDiffs = calculateChordDiffs0(pSub, qSub, idxsSub);
-        
-        return chordDiffs;
-    }
-    
-    private List<Match.Points> matchSameNumber(PairIntArray p, PairIntArray q) throws Exception {
-
-        log.fine("p.n=" + p.getN() + " q.n=" + q.getN());
-
-        if (p.getN() < 2 || q.getN() < 2) {
-            throw new IllegalArgumentException("p and q must "
-            + " have at least dp*2 points = " + (dp * 2));
+        if (useSameNumberOfPoints && n1 != n2) {
+            double[][] pxy = new double[2][p.getN()];
+            for (int i = 0; i < p.getN(); ++i){
+                pxy[0][i] = p.getX(i);
+                pxy[1][i] = p.getY(i);
+            }
+            
+            double[][] xyOut = CurveResampler.resample(pxy, n2);
+            p2 = new PairIntArray();
+            for (int i = 0; i < xyOut[0].length; ++i) {
+                p2.add((int)Math.round(xyOut[0][i]), (int)Math.round(xyOut[1][i]));
+            }
         }
 
-        int nSampl = Math.min(p.getN(), q.getN())/dp;
-
-        PairIntArray pSub = new PairIntArray(nSampl);
-        PairIntArray qSub = new PairIntArray(nSampl);
-
-        int pDp = p.getN()/nSampl;
-        int qDp = q.getN()/nSampl;
-    
-        for (int i = 0; i < p.getN(); i += pDp) {
-            pSub.add(p.getX(i), p.getY(i));
-        }
-
-        for (int i = 0; i < q.getN(); i += qDp) {
-            qSub.add(q.getX(i), q.getY(i));
-        }
-        
-        log.fine("pSub.n=" + pSub.getN() + " qSub.n=" + qSub.getN());
-
-        List<Match.Points> points = match0(pSub, qSub);
-        
-        if (points == null) {
-            return null;
-        }
-
-        for (Match.Points a : points) {
-            a.scale(pDp, qDp);
-        }
-
-        return points;
-    }
-    
-    private TDoubleList calculateChordDiffs0(PairIntArray p, PairIntArray q,
-        PairIntArray matchedIndexes) {
-        
-        if (p == null || p.getN() < 2) {
-            throw new IllegalArgumentException("p must have at "
-                + "least 2 points");
-        }
-        
-        if (q == null || q.getN() < 2) {
-            throw new IllegalArgumentException("q must have at "
-                + "least 2 points");
-        }
-        
-        // --- make difference matrices ---
-
-        //md[0:n2-1][0:n1-1][0:n1-1]
-        float[][][] md;
-        TDoubleList chordDiffs;
-        if (p.getN() <= q.getN()) {
-            md = createDifferenceMatrices(p, q);
-            chordDiffs = extractChordDiffs(md, p.getN(), q.getN(),
-                matchedIndexes);
+        PairIntArray pSub = null;
+        PairIntArray qSub = null;
+        if (dp > 1) {
+            PairIntArray tmpP = (p2 != null) ?  p2 : p;
+            pSub = new PairIntArray(tmpP.getN()/dp);
+            for (int i = 0; i < tmpP.getN(); i += dp) {
+                pSub.add(tmpP.getX(i), tmpP.getY(i));
+            }
+            qSub = new PairIntArray(q.getN()/dp);
+            for (int i = 0; i < q.getN(); i += dp) {
+                qSub.add(q.getX(i), q.getY(i));
+            }
         } else {
-            md = createDifferenceMatrices(q, p);
-            PairIntArray revMatchedIndexes = reverseXY(matchedIndexes);
-            chordDiffs = extractChordDiffs(md, q.getN(), p.getN(),
-                revMatchedIndexes);
+            pSub = (p2 != null) ?  p2 : p;
+            qSub = q;
         }
 
-        return chordDiffs;
+        log.info("pSub.n=" + pSub.getN() + " qSub.n=" + qSub.getN());
+
+        List<Match.Points> pointsList = match0(pSub, qSub);
+
+        // transform results back into original reference frames p and q
+
+        if (dp > 1) {
+            for (Match.Points points : pointsList) {
+                for (int i = 0; i < points.pIdxs.length; ++i) {
+                    points.pIdxs[i] = Math.round(points.pIdxs[i]/(float)dp);
+                    points.qIdxs[i] = Math.round(points.qIdxs[i]/(float)dp);
+                }
+            }
+        }
+
+        if (useSameNumberOfPoints && n1 != n2) {
+            // multiply by n1 and divide by n2
+            float factor = (float)n1/(float)n2;
+            for (int i = 0; i < pointsList.size(); ++i) {
+                Match.Points points = pointsList.get(i);
+                //pIdxs are w.r.t. p2 reference frame
+                for (int j = 0; j < points.pIdxs.length; ++j) {
+                    points.pIdxs[j] = Math.round(points.pIdxs[j]*factor);
+                }
+            }
+            //TODO: consider a function to remove points when more than 1 match to same index
+        }
+
+        if (interchange) {
+            for (int i = 0; i < pointsList.size(); ++i) {
+                Match.Points points = pointsList.get(i);
+                //pIdxs are w.r.t. p2 reference frame
+                int[] tmp = points.pIdxs;
+                points.pIdxs = points.qIdxs;
+                points.qIdxs = tmp;
+            }
+        }
+
+        return pointsList;
     }
-    
+
     private List<Match.Points> match0(PairIntArray p, PairIntArray q) throws Exception {
 
         if (p == null || p.getN() < 2) {
@@ -498,90 +450,6 @@ public class PartialShapeMatcher2 {
         }
 
         return points;
-    }
-    
-    /**
-     * as an alternative to finding the best correspondence between two
-     * shapes, instead, given the correspondence, sum the chord differences.
-     * The same instance variables such as the point spacing are used here
-     * too.
-     * @param p
-     * @param q
-     * @param matchedIndexes
-     * @return 
-     */
-    public double calculateChordDiffSums(PairIntArray p, PairIntArray q,
-        PairIntArray matchedIndexes) {
-       
-        TDoubleList diffs = calculateChordDiffs(p, q, matchedIndexes);
-        
-        double sum = 0;
-        
-        for (int i = 0; i < diffs.size(); ++i) {
-            sum += diffs.get(i);
-        }
-       
-        return sum;
-    }
-    
-    /**
-     * 
-     * as an alternative to finding the best correspondence between two
-     * shapes, instead, given the correspondence, sum the chord differences.
-     * The same instance variables such as the point spacing are used here
-     * too.
-     * @param p
-     * @param q
-     * @param matchedIndexes
-     * @return 
-     */
-    public TDoubleList calculateChordDiffs(PairIntArray p, PairIntArray q,
-        PairIntArray matchedIndexes) {
-       
-        //TODO: edit method to find sequential intervals
-        //  in matchedIndexes
-        //  then extract that sum from the chord diff matrix.
-        //  NOTE: chord diff matrix needs to be changed to
-        //  use summed columns or summed area
-        
-        log.info("p.n=" + p.getN() + " q.n=" + q.getN()
-            + " useSameNumberOfPoints=" + useSameNumberOfPoints
-            + " dp=" + dp);
-
-        if (p.getN() < 2 || q.getN() < 2) {
-            throw new IllegalArgumentException("p and q must "
-            + " have at least dp*2 points = " + (dp * 2));
-        }
-
-        if (useSameNumberOfPoints) {
-            return calculateChordDiffsSameNumber(p, q, matchedIndexes);
-        }
-                
-        if (dp == 1) {
-            return calculateChordDiffs0(p, q, matchedIndexes);
-        }
-     
-        PairIntArray pSub = new PairIntArray(p.getN()/dp);
-        PairIntArray qSub = new PairIntArray(q.getN()/dp);
-        PairIntArray idxsSub = new PairIntArray(pSub.getN());
-        
-        for (int i = 0; i < p.getN(); i += dp) {
-            pSub.add(p.getX(i), p.getY(i));
-        }
-        
-        for (int i = 0; i < q.getN(); i += dp) {
-            qSub.add(q.getX(i), q.getY(i));
-        }
-        
-        for (int i = 0; i < matchedIndexes.getN(); ++i) {
-            int idx1 = matchedIndexes.getX(i)/dp;
-            int idx2 = matchedIndexes.getY(i)/dp;
-            idxsSub.add(idx1, idx2);
-        }
-        
-        log.info("pSub.n=" + pSub.getN() + " qSub.n=" + qSub.getN());
-        
-        return calculateChordDiffs0(pSub, qSub, idxsSub);
     }
 
     /**
@@ -853,20 +721,6 @@ public class PartialShapeMatcher2 {
             curM.add(iDiag, offset, r, weight, rangeNum);
             recursion(md, iDiag + r + 1, r, rMin, dR, out, curM, st, outC, rangeNum + 1);
         }
-    }
-
-    private PairIntArray reverseXY(PairIntArray matchedIndexes) {
-
-        int n = matchedIndexes.getN();
-        
-        PairIntArray r = new PairIntArray(n);
-        
-        for (int i = 0; i < n; ++i) {
-            r.add(matchedIndexes.getY(i),
-                matchedIndexes.getX(i));
-        }
-        
-        return r;
     }
 
     /**
@@ -1271,4 +1125,5 @@ public class PartialShapeMatcher2 {
             sb.delete(0, sb.length());
         }
     }
+
 }

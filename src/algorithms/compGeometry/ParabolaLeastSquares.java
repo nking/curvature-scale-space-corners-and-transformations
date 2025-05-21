@@ -89,7 +89,13 @@ public class ParabolaLeastSquares {
     }
     
     double[][] getMatrixA() {
-        
+        // 0    1    2      3       4     5     6
+        //x    y    x^2    x^3    x^4    xy    yx^2
+        /*
+        x^4   x^3   x^2
+        x^3   x^2   x
+        x^2   x      n
+         */
         double[][] A = new double[3][3];
         A[0] = new double[]{moments_[4], moments_[3], moments_[2] };
         A[1] = new double[]{moments_[3], moments_[2], moments_[0] };
@@ -99,6 +105,13 @@ public class ParabolaLeastSquares {
     }
     
     double[][] getRHS() {
+        // 0    1    2      3       4     5     6
+        //x    y    x^2    x^3    x^4    xy    yx^2
+        /*
+        y*x^2
+        xy
+        y
+         */
         double[][] Y = new double[3][1];
         Y[0] = new double[]{moments_[6]};
         Y[1] = new double[]{moments_[5]};

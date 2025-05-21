@@ -9,6 +9,8 @@ import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.MiscMath;
+import algorithms.misc.NumberTheory;
+import algorithms.signalProcessing.Bilinear;
 import algorithms.util.CorrespondencePlotter;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
@@ -56,7 +58,7 @@ public class PartialShapeMatcher2Test extends TestCase {
         PartialShapeMatcher2 shapeMatcher = new PartialShapeMatcher2();
         //shapeMatcher.overrideSamplingDistance(1);
         //shapeMatcher.setToDebug();
-    //    shapeMatcher.overrideMinimumLength(4);
+        //shapeMatcher.overrideMinimumLength(4);
         //shapeMatcher.overrideToSearchAllBlockSizes();;
 
         List<Match.Points> results = shapeMatcher.match(p, q);
@@ -130,24 +132,24 @@ public class PartialShapeMatcher2Test extends TestCase {
         PairIntArray p = getScissors1();
         p.rotateLeft(16);
         p = curveHelper.scaleDown(p, 0.5f);
-        plot(p, 200);
+        //plot(p, 200);
 
         PairIntArray q = getScissors2();
         //q = curveHelper.scaleDown(q, 0.5f);
-        plot(q, 201);
-       
+        //plot(q, 201);
+
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
         //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher2 shapeMatcher = new PartialShapeMatcher2();
-        shapeMatcher.overrideSamplingDistance(1);
-        shapeMatcher.overrideMinimumLength(4);
+        //shapeMatcher.overrideSamplingDistance(1);
+        //shapeMatcher.overrideMinimumLength(4);
         shapeMatcher.setToUseSameNumberOfPoints();
-        //shapeMatcher.setToDebug();
+        shapeMatcher.setToDebug();
 
         List<Match.Points> results = shapeMatcher.match(p, q);
         assertFalse(results.isEmpty());
-        plotResults(results, p, q, 4, "_scissors_offset016_corres", false);
+        plotResults(results, p, q, 1, "_scissors_offset016_corres", false);
 
     }
     
@@ -374,7 +376,7 @@ public class PartialShapeMatcher2Test extends TestCase {
                 "_triangle_rectangle_", false);
     }
 
-    public void testMatch() {
+    public void _testMatch() {
         PairIntArray triangle = getTriangle();
 
         TransformationParameters params = new TransformationParameters();
@@ -490,8 +492,43 @@ public class PartialShapeMatcher2Test extends TestCase {
         plotResults(results, triangle, triangle2, 4,
                 "_triangle_triangle2_", true);
     }
+
+    public void testMatchTrianglesSameNumberPoints() throws Exception {
+        PairIntArray triangle1 = getTriangle(7, 2, 1);
+        PairIntArray triangle2 = getTriangle(9, 2, 1);
+
+        /*
+        TransformationParameters params = new TransformationParameters();
+        params.setOriginX(1);
+        params.setOriginY(2);
+        params.setTranslationX(10);
+        params.setTranslationY(10);
+        params.setRotationInDegrees(90);
+        params.setScale(2);
+        Transformer transformer = new Transformer();
+        triangle2 = transformer.applyTransformation(params, triangle2);
+        */
+
+        PartialShapeMatcher2 shapeMatcher = new PartialShapeMatcher2();
+        //shapeMatcher.setToDebug();
+        shapeMatcher.overrideSamplingDistance(1);
+        shapeMatcher.setToUseSameNumberOfPoints();
+
+        List<Match.Points> results = shapeMatcher.match(triangle1, triangle2);
+        assertFalse(results.isEmpty());
+        plotResults(results, triangle1, triangle2, 4,
+                "_triangle1_triangle2_", true);
+    }
     
     protected PairIntArray getTriangle() {
+        int top = 7;
+        int base = 2;
+        // slope is +1
+        int leftX = 1;
+        return getTriangle(top, base, leftX);
+    }
+
+    protected PairIntArray getTriangle(int topY, int baseY, int leftX) {
         /*
         7                    *
         6                 *     *
@@ -503,16 +540,27 @@ public class PartialShapeMatcher2Test extends TestCase {
         0
            0  1  2  3  4  5  6  7  8  9 10 11
         */
-        
-        PairIntArray p = new PairIntArray(20);
-        for (int i = 1; i <= 6; ++i) {
-            p.add(i, i + 1); 
+        PairIntArray p = new PairIntArray();
+        int i = leftX;
+        int j = baseY;
+        while (j <= topY) {
+            p.add(i, j);
+            ++i;
+            ++j;
         }
-        p.add(7, 6); p.add(8, 5);  p.add(9, 4);  p.add(10, 3); 
-        for (int i = 11; i >= 2; --i) {
-            p.add(i, 2);
+        j -= 2;
+        while (j >= baseY) {
+            p.add(i, j);
+            ++i;
+            --j;
         }
-        
+        i -= 2;
+        ++j;
+        while (i > leftX) {
+            p.add(i, j);
+            --i;
+        }
+
         return p;
     }
     

@@ -1,6 +1,6 @@
 package algorithms.imageProcessing.transform;
 
-import algorithms.misc.PolynomialRootSolver;
+import algorithms.statistics.PolynomialRootSolver;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.util.PairIntArray;

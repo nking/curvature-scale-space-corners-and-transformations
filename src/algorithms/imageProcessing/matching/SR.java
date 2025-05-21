@@ -1,15 +1,18 @@
 package algorithms.imageProcessing.matching;
 
 /**
- *
  * @author nichole
  */
 class SR implements Comparable<SR> {
     
     // range of match is idx1 thru idx2, inclusive and if idx2 < idx1,
     //   the interval has wrapped around the closed curve
+    //these represent indexes along the diagonal of A1 from the paper.
     int startIdx1;
     int stopIdx1;
+    // offsetIdx2 is in context of the offset image A1-(A2 offset) where offset
+    // is the circular shift up and left of the chord diffs).
+    // the indexes of A2 can be recovered by idx1 + offsetIdx2
     int offsetIdx2;
     int row;
     int mLen;
@@ -75,8 +78,7 @@ class SR implements Comparable<SR> {
     }
 
     double calcSalukDist() {
-        return calcSalukDist(diffChordSum, maxChordSum, 
-            (stopIdx1 - startIdx1 + 1), nMax);
+        return calcSalukDist(diffChordSum, maxChordSum, mLen, nMax);
     }
 
     double calcSalukDist(double compChord, double maxChord,

@@ -2061,7 +2061,7 @@ createBinary1stDerivForPolarTheta(ptImg, 20);
             then downsample to the final output size for easier math.
         or,
         (2) most pixels are integer copies of the current replicated pixel
-        from the input, but the pixels which are integer muliples of the
+        from the input, but the pixels which are integer multiples of the
         factor are composed of replicated current and next pixel
         as a fraction of sums to be computed for each.
 

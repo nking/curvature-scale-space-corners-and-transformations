@@ -4,7 +4,7 @@ import algorithms.sort.MultiArrayMergeSort;
 import algorithms.imageProcessing.GreyscaleImage;
 import algorithms.util.AngleUtil;
 import algorithms.misc.Misc;
-import algorithms.util.LinearRegression;
+import algorithms.statistics.LinearRegression;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;

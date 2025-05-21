@@ -7,7 +7,7 @@ import algorithms.matrix.MatrixUtil;
 import algorithms.matrix.MatrixUtil.SVDProducts;
 import algorithms.misc.MiscMath;
 import algorithms.misc.MiscMath0;
-import algorithms.misc.PolynomialRootSolver;
+import algorithms.statistics.PolynomialRootSolver;
 import algorithms.util.FormatArray;
 import java.io.IOException;
 import java.util.ArrayList;
