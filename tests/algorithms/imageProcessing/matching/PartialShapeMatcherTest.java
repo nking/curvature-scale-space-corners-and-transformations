@@ -8,6 +8,7 @@ import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SIGMA;
 import algorithms.imageProcessing.transform.TransformationParameters;
 import algorithms.imageProcessing.transform.Transformer;
+import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.util.*;
 
@@ -81,10 +82,10 @@ public class PartialShapeMatcherTest extends TestCase {
                 int y1 = pInt.getY(idx1);
                 int x2 = qInt.getX(idx2);
                 int y2 = qInt.getY(idx2);
-                System.out.println(String.format(
-                "(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
-                if (printIndexes) {
 
+                if (printIndexes) {
+                    System.out.println(String.format(
+                            "(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
                 }
 
                 plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 0);
@@ -500,7 +501,7 @@ public class PartialShapeMatcherTest extends TestCase {
         List<Match.Points> results = matcher.match(triangle, triangle2);
         assertFalse(results.isEmpty());
         plotResults(results, triangle, triangle2, 4,
-                "_triangle_triangle2_", true);
+                "_triangle_triangle2_", false);
     }
 
     public void testMatchTrianglesSameNumberPoints() throws Exception {
@@ -527,7 +528,7 @@ public class PartialShapeMatcherTest extends TestCase {
         List<Match.Points> results = shapeMatcher.match(triangle1, triangle2);
         assertFalse(results.isEmpty());
         plotResults(results, triangle1, triangle2, 4,
-                "_triangle1_triangle2_", true);
+                "_triangle1_triangle2_", false);
     }
     
     protected PairFloatArray getTriangle() {

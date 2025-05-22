@@ -925,8 +925,7 @@ public class PhaseCongruencyDetector {
                 pixIdxs.add(pixIdx);
             }
                         
-            ClusterFinder cFinder = new ClusterFinder(pixIdxs,
-                nRows, nCols);
+            ClusterFinder cFinder = new ClusterFinder(pixIdxs, nRows, nCols);
             //cFinder.setToDebug();
             cFinder.setThreshholdFactor(1.f);
             cFinder.setMinimumNumberInCluster(1);
