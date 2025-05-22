@@ -24,12 +24,16 @@ package algorithms.imageProcessing.matching;
  *       O(L*N_S^3) where L is the number of curves to store in databases.
  *    - stepping along the diagonal of a shifted descriptor image until reach minLength,
  *       -- each block starting at that diagonal index gets flattened into a vector and stored in a
- *          separate db.
+ *          separate db for its length.
  *  Details of query:
  *    - descriptor image:
  *        O(NS^2)
  *    - search of Query against each db: < NS*log(L)
  *    - Salukwdze comparison: O(NS*topK*log(NS*topK))
+ *
+ * The above estimates do not include the computations for writing blocks to flattened vectors.
+ * This algorithm could be implemented to use vectorization (intrinsics in SIMD or ISPC etc) and
+ * vector shifts and total embeddings being composed of 8-wide or 16-wide vectors.
  *
  *</pre>
  */

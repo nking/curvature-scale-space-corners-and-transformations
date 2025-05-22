@@ -1,7 +1,8 @@
--- improve bundle adjustment and the bouguet refinement method.
-   - consider replacing with use of a library for sparse LM if exists
+- implement MultiPartialShapeMatcher
 
--- kalman filter (and gaussian process in general)
+- revise this todo list
+
+-- kalman filter (and gaussian process in general... already have python particle filter code...)
    - chap 12.1.3 of MASKS book
    - https://docs.opencv.org/4.x/dc/d2c/tutorial_real_time_pose.html
 
