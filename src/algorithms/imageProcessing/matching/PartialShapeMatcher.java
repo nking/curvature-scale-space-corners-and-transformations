@@ -897,6 +897,8 @@ public class PartialShapeMatcher {
          d is the number of points before j in the sequence of points P.
 
          a_i_j is the angle between the 2 chords P_i_P_j and P_j_P_(j-d)
+
+     r.t.c. is O(n^2)
     */
     protected float[][] createDescriptorMatrix(PairFloatArray p, int n) {
         
@@ -1002,7 +1004,7 @@ public class PartialShapeMatcher {
         return a2;
     }
 
-    private void rotate(float[][] prevShifted) {
+    protected void rotate(float[][] prevShifted) {
 
          // shift x left by 1 first
          for (int y = 0; y < prevShifted[0].length; ++y) {
