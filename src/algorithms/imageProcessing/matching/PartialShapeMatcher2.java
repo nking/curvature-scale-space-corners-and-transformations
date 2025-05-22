@@ -4,9 +4,12 @@ import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.SummedAreaTable;
 import algorithms.misc.MiscMath;
 import algorithms.signalProcessing.CurveResampler;
+import algorithms.util.CorrespondencePlotter;
 import algorithms.util.PairFloatArray;
+import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -306,7 +309,6 @@ public class PartialShapeMatcher2 {
         PairFloatArray pSub = null;
         PairFloatArray qSub = null;
         if (dp > 1) {
-            //TODO: fix errors when using dp.  might be only due to use when have too few points.
             PairFloatArray tmpP = (p2 != null) ?  p2 : p;
             pSub = new PairFloatArray(tmpP.getN()/dp);
             for (int i = 0; i < tmpP.getN(); i += dp) {
@@ -322,7 +324,7 @@ public class PartialShapeMatcher2 {
         }
 
         if (!overrideMinLength) {
-            this.minLength = Math.max(DEFAULT_MIN_LENGTH, (int)Math.round(0.1*Math.max(n1, n2)));
+            this.minLength = Math.max(DEFAULT_MIN_LENGTH, (int)Math.round(0.1*Math.max(pSub.getN(), qSub.getN())));
         }
 
         if (debug) {
@@ -334,10 +336,14 @@ public class PartialShapeMatcher2 {
 
         List<Match.Points> pointsList = match0(pSub, qSub);
 
+        if (debug && !pointsList.isEmpty()) {
+            long ts = System.nanoTime();
+            plotResults(pointsList, pSub, qSub, 4, ts + "_corres_", false);
+        }
+
         // transform results back into original reference frames p and q
 
         if (dp > 1) {
-            //TODO: fix errors when using dp.  might be only due to use when have too few points.
             for (Match.Points points : pointsList) {
                 for (int i = 0; i < points.pIdxs.length; ++i) {
                     points.pIdxs[i] = Math.round(points.pIdxs[i]/(float)dp);
@@ -366,7 +372,6 @@ public class PartialShapeMatcher2 {
                     points.pIdxs[j] = idx;
                 }
             }
-            //TODO: consider a function to remove points when more than 1 match to same index
         }
 
         // if there is a sequential mapping of same point in p, drop all but the first.
@@ -414,12 +419,12 @@ public class PartialShapeMatcher2 {
         }
         
         // --- make difference matrices ---
-
         //md[0:n2-1][0:n1-1][0:n1-1]
         assert(p.getN() <= q.getN());
         float[][][] md = createDifferenceMatrices(p, q);
         applySummedAreaTableConversion(md);
         List<Match.Points> points = match0(md, p, q);
+
         return points;
     }
 
@@ -1086,5 +1091,46 @@ public class PartialShapeMatcher2 {
                 x, y, x, y, "");
 
         return plot.writeFile(fileLabel);
+    }
+
+    private List<String> plotResults(List<Match.Points> results, PairFloatArray p, PairFloatArray q,
+                                     int spacing, String fileSuffix, boolean printIndexes) {
+        List<String> writtenFiles = new ArrayList<>();
+
+        PairIntArray pInt = new PairIntArray();
+        PairIntArray qInt = new PairIntArray();
+        for (int i = 0; i < p.getN(); ++i) {
+            pInt.add(Math.round(p.getX(i)), Math.round(p.getY(i)));
+        }
+        for (int i = 0; i < q.getN(); ++i) {
+            qInt.add(Math.round(q.getX(i)), Math.round(q.getY(i)));
+        }
+
+        try {
+            for (int i = 0; i < results.size(); ++i) {
+                CorrespondencePlotter plotter = new CorrespondencePlotter(pInt, qInt);
+                Match.Points result = results.get(i);
+                for (int ii = 0; ii < result.pIdxs.length; ii += spacing) {
+                    int idx1 = result.pIdxs[ii];
+                    int idx2 = result.qIdxs[ii];
+                    int x1 = pInt.getX(idx1);
+                    int y1 = pInt.getY(idx1);
+                    int x2 = qInt.getX(idx2);
+                    int y2 = qInt.getY(idx2);
+
+                    if (printIndexes) {
+                        System.out.println(String.format(
+                                "(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
+                    }
+
+                    plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 0);
+                }
+                String filePath = plotter.writeImage(String.format("_%s_%d", fileSuffix, i));
+                writtenFiles.add(filePath);
+            }
+        } catch (IOException ex) {
+            log.severe(ex.getMessage());
+        }
+        return writtenFiles;
     }
 }

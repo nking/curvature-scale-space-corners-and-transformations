@@ -164,7 +164,7 @@ public class PartialShapeMatcher2Test extends TestCase {
         plotResults(results, p, q, 1, "_scissors_offset016_corres", false);
 
     }
-    
+
     public void testAndroidGingerbreadSameScale() throws Exception {
         /*
         For same scale and very little noise, the
@@ -309,16 +309,15 @@ public class PartialShapeMatcher2Test extends TestCase {
             PairFloatArray q = extractOrderedBoundary(img, sigma);
             plot(q, (i+1)*100 + 1);
 
-            log.info("matching " + fileName0Root
-            + " to " + fileName1Root + " (" + p.getN()
+            log.info("matching " + fileName0Root + " to " + fileName1Root + " (" + p.getN()
             + " points to " + q.getN() + " points");
 
             //int dp = 1;
             PartialShapeMatcher2 shapeMatcher = new PartialShapeMatcher2();
-            //matcher.setToDebug();
+            //shapeMatcher.setToDebug();
             shapeMatcher.setToUseSameNumberOfPoints();
-            //shapeMatcher.overrideSamplingDistance(dp);
-            //matcher._overrideToThreshhold(0.2f);
+            //shapeMatcher.overrideSamplingDistance(4);
+            //shapeMatcher._overrideToThreshhold(0.5f);
             //shapeMatcher.overrideMinimumLength(3);
 
             List<Match.Points> results = shapeMatcher.match(p, q);
