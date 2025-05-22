@@ -2,20 +2,12 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.SummedAreaTable;
-import algorithms.misc.NumberTheory;
-import algorithms.signalProcessing.Bilinear;
 import algorithms.signalProcessing.CurveResampler;
 import algorithms.util.PairFloatArray;
-import algorithms.util.PairIntArray;
-import gnu.trove.list.TDoubleList;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TDoubleArrayList;
-import gnu.trove.list.array.TIntArrayList;
 
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.IntStream;
 
 /**
 <pre>
@@ -583,7 +575,7 @@ public class PartialShapeMatcher2 {
                 if (weight > thresh) {
                     continue;
                 }
-                curM = new Match(n1, n2);
+                curM = new Match(N);
                 curM.add(iDiag, offset, N - iDiag, weight, 0);
                 candidates.add(curM);
             }
@@ -638,7 +630,7 @@ public class PartialShapeMatcher2 {
                     if (weight > thresh) {
                         continue;
                     }
-                    curM = new Match(n1, n2);
+                    curM = new Match(N);
                     curM.add(iDiag, offset, r, weight, 0);
                     candidates.add(curM);
                 }
@@ -671,27 +663,27 @@ public class PartialShapeMatcher2 {
         //    etc, sequentially matching or skipping and moving onto next offset image.
         // a recursion can fill all of these combinations.
         // then can use salukwdze comparator to find best among them.
-        int n = md[0].length;
-        double nIntervals = Math.log(n)/Math.log(2);
+        int N = md[0].length;
+        double nIntervals = Math.log(N)/Math.log(2);
         nIntervals = 1;
-        int dR = (int)Math.ceil((float)(n - minLength)/nIntervals);
+        int dR = (int)Math.ceil((float)(N - minLength)/nIntervals);
         if (dR == 0) {
             dR = 1;
         }
 
-        int rUpper = n;
-        int nR = ((n - minLength)/dR) + 1;
+        int rUpper = N;
+        int nR = ((N - minLength)/dR) + 1;
         List<Match> candidates = new ArrayList<>();
 
         System.out.printf("\nnR=%d, dR=%d\n", nR, dR);
 
         // n*m* log(n)
-        recursion(md, 0, rUpper, minLength, dR, candidates, new Match(n1, n2),
+        recursion(md, 0, rUpper, minLength, dR, candidates, new Match(N),
                 new SummedAreaTable(), new float[2], 0);
 
         if (debug) {
             Set<Match> unique = new HashSet<>(candidates);
-            System.out.printf("n=%d, nR=%d, nCandidates=%d, nUnique=%d\n", n, nR, candidates.size(), unique.size());
+            System.out.printf("n=%d, nR=%d, nCandidates=%d, nUnique=%d\n", N, nR, candidates.size(), unique.size());
         }
 
         if (candidates.isEmpty()) {
@@ -729,7 +721,7 @@ public class PartialShapeMatcher2 {
                 return;
             }
             iDiag = 0;
-            curM = new Match(curM.n1, curM.n2);
+            curM = new Match(curM.N);
             rangeNum = 0;
         }
 

@@ -44,37 +44,33 @@ public class Match implements Comparable<Match> {
     protected double diffChordSum = 0.;
     protected double maxChordSum = Double.NEGATIVE_INFINITY;
     protected int mLen = 0;
-    protected final int n1;
-    protected final int n2;
-    protected final int nMaxMatchable;
+    /** N is the length of dimension md[0] where md[0] is NXN and md is the integral image of the chord differences.*/
+    protected final int N;
 
     /**
      *
-     * @param n1
-     * @param n2
+     * @param N
      */
-    public Match(int n1, int n2) {
-        if (n1 < 1 || n2 < 1) {
+    public Match(int N) {
+        if (N < 1) {
             throw new IllegalArgumentException(
-                    String.format("n1 and n2 must be greater than 0. received n1=%, n2=%d", n1, n2));
+                    String.format("N must be greater than 0. received N=%d", N));
         }
-        if (n1 > (1 << 16) || n2 > (1 << 16)) {
-            throw new IllegalArgumentException("n1 and n2 must be less than " + (1<<16));
+        if (2*N > (1 << 16)) {
+            throw new IllegalArgumentException("2*N must be less than " + (1<<16));
         }
-        this.n1 = n1;
-        this.n2 = n2;
-        this.nMaxMatchable = Math.min(n1, n2);
-        // num bits need to represent a 0-based index
-        if (nMaxMatchable > 256) {
+        this.N = N;
+        // num bits need to represent a 0-based index for up to  n1 + offset2
+        if (2*N > 256) {
             BITS_PER_NUM = 16;
         } else {
             BITS_PER_NUM = 8;
         }
-        int len = (int)Math.ceil((float)(Math.max(n1, n2))/BITS_PER_NUM);
+        int len = (int)Math.ceil((float)N/BITS_PER_NUM);
         this.starts1 = new long[len];
         this.blocks = new long[len];
         this.offsets2 = new long[len];
-        this.diffChordSums = new double[nMaxMatchable];
+        this.diffChordSums = new double[N];
     }
 
     /**
@@ -126,7 +122,7 @@ public class Match implements Comparable<Match> {
             for (int i = 0; i < rStarts1.size(); ++i) {
                 for (int idx1 = rStarts1.get(i), idx2 = rStarts2.get(i); idx1 <= rStops1.get(i); ++idx1, ++idx2) {
                     t1.add(idx1);
-                    t2.add(idx2 % m.n2);
+                    t2.add(idx2 % m.N);
                 }
             }
             this.pIdxs = t1.toArray();
@@ -154,7 +150,7 @@ public class Match implements Comparable<Match> {
     }
 
     public Match copy() {
-        Match t = new Match(this.n1, this.n2);
+        Match t = new Match(this.N);
         System.arraycopy(starts1, 0, t.starts1, 0, starts1.length);
         System.arraycopy(blocks, 0, t.blocks, 0, blocks.length);
         System.arraycopy(offsets2, 0, t.offsets2, 0, offsets2.length);
@@ -178,9 +174,9 @@ public class Match implements Comparable<Match> {
     public void add(final int idx, final int offset2, final int blockSize, final double diffChordSum,
                     final int matchNumber) {
 
-        if (matchNumber == nMaxMatchable) {
-            throw new IllegalStateException("nMaxMatchable is " + nMaxMatchable
-                    + " but you are attempting to insert more than that.  ");
+        if (matchNumber >= 2*N) {
+            throw new IllegalStateException("The maximum number expected is N " + (2*N - 1)
+                    + " but you are attempting to insert " + (matchNumber+1));
         }
         if (matchNumber > lastIdx + 1) {
             throw new IllegalStateException(String.format("Error in algorithm: lastIdx=%d and match_number to insert is %d",
@@ -209,13 +205,11 @@ public class Match implements Comparable<Match> {
             return false;
         }
         Match other = (Match)obj;
-        if (n1 != other.n1) return false;
-        if (n2 != other.n2) return false;
+        if (N != other.N) return false;
         if (BITS_PER_NUM != other.BITS_PER_NUM) return false;
         if (mLen != other.mLen) return false;
         if (lastIdx != other.lastIdx) return false;
         // no need to compare maxChordSum as that will be reset upong use, though could reconsider this.
-        if (nMaxMatchable != other.nMaxMatchable) return false;
         if (Math.abs(diffChordSum - other.diffChordSum) > tol) return false;
         if (!Arrays.equals(starts1, other.starts1)) return false;
         if (!Arrays.equals(blocks, other.blocks)) return false;
@@ -260,13 +254,7 @@ public class Match implements Comparable<Match> {
         sum ^= mLen;
         sum *= fnv32Prime;
 
-        sum ^= nMaxMatchable;
-        sum *= fnv32Prime;
-
-        sum ^= n1;
-        sum *= fnv32Prime;
-
-        sum ^= n2;
+        sum ^= N;
         sum *= fnv32Prime;
 
         sum ^= BITS_PER_NUM;
@@ -290,7 +278,7 @@ public class Match implements Comparable<Match> {
     @Override
     public int compareTo(Match other) {
         double maxDiffChord = Math.max(maxChordSum, other.maxChordSum);
-        int maxLen = Math.max(nMaxMatchable, other.nMaxMatchable);
+        int maxLen = Math.max(N, other.N);
         double d1 = calcSalukDist(diffChordSum, maxDiffChord, mLen, maxLen);
         double d2 = calcSalukDist(other.diffChordSum, maxDiffChord, other.mLen, maxLen);
         return Double.compare(d1, d2);

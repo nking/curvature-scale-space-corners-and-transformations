@@ -195,8 +195,7 @@ public class PartialShapeMatcher2Test extends TestCase {
                 
                 //int dp = 2;
 
-                PartialShapeMatcher2 shapeMatcher =
-                    new PartialShapeMatcher2();
+                PartialShapeMatcher2 shapeMatcher = new PartialShapeMatcher2();
                 //matcher.setToDebug();
                 if (type == 0) {
                     shapeMatcher._overrideToThreshhold(0.2f);
@@ -402,7 +401,7 @@ public class PartialShapeMatcher2Test extends TestCase {
         int minBlockSize = 5;
         int nMaxMatchable = Math.min(triangle.getN(), triangle2.getN());
 
-        Match m = new Match(triangle.getN(), triangle2.getN());
+        Match m = new Match(Math.max(triangle.getN(), triangle2.getN()));
         int blockSize = 5;
         int offset2 = 1;
         for (int i = 0, count=0; i < triangle.getN(); i += blockSize, ++count) {
