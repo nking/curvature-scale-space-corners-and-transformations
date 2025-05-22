@@ -5,6 +5,7 @@ import algorithms.imageProcessing.SummedAreaTable;
 import algorithms.misc.NumberTheory;
 import algorithms.signalProcessing.Bilinear;
 import algorithms.signalProcessing.CurveResampler;
+import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import gnu.trove.list.TDoubleList;
 import gnu.trove.list.TIntList;
@@ -115,6 +116,11 @@ based upon algorithm in paper
  */
 public class PartialShapeMatcher2 {
 
+    public static final float TWO_PI = (float)(2.*Math.PI);
+
+    // the range of difference from TWO_PI for which an angle will be considered 0.
+    public static final float ZERO_TOL = 0.00001f;
+
     /**
      * in sampling the boundaries of the shapes, one can
      * choose to use the same number for each (which can result
@@ -132,7 +138,7 @@ public class PartialShapeMatcher2 {
     // for a fit to a line, consider 1E-9
     private float thresh = 1.f;//(float)(Math.PI/180.) * 10.f;
 
-    private int minLength = 3;
+    private int minLength = 7;
 
     private int topK = 1;
 
@@ -259,7 +265,7 @@ public class PartialShapeMatcher2 {
      @param q a closed curve to match to p.  Note that the format does not expect that start == stop point.
      @return the matched intervals.
     */
-    public List<Match.Points> match(PairIntArray p, PairIntArray q) throws Exception {
+    public List<Match.Points> match(PairFloatArray p, PairFloatArray q) throws Exception {
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN()
             + " useSameNumberOfPoints=" + useSameNumberOfPoints
@@ -280,37 +286,35 @@ public class PartialShapeMatcher2 {
 
         boolean interchange = n2 < n1;
         if (interchange) {
-            PairIntArray tmp = p;
+            PairFloatArray tmp = p;
             p = q;
             q = p;
         }
 
         // resample if needed:
-        PairIntArray p2 = null;
+        PairFloatArray p2 = null;
 
         if (useSameNumberOfPoints && n1 != n2) {
-            double[][] pxy = new double[2][p.getN()];
-            for (int i = 0; i < p.getN(); ++i){
-                pxy[0][i] = p.getX(i);
-                pxy[1][i] = p.getY(i);
-            }
-            
-            double[][] xyOut = CurveResampler.resample(pxy, n2);
-            p2 = new PairIntArray();
+            float[][] pxy = new float[2][p.getN()];
+            pxy[0] = Arrays.copyOf(p.getX(), p.getN());
+            pxy[1] = Arrays.copyOf(p.getY(), p.getN());
+            float[][] xyOut = CurveResampler.resample(pxy, n2);
+            p2 = new PairFloatArray();
             for (int i = 0; i < xyOut[0].length; ++i) {
-                p2.add((int)Math.round(xyOut[0][i]), (int)Math.round(xyOut[1][i]));
+                p2.add(xyOut[0][i], xyOut[1][i]);
             }
         }
 
-        PairIntArray pSub = null;
-        PairIntArray qSub = null;
+        PairFloatArray pSub = null;
+        PairFloatArray qSub = null;
         if (dp > 1) {
-            PairIntArray tmpP = (p2 != null) ?  p2 : p;
-            pSub = new PairIntArray(tmpP.getN()/dp);
+            //TODO: errors here when using dp
+            PairFloatArray tmpP = (p2 != null) ?  p2 : p;
+            pSub = new PairFloatArray(tmpP.getN()/dp);
             for (int i = 0; i < tmpP.getN(); i += dp) {
                 pSub.add(tmpP.getX(i), tmpP.getY(i));
             }
-            qSub = new PairIntArray(q.getN()/dp);
+            qSub = new PairFloatArray(q.getN()/dp);
             for (int i = 0; i < q.getN(); i += dp) {
                 qSub.add(q.getX(i), q.getY(i));
             }
@@ -347,6 +351,25 @@ public class PartialShapeMatcher2 {
             //TODO: consider a function to remove points when more than 1 match to same index
         }
 
+        // if there is a sequential mapping of same point in p, drop all but the first.
+        for (int i = 0; i < pointsList.size(); ++i) {
+            Match.Points points = pointsList.get(i);
+            int prev = points.pIdxs[0];
+            int idx = 1;
+            for (int j = 1; j < points.pIdxs.length; ++j) {
+                if (points.pIdxs[j] != prev) {
+                    points.pIdxs[idx] = points.pIdxs[j];
+                    points.qIdxs[idx] = points.qIdxs[j];
+                    ++idx;
+                }
+                prev = points.pIdxs[j];
+            }
+            if (idx < points.pIdxs.length) {
+                points.pIdxs = Arrays.copyOf(points.pIdxs, idx);
+                points.qIdxs = Arrays.copyOf(points.qIdxs, idx);
+            }
+        }
+
         if (interchange) {
             for (int i = 0; i < pointsList.size(); ++i) {
                 Match.Points points = pointsList.get(i);
@@ -360,7 +383,7 @@ public class PartialShapeMatcher2 {
         return pointsList;
     }
 
-    private List<Match.Points> match0(PairIntArray p, PairIntArray q) throws Exception {
+    private List<Match.Points> match0(PairFloatArray p, PairFloatArray q) throws Exception {
 
         if (p == null || p.getN() < 2) {
             throw new IllegalArgumentException("p must have at "
@@ -401,7 +424,7 @@ public class PartialShapeMatcher2 {
         return points;
     }
 
-    private List<Match.Points> match0(float[][][] md, PairIntArray p, PairIntArray q) throws Exception {
+    private List<Match.Points> match0(float[][][] md, PairFloatArray p, PairFloatArray q) throws Exception {
 
         if (p == null || p.getN() < 2) {
             throw new IllegalArgumentException("p must have at "
@@ -730,8 +753,7 @@ public class PartialShapeMatcher2 {
      * index0 is rotations of q,  index1 is p.n, index2 is q.n
       returns a[0:q.n-1][0:p.n-1][0:p.n-1]
     */
-    protected float[][][] createDifferenceMatrices(
-        PairIntArray p, PairIntArray q) {
+    protected float[][][] createDifferenceMatrices(PairFloatArray p, PairFloatArray q) {
 
         if (p.getN() > q.getN()) {
             throw new IllegalArgumentException(
@@ -834,7 +856,7 @@ public class PartialShapeMatcher2 {
 
          a_i_j is the angle between the 2 chords P_i_P_j and P_j_P_(j-d)
     */
-    protected float[][] createDescriptorMatrix(PairIntArray p, int n) {
+    protected float[][] createDescriptorMatrix(PairFloatArray p, int n) {
         
         int dp1 = 1;
 
@@ -869,8 +891,8 @@ public class PartialShapeMatcher2 {
 
                 //log.fine("i1=" + i1 + " imid=" + imid + " i2=" + i2);
 
-                double angleA = LinesAndAngles.calcAngle(
-                //double angleA = LinesAndAngles.calcClockwiseAngle(
+                //double angleA = LinesAndAngles.calcAngle(
+                double angleA = LinesAndAngles.calcClockwiseAngle(
                     p.getX(i1), p.getY(i1),
                     p.getX(i2), p.getY(i2),
                     p.getX(imid), p.getY(imid)
@@ -897,6 +919,8 @@ public class PartialShapeMatcher2 {
                     }
                 }
 
+                float angleAF = (float)angleA;
+
                 /*
                 String str = String.format(
                     "[%d](%d,%d) [%d](%d,%d) [%d](%d,%d) a=%.4f",
@@ -907,11 +931,14 @@ public class PartialShapeMatcher2 {
                 log.fine(str);
                 */
 
-                if (angleA > Math.PI || Math.abs(angleA - Math.PI) < 1E-10) {
-                    angleA -= Math.PI;
+                if (angleAF >= TWO_PI) {// rounding errors from int to float and double
+                    angleAF -= TWO_PI;
+                }
+                if (Math.abs(angleAF - TWO_PI) < ZERO_TOL) {
+                    angleAF = 0.f;
                 }
 
-                a[i1][i2] = (float)angleA;
+                a[i1][i2] = angleAF;
                 
                 if (i2 == (i1 + 2)) {
                     // fill in missing point, assume same value
@@ -992,9 +1019,9 @@ public class PartialShapeMatcher2 {
         for (int i = 0; i < n1; ++i) {
             output[i] = new float[n1];
             for (int j = 0; j < n1; ++j) {
-                float v = a1[i][j] - a2[i][j];
-                if (v < 0) {
-                    v *= -1;
+                float v = Math.abs(a1[i][j] - a2[i][j]);
+                if (Math.abs(TWO_PI - v) < ZERO_TOL) {
+                    v = 0.f;
                 }
                 output[i][j] = v;
             }
@@ -1027,87 +1054,6 @@ public class PartialShapeMatcher2 {
                 }
             }
         }
-    }
-
-    /**
-     * given a chord difference matrix which does not use summed columns
-     * nor summed area, extract the chord differences of the matched indexes.
-     * @param md
-     * @param n1
-     * @param n2 
-     * @param matchedIndexes
-     */
-    private TDoubleList extractChordDiffs(float[][][] md, int n1, int n2,
-        PairIntArray matchedIndexes) {
-       
-        assert(md[0][0].length == n1);
-        assert(md.length == n2);
-        assert(md[0].length == n1);
-        
-        //md[0:n2-1][0:n1-1][0:n1-1]
-        
-        TDoubleList chordDiffs = new TDoubleArrayList();
-        
-        int offset = 0;
-        int idx1, idx2;
-        
-        /*
-            MXM              NXN
-                         30 31 32 33
-         20 21 22        20 21 22 23
-         10 11 12        10 11 12 13
-         00 01 02        00 01 02 03   p_i_j - q_i_j
-
-                         01 02 03 00
-         20 21 22        31 32 33 30
-         10 11 12        21 22 23 20
-         00 01 02        11 12 13 10  p_i_j - q_(i+1)_(j+1)
-
-                         12 13 10 11
-         20 21 22        02 03 00 01
-         10 11 12        32 33 30 31
-         00 01 02        22 23 20 21  p_i_j - q_(i+2)_(j+2)
-
-                         23 20 21 22
-         20 21 22        13 10 11 12
-         10 11 12        03 00 01 02
-         00 01 02        33 30 31 32  p_i_j - q_(i+3)_(j+3)
-        */
-
-        for (int i = 0; i < matchedIndexes.getN(); ++i) {
-            
-            idx1 = matchedIndexes.getX(i);
-            idx2 = matchedIndexes.getY(i);
- 
-            // idx2 is at column 0 when offset=idx2.
-            // since n2 >= n1, offset should be within bounds for tht offset.
-            // but the diagonals are 0, so choosing a position
-            // at least a few pixels away from bounds.
-            offset = 0;
-
-            if (idx2 > (n1 - 2)) {
-                // idx2 is outside of the default row 0 of md[0] array, so
-                // need to calculate the offset.
-                
-                // if within bounds, will add 4 to the offset to get the pixel
-                // away from bounds
-                                
-                if (((idx2 - (n1 - 2)) + 4) < (n1 - 2)) {
-                    offset = (idx2 - (n1 - 2)) + 4;
-                } else {
-                    offset = (idx2 - (n1 - 2));
-                }
-                idx2 -= offset;
-                if (idx2 < 0) {
-                    offset = idx2 - (n1 - 2);
-                    idx2 -= offset;
-                }
-            }
-                        
-            chordDiffs.add(md[offset][idx1][idx2]);
-        }
-        
-        return chordDiffs;
     }
 
     private void print(String label, float[][] a) {
