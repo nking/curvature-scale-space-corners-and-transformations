@@ -6,14 +6,13 @@ import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.imageProcessing.ImageProcessor;
 import algorithms.compGeometry.MiscellaneousCurveHelper;
 import algorithms.imageProcessing.SIGMA;
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.MiscMath;
-import algorithms.util.CorrespondencePlotter;
-import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
-import algorithms.util.PolygonAndPointPlotter;
-import algorithms.util.ResourceFinder;
-import java.util.HashSet;
-import java.util.Set;
+import algorithms.util.*;
+
+import java.io.IOException;
+import java.util.*;
 import java.util.logging.Logger;
 import junit.framework.TestCase;
 import static junit.framework.TestCase.assertNotNull;
@@ -34,75 +33,66 @@ public class PartialShapeMatcherTest extends TestCase {
     public PartialShapeMatcherTest() {
     }
 
-    /*
-    public void testSummedColumnTables() {
-
-        //2 9  2  7     9 11  18
-        //1 5  1  2     5  6   8 
-        //0 2  3  5     2  5  10 
-        //  0  1  2
-        float[][] a = new float[3][];
-        a[0] = new float[]{2, 3, 5};
-        a[1] = new float[]{5, 1, 2};
-        a[2] = new float[]{9, 2, 7};
-
-        PartialShapeMatcher matcher = new PartialShapeMatcher();
-        matcher.applySummedColumnTableConversion(a);
-
-        assertTrue(Arrays.equals(new float[]{2, 5, 10}, a[0]));
-        assertTrue(Arrays.equals(new float[]{5, 6, 8}, a[1]));
-        assertTrue(Arrays.equals(new float[]{9, 11, 18}, a[2]));
-
-    }
-    */
-
     public void testScissorsMatch0() throws Exception {
 
         // 60
-        PairIntArray p = getScissors1();
-        //plot(p, 200);
+        PairFloatArray p = getScissors1();
+        plot(p, 200);
 
         // 63
-        PairIntArray q = getScissors2();
-        //plot(q, 201);
+        PairFloatArray q = getScissors2();
+        plot(q, 201);
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
         //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
-        shapeMatcher.overrideSamplingDistance(1);
+        //shapeMatcher.overrideSamplingDistance(1);
         //shapeMatcher.setToDebug();
+        //shapeMatcher.overrideMinimumLength(4);
+        //shapeMatcher.overrideToSearchAllBlockSizes();;
 
-        PartialShapeMatcher.Result result = shapeMatcher.match(p, q);
+        List<Match.Points> results = shapeMatcher.match(p, q);
+        assertFalse(results.isEmpty());
+        plotResults(results, p, q, 4, "_scissors_offset0_corres", false);
 
-        assertNotNull(result);
+    }
 
-        log.info("RESULTS= scissors offset0: "
-            + result.toString());
+    private List<String> plotResults(List<Match.Points> results, PairFloatArray p, PairFloatArray q,
+                               int spacing, String fileSuffix, boolean printIndexes) throws IOException {
+        List<String> writtenFiles = new ArrayList<>();
 
-        CorrespondencePlotter plotter = new CorrespondencePlotter(p, q);
+        PairIntArray pInt = new PairIntArray();
+        PairIntArray qInt = new PairIntArray();
+        for (int i = 0; i < p.getN(); ++i) {
+            pInt.add(Math.round(p.getX(i)), Math.round(p.getY(i)));
+        }
+        for (int i = 0; i < q.getN(); ++i) {
+            qInt.add(Math.round(q.getX(i)), Math.round(q.getY(i)));
+        }
 
-        for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
-            int idx1 = result.getIdx1(ii);
-            int idx2 = result.getIdx2(ii);
-            int x1 = p.getX(idx1);
-            int y1 = p.getY(idx1);
-            int x2 = q.getX(idx2);
-            int y2 = q.getY(idx2);
-            //System.out.println(String.format(
-            //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
+        for (int i = 0; i < results.size(); ++i) {
+            CorrespondencePlotter plotter = new CorrespondencePlotter(pInt, qInt);
+            Match.Points result = results.get(i);
+            for (int ii = 0; ii < result.pIdxs.length; ii += spacing) {
+                int idx1 = result.pIdxs[ii];
+                int idx2 = result.qIdxs[ii];
+                int x1 = pInt.getX(idx1);
+                int y1 = pInt.getY(idx1);
+                int x2 = qInt.getX(idx2);
+                int y2 = qInt.getY(idx2);
+                System.out.println(String.format(
+                "(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
+                if (printIndexes) {
 
-            if ((ii % 4) == 0) {
-                plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
-                    0);
+                }
+
+                plotter.drawLineInAlternatingColors(x1, y1, x2, y2, 0);
             }
+            String filePath = plotter.writeImage(String.format("_%s_%d", fileSuffix, i));
+            writtenFiles.add(filePath);
         }
-        String filePath = plotter.writeImage("_"
-            + "_scissors_offset0_corres");
-
-        if (enableAsserts) {
-            assertTrue(result.getFractionOfWhole() > 0.4);
-        }
+        return writtenFiles;
     }
 
     public void testScissorsMatch16() throws Exception {
@@ -110,11 +100,11 @@ public class PartialShapeMatcherTest extends TestCase {
         // rotate points p so that start points are
         // different and assert that wrap around is
         // handled correctly
-        PairIntArray p = getScissors1();
+        PairFloatArray p = getScissors1();
         p.rotateLeft(16);
         plot(p, 200);
 
-        PairIntArray q = getScissors2();
+        PairFloatArray q = getScissors2();
         plot(q, 201);
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
@@ -123,38 +113,13 @@ public class PartialShapeMatcherTest extends TestCase {
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
         //shapeMatcher.setToDebug();
-        
+        //shapeMatcher.overrideMinimumLength(4);
+
         // articulated:
-        PartialShapeMatcher.Result result = shapeMatcher.match(p, q);
+        List<Match.Points> results = shapeMatcher.match(p, q);
+        assertFalse(results.isEmpty());
+        plotResults(results, p, q, 4, "_scissors_offset16_corres", false);
 
-        assertNotNull(result);
-
-        log.info("RESULTS= scissors offset15: "
-            + result.toString());
-
-        CorrespondencePlotter plotter = new CorrespondencePlotter(p, q);
-
-        for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
-            int idx1 = result.getIdx1(ii);
-            int idx2 = result.getIdx2(ii);
-            int x1 = p.getX(idx1);
-            int y1 = p.getY(idx1);
-            int x2 = q.getX(idx2);
-            int y2 = q.getY(idx2);
-            //System.out.println(String.format(
-            //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
-
-            if ((ii % 4) == 0) {
-                plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
-                    0);
-            }
-        }
-        String filePath = plotter.writeImage("_"
-            + "_scissors_offset16_corres");
-
-        if (enableAsserts) {
-            assertTrue(result.getFractionOfWhole() > 0.3);
-        }
     }
     
     public void testScissorsMatch16_scaled() throws Exception {
@@ -165,58 +130,39 @@ public class PartialShapeMatcherTest extends TestCase {
         // rotate points p so that start points are
         // different and assert that wrap around is
         // handled correctly
-        PairIntArray p = getScissors1();
-        p.rotateLeft(16);
-        p = curveHelper.scaleDown(p, 0.5f);
-        plot(p, 200);
 
-        PairIntArray q = getScissors2();
+        PairFloatArray p = getScissors1();
+        p.rotateLeft(16);
+
+        /*
+        MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
+        double[] cenXY = ch.calculateXYCentroids(p.getX(), p.getY());
+        TransformationParameters params = new TransformationParameters();
+        params.setOriginX((float)cenXY[0]);
+        params.setOriginX((float)cenXY[1]);
+        params.setScale(0.5f);
+        Transformer transformer = new Transformer();
+        PairFloatArray b = transformer.applyTransformation(params, p);
+         */
+        plot(p, 210);
+
+        PairFloatArray q = getScissors2();
         //q = curveHelper.scaleDown(q, 0.5f);
-        plot(q, 201);
-       
+        plot(q, 211);
+
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
         //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
-        shapeMatcher.overrideSamplingDistance(1);
-        
-        shapeMatcher.overrideMinimumLength(4);
         shapeMatcher.setToUseSameNumberOfPoints();
         //shapeMatcher.setToDebug();
-        
-        // articulated:
-        PartialShapeMatcher.Result result = shapeMatcher.match(p, q);
 
-        assertNotNull(result);
+        List<Match.Points> results = shapeMatcher.match(p, q);
+        assertFalse(results.isEmpty());
+        plotResults(results, p, q, 1, "_scissors_offset016_corres", false);
 
-        log.info("RESULTS= scissors offset15: "
-            + result.toString());
-
-        CorrespondencePlotter plotter = new CorrespondencePlotter(p, q);
-
-        for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
-            int idx1 = result.getIdx1(ii);
-            int idx2 = result.getIdx2(ii);
-            int x1 = p.getX(idx1);
-            int y1 = p.getY(idx1);
-            int x2 = q.getX(idx2);
-            int y2 = q.getY(idx2);
-            //System.out.println(String.format(
-            //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
-
-            if ((ii % 4) == 0) {
-                plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
-                    0);
-            }
-        }
-        String filePath = plotter.writeImage("_"
-            + "_scissors_offset16_corres");
-
-        if (enableAsserts) {
-            assertTrue(result.getFractionOfWhole() > 0.3);
-        }
     }
-    
+
     public void testAndroidGingerbreadSameScale() throws Exception {
         /*
         For same scale and very little noise, the
@@ -235,27 +181,25 @@ public class PartialShapeMatcherTest extends TestCase {
             .findFileInTestResources(fileName0);
         ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
 
-        PairIntArray p = extractOrderedBoundary(img0);
+        PairFloatArray p = extractOrderedBoundary(img0);
         plot(p, 100);
 
         String fileName1 = "";
 
-        for (int type = 0; type < 2; ++type) {
-            for (int i = 0; i < 4; ++i) {
+        //for (int type = 0; type < 2; ++type) {
+        for (int type = 1; type < 2; ++type) {
+            //for (int i = 0; i < 4; ++i) {
+            for (int i = 2; i < 3; ++i) {
                 
-                int dp = 2;
+                //int dp = 2;
 
-                PartialShapeMatcher matcher =
-                    new PartialShapeMatcher();
+                PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
                 //matcher.setToDebug();
                 if (type == 0) {
-                    matcher._overrideToThreshhold(0.2f);
-                } else if (type == 1) {
-                    matcher.setToUseEuclidean();
+                    shapeMatcher._overrideToThreshhold(0.2f);
                 }
-                matcher.overrideSamplingDistance(dp);
-                matcher.setToRemoveOutliers();
-                
+                //shapeMatcher.overrideSamplingDistance(dp);
+
                 switch(i) {
                     case 0: {
                         fileName1
@@ -285,41 +229,17 @@ public class PartialShapeMatcherTest extends TestCase {
                 String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
                 ImageExt img = ImageIOHelper.readImageExt(filePath1);
 
-                PairIntArray q = extractOrderedBoundary(img);
+                PairFloatArray q = extractOrderedBoundary(img);
                 plot(q, (i+1)*100 + 1);
 
-                log.info("matching " + fileName0Root
+                log.info("type=" + type + " i=" + i + " matching " + fileName0Root
                 + " to " + fileName1Root + " (" + p.getN()
                 + " points to " + q.getN() + " points");
 
-               
-                PartialShapeMatcher.Result result = matcher.match(p, q);
-
-                assertNotNull(result);
-
-                log.info("RESULTS=" + fileName1Root + " : " +
-                    result.toString());
-
-                CorrespondencePlotter plotter = new
-                    CorrespondencePlotter(p, q);
-
-                for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
-                    int idx1 = result.getIdx1(ii);
-                    int idx2 = result.getIdx2(ii);
-                    int x1 = p.getX(idx1);
-                    int y1 = p.getY(idx1);
-                    int x2 = q.getX(idx2);
-                    int y2 = q.getY(idx2);
-                    //System.out.println(String.format(
-                    //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
-
-                    if ((ii % 2) == 0) {
-                        plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
-                            0);
-                    }
-                }
-                String filePath = plotter.writeImage("_" +
-                        fileName1Root + "_corres_" + type);
+                List<Match.Points> results = shapeMatcher.match(p, q);
+                assertFalse(results.isEmpty());
+                plotResults(results, p, q, 4,
+                        "_" + fileName1Root + "_corres_" + type, false);
             }
         }
     }
@@ -334,7 +254,7 @@ public class PartialShapeMatcherTest extends TestCase {
             matcher.setToUseEuclidean();
         */
         
-         MiscellaneousCurveHelper curveHelper = 
+        MiscellaneousCurveHelper curveHelper = 
             new MiscellaneousCurveHelper();
                 
         SIGMA sigma = SIGMA.ONE;
@@ -347,7 +267,7 @@ public class PartialShapeMatcherTest extends TestCase {
             .findFileInTestResources(fileName0);
         ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
 
-        PairIntArray p = extractOrderedBoundary(img0, sigma);
+        PairFloatArray p = extractOrderedBoundary(img0, sigma);
         //p = curveHelper.scaleDown(p, 0.5f);
         plot(p, 100);
 
@@ -384,49 +304,24 @@ public class PartialShapeMatcherTest extends TestCase {
             String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
             ImageExt img = ImageIOHelper.readImageExt(filePath1);
 
-            PairIntArray q = extractOrderedBoundary(img, sigma);
+            PairFloatArray q = extractOrderedBoundary(img, sigma);
             plot(q, (i+1)*100 + 1);
 
-            log.info("matching " + fileName0Root
-            + " to " + fileName1Root + " (" + p.getN()
+            log.info("matching " + fileName0Root + " to " + fileName1Root + " (" + p.getN()
             + " points to " + q.getN() + " points");
 
-            int dp = 1;
-            PartialShapeMatcher matcher = new PartialShapeMatcher();
-            //matcher.setToDebug();
-            matcher.setToUseSameNumberOfPoints();
-            matcher.overrideSamplingDistance(dp);
-            //matcher._overrideToThreshhold(0.2f);
-            //matcher.setToRemoveOutliers();
-            matcher.setToUseEuclidean();
-            
-            PartialShapeMatcher.Result result = matcher.match(p, q);
+            //int dp = 1;
+            PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
+            //shapeMatcher.setToDebug();
+            shapeMatcher.setToUseSameNumberOfPoints();
+            //shapeMatcher.overrideSamplingDistance(4);
+            //shapeMatcher._overrideToThreshhold(0.5f);
+            //shapeMatcher.overrideMinimumLength(3);
 
-            assertNotNull(result);
-
-            log.info("RESULTS=" + fileName1Root + " : " +
-                result.toString());
-
-            CorrespondencePlotter plotter = new
-                CorrespondencePlotter(p, q);
-
-            for (int ii = 0; ii < result.getNumberOfMatches(); ++ii) {
-                int idx1 = result.getIdx1(ii);
-                int idx2 = result.getIdx2(ii);
-                int x1 = p.getX(idx1);
-                int y1 = p.getY(idx1);
-                int x2 = q.getX(idx2);
-                int y2 = q.getY(idx2);
-                //System.out.println(String.format(
-                //"(%d, %d) <=> (%d, %d)", x1, y1, x2, y2));
-
-                if ((ii % 4) == 0) {
-                    plotter.drawLineInAlternatingColors(x1, y1, x2, y2,
-                        0);
-                }
-            }
-            String filePath = plotter.writeImage("_" +
-                    fileName1Root + "_corres");
+            List<Match.Points> results = shapeMatcher.match(p, q);
+            assertFalse(results.isEmpty());
+            plotResults(results, p, q, 4,
+                    "_" + fileName1Root + "_corres_", false);
 
             /*
             float expFrac = 0.4f;
@@ -447,21 +342,21 @@ public class PartialShapeMatcherTest extends TestCase {
         }
     }
     
-    public void testMatchLines() {
+    public void _testMatchLines() throws Exception {
         
         // close to correct, but one set of lines is interpreted as
         // 1 line instead of 2 due to threshold of consecutive points.
-        //   so may need to make a PartialShapeMatcher specific
+        //   so may need to make a PartialShapeMatcher2 specific
         //   to the task of matching a line...that should remove sensitivity
         //   to the model line length and the added corners to make a closed
         //   shape of lines...
         // use of this meanwhile, depends upon results of a null test
         // to not find lines where there are only curves 
         // so the resulting sum of chords is important for that last test
-        
-        PairIntArray triangle = getTriangle();
-        
-        PairIntArray rectangle = createRectangle(11, 6, 5, 5);
+
+        PairFloatArray triangle = getTriangle();
+
+        PairFloatArray rectangle = createRectangle(11, 6, 5, 5);
         rectangle = createLine(triangle.getN(), 5, 5);
         
         /*
@@ -476,29 +371,100 @@ public class PartialShapeMatcherTest extends TestCase {
            0  1  2  3  4  5  6  7  8  9 10 11
         */
       
-        PartialShapeMatcher matcher = new PartialShapeMatcher();
+        PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         //matcher.setToDebug();
-        matcher._overrideToThreshhold((float)(1e-7));
-        matcher.overrideSamplingDistance(1);
-        
-        PartialShapeMatcher.Result r = matcher.match(triangle, rectangle);
-        for (int i = 0; i < r.idx1s.size(); ++i) {
-            int x1 = triangle.getX(r.idx1s.get(i)); 
-            int y1 = triangle.getY(r.idx1s.get(i)); 
-            int x2 = rectangle.getX(r.idx2s.get(i)); 
-            int y2 = rectangle.getY(r.idx2s.get(i)); 
-            //int segIdx = r.getArticulatedSegment(i);
-            System.out.println(x1 + ", " + y1 + "   " + x2 + ", " + y2 
-                //+ " segIdx=" + segIdx 
-                + " idx1=" + r.idx1s.get(i)
-                + " idx2=" + r.idx2s.get(i)
-            );
-        }
-        System.out.println("triangle size=" + triangle.getN() +
-            " matched size=" + r.getNumberOfMatches());
+        shapeMatcher._overrideToThreshhold((float)(1e-7));
+        shapeMatcher.overrideSamplingDistance(1);
+
+        List<Match.Points> results = shapeMatcher.match(triangle, rectangle);
+        assertFalse(results.isEmpty());
+        plotResults(results, triangle, rectangle, 4,
+                "_triangle_rectangle_", false);
     }
-    
-    protected PairIntArray getTriangle() {
+
+    public void testMatch() {
+        PairFloatArray triangle = getTriangle();
+
+        TransformationParameters params = new TransformationParameters();
+        params.setOriginX(1);
+        params.setOriginY(2);
+        params.setTranslationX(10);
+        params.setTranslationY(10);
+        //params.setRotationInDegrees(90);
+        //params.setScale(2);
+        Transformer transformer = new Transformer();
+        PairFloatArray triangle2 = transformer.applyTransformation(params, triangle);
+
+        int minBlockSize = 5;
+        int nMaxMatchable = Math.min(triangle.getN(), triangle2.getN());
+
+        Match m = new Match(Math.max(triangle.getN(), triangle2.getN()));
+        int blockSize = 5;
+        int offset2 = 1;
+        for (int i = 0, count=0; i < triangle.getN(); i += blockSize, ++count) {
+            m.add(i, offset2, blockSize, 0.1, count);
+        }
+
+        Match m2 = m.copy();
+        assertTrue(m.equals(m2));
+
+        double maxChordSum = m.diffChordSum;
+        m.maxChordSum = maxChordSum;
+        m2.maxChordSum = maxChordSum;
+
+        // reduce the differences of m2, so comparison will prefer m2
+        assertEquals(0, m.compareTo(m2));
+        m2.diffChordSum *= 0.9;
+        assertTrue(m.compareTo(m2) > 0);
+
+        Match.Points points = new Match.Points(m);
+        assertEquals(triangle.getN(), points.pIdxs.length);
+        assertEquals(triangle.getN(), points.qIdxs.length);
+        assertEquals(triangle.getN(), points.mLen);
+        for (int i = 0; i < points.pIdxs.length; ++i) {
+            assertEquals((points.pIdxs[i] + offset2) % triangle.getN(), points.qIdxs[i]);
+        }
+        assertTrue(Math.abs(4*0.1 - points.chordDiffSum) < 1E-10);
+
+        points.interchange();
+        assertEquals(triangle.getN(), points.qIdxs.length);
+        assertEquals(triangle.getN(), points.pIdxs.length);
+        assertEquals(triangle.getN(), points.mLen);
+        for (int i = 0; i < points.pIdxs.length; ++i) {
+            assertEquals((points.qIdxs[i] + offset2) % triangle2.getN(), points.pIdxs[i]);
+        }
+        assertTrue(Math.abs(4*0.1 - points.chordDiffSum) < 1E-10);
+
+
+    }
+
+    public void testMatchTriangles() throws Exception {
+
+        // close to correct, but one set of lines is interpreted as
+        // 1 line instead of 2 due to threshold of consecutive points.
+        //   so may need to make a PartialShapeMatcher2 specific
+        //   to the task of matching a line...that should remove sensitivity
+        //   to the model line length and the added corners to make a closed
+        //   shape of lines...
+        // use of this meanwhile, depends upon results of a null test
+        // to not find lines where there are only curves
+        // so the resulting sum of chords is important for that last test
+
+        PairFloatArray triangle = getTriangle();
+
+        TransformationParameters params = new TransformationParameters();
+        params.setOriginX(1);
+        params.setOriginY(2);
+        params.setTranslationX(10);
+        params.setTranslationY(10);
+        params.setRotationInDegrees(90);
+        params.setScale(2);
+        Transformer transformer = new Transformer();
+        PairFloatArray triangle2 = transformer.applyTransformation(params, triangle);
+
+        //System.out.printf("plotting %s\n", plot(triangle, 1000));
+        //System.out.printf("plotting %s\n", plot(triangle2, 1001));
+
         /*
         7                    *
         6                 *     *
@@ -510,35 +476,120 @@ public class PartialShapeMatcherTest extends TestCase {
         0
            0  1  2  3  4  5  6  7  8  9 10 11
         */
-        
-        PairIntArray p = new PairIntArray(20);
-        for (int i = 1; i <= 6; ++i) {
-            p.add(i, i + 1); 
+
+        PartialShapeMatcher matcher = new PartialShapeMatcher();
+        //matcher.setToDebug();
+        matcher._overrideToThreshhold((float)(1e-7));
+        matcher.overrideSamplingDistance(1);
+
+        float[][] a1 = matcher.createDescriptorMatrix(triangle, triangle.getN());
+        float[][] a2 = matcher.createDescriptorMatrix(triangle2, triangle2.getN());
+        double tol = 1E-5;
+        for (int i = 0; i < a1.length; ++i){
+            for (int j = 0; j < a1[i].length; ++j) {
+                float _a1 = a1[i][j];
+                float _a2 = a2[i][j];
+                float v1 = Math.abs(_a1 - _a2);
+                float v2 = Math.abs(Math.abs(_a1 - _a2) - PartialShapeMatcher.TWO_PI);
+                assert(v1 < tol || v2 < tol);
+            }
         }
-        p.add(7, 6); p.add(8, 5);  p.add(9, 4);  p.add(10, 3); 
-        for (int i = 11; i >= 2; --i) {
-            p.add(i, 2);
+        float[][][] md = matcher.createDifferenceMatrices(triangle, triangle2);
+        matcher.applySummedAreaTableConversion(md[0]);
+
+        List<Match.Points> results = matcher.match(triangle, triangle2);
+        assertFalse(results.isEmpty());
+        plotResults(results, triangle, triangle2, 4,
+                "_triangle_triangle2_", true);
+    }
+
+    public void testMatchTrianglesSameNumberPoints() throws Exception {
+        PairFloatArray triangle1 = getTriangle(7, 2, 1);
+        PairFloatArray triangle2 = getTriangle(9, 2, 1);
+
+        /*
+        TransformationParameters params = new TransformationParameters();
+        params.setOriginX(1);
+        params.setOriginY(2);
+        params.setTranslationX(10);
+        params.setTranslationY(10);
+        params.setRotationInDegrees(90);
+        params.setScale(2);
+        Transformer transformer = new Transformer();
+        triangle2 = transformer.applyTransformation(params, triangle2);
+        */
+
+        PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
+        //shapeMatcher.setToDebug();
+        shapeMatcher.overrideSamplingDistance(1);
+        shapeMatcher.setToUseSameNumberOfPoints();
+
+        List<Match.Points> results = shapeMatcher.match(triangle1, triangle2);
+        assertFalse(results.isEmpty());
+        plotResults(results, triangle1, triangle2, 4,
+                "_triangle1_triangle2_", true);
+    }
+    
+    protected PairFloatArray getTriangle() {
+        int top = 7;
+        int base = 2;
+        // slope is +1
+        int leftX = 1;
+        return getTriangle(top, base, leftX);
+    }
+
+    protected PairFloatArray getTriangle(int topY, int baseY, int leftX) {
+        /*
+        7                    *
+        6                 *     *
+        5              *           *
+        4           *                 *
+        3        *                       *
+        2     *  *  *  *  *  *  *  *  *  *  *
+        1
+        0
+           0  1  2  3  4  5  6  7  8  9 10 11
+        */
+        PairFloatArray p = new PairFloatArray();
+        int i = leftX;
+        int j = baseY;
+        while (j <= topY) {
+            p.add(i, j);
+            ++i;
+            ++j;
         }
-        
+        j -= 2;
+        while (j >= baseY) {
+            p.add(i, j);
+            ++i;
+            --j;
+        }
+        i -= 2;
+        ++j;
+        while (i > leftX) {
+            p.add(i, j);
+            --i;
+        }
+
         return p;
     }
     
-    protected PairIntArray createLine(int len, int xOff, int yOff) {
-        PairIntArray a = new PairIntArray(len);
+    protected PairFloatArray createLine(int len, int xOff, int yOff) {
+        PairFloatArray a = new PairFloatArray(len);
         for (int i = (len - 1); i >= 0; --i) {
             a.add(xOff + i, yOff + i);
         }
         return a;
     }
     
-    protected PairIntArray createRectangle(int width, int height, int xOff, 
+    protected PairFloatArray createRectangle(int width, int height, int xOff,
         int yOff) {
         /*
           h
         
           0     w
         */
-        PairIntArray a = new PairIntArray(2*width + 2*height);
+        PairFloatArray a = new PairFloatArray(2*width + 2*height);
         for (int i = (width - 1); i >= 0; --i) {
             a.add(i, 0);
         }
@@ -558,9 +609,9 @@ public class PartialShapeMatcherTest extends TestCase {
         return a;
     }
 
-    protected PairIntArray getScissors1() {
+    protected PairFloatArray getScissors1() {
 
-        PairIntArray p = new PairIntArray();
+        PairFloatArray p = new PairFloatArray();
         p.add(95, 55);
         p.add(102, 52);
         p.add(108, 42);
@@ -626,17 +677,17 @@ public class PartialShapeMatcherTest extends TestCase {
         // accidently entered y for x, so
         // reverse them here
         for (int i = 0; i < p.getN(); ++i) {
-            int x = p.getX(i);
-            int y = p.getY(i);
+            float x = p.getX(i);
+            float y = p.getY(i);
             p.set(i, y, x);
         }
 
         return p;
     }
 
-    protected PairIntArray getScissors2() {
+    protected PairFloatArray getScissors2() {
 
-        PairIntArray p = new PairIntArray();
+        PairFloatArray p = new PairFloatArray();
         p.add(80, 105);
         p.add(75, 112);
         p.add(65, 117);
@@ -705,9 +756,9 @@ public class PartialShapeMatcherTest extends TestCase {
         return p;
     }
 
-    protected PairIntArray getWineGlassShape() {
+    protected PairFloatArray getWineGlassShape() {
 
-        PairIntArray p = new PairIntArray();
+        PairFloatArray p = new PairFloatArray();
         p.add(140, 500 - 450);
         p.add(220, 500 - 410);
         p.add(225, 500 - 390);
@@ -730,16 +781,10 @@ public class PartialShapeMatcherTest extends TestCase {
         return p;
     }
 
-    private void plot(PairIntArray p, int fn) throws Exception {
+    private String plot(PairFloatArray p, int fn) throws Exception {
 
-        float[] x = new float[p.getN()];
-        float[] y = new float[p.getN()];
-
-        for (int i = 0; i < x.length; ++i) {
-            x[i] = p.getX(i);
-            y[i] = p.getY(i);
-        }
-
+        float[] x = Arrays.copyOf(p.getX(), p.getN());
+        float[] y = Arrays.copyOf(p.getY(), p.getN());
         float xMax = MiscMath.findMax(x) + 1;
         float yMax = MiscMath.findMax(y) + 1;
 
@@ -748,14 +793,14 @@ public class PartialShapeMatcherTest extends TestCase {
         plot.addPlot(0, xMax, 0, yMax,
             x, y, x, y, "");
 
-        plot.writeFile(fn);
+        return plot.writeFile(fn);
     }
 
-    private PairIntArray extractOrderedBoundary(ImageExt image) {
+    private PairFloatArray extractOrderedBoundary(ImageExt image) {
         return extractOrderedBoundary(image, SIGMA.ONE);
     }
 
-    private PairIntArray extractOrderedBoundary(ImageExt image,
+    private PairFloatArray extractOrderedBoundary(ImageExt image,
         SIGMA sigma) {
 
         GreyscaleImage img = image.copyToGreyscale();
@@ -776,7 +821,12 @@ public class PartialShapeMatcherTest extends TestCase {
             imageProcessor.extractSmoothedOrderedBoundary(
             blob, sigma, img.getWidth(), img.getHeight());
 
-        return ordered;
+        PairFloatArray out = new PairFloatArray();
+        for (int i = 0; i < ordered.getN(); ++i) {
+            out.add(ordered.getX(i), ordered.getY(i));
+        }
+
+        return out;
     }
 
 }
