@@ -2,8 +2,10 @@ package algorithms.imageProcessing.matching;
 
 import algorithms.compGeometry.LinesAndAngles;
 import algorithms.imageProcessing.SummedAreaTable;
+import algorithms.misc.MiscMath;
 import algorithms.signalProcessing.CurveResampler;
 import algorithms.util.PairFloatArray;
+import algorithms.util.PolygonAndPointPlotter;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -132,6 +134,8 @@ public class PartialShapeMatcher2 {
     // for a fit to a line, consider 1E-9
     private float thresh = 1.f;//(float)(Math.PI/180.) * 10.f;
 
+    private boolean overrideMinLength = false;
+    private final int DEFAULT_MIN_LENGTH = 7;
     private int minLength = 7;
 
     private int topK = 1;
@@ -174,6 +178,7 @@ public class PartialShapeMatcher2 {
      */
     public void overrideMinimumLength(int length) {
         this.minLength = length;
+        this.overrideMinLength = true;
     }
     
     /**
@@ -316,7 +321,16 @@ public class PartialShapeMatcher2 {
             qSub = q;
         }
 
-        log.info("pSub.n=" + pSub.getN() + " qSub.n=" + qSub.getN());
+        if (!overrideMinLength) {
+            this.minLength = Math.max(DEFAULT_MIN_LENGTH, (int)Math.round(0.1*Math.max(n1, n2)));
+        }
+
+        if (debug) {
+            long ts = System.nanoTime();
+            log.info(String.format("ts=%d, pSub.n=%d, qSub.n=%d, minLength=%d\n", ts, pSub.getN(), qSub.getN(), minLength));
+            plot(pSub, "p_"+ts);
+            plot(qSub, "q_"+ts);
+        }
 
         List<Match.Points> pointsList = match0(pSub, qSub);
 
@@ -402,29 +416,10 @@ public class PartialShapeMatcher2 {
         // --- make difference matrices ---
 
         //md[0:n2-1][0:n1-1][0:n1-1]
-        float[][][] md;
-        List<Match.Points> points;
-        if (p.getN() <= q.getN()) {
-            md = createDifferenceMatrices(p, q);
-            applySummedAreaTableConversion(md);
-            points = match0(md, p, q);
-            if (points != null) {
-                if (debug) {
-                    System.out.println("not transposed");
-                }
-            }
-        } else {
-            md = createDifferenceMatrices(q, p);
-            applySummedAreaTableConversion(md);
-            points = match0(md, q, p);
-            if (debug) {
-                System.out.println("transpose");
-            }
-            for (Match.Points _points : points) {
-                _points.interchange();
-            }
-        }
-
+        assert(p.getN() <= q.getN());
+        float[][][] md = createDifferenceMatrices(p, q);
+        applySummedAreaTableConversion(md);
+        List<Match.Points> points = match0(md, p, q);
         return points;
     }
 
@@ -559,7 +554,9 @@ public class PartialShapeMatcher2 {
         // dR is the number of block sizes.  setting that to log(n).  consider fewer.
         int nIntervals = Math.max(1, (int)(Math.log(N)/Math.log(2)));
         int dR = Math.max(1, (N - minLength)/nIntervals);
-        System.out.printf("df = %d\n", dR);
+        if (debug) {
+            log.info(String.format("dR = %d\n", dR));
+        }
 
         Match curM;
         for (int offset = 0; offset < M; ++offset) {
@@ -1076,4 +1073,18 @@ public class PartialShapeMatcher2 {
         }
     }
 
+    private String plot(PairFloatArray p, String fileLabel) throws Exception {
+
+        float[] x = Arrays.copyOf(p.getX(), p.getN());
+        float[] y = Arrays.copyOf(p.getY(), p.getN());
+        float xMax = MiscMath.findMax(x) + 1;
+        float yMax = MiscMath.findMax(y) + 1;
+
+        PolygonAndPointPlotter plot = new PolygonAndPointPlotter();
+
+        plot.addPlot(0, xMax, 0, yMax,
+                x, y, x, y, "");
+
+        return plot.writeFile(fileLabel);
+    }
 }
