@@ -670,7 +670,7 @@ public class Rectification {
         NOTE: the scalars below are depths. They're the distance from the
             object in world reference to the focal place of the camera.
             Only for a special choice of the world reference frame 
-            (the plane at infinity as the refence plane) does this depth
+            (the plane at infinity as the reference plane) does this depth
             coincide with the object's third coordinate (Z).
             (when lambda=1 the scalar is the depth of the object;
              where P=lambda*K*[R|t] and K[2][2]=1)

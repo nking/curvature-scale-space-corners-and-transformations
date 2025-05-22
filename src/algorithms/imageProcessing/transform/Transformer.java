@@ -104,6 +104,33 @@ public class Transformer {
         return applyTransformation(rotInRadians, scale, translationX,
             translationY, centroidX, centroidY, points);
      }
+
+    /**
+     * transform the given edges using the given parameters.
+     * Note, the rotation is applied in a clockwise
+     * direction (which is in the -z direction using right hand rule).
+     *
+     * @param params
+     * @param points
+     * @return
+     */
+    public PairFloatArray applyTransformation(TransformationParameters params,
+                                            PairFloatArray points) {
+
+        if (params == null) {
+            throw new IllegalArgumentException("params cannot be null");
+        }
+
+        double rotInRadians = params.getRotationInRadians();
+        double scale = params.getScale();
+        double translationX = params.getTranslationX();
+        double translationY = params.getTranslationY();
+        double centroidX = params.getOriginX();
+        double centroidY = params.getOriginY();
+
+        return applyTransformation(rotInRadians, scale, translationX,
+                translationY, centroidX, centroidY, points);
+    }
      
      /**
      * transform the given edges using the given parameters.
@@ -312,6 +339,70 @@ public class Transformer {
             te.add(xte, yte);
         }
           
+        return te;
+    }
+
+    /**
+     * transform the given edge using the given parameters.
+     *
+     * @param rotInRadians rotation in radians.
+     * Note, the rotation is applied in a clockwise
+     * direction (which is in the -z direction using right hand rule).
+     * @param scale
+     * @param translationX translation along x axis in pixels
+     * @param translationY translation along y axis in pixels
+     * @param centroidX the horizontal center of the reference frame for edges.
+     * this should be the center of the image if edges points are in the
+     * original image reference frame.
+     * @param centroidY the vertical center of the reference frame for edges.
+     * this should be the center of the image if edges points are in the
+     * original image reference frame.
+     * @param edge
+     * @return
+     */
+    public PairFloatArray applyTransformation(double rotInRadians,
+                                            double scale, double translationX, double translationY,
+                                            double centroidX, double centroidY, PairFloatArray edge) {
+
+        if (edge == null) {
+            throw new IllegalArgumentException("edge cannot be null");
+        }
+
+        double cos = Math.cos(rotInRadians);
+        double sin = Math.sin(rotInRadians);
+
+        /*
+        scale, rotate, then translate.
+
+        xr_0 = xc*scale + (((x0-xc)*scale*math.cos(theta)) + ((y0-yc)*scale*math.sin(theta)))
+
+        xt_0 = xr_0 + transX = x1
+
+        yr_0 = yc*scale + (-((x0-xc)*scale*math.sin(theta)) + ((y0-yc)*scale*math.cos(theta)))
+
+        yt_0 = yr_0 + transY = y1
+
+        */
+
+        PairFloatArray te = new PairFloatArray();
+
+        for (int i = 0; i < edge.getN(); i++) {
+
+            double x = edge.getX(i);
+            double y = edge.getY(i);
+
+            double xr = centroidX * scale + ((x - centroidX) * scale * cos)
+                    + ((y - centroidY) * scale * sin);
+
+            double yr = centroidY * scale + (-(x - centroidX) * scale * sin)
+                    + ((y - centroidY) * scale * cos);
+
+            double xt = xr + translationX;
+            double yt = yr + translationY;
+
+            te.add((float)xt, (float)yt);
+        }
+
         return te;
     }
     
