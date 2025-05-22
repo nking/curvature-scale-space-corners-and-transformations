@@ -129,8 +129,10 @@ public class PartialShapeMatcher2 {
      * points.
      * dp is the set distance between sampling points.
        The authors of the paper use 3 as an example.
+
+     The use of dp in this code is not well tested and could be improved.
     */
-    protected int dp = 3;
+    protected int dp = 1;
 
     private boolean useSameNumberOfPoints = false;
 
@@ -194,7 +196,7 @@ public class PartialShapeMatcher2 {
     }
 
     /**
-     * the default sampling distance is 3.  use this method to override it.
+     * the default sampling distance is 1.  use this method to override it.
      * @param d set the sampling distance between points to use for curves.
      */
     public void overrideSamplingDistance(int d) {
@@ -276,9 +278,8 @@ public class PartialShapeMatcher2 {
             + " have at least dp*2 points = " + (dp * 2));
         }
         
-        if ((p.getN()/dp) > 500 || (q.getN()/dp) > 500) {
-            log.warning("warning, q.n/dp or q.n/dp is large and requires alot of"
-                + " memory");
+        if ((p.getN()/dp) < 30 || (q.getN()/dp) < 30) {
+            log.warning("WARNING: consider overriding dp to set it to 1 because these are small curves");
         }
 
         final int n1 = p.getN();
@@ -308,7 +309,7 @@ public class PartialShapeMatcher2 {
         PairFloatArray pSub = null;
         PairFloatArray qSub = null;
         if (dp > 1) {
-            //TODO: errors here when using dp
+            //TODO: fix errors when using dp.  might be only due to use when have too few points.
             PairFloatArray tmpP = (p2 != null) ?  p2 : p;
             pSub = new PairFloatArray(tmpP.getN()/dp);
             for (int i = 0; i < tmpP.getN(); i += dp) {
@@ -330,6 +331,7 @@ public class PartialShapeMatcher2 {
         // transform results back into original reference frames p and q
 
         if (dp > 1) {
+            //TODO: fix errors when using dp.  might be only due to use when have too few points.
             for (Match.Points points : pointsList) {
                 for (int i = 0; i < points.pIdxs.length; ++i) {
                     points.pIdxs[i] = Math.round(points.pIdxs[i]/(float)dp);
@@ -341,11 +343,21 @@ public class PartialShapeMatcher2 {
         if (useSameNumberOfPoints && n1 != n2) {
             // multiply by n1 and divide by n2
             float factor = (float)n1/(float)n2;
+            if (interchange) {
+                factor = 1.f/factor;
+            }
             for (int i = 0; i < pointsList.size(); ++i) {
                 Match.Points points = pointsList.get(i);
                 //pIdxs are w.r.t. p2 reference frame
                 for (int j = 0; j < points.pIdxs.length; ++j) {
-                    points.pIdxs[j] = Math.round(points.pIdxs[j]*factor);
+                    int idx = Math.round(points.pIdxs[j]*factor);
+                    //TODO: this could be improved
+                    if (!interchange && idx >= n1){
+                        idx = n1 - 1;
+                    } else if (interchange && idx >= n2){
+                        idx = n2 - 1;
+                    }
+                    points.pIdxs[j] = idx;
                 }
             }
             //TODO: consider a function to remove points when more than 1 match to same index

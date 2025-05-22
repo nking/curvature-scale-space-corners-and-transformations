@@ -35,7 +35,7 @@ public class PartialShapeMatcher2Test extends TestCase {
     public PartialShapeMatcher2Test() {
     }
 
-    public void _testScissorsMatch0() throws Exception {
+    public void testScissorsMatch0() throws Exception {
 
         // 60
         PairFloatArray p = getScissors1();
@@ -97,7 +97,7 @@ public class PartialShapeMatcher2Test extends TestCase {
         return writtenFiles;
     }
 
-    public void _testScissorsMatch16() throws Exception {
+    public void testScissorsMatch16() throws Exception {
         
         // rotate points p so that start points are
         // different and assert that wrap around is
@@ -156,7 +156,6 @@ public class PartialShapeMatcher2Test extends TestCase {
 
         //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher2 shapeMatcher = new PartialShapeMatcher2();
-        shapeMatcher.overrideSamplingDistance(1);
         shapeMatcher.setToUseSameNumberOfPoints();
         //shapeMatcher.setToDebug();
 
@@ -166,7 +165,7 @@ public class PartialShapeMatcher2Test extends TestCase {
 
     }
     
-    public void _testAndroidGingerbreadSameScale() throws Exception {
+    public void testAndroidGingerbreadSameScale() throws Exception {
         /*
         For same scale and very little noise, the
         best results are obtained with options:
@@ -194,7 +193,7 @@ public class PartialShapeMatcher2Test extends TestCase {
             //for (int i = 0; i < 4; ++i) {
             for (int i = 2; i < 3; ++i) {
                 
-                int dp = 2;
+                //int dp = 2;
 
                 PartialShapeMatcher2 shapeMatcher =
                     new PartialShapeMatcher2();
@@ -202,7 +201,7 @@ public class PartialShapeMatcher2Test extends TestCase {
                 if (type == 0) {
                     shapeMatcher._overrideToThreshhold(0.2f);
                 }
-                shapeMatcher.overrideSamplingDistance(dp);
+                //shapeMatcher.overrideSamplingDistance(dp);
 
                 switch(i) {
                     case 0: {
@@ -248,7 +247,7 @@ public class PartialShapeMatcher2Test extends TestCase {
         }
     }
     
-    public void _testAndroidGingerbreadDiffScale() throws Exception {
+    public void testAndroidGingerbreadDiffScale() throws Exception {
 
         /*
         for a different scale matching,
@@ -315,15 +314,13 @@ public class PartialShapeMatcher2Test extends TestCase {
             + " to " + fileName1Root + " (" + p.getN()
             + " points to " + q.getN() + " points");
 
-            int dp = 1;
+            //int dp = 1;
             PartialShapeMatcher2 shapeMatcher = new PartialShapeMatcher2();
             //matcher.setToDebug();
             shapeMatcher.setToUseSameNumberOfPoints();
-            shapeMatcher.overrideSamplingDistance(dp);
+            //shapeMatcher.overrideSamplingDistance(dp);
             //matcher._overrideToThreshhold(0.2f);
-            //matcher.setToRemoveOutliers();
-
-            shapeMatcher.overrideMinimumLength(3);
+            //shapeMatcher.overrideMinimumLength(3);
 
             List<Match.Points> results = shapeMatcher.match(p, q);
             assertFalse(results.isEmpty());
@@ -389,7 +386,7 @@ public class PartialShapeMatcher2Test extends TestCase {
                 "_triangle_rectangle_", false);
     }
 
-    public void _testMatch() {
+    public void testMatch() {
         PairFloatArray triangle = getTriangle();
 
         TransformationParameters params = new TransformationParameters();
@@ -445,7 +442,7 @@ public class PartialShapeMatcher2Test extends TestCase {
 
     }
 
-    public void _testMatchTriangles() throws Exception {
+    public void testMatchTriangles() throws Exception {
 
         // close to correct, but one set of lines is interpreted as
         // 1 line instead of 2 due to threshold of consecutive points.
@@ -510,7 +507,7 @@ public class PartialShapeMatcher2Test extends TestCase {
                 "_triangle_triangle2_", true);
     }
 
-    public void _testMatchTrianglesSameNumberPoints() throws Exception {
+    public void testMatchTrianglesSameNumberPoints() throws Exception {
         PairFloatArray triangle1 = getTriangle(7, 2, 1);
         PairFloatArray triangle2 = getTriangle(9, 2, 1);
 
