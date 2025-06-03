@@ -15,11 +15,12 @@ package algorithms.imageProcessing.matching;
  *
  *  The Query construction has r.t.c. O(NS^2).
  *
- *  The Query search is roughly O(NS*topK*log(L)).
+ *  The Query search is roughly O(NS*topK*log(L)) where topK is the top results selected for each size of
+ *  embedding.
  *
  *  Details of db creation:
  *    - the databases are instances of a nearest neighbor library indexer such as Google's ScANN or Meta's FAISS
- *      or java based Voyager, etc.
+ *      or java version of Voyager, etc.
  *    - shifted descriptor images (no subtraction or sum to integral image) are created.
  *       O(L*N_S^3) where L is the number of curves to store in databases.
  *    - stepping along the diagonal of a shifted descriptor image until reach minLength,

@@ -900,7 +900,7 @@ public class PartialShapeMatcher {
 
      r.t.c. is O(n^2)
     */
-    protected float[][] createDescriptorMatrix(PairFloatArray p, int n) {
+    public static float[][] createDescriptorMatrix(PairFloatArray p, int n) {
         
         int dp1 = 1;
 
