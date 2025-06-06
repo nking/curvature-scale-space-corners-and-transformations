@@ -167,7 +167,6 @@ public class LabelToColorHelper {
      * with that label.  Note that the label indexes are
      * the pixel indexes also.
      * 
-     * @param img
      * @param labels
      * @return map w/ key = label, index = all indexes in labels
      * with that label.  Note that the label indexes are

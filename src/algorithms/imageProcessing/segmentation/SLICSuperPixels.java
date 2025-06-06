@@ -13,7 +13,8 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
-import java.util.Arrays;
+
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -51,6 +52,7 @@ public class SLICSuperPixels {
 
     protected final ImageExt img;
 
+    // gradient uses column major notation, that is [col][row]
     protected double[][] gradient = null;
 
     protected final double threshold;
@@ -204,7 +206,7 @@ public class SLICSuperPixels {
         threshold = 0.01 * maxError;
     }
 
-     public void calculate() {
+    public void calculate() {
 
         init();
 
@@ -491,12 +493,13 @@ public class SLICSuperPixels {
 
         double diff;
         for (int kCurrent = 0; kCurrent < k; ++kCurrent) {
-            assert(count[kCurrent] > 0);
-            float nc = count[kCurrent];
-            for (int m = 0; m < 5; ++m) {
-                meanDescriptors[kCurrent][m] /= nc;
-                diff = meanDescriptors[kCurrent][m] - seedDescriptors[kCurrent][m];
-                sqDiffSum[m] += (diff * diff);
+            if (count[kCurrent] > 0) {
+                float nc = count[kCurrent];
+                for (int m = 0; m < 5; ++m) {
+                    meanDescriptors[kCurrent][m] /= nc;
+                    diff = meanDescriptors[kCurrent][m] - seedDescriptors[kCurrent][m];
+                    sqDiffSum[m] += (diff * diff);
+                }
             }
         }
 

@@ -915,7 +915,7 @@ public class PartialShapeMatcher {
                   P2
         */
 
-        log.fine("n=" + n);
+        //log.fine("n=" + n);
 
         for (int i1 = 0; i1 < n; ++i1) {
             int start = i1 + 1 + dp1;

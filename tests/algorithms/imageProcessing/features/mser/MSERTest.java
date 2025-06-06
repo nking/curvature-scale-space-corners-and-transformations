@@ -402,7 +402,7 @@ public class MSERTest extends TestCase {
         
         List<List<Region>> regions = mser.findRegions(
             data, width, height, delta, minArea, maxArea, maxVariation, minDiversity);
-            
+
         Image img2 = ImageIOHelper.readImage(fl.getPath());
 
         Region.drawEllipses(img2, regions, 0);

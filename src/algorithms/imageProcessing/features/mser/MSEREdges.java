@@ -475,8 +475,7 @@ public class MSEREdges {
     /**
      * extract the contiguous conneted pixels that are not in edgePixels
      * @param edgePixels
-     * @param minGroupSize
-     * @return 
+     * @return
      */
     private List<TIntSet> extractContiguousBetweenEdges(TIntSet 
         edgePixels) {

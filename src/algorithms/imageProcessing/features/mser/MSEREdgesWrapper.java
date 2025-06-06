@@ -11,7 +11,7 @@ import algorithms.imageProcessing.ImageProcessor;
  */
 public class MSEREdgesWrapper {
     
-    private static int maxDimension = 256;
+    private int maxDimension = 256;
     
     private int binFactor = 1;
     
@@ -29,6 +29,23 @@ public class MSEREdgesWrapper {
         
         mse.extractAndMergeEdges();
         
+        return mse;
+    }
+
+    public MSEREdges extractAndMergeEdges(ImageExt img, int maxDimension) {
+
+        this.maxDimension = maxDimension;
+
+        img = binImage(img);
+
+        MSEREdges mse = new MSEREdges(img);
+
+        if (debug) {
+            mse.setToDebug();
+        }
+
+        mse.extractAndMergeEdges();
+
         return mse;
     }
     
@@ -51,7 +68,7 @@ public class MSEREdgesWrapper {
         debug = true;
     }
     
-    private ImageExt binImage(ImageExt img) {
+    public ImageExt binImage(ImageExt img) {
         
         int w = img.getWidth();        
         int h = img.getHeight();
