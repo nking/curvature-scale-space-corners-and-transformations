@@ -1,6 +1,7 @@
 package algorithms.imageProcessing.segmentation;
 
 import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.ImageExt;
 import algorithms.imageProcessing.ImageIOHelper;
 import algorithms.misc.MiscDebug;
 import gnu.trove.set.TIntSet;
@@ -36,7 +37,7 @@ public class MergeLabelsTest extends TestCase {
         int w = 8;
         int h = 12;
 
-        Image img = new Image(w, h);
+        ImageExt img = new ImageExt(w, h);
         int[] labels = new int[img.getNPixels()];
         int r, c;
         for (int i = 0; i < img.getNPixels(); ++i) {
@@ -76,34 +77,37 @@ public class MergeLabelsTest extends TestCase {
                 {3, 3}, {3, 7}, {7, 3}, {7,7}, {11, 3}, {11,7}
         };
 
-        //
-        double thresh = 3; //2.5
+        for (MergeLabels.METHOD method : new MergeLabels.METHOD[]{MergeLabels.METHOD.MEAN, MergeLabels.METHOD.MODE,
+        MergeLabels.METHOD.MIN_GRADIENT}) {
 
-        int nLabels2 = MergeLabels.mergeUsingDeltaE2000(img, labels, thresh);
+            double thresh = 3; //2.5
 
-        // expect A and B to be merged
-        int blockNumber = 0;
-        for (int[] bound : bounds) {
+            int nLabels2 = MergeLabels.mergeUsingDeltaE2000(img, labels, thresh, method);
 
-            int r1 = bound[0];
-            int r0 = bound[0] - 3;
-            int c1 = bound[1];
-            int c0 = bound[1] - 3;
-            int label = labels[img.getInternalIndex(c0, r0)];
-            for (r = r0; r <= r1; ++r) {
-                for (c = c0; c <= c1; ++c) {
-                    if (blockNumber == 1) {
-                        assertEquals(label, labels[0]);
-                    } else {
-                        assertEquals(label, labels[img.getInternalIndex(c, r)]);
+            // expect A and B to be merged
+            int blockNumber = 0;
+            for (int[] bound : bounds) {
+
+                int r1 = bound[0];
+                int r0 = bound[0] - 3;
+                int c1 = bound[1];
+                int c0 = bound[1] - 3;
+                int label = labels[img.getInternalIndex(c0, r0)];
+                for (r = r0; r <= r1; ++r) {
+                    for (c = c0; c <= c1; ++c) {
+                        if (blockNumber == 1) {
+                            assertEquals(label, labels[0]);
+                        } else {
+                            assertEquals(label, labels[img.getInternalIndex(c, r)]);
+                        }
                     }
                 }
+                ++blockNumber;
             }
-            ++blockNumber;
-        }
 
-        Image im2 = img.copyImage();
-        ImageIOHelper.addAlternatingColorLabelsToRegion(im2, labels);
-        MiscDebug.writeImage(im2, "_merged_");
+            //Image im2 = img.copyImage();
+            //ImageIOHelper.addAlternatingColorLabelsToRegion(im2, labels);
+            //MiscDebug.writeImage(im2, "_merged_");
+        }
     }
 }

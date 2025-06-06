@@ -68,7 +68,6 @@ public class MultiPartialShapeMatcherTest extends TestCase {
             //TODO: get the centers of the labels.
             // will use them with yolov11 or yolov12
 
-
             //extractShapes(img, fileName1Root);
 
             /*
@@ -129,9 +128,11 @@ public class MultiPartialShapeMatcherTest extends TestCase {
         //ImageProcessor imageProcessor = new ImageProcessor();
         //imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO));
 
-        METHOD method = METHOD.MEAN;
-        //int nc = 100; double thresh = 0.55;
-        int nc = 70; double thresh = 0.20;
+        METHOD method = METHOD.MIN_GRADIENT;
+        //int nc = 100; double thresh = 2.5;
+        //int nc = 70; double thresh = 2.5;
+        //int nc = 40; double thresh = 1.5;
+        int nc = 40; double thresh = 1.0;
 
         //METHOD method = METHOD.MODE;
         //int nc = 100; double thresh = 5.0;
@@ -140,6 +141,7 @@ public class MultiPartialShapeMatcherTest extends TestCase {
         int[] labels2 = slic(img.copyToImageExt(), fileName1Root, nc);
 
         int nLabels2 = MergeLabels.mergeUsingDeltaE2000(img, labels2, thresh, method);
+        System.out.printf("merged k=%d, nc=%d\n", nLabels2, nc);
         ImageExt im3 = img.copyToImageExt();
         ImageIOHelper.addAlternatingColorLabelsToRegion(im3, labels2);
         MiscDebug.writeImage(im3, "_" + fileName1Root + "_slic_merged_");

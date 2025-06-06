@@ -185,7 +185,7 @@ public class SLICSuperPixels {
         nYs = Math.round((float)img.getHeight()/(float)s);
         this.k = nXs * nYs;
 
-        log.info("k = " + k);
+        //log.info("k = " + k);
 
         this.img = img;
         if (cieType == 1) {

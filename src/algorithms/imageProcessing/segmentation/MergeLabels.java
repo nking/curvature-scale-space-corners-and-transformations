@@ -1,8 +1,7 @@
 package algorithms.imageProcessing.segmentation;
 
 import algorithms.disjointSets.UnionFind;
-import algorithms.imageProcessing.CIEChromaticity;
-import algorithms.imageProcessing.Image;
+import algorithms.imageProcessing.*;
 import algorithms.misc.MiscMath0;
 
 import java.util.*;
@@ -15,7 +14,7 @@ public class MergeLabels {
     };
 
     public static enum METHOD {
-        MEAN, MODE
+        MEAN, MODE, MIN_GRADIENT
     }
 
     /**
@@ -32,7 +31,15 @@ public class MergeLabels {
      * @param method mean or mode
      * @return number of unique labels
      */
-    public static int mergeUsingDeltaE2000(Image img, int[] labels, double thresh, METHOD method) {
+    public static int mergeUsingDeltaE2000(ImageExt img, int[] labels, double thresh, METHOD method) {
+
+        if (method == null) {
+            throw new IllegalArgumentException("method cannot be null");
+        }
+
+        if (method == METHOD.MIN_GRADIENT) {
+            return mergeWithMinGrad(img, labels, thresh);
+        }
 
         // merging adjacent labels if their deltaE2000 are < thresh
         //
@@ -141,6 +148,122 @@ public class MergeLabels {
         }
 
         return mergedLabelMap.size();
+    }
+
+    /**
+     * the color descriptor of each label is determined from the point which has the min gradient for each label region
+     * as was done in the SuperPixels algorithm.
+     * @param img
+     * @param labels
+     * @param thresh
+     * @return the number of unique labels after merging
+     */
+    protected static int mergeWithMinGrad(ImageExt img, int[] labels, double thresh) {
+
+        ImageSegmentation seg = new ImageSegmentation();
+        EdgeFilterProducts edgeProducts = seg.createGradient(img, 0, System.currentTimeMillis());
+        GreyscaleImage grad = edgeProducts.getGradientXY();
+
+        CIEChromaticity cieC = new CIEChromaticity();
+
+        int r1, c1, r2, c2, i2, label2;
+        int w = img.getWidth();
+        int h = img.getHeight();
+        Map<Integer, Set<Integer>> adjLabelMap = new HashMap<>();
+
+        // descriptor is [L, A, B, minGrad]
+        Map<Integer, float[]> labelDescMap = new HashMap<>();
+
+        for (int i1 = 0; i1 < labels.length; ++i1) {
+            int label1 = labels[i1];
+            adjLabelMap.putIfAbsent(label1, new HashSet<>());
+
+            r1 = img.getRow(i1);
+            c1 = img.getCol(i1);
+            for (int[] offset : offsets) {
+                r2 = r1 + offset[0];
+                c2 = c1 + offset[1];
+                if (r2 < 0 || c2 < 0 || r2 == h || c2 == w) {
+                    continue;
+                }
+                i2 = img.getInternalIndex(c2, r2);
+                label2 = labels[i2];
+
+                if (label1 == label2) {
+                    continue;
+                }
+
+                adjLabelMap.putIfAbsent(label2, new HashSet<>());
+
+                adjLabelMap.get(label1).add(label2);
+                adjLabelMap.get(label2).add(label1);
+            }
+
+            labelDescMap.putIfAbsent(label1, new float[]{0.f, 0.f, 0.f, Integer.MAX_VALUE});
+
+            int gradient = grad.getValue(c1, r1);
+            if (gradient < labelDescMap.get(label1)[3]) {
+                float[] lab = img.getCIELAB(c1, r1);
+                float[] tmp = labelDescMap.get(label1);
+                System.arraycopy(lab, 0, tmp, 0, lab.length);
+                tmp[3] = gradient;
+            }
+        }
+
+        int nLabels = adjLabelMap.size();
+        UnionFind uf = new UnionFind(nLabels);
+
+        // BFS traverse adj map
+        Set<Integer> visited = new HashSet<>();
+        Deque<Integer> q = new ArrayDeque<>();
+        q.add(labels[0]);
+        int u;
+        float[] uDesc;
+        float[] vDesc;
+        while (!q.isEmpty()) {
+            u = q.poll();
+            visited.add(u);
+            uDesc = labelDescMap.get(u);
+            for (int v : adjLabelMap.get(u)) {
+                if (visited.contains(v)) {
+                    continue;
+                }
+                q.add(v);
+                if (uf.find(u) == uf.find(v)) {
+                    continue;
+                }
+                vDesc = labelDescMap.get(v);
+                double deltaE = cieC.calcDeltaECIE2000( uDesc[0], uDesc[1], uDesc[2], vDesc[0], vDesc[1], vDesc[2]);
+                if (deltaE < thresh) {
+                    uf.union(u, v);
+                    // update uDesc and vDesc
+                    if (uDesc[3] <= vDesc[3]) {
+                        System.arraycopy(uDesc, 0, vDesc, 0, uDesc.length);
+                    } else {
+                        System.arraycopy(vDesc, 0, uDesc, 0, vDesc.length);
+                    }
+                }
+            }
+        }
+
+        Map<Integer, Set<Integer>> mergedLabelMap = uf.getComponents();
+
+        int j = 0;
+        // reverse the map so given previous label, we have new label, but renumber new label from 0 to size()-1
+        int[] rev = new int[nLabels];
+        for (Map.Entry<Integer, Set<Integer>> entry : mergedLabelMap.entrySet()) {
+            for (int oldLabel : entry.getValue()) {
+                rev[oldLabel] = j;
+            }
+            ++j;
+        }
+
+        for (int i = 0; i < labels.length; ++i) {
+            labels[i] = rev[labels[i]];
+        }
+
+        return mergedLabelMap.size();
+
     }
 
     private static void add(int[][] uHist, int[][] vHist, int[][] tmp) {
