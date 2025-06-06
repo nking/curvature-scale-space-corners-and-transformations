@@ -879,9 +879,9 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         
         double[] thetas = new double[pairIndexes.size()];
 
-        float scaleSum = 0;
-        float transXSum= 0;
-        float transYSum = 0;
+        double scaleSum = 0;
+        double transXSum= 0;
+        double transYSum = 0;
         int count = 0;
         for (PairInt pairIndex : pairIndexes) {
 
@@ -961,9 +961,9 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
             count++;
         }
         
-        float scaleAvg = scaleSum/(float)pairIndexes.size();
-        float transXAvg = transXSum/(float)pairIndexes.size();
-        float transYAvg = transYSum/(float)pairIndexes.size();
+        double scaleAvg = scaleSum/pairIndexes.size();
+        double transXAvg = transXSum/pairIndexes.size();
+        double transYAvg = transYSum/pairIndexes.size();
                 
         boolean useRadians = true;
         double thetaAvg = AngleUtil.calculateAverageWithQuadrantCorrections(
@@ -971,9 +971,9 @@ log.info("rot=" + thetas[i] + " stDevTheta=" + stDevTheta
         
         TransformationParameters params = new TransformationParameters();
         params.setRotationInRadians((float)thetaAvg);
-        params.setScale(scaleAvg);
-        params.setTranslationX(transXAvg);
-        params.setTranslationY(transYAvg);
+        params.setScale((float)scaleAvg);
+        params.setTranslationX((float)transXAvg);
+        params.setTranslationY((float)transYAvg);
         params.setOriginX((float)centroidX1);
         params.setOriginY((float)centroidY1);
         // this is the number of data points as the number of pairs

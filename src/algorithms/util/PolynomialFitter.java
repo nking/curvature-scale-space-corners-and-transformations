@@ -445,9 +445,9 @@ public class PolynomialFitter {
         for (int i = (n - 1); i >= 0; i--) {
             c[i] = (float)qty.get(i, 0);
             for (int j = (i + 1); j < n; j++) {
-                c[i] -= c[j] * r.get(i, j);
+                c[i] -= c[j] * (float)r.get(i, j);
             }
-            c[i] /= r.get(i, i);
+            c[i] /= (float)r.get(i, i);
         }
         
         return c;

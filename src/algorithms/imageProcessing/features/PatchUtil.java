@@ -68,8 +68,8 @@ public class PatchUtil {
             div(h, norm);
         }
         
-        long tmpSum = 0;
-        long tmpSumErrSq = 0;
+        double tmpSum = 0;
+        double tmpSumErrSq = 0;
         double maxValue;
         
         long[] tmp = new long[h.length];
@@ -158,8 +158,8 @@ public class PatchUtil {
             div(h, norm);
         }
         
-        long tmpSum = 0;
-        long tmpSumErrSq = 0;
+        double tmpSum = 0;
+        double tmpSumErrSq = 0;
         double maxValue;
         
         long[] tmp = new long[h.length];
@@ -248,8 +248,8 @@ public class PatchUtil {
             div(h, norm);
         }
         
-        long tmpSum = 0;
-        long tmpSumErrSq = 0;
+        double tmpSum = 0;
+        double tmpSumErrSq = 0;
         double maxValue;
         
         long[] tmp = new long[h.length];

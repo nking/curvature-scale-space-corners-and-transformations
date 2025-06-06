@@ -489,7 +489,7 @@ public class HGS {
         assert(!Double.isNaN(norm));
 
         for (int i = 0; i < out.length; ++i) {
-            out[i] *= norm;
+            out[i] *= (int)Math.round(norm);
             assert(out[i] >= 0);
         }
 

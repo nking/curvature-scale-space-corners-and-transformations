@@ -4,9 +4,7 @@ import algorithms.misc.MiscMath;
 import algorithms.util.PairInt;
 import algorithms.util.PairIntArray;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * class to hold data with values in range 0-255 or -255 to 255 depending

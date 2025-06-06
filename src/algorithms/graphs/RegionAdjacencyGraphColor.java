@@ -635,7 +635,7 @@ public class RegionAdjacencyGraphColor extends RegionAdjacencyGraph {
                 }
                 added.add(p);
                 
-                float sumDiff = 0;
+                double sumDiff = 0;
                 for (int m = 0; m < 3; ++m) {
                     float d = nodeColors[m][idx1] - nodeColors[m][idx2];
                     sumDiff += Math.sqrt(d * d);

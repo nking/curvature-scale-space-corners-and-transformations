@@ -78,8 +78,7 @@ public class Gaussian1DSecondDeriv {
      */
     public static float[] getKernel(float sigma, float mu, int nPoints) {
 
-        float normalization = (float)(Math.pow(sigma, 5) * 
-            Math.sqrt(2.f * Math.PI));
+        double normalization = (Math.pow(sigma, 5) * Math.sqrt(2.f * Math.PI));
         
         if (sigma < 1) {
             // hack to correct for the power introduced by (x-sigma)*(x+sigma)
@@ -111,7 +110,7 @@ public class Gaussian1DSecondDeriv {
             float y = (dsq - sigma*sigma) * (float)(
                 Math.exp(-1.f * dsq/(2.f * sigma * sigma)));
             
-            yPoints[count] = y/normalization;
+            yPoints[count] = (float)(y/normalization);
             
             count++;
         }

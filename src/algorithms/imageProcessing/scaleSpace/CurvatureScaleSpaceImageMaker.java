@@ -286,7 +286,7 @@ public final class CurvatureScaleSpaceImageMaker {
                 //resultingSigma *= 2;
                 sigma = SIGMA.increaseToFactorBySQRT2(resultingSigma);
 
-                resultingSigma *= Math.sqrt(2);
+                resultingSigma *= (float)Math.sqrt(2);
                 
             }
 

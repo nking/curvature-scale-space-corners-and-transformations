@@ -576,7 +576,7 @@ public class ColorHistogram {
                     output[i] += (diff * diff)/add;
                 }
             }
-            output[i] *= 0.5;
+            output[i] *= 0.5f;
         }        
     }
 

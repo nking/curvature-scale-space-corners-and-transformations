@@ -315,7 +315,7 @@ public class CSSCornerMaker {
 
             sigma = SIGMA.increaseToFactorBySQRT2(resultingSigma);
 
-            resultingSigma *= Math.sqrt(2);
+            resultingSigma *= (float)Math.sqrt(2);
 
             lastCurve = curve;
 
@@ -372,7 +372,7 @@ public class CSSCornerMaker {
 
             sigma = SIGMA.increaseToFactorBySQRT2(resultingSigma);
 
-            resultingSigma *= Math.sqrt(2);
+            resultingSigma *= (float)Math.sqrt(2);
         }
 
         return output;

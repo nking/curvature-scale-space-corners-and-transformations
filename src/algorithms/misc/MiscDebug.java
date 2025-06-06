@@ -1431,9 +1431,9 @@ public class MiscDebug {
             }
             yMin = algorithms.misc.MiscMath.findMin(yPoints);
             if (yMin < 0) {
-                yMin *= 1.1;
+                yMin *= 1.1f;
             } else {
-                yMin *= 0.9;
+                yMin *= 0.9f;
             }
             yMax = algorithms.misc.MiscMath.findMax(yPoints);
             // ==== k vs t
@@ -1450,9 +1450,9 @@ public class MiscDebug {
 
             yMin = algorithms.misc.MiscMath.findMin(yPoints);
             if (yMin < 0) {
-                yMin *= 1.1;
+                yMin *= 1.1f;
             } else {
-                yMin *= 0.9;
+                yMin *= 0.9f;
             }
             yMax = 1.1f * algorithms.misc.MiscMath.findMax(yPoints);
 
