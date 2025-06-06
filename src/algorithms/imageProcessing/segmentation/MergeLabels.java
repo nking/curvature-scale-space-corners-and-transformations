@@ -3,7 +3,7 @@ package algorithms.imageProcessing.segmentation;
 import algorithms.disjointSets.UnionFind;
 import algorithms.imageProcessing.CIEChromaticity;
 import algorithms.imageProcessing.Image;
-import algorithms.imageProcessing.ImageExt;
+import algorithms.misc.MiscMath0;
 
 import java.util.*;
 
@@ -14,6 +14,10 @@ public class MergeLabels {
             {-1,1}, {-1,-1}, {1,-1}, {1, 1}
     };
 
+    public static enum METHOD {
+        MEAN, MODE
+    }
+
     /**
      * merge adjacent labeled regions if the deltaE2000 color difference between two adjacent regions is
      * less than the given thresh.
@@ -22,13 +26,13 @@ public class MergeLabels {
      * @param labels input labels, they are updated in place with merged labels
      * @param thresh threshold for the deltaE2000 color difference.  The JND (just noticeable difference) threshold is
      *               about 2.3 and the maximum value is 20?  (TODO: calculate this).
-     *               Caveat is that the mean of color histograms of regions are taken as the representative
+     *               Caveat is that the if the method is MEAN of color histograms of regions are taken as the representative
      *               color for the region, and so a threshold between 0 and 1.0 performs better.
-     *               TODO: change to use the mode of the color histogram with a correction for multi-modal
-     *               histograms.
+     *               For MODE,
+     * @param method mean or mode
      * @return number of unique labels
      */
-    public static int mergeUsingDeltaE2000(Image img, int[] labels, double thresh) {
+    public static int mergeUsingDeltaE2000(Image img, int[] labels, double thresh, METHOD method) {
 
         // merging adjacent labels if their deltaE2000 are < thresh
         //
@@ -111,7 +115,7 @@ public class MergeLabels {
                     continue;
                 }
                 vHist = labelHistMap.get(v);
-                double diff = calcColorDiff(cieC, uHist, vHist);
+                double diff = calcColorDiff(cieC, uHist, vHist, method);
                 if (diff < thresh) {
                     uf.union(u, v);
                     // update uHist and vHist
@@ -157,14 +161,21 @@ public class MergeLabels {
         }
     }
 
-    private static double calcColorDiff(CIEChromaticity cieC, int[][] uHist, int[][] vHist) {
+    private static double calcColorDiff(CIEChromaticity cieC, int[][] uHist, int[][] vHist,
+                                        METHOD method) {
         // ideally, the histograms would have single modes, but cannot guarantee that, so will use mean instead.
 
-        int[] uMean = meanRGB(uHist);
-        int[] vMean = meanRGB(vHist);
+        int[] u, v;
+        if (method == METHOD.MEAN) {
+            u = meanRGB(uHist);
+            v = meanRGB(vHist);
+        } else {
+            u = modeRGB(uHist);
+            v = modeRGB(vHist);
+        }
 
-        float[] lab1 = cieC.cieXYZToCIELAB(cieC._rgbToCIEXYZ(uMean[0], uMean[1], uMean[2]));
-        float[] lab2 = cieC.cieXYZToCIELAB(cieC._rgbToCIEXYZ(vMean[0], vMean[1], vMean[2]));
+        float[] lab1 = cieC.cieXYZToCIELAB(cieC._rgbToCIEXYZ(u[0], u[1], u[2]));
+        float[] lab2 = cieC.cieXYZToCIELAB(cieC._rgbToCIEXYZ(v[0], v[1], v[2]));
         return cieC.calcDeltaECIE2000(lab1, lab2);
     }
 
@@ -181,6 +192,15 @@ public class MergeLabels {
             mean[c] = Math.round(sum/total);
         }
         return mean;
+    }
+
+    protected static int[] modeRGB(int[][] colorHist) {
+        int[] mode = new int[3];
+        for (int i = 0; i < 3; ++i) {
+            int idx = MiscMath0.findMax(colorHist[i]);
+            mode[i] = Math.round((idx * 5)+2.5f);
+        }
+        return mode;
     }
 
 }

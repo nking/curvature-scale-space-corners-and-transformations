@@ -10,6 +10,7 @@ import algorithms.imageProcessing.segmentation.MSEREdgesToLabelsHelper;
 import algorithms.imageProcessing.segmentation.MergeLabels;
 import algorithms.imageProcessing.segmentation.NormalizedCuts;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
+import algorithms.imageProcessing.segmentation.MergeLabels.METHOD;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairInt;
@@ -125,39 +126,20 @@ public class MultiPartialShapeMatcherTest extends TestCase {
 
     private int[][] mserAndSLIC_2(ImageExt img, String fileName1Root) throws IOException {
 
-        ImageProcessor imageProcessor = new ImageProcessor();
+        //ImageProcessor imageProcessor = new ImageProcessor();
         //imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO));
 
-        /*
-        MSEREdges mserE = new MSEREdges(img);
-        mserE.extractAndMergeEdges();
-
-        List<TIntSet> edgeList = mserE.getEdges();
-        Image im = mserE.getGsImg().copyToColorGreyscale();
-        int[] clr = new int[]{255, 0, 0};
-        for (int ii = 0; ii < edgeList.size(); ++ii) {
-            ImageIOHelper.addCurveToImage(edgeList.get(ii), im, 0, clr[0],clr[1], clr[2]);
-        }
-        MiscDebug.writeImage(im, "_" + fileName1Root + "_mser_edges_");
-
-        //assign labels
-        ImageExt im2 = img.copyToImageExt();
-        assertEquals(im.getNPixels(), im2.getNPixels());
-        assertEquals(im.getWidth(), im2.getWidth());
-        assertEquals(im.getHeight(), im2.getHeight());
-        int[] labels = new int[im2.getNPixels()];
-        int nComp = MSEREdgesToLabelsHelper.createLabels(im2, edgeList, labels);
-        assertTrue(MSEREdgesToLabelsHelper.allAreNonNegative(labels));
-        ImageIOHelper.addAlternatingColorLabelsToRegion(im2, labels);
-        MiscDebug.writeImage(im2, "_" + fileName1Root + "_mser_segmentation_");
-        */
-
+        METHOD method = METHOD.MEAN;
         //int nc = 100; double thresh = 0.55;
         int nc = 70; double thresh = 0.20;
 
+        //METHOD method = METHOD.MODE;
+        //int nc = 100; double thresh = 5.0;
+        //int nc = 70; double thresh = 5.0;
+
         int[] labels2 = slic(img.copyToImageExt(), fileName1Root, nc);
 
-        int nLabels2 = MergeLabels.mergeUsingDeltaE2000(img, labels2, thresh);
+        int nLabels2 = MergeLabels.mergeUsingDeltaE2000(img, labels2, thresh, method);
         ImageExt im3 = img.copyToImageExt();
         ImageIOHelper.addAlternatingColorLabelsToRegion(im3, labels2);
         MiscDebug.writeImage(im3, "_" + fileName1Root + "_slic_merged_");
