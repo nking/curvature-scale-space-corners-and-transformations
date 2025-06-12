@@ -728,7 +728,6 @@ public class PerimeterFinder2 {
      * @param neighborsX
      * @param neighborsY
      * @param nn
-     * @param medAxis0 closest medial axis point to (x, y)
      * @return index of neighborsX, neighborsY that
      * has the smallest angle subtended by the medial axis
      */
@@ -1221,7 +1220,6 @@ public class PerimeterFinder2 {
      * @param neighborsX
      * @param neighborsY
      * @param nn
-     * @param medAxis0 closest medial axis point to (x, y)
      * @return index of neighborsX, neighborsY that
      * has the smallest angle subtended by the medial axis
      */

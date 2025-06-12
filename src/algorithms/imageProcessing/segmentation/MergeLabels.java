@@ -326,4 +326,31 @@ public class MergeLabels {
         return mode;
     }
 
+    /**
+     * calculate centroids of labeled region and return them as
+     * @param labels labels for each point where range of label value = 0 to nUniqeLabels - 1
+     * @param width width of image the labels are relative to.
+     * @return centroids of the labeled regions as
+     * result[0] = {x0, y0}
+     */
+    public static int[][] calculateCentroids(int[] labels, int width) {
+        Set<Integer> uniqueLabels = new HashSet<>();
+        for (int label : labels) {
+            uniqueLabels.add(label);
+        }
+        // each row is a label's summed x, summed y
+        double[][] sums = new double[uniqueLabels.size()][2];
+        int[] nPoints = new int[uniqueLabels.size()];
+        for (int i = 0; i < labels.length; ++i) {
+            sums[labels[i]][0] +=  (i % width);
+            sums[labels[i]][1] +=  (i / width);
+            ++nPoints[labels[i]];
+        }
+        int[][] coords = new int[uniqueLabels.size()][2];
+        for (int i = 0; i < nPoints.length; ++i) {
+            coords[i][0] = (int)Math.round(sums[i][0] / nPoints[i]);
+            coords[i][1] = (int)Math.round(sums[i][1] / nPoints[i]);
+        }
+        return coords;
+    }
 }

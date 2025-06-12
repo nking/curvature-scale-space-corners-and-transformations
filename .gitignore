@@ -1,6 +1,7 @@
 .DS_Store
 *~
 venv
+venv/README_venv.txt
 *.iml
 *.swp
 *.swo
