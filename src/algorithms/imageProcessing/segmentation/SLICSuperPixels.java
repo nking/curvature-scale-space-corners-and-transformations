@@ -573,6 +573,7 @@ public class SLICSuperPixels {
         assignTheUnassigned(unassignedSet);
     }
 
+    //TODO: consider rewriting this one day:
     private void assignTheUnassigned(TIntSet unassignedSet) {
 
         int w = img.getWidth();
