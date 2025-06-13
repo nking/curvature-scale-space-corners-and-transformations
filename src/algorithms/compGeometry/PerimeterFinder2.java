@@ -27,16 +27,20 @@ import java.util.Stack;
 /**
  * class to hold some of the newer methods
  * w.r.t. boundary point extractions.
+ *
+ * This class is deprecated.  Use methods in PerimeterFinder3 instead.
  * 
  * @author nichole
  */
 public class PerimeterFinder2 {
    
     /**
+     * This class is deprecated.  Use methods in PerimeterFinder3 instead.
+     *
      * finds the pixels with neighbors not in given point
      * set, contiguousPoints.  Note, the contiguous points
      * fill out the shape for which the border is found.
-     * 
+     *
      * @param contiguousPoints
      * @return 
      */
@@ -158,6 +162,7 @@ public class PerimeterFinder2 {
     }
     
     /**
+     * This class is deprecated.  Use methods in PerimeterFinder3 instead.
      * finds any gaps embedded in the contiguous points.
      * @param contiguousPoints
      * @param outputEmbedded output variable
@@ -291,6 +296,7 @@ public class PerimeterFinder2 {
     }
     
     /**
+     * This class is deprecated.  Use methods in PerimeterFinder3 instead.
      * finds any gaps embedded in the contiguous points.
      * The runtime complexity is roughly O(N_contiguousPoints).
      * 
@@ -376,9 +382,10 @@ public class PerimeterFinder2 {
         }
         
     }
-    
-  
+
     /**
+     * This class is deprecated.  Use methods in PerimeterFinder3 instead.
+     *
      * finds the outer boundary points of the contiguous points.
      * any embedded holes in the contiguousPoints are not included
      * in the result boundary.
@@ -423,6 +430,8 @@ public class PerimeterFinder2 {
     }
     
     /**
+     * This class is deprecated.  Use methods in PerimeterFinder3 instead.
+     *
      * NOT READY FOR USE...needs alot more testing.
      * 
      * given a set of contiguous points, fills in embedded points
