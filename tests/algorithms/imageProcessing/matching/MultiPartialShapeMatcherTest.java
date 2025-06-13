@@ -1,9 +1,11 @@
 package algorithms.imageProcessing.matching;
 
+import algorithms.compGeometry.PerimeterFinder3;
 import algorithms.imageProcessing.*;
 import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.imageProcessing.features.mser.MSEREdgesWrapper;
 import algorithms.imageProcessing.features.mser.Region;
+import algorithms.imageProcessing.segmentation.LabelHelper;
 import algorithms.imageProcessing.segmentation.MSEREdgesToLabelsHelper;
 import algorithms.imageProcessing.segmentation.MergeLabels;
 import algorithms.imageProcessing.segmentation.SLICSuperPixels;
@@ -38,7 +40,7 @@ public class MultiPartialShapeMatcherTest extends TestCase {
 
         //PairFloatArray p = extractOrderedBoundary(img0);
 
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 1; ++i) {
             String fileName1;
             switch (i) {
                 case 0: {
@@ -67,26 +69,27 @@ public class MultiPartialShapeMatcherTest extends TestCase {
             String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
             ImageExt img = ImageIOHelper.readImageExt(filePath1);
 
+            System.out.printf("i=%d\n", i);
+
             int[] labels = mergedSLIC(img, fileName1Root);
 
+            Map<Integer, PairIntArray> shapes = PerimeterFinder3.extractOrderedBorders(labels, img.getWidth(), img.getHeight());
 
+            List<PairFloatArray> list = new ArrayList<>();
+            for (Map.Entry<Integer, PairIntArray> entry : shapes.entrySet()) {
+                PairIntArray s = entry.getValue();
+                //System.out.printf("i=%d, label=%d, curve.n=%d\n", i, entry.getKey(), s.getN());
+                PairFloatArray f = new PairFloatArray(s.getN());
+                for (int j = 0; j < s.getN(); ++j) {
+                    f.add(s.getX(j), s.getY(j));
+                }
+                list.add(f);
+            }
+            plot(img, list, fileName1Root + "_closed_curves_");
 
             //write_centroids(labels, img, fileName1Root);
 
-
             //extractShapes(img, fileName1Root);
-
-            /*
-            List<Set<PairInt>> blobs = createBlobs(labels, img.getWidth(), minNumPts);
-            List<PairFloatArray> cc = new ArrayList<>();
-            for (Set<PairInt> item : blobs) {
-                PairFloatArray q = extractOrderedBoundary(item, SIGMA.ONE, img.getWidth(), img.getHeight());
-                if (q != null) {
-                    cc.add(q);
-                }
-            }
-            plot(img, cc, fileName1Root + "_closed_curves_" + nc + "_");
-            */
 
             // use MultiPartialShapeMatcher to match these
         }
@@ -147,6 +150,7 @@ public class MultiPartialShapeMatcherTest extends TestCase {
 
         int nLabels2 = MergeLabels.mergeUsingDeltaE2000(img, labels2, thresh, method);
         System.out.printf("merged k=%d, nc=%d\n", nLabels2, nc);
+
         ImageExt im3 = img.copyToImageExt();
         ImageIOHelper.addAlternatingColorLabelsToRegion(im3, labels2);
         MiscDebug.writeImage(im3, "_" + fileName1Root + "_slic_merged_");
@@ -197,6 +201,19 @@ public class MultiPartialShapeMatcherTest extends TestCase {
 
     }
 
+    private void plot(ImageExt img, Set<Integer> points,
+        String fileSuffix) throws IOException {
+        Image im = img.copyToGreyscale().copyToColorGreyscale();
+        int[] clr;
+        int nDot = 0;
+        clr = ImageIOHelper.getNextRGB(0);
+        for (int idx : points) {
+            ImageIOHelper.addPointToImage(idx % im.getWidth(),
+               idx / im.getWidth(), im, nDot, clr[0], clr[1], clr[2]);
+        }
+        MiscDebug.writeImage(im, fileSuffix);
+    }
+
     private List<Set<PairInt>> createBlobs(int[] labels, int width, int minNumPts) {
         Map<Integer, Set<Integer>> map = new HashMap<>();
         for (int i = 0; i < labels.length; ++i) {
@@ -233,6 +250,8 @@ public class MultiPartialShapeMatcherTest extends TestCase {
         slic.calculate();
         int[] labels = slic.getLabels();
 
+        LabelHelper.resolveByConnectedness(labels, img.getWidth(), img.getHeight(), true);
+
         Image img3 = img.createWithDimensions();
         ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
         String str = Integer.toString(nc);
@@ -242,7 +261,6 @@ public class MultiPartialShapeMatcherTest extends TestCase {
         String suffix = String.format("_slic_%s_%s", fileName1Root, str);
         MiscDebug.writeImage(img3, suffix);
         return labels;
-
     }
 
     private PairFloatArray extractOrderedBoundary(ImageExt image) {
