@@ -7,6 +7,8 @@ import algorithms.util.PairIntArray;
 
 import java.util.*;
 
+//TODO: consider adding a minimum size argument to some of the methods or overload to not solve for borders if number
+// of points is fewer thn a minimum size.
 public class PerimeterFinder3 {
 
     // using convention {col, row}
@@ -31,7 +33,7 @@ public class PerimeterFinder3 {
 
     /**
      * given labels for each pixel image where idx = row * imageWidth + col, extract each region's
-     * border pixels in a connected clockwise manner to forma closed curve, missing the last point which equals
+     * border pixels in a connected clockwise manner to form a closed curve, missing the last point which equals
      * the first.
      * @param labels labels of each image pixel
      * @param imgWidth width of image
@@ -253,6 +255,10 @@ public class PerimeterFinder3 {
                     startCR[1] = r;
                     p.add(c, r);
                     pCounts.put(new PairInt(c, r), 1);
+                    if (r == 0) {
+                        beforeCR[0] = c;
+                        beforeCR[1] = r - 1;
+                    }
                     break;
                 } else {
                     beforeCR[0] = c;
@@ -274,13 +280,27 @@ public class PerimeterFinder3 {
         int[] cr2 = new int[2];
         int idx2;
         boolean done = false;
+        int nIter = 0;
+        final int nMaxIter = 2 * imgHeight * imgWidth;
         while (!done) {
+            if (nIter == nMaxIter) {
+                System.out.printf("  ERROR:  exceeded nMaxIter.  cr=(%s), beforeCROffset=(%s), beforeCR=(%s)\n",
+                    Arrays.toString(cr), Arrays.toString(beforeCROffset), Arrays.toString(beforeCR));
+                break;
+            }
+            ++nIter;
             // nOffIter is the count of 8 neighbors visited on this scan
             int nOffIter = 0;
             //System.out.printf("current (c=%d,r=%d)\n", cr[0], cr[1]);
             // pt is used to find the offset relative to the new number
             PairInt pt = new PairInt(beforeCR[0] - cr[0], beforeCR[1] - cr[1]);
-            //System.out.printf("  offset(x,y=%s)\n", pt.toString());
+            {//DEBUG
+                if (!offsetIndexMap.containsKey(pt)) {
+                    System.out.printf("  ERROR:  cr=(%s), beforeCR=(%s), beforeCROffset=(%s), => offset(x,y=%s)\n",
+                        Arrays.toString(cr), Arrays.toString(beforeCR), Arrays.toString(beforeCROffset), pt.toString());
+                }
+            }
+
             int offI = offsetIndexMap.get(pt);
             while (nOffIter < 8) {
                 int[] offset = offsets16[offI];
@@ -314,7 +334,7 @@ public class PerimeterFinder3 {
                     } else if (offset[0] == beforeCROffset[0] && offset[1] == beforeCROffset[1]){
                         done = true;
                     }
-                } else if (pCounts.getOrDefault(c, 0) == 1) {
+                } else if (pCounts.getOrDefault(c, 0) > 0) {
                     // check if previous point == first point, and this point == 2nd point,
                     // then we've reached the start again, but approached it from another direction
                     if (p.getX(1) == cr2[0] && p.getY(1) == cr2[1]

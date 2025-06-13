@@ -15,6 +15,30 @@ import static org.junit.Assert.*;
 public class PerimeterFinder3Test extends TestCase {
 
     @Test
+    public void test100() {
+        int w = 640;
+        int h = 279;
+        int[] idxs = new int[]{103457,104097,104737,103456,104096,104736,104739,104098,104738,104741,104740,102815,
+                103455,104095,104735,100894,101534,102174,102814,103454,104094,104734,};
+        Set<Integer> points = Arrays.stream(idxs)
+                .boxed() // Convert IntStream to Stream<Integer>
+                .collect(Collectors.toSet());
+        //(414,157)->(414,163), 415,163)->(421,163)  ->(419,163)  418,162,
+        PairIntArray boundary = PerimeterFinder3.mooreTracingWithJacob(points, w, h);
+        //System.out.printf("boundary=%s\n", boundary.toString());
+
+        int[][] expected = new int[][]{{414, 157},{414, 158},{414, 159},{414, 160},{414, 161},{414, 162}, {414, 163},
+            {415, 163},{416, 163},{417, 163},{418, 163},{419, 163},
+            {420, 163},{421, 163},{420, 163},{419, 163},
+                {418, 162},{417, 161}, {416, 161},{415, 160},{414, 159},{414, 158}};
+        assertEquals(expected.length, boundary.getN());
+        for (int i = 0; i < boundary.getN(); ++i) {
+            assertEquals(expected[i][0], boundary.getX(i));
+            assertEquals(expected[i][1], boundary.getY(i));
+        }
+    }
+
+    @Test
     public void testGetLabeledPointsMap() {
 
         int[] labels = new int[]{2,0,1,0};
