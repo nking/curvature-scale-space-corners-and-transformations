@@ -42,8 +42,25 @@ public class PerimeterFinder3 {
      * the first.
      */
     public static Map<Integer, PairIntArray> extractOrderedBorders(int[] labels, int imgWidth, int imgHeight) {
+        return extractOrderedBorders(labels, imgWidth, imgHeight, 1, labels.length);
+    }
 
-        Map<Integer, Set<Integer>> filledRegions = regionFill(labels, imgWidth, imgHeight);
+    /**
+     * given labels for each pixel image where idx = row * imageWidth + col, extract each region's
+     * border pixels in a connected clockwise manner to form a closed curve, missing the last point which equals
+     * the first.
+     * @param labels labels of each image pixel
+     * @param imgWidth width of image
+     * @param imgHeight height of image
+     * @param minSize the minimum size of a filled region to extract boundary from, inclusive.
+     * @param maxSize the maximum size of a filled region to extract a boundary from, inclusive.
+     * @return each region's bounding pixels in a connected clockwise manner to forma closed curve, missing the last point which equals
+     * the first.
+     */
+    public static Map<Integer, PairIntArray> extractOrderedBorders(int[] labels, int imgWidth, int imgHeight,
+                                                                   int minSize, int maxSize) {
+
+        Map<Integer, Set<Integer>> filledRegions = regionFill(labels, imgWidth, imgHeight, minSize, maxSize);
 
         Map<Integer, PairIntArray> out = new HashMap<>();
 
@@ -73,6 +90,22 @@ public class PerimeterFinder3 {
      * interior points are present as a mask where the map holds key=label, value = in-filled region points.
      */
     public static Map<Integer, Set<Integer>> regionFill(int[] labels, int imgWidth, int imgHeight) {
+        return regionFill(labels, imgWidth, imgHeight, 1, imgWidth*imgHeight);
+    }
+
+    /**
+     * given labels for each pixel image where idx = row * imageWidth + col,
+     * for each region, fill in any interior "holes" where a "hole" is any other labeled region.
+     * @param labels labels of each image pixel
+     * @param imgWidth width of image
+     * @param imgHeight height of image
+     * @param minSize the minimum size of a filled region to extract boundary from, inclusive.
+     * @param maxSize the maximum size of a filled region to extract a boundary from, inclusive.
+     * @return a map of labeled regions where each region has been in-filled so that all
+     * interior points are present as a mask where the map holds key=label, value = in-filled region points.
+     */
+    public static Map<Integer, Set<Integer>> regionFill(int[] labels, int imgWidth, int imgHeight,
+                                                        int minSize, int maxSize) {
 
         /*
         (1) create hashmap w/ key = label, value = indexes of points having that label
@@ -140,6 +173,10 @@ public class PerimeterFinder3 {
         Map<Integer, Set<Integer>> filledRegions = new HashMap<>();
 
         for (Map.Entry<Integer, Set<Integer>> entry : labelPointsMap.entrySet()) {
+            if (entry.getValue().size() < minSize || entry.getValue().size() > maxSize) {
+                continue;
+            }
+
             int label = entry.getKey();
 
             // region filling algorithm:
