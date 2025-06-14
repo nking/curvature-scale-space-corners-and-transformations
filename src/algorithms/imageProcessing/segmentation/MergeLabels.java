@@ -171,7 +171,7 @@ public class MergeLabels {
         int h = img.getHeight();
         Map<Integer, Set<Integer>> adjLabelMap = new HashMap<>();
 
-        // descriptor is [L, A, B, minGrad]
+        // descriptor is [L, A, B, minGrad, x, y]
         Map<Integer, float[]> labelDescMap = new HashMap<>();
 
         for (int i1 = 0; i1 < labels.length; ++i1) {
@@ -199,7 +199,7 @@ public class MergeLabels {
                 adjLabelMap.get(label2).add(label1);
             }
 
-            labelDescMap.putIfAbsent(label1, new float[]{0.f, 0.f, 0.f, Integer.MAX_VALUE});
+            labelDescMap.putIfAbsent(label1, new float[]{0.f, 0.f, 0.f, Integer.MAX_VALUE, 0.f, 0.f});
 
             int gradient = grad.getValue(c1, r1);
             if (gradient < labelDescMap.get(label1)[3]) {
@@ -207,6 +207,8 @@ public class MergeLabels {
                 float[] tmp = labelDescMap.get(label1);
                 System.arraycopy(lab, 0, tmp, 0, lab.length);
                 tmp[3] = gradient;
+                tmp[4] = c1;
+                tmp[5] = r1;
             }
         }
 
@@ -222,8 +224,12 @@ public class MergeLabels {
         float[] vDesc;
         while (!q.isEmpty()) {
             u = q.poll();
+            if (visited.contains(u)) {
+                continue;
+            }
             visited.add(u);
             uDesc = labelDescMap.get(u);
+
             for (int v : adjLabelMap.get(u)) {
                 if (visited.contains(v)) {
                     continue;
@@ -263,7 +269,6 @@ public class MergeLabels {
         }
 
         return mergedLabelMap.size();
-
     }
 
     private static void add(int[][] uHist, int[][] vHist, int[][] tmp) {
