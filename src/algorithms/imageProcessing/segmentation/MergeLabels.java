@@ -2,6 +2,7 @@ package algorithms.imageProcessing.segmentation;
 
 import algorithms.disjointSets.UnionFind;
 import algorithms.imageProcessing.*;
+import algorithms.imageProcessing.features.HCPT;
 import algorithms.misc.MiscMath0;
 
 import java.util.*;
@@ -38,7 +39,10 @@ public class MergeLabels {
         }
 
         if (method == METHOD.MIN_GRADIENT) {
-            return mergeWithMinGrad(img, labels, thresh);
+            ImageSegmentation seg = new ImageSegmentation();
+            EdgeFilterProducts edgeProducts = seg.createGradient(img, 0, System.currentTimeMillis());
+            GreyscaleImage grad = edgeProducts.getGradientXY();
+            return mergeWithMinGrad(img, labels, thresh, grad);
         }
 
         // merging adjacent labels if their deltaE2000 are < thresh
@@ -151,6 +155,316 @@ public class MergeLabels {
     }
 
     /**
+     * experimental method to merge labels where input image is CIE LUV polar theta image.
+     * not yet tested.
+     * The values in a pixel
+     * are circular, so differences are the min(max-(abs(a-b)), abs(a-b)), hence, this "merging" is very different than
+     * would be applied to a standard greyscale image.
+     *
+     * @param img CIE LUV polar theta image created with maxValue=255.
+     * @param labels input labels, they are updated in place with merged labels
+     * @param thresh threshold lower limit for which the difference will be considered different regions.
+     * @return number of unique labels
+     */
+    public static int mergeCIELUVPolarTheta(GreyscaleImage img, int[] labels, int thresh) {
+
+        // will use the mean of each labeled region.  the descriptors will hold the sums and number of elements.
+        //
+        // datastructures:
+        //  hashmap w/ key = label, value = color histogram
+        //  hashmap w/ key = label, value = set of adjacent labels
+        //
+        // will use BFS traversal of adjacency map and when deltaE2000 of parent and child are < thresh
+        // will merge the two using union find.
+        //
+        // the final components are the parents in union find.
+        // for each original label, there will be a new label and total number of unique labels is <= original number.
+
+        int r1, c1, r2, c2, i2, label2;
+        int w = img.getWidth();
+        int h = img.getHeight();
+        Map<Integer, Set<Integer>> adjLabelMap = new HashMap<>();
+        Map<Integer, long[]> labelDescriptorMap = new HashMap<>();
+
+        long[] tmp = new long[2];
+
+        for (int i1 = 0; i1 < labels.length; ++i1) {
+            int label1 = labels[i1];
+            adjLabelMap.putIfAbsent(label1, new HashSet<>());
+
+            r1 = img.getRow(i1);
+            c1 = img.getCol(i1);
+            for (int[] offset : offsets) {
+                r2 = r1 + offset[0];
+                c2 = c1 + offset[1];
+                if (r2 < 0 || c2 < 0 || r2 == h || c2 == w) {
+                    continue;
+                }
+                i2 = img.getInternalIndex(c2, r2);
+                label2 = labels[i2];
+
+                if (label1 == label2) {
+                    continue;
+                }
+
+                adjLabelMap.putIfAbsent(label2, new HashSet<>());
+
+                adjLabelMap.get(label1).add(label2);
+                adjLabelMap.get(label2).add(label1);
+            }
+
+            labelDescriptorMap.putIfAbsent(label1, new long[2]);
+
+            long[] desc = labelDescriptorMap.get(label1);
+            desc[0] += img.getValue(i1);
+            desc[1]++;
+        }
+
+        int nLabels = adjLabelMap.size();
+        UnionFind uf = new UnionFind(nLabels);
+
+        // BFS traverse adj map
+        Set<Integer> visited = new HashSet<>();
+        Deque<Integer> q = new ArrayDeque<>();
+        q.add(labels[0]);
+        int u;
+        long[] uDesc;
+        long[] vDesc;
+        double uMean, vMean;
+        while (!q.isEmpty()) {
+            u = q.poll();
+            if (visited.contains(u)) {
+                continue;
+            }
+            visited.add(u);
+            uDesc = labelDescriptorMap.get(u);
+            for (int v : adjLabelMap.get(u)) {
+                if (visited.contains(v)) {
+                    continue;
+                }
+                q.add(v);
+                if (uf.find(u) == uf.find(v)) {
+                    continue;
+                }
+                vDesc = labelDescriptorMap.get(v);
+                uMean = uDesc[0] / (double)uDesc[1];
+                vMean = vDesc[0] / (double)vDesc[1];
+                double diff = Math.abs(uMean - vMean);
+                diff = Math.min(255 - diff, diff);
+                if (diff < thresh) {
+                    uf.union(u, v);
+                    // update the descriptors for the merge
+                    if (uMean > vMean) {
+                        uDesc[0] = (255 * uDesc[1]) - uDesc[0];
+                    } else if (uMean < vMean) {
+                        vDesc[0] = (255 * vDesc[1]) - vDesc[0];
+                    }
+                    System.arraycopy(uDesc, 0, tmp, 0, uDesc.length);
+                    uDesc[0] += vDesc[0];
+                    uDesc[1] += vDesc[1];
+                    vDesc[0] += tmp[0];
+                    vDesc[1] += tmp[1];
+                }
+            }
+        }
+
+        Map<Integer, Set<Integer>> mergedLabelMap = uf.getComponents();
+
+        int j = 0;
+        // reverse the map so given previous label, we have new label, but renumber new label from 0 to size()-1
+        int[] rev = new int[nLabels];
+        for (Map.Entry<Integer, Set<Integer>> entry : mergedLabelMap.entrySet()) {
+            for (int oldLabel : entry.getValue()) {
+                rev[oldLabel] = j;
+            }
+            ++j;
+        }
+
+        for (int i = 0; i < labels.length; ++i) {
+            labels[i] = rev[labels[i]];
+        }
+
+        return mergedLabelMap.size();
+    }
+
+    /**
+     * experimental method to merge labels where input image is CIE LUV polar theta image
+     * and histograms are used.
+     * not yet tested.
+     * The values in a pixel
+     * are circular, so differences are the min(max-(abs(a-b)), abs(a-b)), hence, this "merging" is very different than
+     * would be applied to a standard greyscale image.
+     *
+     * @param img CIE LUV polar theta image created with maxValue=255.
+     * @param labels input labels, they are updated in place with merged labels
+     * @param thresh value between 0 and 1 for similarity threshold, above which regions will be merged.
+     * @return number of unique labels
+     */
+    public static int mergeCIELUVPolarThetaH(GreyscaleImage img, int[] labels, double thresh) {
+
+        // will use the histograms of each labeled region.  the descriptors will hold the sums and number of elements.
+        //
+        // datastructures:
+        //  hashmap w/ key = label, value = color histogram
+        //  hashmap w/ key = label, value = set of adjacent labels
+        //
+        // will use BFS traversal of adjacency map and when deltaE2000 of parent and child are < thresh
+        // will merge the two using union find.
+        //
+        // the final components are the parents in union find.
+        // for each original label, there will be a new label and total number of unique labels is <= original number.
+
+        int r1, c1, r2, c2, i2, label2;
+        int w = img.getWidth();
+        int h = img.getHeight();
+        Map<Integer, Set<Integer>> adjLabelMap = new HashMap<>();
+        Map<Integer, int[]> labelDescriptorMap = new HashMap<>();
+
+        //TODO: change to use HOGUtil.createHCPTHist...integral image methods, and sets of labeled points
+
+        int nBins = 16;
+        // 1st 16 bins are the histogram, last bin is the count
+        int[] tmp = new int[nBins + 1];
+
+        for (int i1 = 0; i1 < labels.length; ++i1) {
+            int label1 = labels[i1];
+            adjLabelMap.putIfAbsent(label1, new HashSet<>());
+
+            r1 = img.getRow(i1);
+            c1 = img.getCol(i1);
+            for (int[] offset : offsets) {
+                r2 = r1 + offset[0];
+                c2 = c1 + offset[1];
+                if (r2 < 0 || c2 < 0 || r2 == h || c2 == w) {
+                    continue;
+                }
+                i2 = img.getInternalIndex(c2, r2);
+                label2 = labels[i2];
+
+                if (label1 == label2) {
+                    continue;
+                }
+
+                adjLabelMap.putIfAbsent(label2, new HashSet<>());
+
+                adjLabelMap.get(label1).add(label2);
+                adjLabelMap.get(label2).add(label1);
+            }
+
+            labelDescriptorMap.putIfAbsent(label1, new int[nBins + 1]);
+
+            int[] desc = labelDescriptorMap.get(label1);
+            int bin = img.getValue(i1) / (nBins + 1);
+            desc[bin]++;
+            desc[nBins]++;
+        }
+
+        int nLabels = adjLabelMap.size();
+        UnionFind uf = new UnionFind(nLabels);
+
+        // BFS traverse adj map
+        Set<Integer> visited = new HashSet<>();
+        Deque<Integer> q = new ArrayDeque<>();
+        q.add(labels[0]);
+        int u;
+        int[] uDesc;
+        int[] vDesc;
+        double uMean, vMean;
+        while (!q.isEmpty()) {
+            u = q.poll();
+            if (visited.contains(u)) {
+                //continue;
+            }
+            visited.add(u);
+            uDesc = labelDescriptorMap.get(u);
+            for (int v : adjLabelMap.get(u)) {
+                if (visited.contains(v)) {
+                    continue;
+                }
+                q.add(v);
+                if (uf.find(u) == uf.find(v)) {
+                    continue;
+                }
+                vDesc = labelDescriptorMap.get(v);
+                double intersection = intersection(uDesc, vDesc);
+                if (intersection > thresh) {
+                    uf.union(u, v);
+                    System.arraycopy(uDesc, 0, tmp, 0, uDesc.length);
+                    for (int k = 0; k < tmp.length; ++k) {
+                        uDesc[k] += vDesc[k];
+                    }
+                    for (int k = 0; k < tmp.length; ++k) {
+                        vDesc[k] += tmp[k];
+                    }
+                }
+            }
+        }
+
+        Map<Integer, Set<Integer>> mergedLabelMap = uf.getComponents();
+
+        int j = 0;
+        // reverse the map so given previous label, we have new label, but renumber new label from 0 to size()-1
+        int[] rev = new int[nLabels];
+        for (Map.Entry<Integer, Set<Integer>> entry : mergedLabelMap.entrySet()) {
+            for (int oldLabel : entry.getValue()) {
+                rev[oldLabel] = j;
+            }
+            ++j;
+        }
+
+        for (int i = 0; i < labels.length; ++i) {
+            labels[i] = rev[labels[i]];
+        }
+
+        return mergedLabelMap.size();
+    }
+
+    // histogram last items are the number of points
+    private static double intersection(int[] histA, int[] histB) {
+
+        if ((histA.length != histB.length)) {
+            throw new IllegalArgumentException(
+                    "histA and histB must be same dimensions");
+        }
+
+        int nBins = histA.length - 1;
+
+        /*
+        normalize histograms, then:
+
+        K(a,b) =
+            (summation_over_i_from_1_to_n( min(a_i, b_i))
+             /
+            (min(summation_over_i(a_i), summation_over_i(b_i))
+        */
+
+        double nA = histA[histA.length - 1];
+        double nB = histB[histB.length - 1];
+
+        double sum = 0;
+        double sumA = 0;
+        double sumB = 0;
+        for (int j = 0; j < nBins; ++j) {
+
+            double yA = histA[j] / nA;
+            double yB = histB[j] / nB;
+
+            sum += Math.min(yA, yB);
+            sumA += yA;
+            sumB += yB;
+
+            //System.out.println(" " + yA + " -- " + yB + " sum="+sum + ", " + sumA + "," + sumB);
+        }
+
+        double d = 1E-7 +  Math.min(sumA, sumB);
+
+        double sim = sum/d;
+
+        return sim;
+    }
+
+
+    /**
      * the color descriptor of each label is determined from the point which has the min gradient for each label region
      * as was done in the SuperPixels algorithm.
      * @param img
@@ -158,11 +472,7 @@ public class MergeLabels {
      * @param thresh
      * @return the number of unique labels after merging
      */
-    protected static int mergeWithMinGrad(ImageExt img, int[] labels, double thresh) {
-
-        ImageSegmentation seg = new ImageSegmentation();
-        EdgeFilterProducts edgeProducts = seg.createGradient(img, 0, System.currentTimeMillis());
-        GreyscaleImage grad = edgeProducts.getGradientXY();
+    public static int mergeWithMinGrad(ImageExt img, int[] labels, double thresh, GreyscaleImage gradImg) {
 
         CIEChromaticity cieC = new CIEChromaticity();
 
@@ -201,7 +511,7 @@ public class MergeLabels {
 
             labelDescMap.putIfAbsent(label1, new float[]{0.f, 0.f, 0.f, Integer.MAX_VALUE, 0.f, 0.f});
 
-            int gradient = grad.getValue(c1, r1);
+            int gradient = gradImg.getValue(c1, r1);
             if (gradient < labelDescMap.get(label1)[3]) {
                 float[] lab = img.getCIELAB(c1, r1);
                 float[] tmp = labelDescMap.get(label1);

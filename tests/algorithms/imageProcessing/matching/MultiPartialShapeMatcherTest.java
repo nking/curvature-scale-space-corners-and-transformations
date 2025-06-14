@@ -5,10 +5,7 @@ import algorithms.imageProcessing.*;
 import algorithms.imageProcessing.features.mser.MSEREdges;
 import algorithms.imageProcessing.features.mser.MSEREdgesWrapper;
 import algorithms.imageProcessing.features.mser.Region;
-import algorithms.imageProcessing.segmentation.LabelHelper;
-import algorithms.imageProcessing.segmentation.MSEREdgesToLabelsHelper;
-import algorithms.imageProcessing.segmentation.MergeLabels;
-import algorithms.imageProcessing.segmentation.SLICSuperPixels;
+import algorithms.imageProcessing.segmentation.*;
 import algorithms.imageProcessing.segmentation.MergeLabels.METHOD;
 import algorithms.misc.MiscDebug;
 import algorithms.util.PairFloatArray;
@@ -40,7 +37,14 @@ public class MultiPartialShapeMatcherTest extends TestCase {
 
         //PairFloatArray p = extractOrderedBoundary(img0);
 
-        for (int i = 0; i < 1; ++i) {
+        // create for each image, the db of closed curve shapes to search.
+
+        // for this purpose, will use SLICSuperPixels to make the segmentation hence labeled pixels, though it produces
+        // over segmented regions for the parameters I use.
+        // then will use PerimeterFinder3 to extract the shapes.
+        // then, we have curves to place in db (as outlined in MultiPartialShapeMatcher).
+
+        for (int i = 0; i < 4; ++i) {
             String fileName1;
             switch (i) {
                 case 0: {
@@ -61,6 +65,11 @@ public class MultiPartialShapeMatcherTest extends TestCase {
                 }
             }
 
+            /*
+            (1) closed curves from  over-segmented images
+            (2) closed curves from under-segmented images that preserve a couple of larger compositions
+             */
+
             //int minNumPts = p.getN();
             int minNumPts = 10;
 
@@ -69,23 +78,83 @@ public class MultiPartialShapeMatcherTest extends TestCase {
             String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
             ImageExt img = ImageIOHelper.readImageExt(filePath1);
 
-            System.out.printf("i=%d\n", i);
+            ImageProcessor imgProc = new ImageProcessor();
+            ImageSegmentation imgSeg = new ImageSegmentation();
+            ImageExt img2 = img.copyToImageExt();
+            for (int k = 0; k < 0; ++k) {
+                imgProc.blur(img2, SIGMA.getValue(SIGMA.TWO));
+            }
+            GreyscaleImage ptImg = imgProc.createCIELUVTheta_WideRangeLightness(img2, 255);
+            String fn = ResourceFinder.findOutputTestDirectory() + "/../" + fileName1Root + "_polar_theta_0_.png";
+            ImageIOHelper.writeOutputImage(fn, ptImg);
+            EdgeFilterProducts edgeProducts = imgSeg.createGradient(ptImg, 1, System.currentTimeMillis());
+            fn = ResourceFinder.findOutputTestDirectory() + "/../" + fileName1Root + "_polar_theta_0_grad.png";
+            ImageIOHelper.writeOutputImage(fn, edgeProducts.getGradientXY());
 
-            int[] labels = mergedSLIC(img, fileName1Root);
+            System.out.printf("i=%d, min=%d, max=%d\n", i, ptImg.min(), ptImg.max());
 
-            Map<Integer, PairIntArray> shapes = PerimeterFinder3.extractOrderedBorders(labels, img.getWidth(), img.getHeight());
+            // over-segmented:
+            int[] labels1 = mergedSLIC(img, fileName1Root, edgeProducts.getGradientXY(), ptImg);
 
-            List<PairFloatArray> list = new ArrayList<>();
-            for (Map.Entry<Integer, PairIntArray> entry : shapes.entrySet()) {
+            // under-segmented:
+            //int[] labels2 = mergedSLIC(ptImg, fileName1Root, edgeProducts.getGradientXY());
+
+            int[] labels3 = mergeUsingPT(ptImg, fileName1Root, labels1);
+
+            int n = img.getNPixels();
+            int minSz = 150;
+            int maxSz = Math.round(0.7f * n);
+
+            Map<Integer, PairIntArray> shapes1 = PerimeterFinder3.extractOrderedBorders(labels1,
+                    img.getWidth(), img.getHeight(), minSz, maxSz);
+
+            //Map<Integer, PairIntArray> shapes2 = PerimeterFinder3.extractOrderedBorders(labels2,
+            //        img.getWidth(), img.getHeight(), minSz, maxSz);
+
+            Map<Integer, PairIntArray> shapes3 = PerimeterFinder3.extractOrderedBorders(labels3,
+                    img.getWidth(), img.getHeight(), minSz, maxSz);
+
+            System.out.printf("i=%d, n_curves=%d, %d\n", i, shapes1.size(), shapes3.size());
+
+            List<PairFloatArray> list1 = new ArrayList<>();
+            for (Map.Entry<Integer, PairIntArray> entry : shapes1.entrySet()) {
                 PairIntArray s = entry.getValue();
-                //System.out.printf("i=%d, label=%d, curve.n=%d\n", i, entry.getKey(), s.getN());
+                if (s.getN() < minSz || s.getN() > maxSz) {
+                    continue;
+                }
                 PairFloatArray f = new PairFloatArray(s.getN());
                 for (int j = 0; j < s.getN(); ++j) {
                     f.add(s.getX(j), s.getY(j));
                 }
-                list.add(f);
+                list1.add(f);
             }
-            plot(img, list, fileName1Root + "_closed_curves_");
+            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), list1, fileName1Root + "_closed_curves_under");
+
+            /*List<PairFloatArray> list2 = new ArrayList<>();
+            for (Map.Entry<Integer, PairIntArray> entry : shapes2.entrySet()) {
+                PairIntArray s = entry.getValue();
+                PairFloatArray f = new PairFloatArray(s.getN());
+                for (int j = 0; j < s.getN(); ++j) {
+                    f.add(s.getX(j), s.getY(j));
+                }
+                list2.add(f);
+            }
+            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), list2, fileName1Root + "_closed_curves_over");*/
+
+            List<PairFloatArray> list3 = new ArrayList<>();
+            for (Map.Entry<Integer, PairIntArray> entry : shapes3.entrySet()) {
+                PairIntArray s = entry.getValue();
+                if (s.getN() < minSz || s.getN() > maxSz) {
+                    continue;
+                }
+                PairFloatArray f = new PairFloatArray(s.getN());
+                for (int j = 0; j < s.getN(); ++j) {
+                    f.add(s.getX(j), s.getY(j));
+                }
+                list3.add(f);
+            }
+            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), list3, fileName1Root + "_closed_curves_under_over");
+
 
             //write_centroids(labels, img, fileName1Root);
 
@@ -96,42 +165,7 @@ public class MultiPartialShapeMatcherTest extends TestCase {
 
     }
 
-    private int[] mergedMSER(ImageExt img, String fileName1Root) throws IOException {
-
-        ImageProcessor imageProcessor = new ImageProcessor();
-        //imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO));
-
-        MSEREdgesWrapper msew = new MSEREdgesWrapper();
-        MSEREdges mserE = msew.extractAndMergeEdges(img, 512);
-        //MSEREdges mserE = new MSEREdges(img);
-        //mserE.extractAndMergeEdges();
-
-        List<TIntSet> edgeList = mserE.getEdges();
-        Image im = mserE.getGsImg().copyToColorGreyscale();
-        int[] clr = new int[]{255, 0, 0};
-        for (int ii = 0; ii < edgeList.size(); ++ii) {
-            ImageIOHelper.addCurveToImage(edgeList.get(ii), im, 0, clr[0],clr[1], clr[2]);
-        }
-        MiscDebug.writeImage(im, "_" + fileName1Root + "_mser_edges_");
-
-        //assign labels
-        ImageExt im2 = msew.binImage(img);
-        assertEquals(im.getNPixels(), im2.getNPixels());
-        assertEquals(im.getWidth(), im2.getWidth());
-        assertEquals(im.getHeight(), im2.getHeight());
-        int[] labels = new int[im2.getNPixels()];
-        int nComp = MSEREdgesToLabelsHelper.createLabels(im2, edgeList, labels);
-        assertTrue(MSEREdgesToLabelsHelper.allAreNonNegative(labels));
-        ImageIOHelper.addAlternatingColorLabelsToRegion(im2, labels);
-        MiscDebug.writeImage(im2, "_" + fileName1Root + "_mser_segmentation_");
-
-        int nc = 50;
-        int[] labels2 = slic(msew.binImage(img), fileName1Root, nc);
-
-        return labels2;
-    }
-
-    private int[] mergedSLIC(ImageExt img, String fileName1Root) throws IOException {
+    private int[] mergedSLIC(ImageExt img, String fileName1Root, GreyscaleImage gradImg, GreyscaleImage luvPolarThetaImg) throws IOException {
 
         ImageProcessor imageProcessor = new ImageProcessor();
         imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO));
@@ -140,18 +174,100 @@ public class MultiPartialShapeMatcherTest extends TestCase {
         //int nc = 100; double thresh = 2.5;
         //int nc = 70; double thresh = 2.5;
         //int nc = 50; double thresh = 3.0;//2nd best
-        int nc = 40; double thresh = 1.0; // best results
+        int nc = 40; double thresh = 1.0; // best results, but over-segmented
 
         //METHOD method = METHOD.MODE;
         //int nc = 100; double thresh = 5.0;
         //int nc = 70; double thresh = 5.0;
 
-        int[] labels2 = slic(img.copyToImageExt(), fileName1Root, nc);
+        int[] labels2 = slic(img.copyToImageExt(), fileName1Root, nc, gradImg);
 
-        int nLabels2 = MergeLabels.mergeUsingDeltaE2000(img, labels2, thresh, method);
-        System.out.printf("merged k=%d, nc=%d\n", nLabels2, nc);
+        //int nLabels2 = MergeLabels.mergeWithMinGrad(img, labels2, thresh, gradImg);
+        //System.out.printf("merged k=%d, nc=%d\n", nLabels2, nc);
+        //int thresh2 = 2;
+        //int nLabels3 = MergeLabels.mergeCIELUVPolarTheta(luvPolarThetaImg, labels2, thresh2);
+        //System.out.printf("merged k=%d\n", nLabels3);
+        //double thresh3 = 0.985;
+        //int nLabels4 = MergeLabels.mergeCIELUVPolarThetaH(luvPolarThetaImg, labels2, thresh3);
+        //System.out.printf("merged k=%d\n", nLabels4);
 
         ImageExt im3 = img.copyToImageExt();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(im3, labels2);
+        MiscDebug.writeImage(im3, "_" + fileName1Root + "_slic_merged_");
+
+        //return new int[][]{labels, labels2};
+        return labels2;
+    }
+
+    private int[] mergeUsingPT(GreyscaleImage img, String fileName1Root, int[] labels) {
+        ImageProcessor imageProcessor = new ImageProcessor();
+        //imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO));
+
+        labels = Arrays.copyOf(labels, labels.length);
+        /*
+        int thresh2 = 10;
+        int nLabels3 = MergeLabels.mergeCIELUVPolarTheta(img, labels, thresh2);
+        System.out.printf("merged k=%d\n", nLabels3);
+        */
+        ///*
+        double thresh3 = 0.65;
+        int nLabels4 = MergeLabels.mergeCIELUVPolarThetaH(img, labels, thresh3);
+        System.out.printf("merged k=%d\n", nLabels4);
+        //*/
+
+        /*
+        int thresh5 = 10;
+        int nLabels5 = MergeLabels.mergeCIELUVPolarTheta(img, labels, thresh5);
+        System.out.printf("merged k=%d\n", nLabels5);
+        */
+
+        ImageExt im3 = img.copyToColorGreyscaleExt();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(im3, labels);
+        MiscDebug.writeImage(im3, "_" + fileName1Root + "_slic_merged_");
+
+        //return new int[][]{labels, labels2};
+        return labels;
+    }
+
+    private int[] mergedSLIC(GreyscaleImage img, String fileName1Root, GreyscaleImage gradImg) throws IOException {
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO));
+
+        METHOD method = METHOD.MIN_GRADIENT;
+        //int nc = 100; double thresh = 2.5;
+        //int nc = 70; double thresh = 2.5;
+        //int nc = 50; double thresh = 3.0;//2nd best
+        int nc = 40;
+        nc = 20;
+        //nc = 30; // best
+        //nc = 20;
+        //nc = 10;
+        //nc = 20; thresh = 0.;
+        //METHOD method = METHOD.MODE;
+        //int nc = 100; double thresh = 5.0;
+        //int nc = 70; double thresh = 5.0;
+
+        int[] labels2 = slic(img, fileName1Root, nc, gradImg);
+
+        ///*
+        int thresh2 = 10;
+        int nLabels3 = MergeLabels.mergeCIELUVPolarTheta(img, labels2, thresh2);
+        System.out.printf("merged k=%d\n", nLabels3);
+        //*/
+        ///*
+        double thresh3 = 0.75;
+        int nLabels4 = MergeLabels.mergeCIELUVPolarThetaH(img, labels2, thresh3);
+        System.out.printf("merged k=%d\n", nLabels4);
+        //*/
+
+        /// *
+        int thresh5 = 10;
+        int nLabels5 = MergeLabels.mergeCIELUVPolarTheta(img, labels2, thresh5);
+        System.out.printf("merged k=%d\n", nLabels5);
+        //*/
+
+        ImageExt im3 = img.copyToColorGreyscaleExt();
         ImageIOHelper.addAlternatingColorLabelsToRegion(im3, labels2);
         MiscDebug.writeImage(im3, "_" + fileName1Root + "_slic_merged_");
 
@@ -162,7 +278,7 @@ public class MultiPartialShapeMatcherTest extends TestCase {
     public void extractShapes(ImageExt img, String fileName1Root) throws IOException {
 
         ImageProcessor imageProcessor = new ImageProcessor();
-        imageProcessor.blur(img, SIGMA.getValue(SIGMA.ONE));
+        //imageProcessor.blur(img, SIGMA.getValue(SIGMA.ONE));
 
         MSEREdgesWrapper msew = new MSEREdgesWrapper();
         //msew.setToDebug();
@@ -191,7 +307,7 @@ public class MultiPartialShapeMatcherTest extends TestCase {
 
         Image im = img.copyToGreyscale().copyToColorGreyscale();
         int[] clr;
-        int nDot = 0;
+        int nDot = 1;
         for (int ii = 0; ii < shapes.size(); ++ii) {
             clr = ImageIOHelper.getNextRGB(ii);
             ImageIOHelper.addCurveToImage(shapes.get(ii), im, nDot, clr[0],
@@ -214,27 +330,7 @@ public class MultiPartialShapeMatcherTest extends TestCase {
         MiscDebug.writeImage(im, fileSuffix);
     }
 
-    private List<Set<PairInt>> createBlobs(int[] labels, int width, int minNumPts) {
-        Map<Integer, Set<Integer>> map = new HashMap<>();
-        for (int i = 0; i < labels.length; ++i) {
-            map.putIfAbsent(labels[i], new HashSet<>());
-            map.get(labels[i]).add(i);
-        }
-        List<Set<PairInt>> out = new ArrayList<>();
-        for (int label : map.keySet()) {
-            if (map.get(label).size() < minNumPts) {
-                continue;
-            }
-            Set<PairInt> set = new HashSet<>();
-            for (int c : map.get(label)) {
-                set.add(new PairInt(c % width, c / width));
-            }
-            out.add(set);
-        }
-        return out;
-    }
-
-    private int[] slic(ImageExt img, String fileName1Root, int nc) throws IOException {
+    private int[] slic(ImageExt img, String fileName1Root, int nc, GreyscaleImage gradImg) throws IOException {
 
         ImageSegmentation imS = new ImageSegmentation();
 
@@ -243,16 +339,41 @@ public class MultiPartialShapeMatcherTest extends TestCase {
 
         int method = 0;
 
-        EdgeFilterProducts edgeProducts = imS.createGradient(img, method, System.currentTimeMillis());
-
         SLICSuperPixels slic = new SLICSuperPixels(img, nc);
-        slic.setGradient(edgeProducts.getGradientXY());
+        slic.setGradient(gradImg);
         slic.calculate();
         int[] labels = slic.getLabels();
 
         LabelHelper.resolveByConnectedness(labels, img.getWidth(), img.getHeight(), true);
 
         Image img3 = img.createWithDimensions();
+        ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
+        String str = Integer.toString(nc);
+        while (str.length() < 3) {
+            str = "0" + str;
+        }
+        String suffix = String.format("_slic_%s_%s", fileName1Root, str);
+        MiscDebug.writeImage(img3, suffix);
+        return labels;
+    }
+
+    private int[] slic(GreyscaleImage img, String fileName1Root, int nc, GreyscaleImage gradImg) throws IOException {
+
+        ImageSegmentation imS = new ImageSegmentation();
+
+        ImageProcessor imageProcessor = new ImageProcessor();
+        //imageProcessor.blur(img, SIGMA.getValue(SIGMA.TWO));
+
+        int method = 0;
+
+        SLICSuperPixelsGS slic = new SLICSuperPixelsGS(img, nc);
+        slic.setGradient(gradImg);
+        slic.calculate();
+        int[] labels = slic.getLabels();
+
+        LabelHelper.resolveByConnectedness(labels, img.getWidth(), img.getHeight(), true);
+
+        Image img3 = img.copyToColorGreyscale();
         ImageIOHelper.addAlternatingColorLabelsToRegion(img3, labels);
         String str = Integer.toString(nc);
         while (str.length() < 3) {

@@ -244,7 +244,7 @@ public class HCPT {
             throw new IllegalArgumentException(
                 "histA and histB must be same dimensions");
         }
-        
+
         int nBins = histA.length;
                 
         /*

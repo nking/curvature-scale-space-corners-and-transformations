@@ -68,7 +68,6 @@ public class ImageSegmentation {
      *
      * @param img
      * @param edges
-     * @param junctions
      * @param outputPoints
      * @param outputDescripors access as [edgeListIndex][(h, s, v, nPix, cenX, cenY)]
      * @param clrSpace color space to fill the descriptors with: 0 is lab, 1 is hsv
@@ -1725,6 +1724,50 @@ public class ImageSegmentation {
             
             products = createPhaseCongruencyGradient(
                 img.copyBlueToGreyscale());
+
+        }
+
+        return products;
+    }
+
+    /**
+     *
+     * @param img
+     * @param gradientMethod
+     * 0=CannyEdgeFilterAdaptiveDeltaE2000,
+     * 1=CannyEdgeFilterAdaptive,
+     * 2=PhaseCongruencyDetector
+     * @param ts timestamp used in debugging image name
+     * @return
+     */
+    public EdgeFilterProducts createGradient(GreyscaleImage img,
+                                             int gradientMethod, long ts) {
+
+        img = img.copyImage();
+        EdgeFilterProducts products = null;
+
+        if (gradientMethod == 0) {
+
+            CannyEdgeFilterAdaptive canny = new CannyEdgeFilterAdaptive();
+            canny.setOtsuScaleFactor(0.3f);
+            canny.setToUseSingleThresholdIn2LayerFilter();
+            canny.applyFilter(img);
+
+            products = canny.getFilterProducts();
+
+        } else if (gradientMethod == 1) {
+
+            CannyEdgeFilterAdaptive canny2 = new CannyEdgeFilterAdaptive();
+            canny2.overrideToNotUseLineThinner();
+            //canny2.setOtsuScaleFactor(0.3f);
+            canny2.setToUseSingleThresholdIn2LayerFilter();
+            canny2.applyFilter(img);
+
+            products = canny2.getFilterProducts();
+
+        } else if (gradientMethod == 2) {
+
+            products = createPhaseCongruencyGradient(img);
 
         }
 

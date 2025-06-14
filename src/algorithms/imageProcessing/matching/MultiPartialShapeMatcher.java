@@ -20,7 +20,7 @@ package algorithms.imageProcessing.matching;
  *
  *  Details of db creation:
  *    - the databases are instances of a nearest neighbor library indexer such as Google's ScANN or Meta's FAISS
- *      or java version of Voyager, etc.
+ *      or java impl of Voyager, etc.
  *    - shifted descriptor images (no subtraction or sum to integral image) are created.
  *       O(L*N_S^3) where L is the number of curves to store in databases.
  *    - stepping along the diagonal of a shifted descriptor image until reach minLength,
