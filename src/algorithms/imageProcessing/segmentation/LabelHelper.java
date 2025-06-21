@@ -72,7 +72,7 @@ public class LabelHelper {
                 }
             }
             // extract the connected regions within this label
-            Map<Integer, Set<Integer>> labelMap = new HashMap();
+            Map<Integer, Set<Integer>> labelMap = new HashMap<>();
             for (int idx : points) {
                 int p = uf.find(uf.getParent()[idx]);
                 labelMap.putIfAbsent(p, new HashSet<>());
