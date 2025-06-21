@@ -49,6 +49,7 @@
     <!-- set compiler options -->
     <property name="compile.debug"       value="true"/>
     <property name="compile.deprecation" value="true"/>
+    <property name="compile.source"      value="11"/>
     <property name="compile.target"      value="11"/>
 
     <!-- print usage: prints all targets -->
@@ -122,7 +123,8 @@
         <echo message="COMPILE debug=${compile.debug} "/>
         <javac srcdir="${src.dir}" fork="true"
             destdir="${src.out.dir}"
-            source="${compile.target}"
+            source="${compile.source}"
+            target="${compile.target}"
             debug="${compile.debug}"
             deprecation="${compile.deprecation}"
             includeAntRuntime="false"
@@ -150,7 +152,8 @@
 
     	<javac srcdir="${tests.dir}"
     	    destdir="${tests.out.dir}"
-    	    source="${compile.target}"
+            source="${compile.source}"
+            target="${compile.target}"
             debug="true"
             includes="**/*.java"
             excludes="**/*KDTree2Test*java"
@@ -353,7 +356,8 @@
         <echo message="COMPILE debug=${compile.debug} "/>
         <javac srcdir="${src.dir}" fork="true"
             destdir="${src.out.dir}"
-            source="${compile.target}"
+            source="${compile.source}"
+            target="${compile.target}"
             debug="${compile.debug}"
             deprecation="${compile.deprecation}"
             includeAntRuntime="false"
@@ -368,7 +372,8 @@
         
         <javac srcdir="${tests.dir}"
             destdir="${tests.out.dir}"
-            source="${compile.target}"
+            source="${compile.source}"
+            target="${compile.target}"
             debug="true"
             includes="**/*.java"
             excludes="**/*KDTree2Test*java"
@@ -409,7 +414,7 @@
             
             <formatter type="plain" usefile="true"/>
 
-            <jvmarg line="-enableassertions --Xms1024m Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"/>
+            <jvmarg line="-enableassertions --Xms1024m Xmx2048m -XX:+HeapDumpOnOutOfMemoryError -Xcheck:jni"/>
 
             <sysproperty key="java.util.logging.config.file" 
                 value="${src.out.dir}/logging.properties"/>
@@ -555,7 +560,8 @@
         
         <javac srcdir="${src.dir}"
             destdir="${src.out.dir}"
-            source="${compile.target}"
+            source="${compile.source}"
+            target="${compile.target}"
             debug="${compile.debug}"
             deprecation="${compile.deprecation}"
             includeAntRuntime="false"
