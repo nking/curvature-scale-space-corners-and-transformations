@@ -7,11 +7,11 @@ import algorithms.imageProcessing.features.mser.MSEREdgesWrapper;
 import algorithms.imageProcessing.features.mser.Region;
 import algorithms.imageProcessing.segmentation.*;
 import algorithms.imageProcessing.segmentation.MergeLabels.METHOD;
+import algorithms.imageProcessing.transform.TransformationParameters;
+import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.MiscDebug;
-import algorithms.util.PairFloatArray;
-import algorithms.util.PairInt;
-import algorithms.util.PairIntArray;
-import algorithms.util.ResourceFinder;
+import algorithms.misc.MiscMath;
+import algorithms.util.*;
 import gnu.trove.set.TIntSet;
 import junit.framework.TestCase;
 
@@ -27,13 +27,106 @@ public class MultiPartialShapeMatcherTest extends TestCase {
     static String eol = System.lineSeparator();
     Logger log = Logger.getLogger(MultiPartialShapeMatcherTest.class.getName());
 
-    public void testAndroidStatues() throws IOException {
+    public void testMPEG7() {
+        // TODO: add test for
+        //https://dabi.temple.edu/external/shape/MPEG7/dataset.html
+    }
+
+    public void testTriangles() throws Exception {
+
+        /* shape 1:
+
+        7                    *
+        6                 *     *
+        5              *           *
+        4           *                 *
+        3        *                       *
+        2     *  *  *  *  *  *  *  *  *  *  *
+        1
+        0
+           0  1  2  3  4  5  6  7  8  9 10 11
+
+
+        shape 2:
+        7                    *
+        6                 *  *
+        5              *     *  *  *
+        4           *              *
+        3        *                 *  *  *
+        2     *  *  *  *  *  *  *  *  *  *  *
+        1
+        0
+           0  1  2  3  4  5  6  7  8  9 10 11
+
+        shape 3:
+        7
+        6                 *  *  *
+        5               *          *
+        4               *          *
+        3               *          *
+        2                 *  *  *
+        1
+        0
+           0  1  2  3  4  5  6  7  8  9 10 11
+        */
+
+        PairFloatArray shape1 = PartialShapeMatcherTest.getTriangle();
+        PairFloatArray shape2 = PartialShapeMatcherTest.getShape2();
+        PairFloatArray shape3 = PartialShapeMatcherTest.getShape3();
+
+        List<PairFloatArray> curves = new ArrayList<>();
+        curves.add(shape1);
+        curves.add(shape2);
+        curves.add(shape3);
+
+        //System.out.printf("plotting %s\n", plot(shape1, 1));
+        //System.out.printf("plotting %s\n", plot(shape2, 2));
+        //System.out.printf("plotting %s\n", plot(shape3, 3));
+
+        int n = shape1.getN();
+        MultiPartialShapeMatcher m = new MultiPartialShapeMatcher(n, 3, curves);
+
+        int topK = 10;
+        MultiPartialShapeMatcher.Results results = m.query(shape1, topK);
+        assertEquals(topK, results.distances.size());
+        assertEquals(n - 1, results.matchingLengths.get(0).intValue());
+        assertEquals(0, results.offsetsTargets.get(0).intValue());
+        assertTrue(Math.abs(results.getDistances().get(0).floatValue()) < 1E-6);
+        assertEquals(0, results.getOffsetsQuery().get(0).intValue());
+
+        /*
+        curves = new ArrayList<>();
+            offsetsTargets = new ArrayList<>();
+            offsetsQuery = new ArrayList<>();
+            matchingLengths = new ArrayList<>();
+            distances = new ArrayList<>();
+         */
+    }
+
+    public void _testAndroidStatues() throws IOException {
+
+        if (false) {
+            calcAndWriteCurvesToFile();
+        }
 
         String fileName0 = "android_statues_03_sz1_mask_small.png";
         int idx0 = fileName0.lastIndexOf(".");
         String fileName0Root = fileName0.substring(0, idx0);
         String filePath0 = ResourceFinder.findFileInTestResources(fileName0);
-        ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
+        GreyscaleImage img0 = ImageIOHelper.readImageAsBinary(filePath0);
+        int[] labels0 = new int[img0.getNPixels()];
+        for (int i = 0; i < img0.getNPixels(); ++i) {
+            if (img0.getValue(i) > 0) {
+                labels0[i] = 1;
+            }
+        }
+        // template n = 174
+        Map<Integer, PairIntArray> shapes0 = PerimeterFinder3.extractOrderedBorders(labels0, img0.getWidth(), img0.getHeight());
+        PairFloatArray queryCurve = MultiPartialShapeMatcher.convert(shapes0.get(1));
+        //plot(img0.copyToColorGreyscaleExt(), shapes0.get(1), 0,"_template_");
+
+        int curveDimension = queryCurve.getN();
+        int minDim = (int)Math.round(0.2*curveDimension);
 
         //PairFloatArray p = extractOrderedBoundary(img0);
 
@@ -43,6 +136,129 @@ public class MultiPartialShapeMatcherTest extends TestCase {
         // over segmented regions for the parameters I use.
         // then will use PerimeterFinder3 to extract the shapes.
         // then, we have curves to place in db (as outlined in MultiPartialShapeMatcher).
+
+        for (int i = 0; i < 4; ++i) {
+            String fileName1;
+            switch (i) {
+                case 0: {
+                    fileName1 = "android_statues_01.jpg";
+                    break;
+                }
+                case 1: {
+                    fileName1 = "android_statues_02.jpg";
+                    break;
+                }
+                case 2: {
+                    fileName1 = "android_statues_03.jpg";
+                    break;
+                }
+                default: {
+                    fileName1 = "android_statues_04.jpg";
+                    break;
+                }
+            }
+
+            int idx = fileName1.lastIndexOf(".");
+            String fileName1Root = fileName1.substring(0, idx);
+            String filePath1 = ResourceFinder.findFileInTestResources(fileName1);
+            ImageExt img = ImageIOHelper.readImageExt(filePath1);
+
+            List<PairIntArray> curves = readInCurves(fileName1Root);
+            System.out.printf("read %d curves\n", curves.size());
+
+            int tt = 2;
+
+            MultiPartialShapeMatcher matcher = new MultiPartialShapeMatcher(curveDimension, minDim,
+                    MultiPartialShapeMatcher.convert(curves));
+
+            MultiPartialShapeMatcher.Results result = matcher.query(queryCurve, 10);
+            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), result.curves,
+                    fileName1Root + "_found_");
+
+            //write_centroids(labels, img, fileName1Root);
+
+            //extractShapes(img, fileName1Root);
+
+            // use MultiPartialShapeMatcher to match these
+        }
+
+    }
+
+    private List<PairIntArray> readInCurves(String fileNameRoot) throws IOException {
+        List<PairIntArray> out = new ArrayList<>();
+
+        String path = getCurveFilePath(fileNameRoot);
+        FileReader rw = null;
+        BufferedReader reader = null;
+        try {
+            rw = new FileReader(path);
+            reader = new BufferedReader(rw);
+            String line = reader.readLine();
+            while (line != null) {
+                String[] items = line.split(",");
+                int n = items.length/2;
+                PairIntArray p = new PairIntArray(n);
+                for (int i = 0; i < n; i+=2) {
+                    p.add(Integer.valueOf(items[2*i]), Integer.valueOf(items[2*i+1]));
+                }
+                out.add(p);
+                line = reader.readLine();
+            }
+        } catch(IOException ex) {
+            System.out.printf("ERROR: %s\n", ex.getMessage());
+        } finally{
+            if (reader != null) {
+                reader.close();
+            }
+            if (rw != null) {
+                rw.close();
+            }
+        }
+        return out;
+    }
+
+    private void writeOutCurves(Map<Integer, PairIntArray> curves, String fileNameRoot, int minSz, int maxSz) throws IOException {
+        String path = getCurveFilePath(fileNameRoot);
+        FileWriter fw = null;
+        BufferedWriter writer = null;
+        try {
+            fw = new FileWriter(path);
+            writer = new BufferedWriter(fw);
+            for (Map.Entry<Integer, PairIntArray> entry : curves.entrySet()) {
+                PairIntArray s = entry.getValue();
+                if (s.getN() < minSz || s.getN() > maxSz) {
+                    continue;
+                }
+                StringBuilder sb = new StringBuilder();
+                for (int k = 0; k < s.getN(); ++k) {
+                    if (k > 0) {
+                        sb.append(",");
+                    }
+                    sb.append(s.getX(k)).append(",").append(s.getY(k));
+                }
+                sb.append(eol);
+                writer.write(sb.toString());
+            }
+            writer.flush();
+        } catch(IOException ex) {
+            System.out.printf("ERROR: %s\n", ex.getMessage());
+        } finally{
+            if (writer != null) {
+                writer.close();
+            }
+            if (fw != null) {
+                fw.close();
+            }
+        }
+    }
+
+    private String getCurveFilePath(String fileNameRoot) throws IOException {
+        String dir = ResourceFinder.findTestResourcesDirectory();
+        String path = dir + sep + "test_shapes" + sep + fileNameRoot + "_curves_.dat";
+        return path;
+    }
+
+    private void calcAndWriteCurvesToFile() throws IOException {
 
         for (int i = 0; i < 4; ++i) {
             String fileName1;
@@ -139,7 +355,8 @@ public class MultiPartialShapeMatcherTest extends TestCase {
                 }
                 list2.add(f);
             }
-            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), list2, fileName1Root + "_closed_curves_over");*/
+            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), list2, fileName1Root + "_closed_curves_over");
+            */
 
             List<PairFloatArray> list3 = new ArrayList<>();
             for (Map.Entry<Integer, PairIntArray> entry : shapes3.entrySet()) {
@@ -155,14 +372,8 @@ public class MultiPartialShapeMatcherTest extends TestCase {
             }
             plot(img.copyToGreyscale().copyToColorGreyscaleExt(), list3, fileName1Root + "_closed_curves_under_over");
 
-
-            //write_centroids(labels, img, fileName1Root);
-
-            //extractShapes(img, fileName1Root);
-
-            // use MultiPartialShapeMatcher to match these
+            writeOutCurves(shapes3, fileName1Root, minSz, maxSz);
         }
-
     }
 
     private int[] mergedSLIC(ImageExt img, String fileName1Root, GreyscaleImage gradImg, GreyscaleImage luvPolarThetaImg) throws IOException {
@@ -326,6 +537,17 @@ public class MultiPartialShapeMatcherTest extends TestCase {
         for (int idx : points) {
             ImageIOHelper.addPointToImage(idx % im.getWidth(),
                idx / im.getWidth(), im, nDot, clr[0], clr[1], clr[2]);
+        }
+        MiscDebug.writeImage(im, fileSuffix);
+    }
+    private void plot(ImageExt img, PairIntArray pts, int nDot,
+                      String fileSuffix) throws IOException {
+        Image im = img.copyToGreyscale().copyToColorGreyscale();
+        int[] clr;
+        clr = ImageIOHelper.getNextRGB(0);
+        for (int i = 0; i < pts.getN(); ++i) {
+            ImageIOHelper.addPointToImage(pts.getX(i),
+                    pts.getY(i), im, nDot, clr[0], clr[1], clr[2]);
         }
         MiscDebug.writeImage(im, fileSuffix);
     }
@@ -526,4 +748,19 @@ public class MultiPartialShapeMatcherTest extends TestCase {
          */
     }
 
+
+    private String plot(PairFloatArray p, int fn) throws Exception {
+
+        float[] x = Arrays.copyOf(p.getX(), p.getN());
+        float[] y = Arrays.copyOf(p.getY(), p.getN());
+        float xMax = MiscMath.findMax(x) + 1;
+        float yMax = MiscMath.findMax(y) + 1;
+
+        PolygonAndPointPlotter plot = new PolygonAndPointPlotter();
+
+        plot.addPlot(0, xMax, 0, yMax,
+                x, y, x, y, "");
+
+        return plot.writeFile(fn);
+    }
 }
