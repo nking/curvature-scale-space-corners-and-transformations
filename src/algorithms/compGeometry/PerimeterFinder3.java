@@ -33,8 +33,7 @@ public class PerimeterFinder3 {
 
     /**
      * given labels for each pixel image where idx = row * imageWidth + col, extract each region's
-     * border pixels in a connected clockwise manner to form a closed curve, missing the last point which equals
-     * the first.
+     * border pixels in a connected clockwise manner to form a closed curve, having first point equals last point.
      * @param labels labels of each image pixel
      * @param imgWidth width of image
      * @param imgHeight height of image
@@ -230,7 +229,6 @@ public class PerimeterFinder3 {
 
     /**
      * given a set of points containing no holes in it, find the clockwise ordered bounding closed curve.
-     * Note that the last point has been removed to be consistent with PerimiterFinder2 in not repeating the point.
      * @param points
      * @param imgWidth
      * @param imgHeight

@@ -259,11 +259,15 @@ public class PartialShapeMatcher {
         but a smaller sigma can be specified.
       </pre>
      temporarily using exhaustive search.
-     @param p a closed curve to match to q.  note that the format does not expect that start == stop point.
-     @param q a closed curve to match to p.  Note that the format does not expect that start == stop point.
+     @param p a closed curve to match to q.  note that the format expects that start == stop point.
+     @param q a closed curve to match to p.  Note that the format expects that start == stop point.
      @return the matched intervals.
     */
     public List<Match.Points> match(PairFloatArray p, PairFloatArray q) throws Exception {
+
+        // p and q now require first point == last point in order for the curve resampling to succeed.
+        // the descriptors, however, exclude the last point when it equals the first point,
+        // so are 1 shorter than curve length in both dimensions
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN()
             + " useSameNumberOfPoints=" + useSameNumberOfPoints
@@ -489,10 +493,7 @@ public class PartialShapeMatcher {
         //q.n is >= p.n, that is n2 >= n1
         
         //md[0:n2-1][0:n1-1][0:n1-1]
-        if (md.length != n2 || md[0].length != n1) {
-            throw new IllegalArgumentException("error in algorithm arguments:"
-                + " revise to set n1 and n2 from md");
-        }
+
         if (n2 < n1) {
             throw new IllegalArgumentException("n2 must be >= n1");
         }        
@@ -559,14 +560,6 @@ public class PartialShapeMatcher {
         SummedAreaTable st = new SummedAreaTable();
         float[] outC = new float[2];
         float weight;
-
-        // block sizes from minLength to N.
-        // dR is the number of block sizes.  setting that to log(n).  consider fewer.
-        int nIntervals = Math.max(1, (int)(Math.log(N)/Math.log(2)));
-        int dR = Math.max(1, (N - minLength)/nIntervals);
-        if (debug) {
-            log.info(String.format("dR = %d\n", dR));
-        }
 
         Match curM;
         for (int offset = 0; offset < M; ++offset) {
@@ -814,10 +807,10 @@ public class PartialShapeMatcher {
         */
 
         //log.fine("a1:");
-        float[][] a1 = createDescriptorMatrix(p, p.getN());
+        float[][] a1 = createDescriptorMatrix(p);
 
         //log.fine("a2:");
-        float[][] a2 = createDescriptorMatrix(q, q.getN());
+        float[][] a2 = createDescriptorMatrix(q);
 
         /*
          make difference matrices.
@@ -855,8 +848,8 @@ public class PartialShapeMatcher {
         //TODO: look into Toeplitz matrix and cyclic matrix
 
         // --- make difference matrices ---
-        int n1 = p.getN();
-        int n2 = q.getN();
+        int n1 = a1.length;
+        int n2 = a2.length;
         float[][][] md = new float[n2][][];
         float[][] prevA2Shifted = null;
         for (int i = 0; i < n2; ++i) {
@@ -900,8 +893,15 @@ public class PartialShapeMatcher {
 
      r.t.c. is O(n^2)
     */
-    public static float[][] createDescriptorMatrix(PairFloatArray p, int n) {
-        
+    public static float[][] createDescriptorMatrix(PairFloatArray p) {
+
+        int n = p.getN();
+        if (Math.abs(p.getX(0) - p.getX(n-1)) < 1E-6 &&
+                Math.abs(p.getY(0) - p.getY(n-1)) < 1E-6) {
+            // excluding the last point because its the same as the first
+            --n;
+        }
+
         int dp1 = 1;
 
         float[][] a = new float[n][];
@@ -1004,7 +1004,7 @@ public class PartialShapeMatcher {
         return a2;
     }
 
-    protected void rotate(float[][] prevShifted) {
+    public static void rotate(float[][] prevShifted) {
 
          // shift x left by 1 first
          for (int y = 0; y < prevShifted[0].length; ++y) {

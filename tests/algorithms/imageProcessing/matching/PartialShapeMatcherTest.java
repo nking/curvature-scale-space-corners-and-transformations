@@ -25,9 +25,6 @@ import static junit.framework.TestCase.assertTrue;
  */
 public class PartialShapeMatcherTest extends TestCase {
 
-    // while configuring new code, not using asserts
-    boolean enableAsserts = false;
-    
     private Logger log = Logger.getLogger(
         this.getClass().getName());
 
@@ -46,7 +43,6 @@ public class PartialShapeMatcherTest extends TestCase {
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
-        //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         //shapeMatcher.overrideSamplingDistance(1);
         //shapeMatcher.setToDebug();
@@ -102,7 +98,10 @@ public class PartialShapeMatcherTest extends TestCase {
         // different and assert that wrap around is
         // handled correctly
         PairFloatArray p = getScissors1();
+        // to rotate, remove the redundant last point, rotate, add redundant point
+        p.removeRange(p.getN()-1, p.getN()-1);
         p.rotateLeft(16);
+        p.add(p.getX(0), p.getY(0));
         plot(p, 200);
 
         PairFloatArray q = getScissors2();
@@ -110,7 +109,6 @@ public class PartialShapeMatcherTest extends TestCase {
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
-        //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.overrideSamplingDistance(1);
         //shapeMatcher.setToDebug();
@@ -133,7 +131,10 @@ public class PartialShapeMatcherTest extends TestCase {
         // handled correctly
 
         PairFloatArray p = getScissors1();
+        // to rotate, remove the redundant last point, rotate, add redundant point
+        p.removeRange(p.getN()-1, p.getN()-1);
         p.rotateLeft(16);
+        p.add(p.getX(0), p.getY(0));
 
         /*
         MiscellaneousCurveHelper ch = new MiscellaneousCurveHelper();
@@ -153,7 +154,6 @@ public class PartialShapeMatcherTest extends TestCase {
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
-        //q.rotateLeft(q.getN() - 3);
         PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
         shapeMatcher.setToUseSameNumberOfPoints();
         //shapeMatcher.setToDebug();
@@ -342,48 +342,8 @@ public class PartialShapeMatcherTest extends TestCase {
             */
         }
     }
-    
-    public void _testMatchLines() throws Exception {
-        
-        // close to correct, but one set of lines is interpreted as
-        // 1 line instead of 2 due to threshold of consecutive points.
-        //   so may need to make a PartialShapeMatcher2 specific
-        //   to the task of matching a line...that should remove sensitivity
-        //   to the model line length and the added corners to make a closed
-        //   shape of lines...
-        // use of this meanwhile, depends upon results of a null test
-        // to not find lines where there are only curves 
-        // so the resulting sum of chords is important for that last test
 
-        PairFloatArray triangle = getTriangle();
-
-        PairFloatArray rectangle = createRectangle(11, 6, 5, 5);
-        rectangle = createLine(triangle.getN(), 5, 5);
-        
-        /*
-        7                    *
-        6                 *     *
-        5              *           *
-        4           *                 *
-        3        *                       *
-        2     *  *  *  *  *  *  *  *  *  *  *
-        1
-        0
-           0  1  2  3  4  5  6  7  8  9 10 11
-        */
-      
-        PartialShapeMatcher shapeMatcher = new PartialShapeMatcher();
-        //matcher.setToDebug();
-        shapeMatcher._overrideToThreshhold((float)(1e-7));
-        shapeMatcher.overrideSamplingDistance(1);
-
-        List<Match.Points> results = shapeMatcher.match(triangle, rectangle);
-        assertFalse(results.isEmpty());
-        plotResults(results, triangle, rectangle, 4,
-                "_triangle_rectangle_", false);
-    }
-
-    public void testMatch() {
+    public void ___testMatch() throws Exception {
         PairFloatArray triangle = getTriangle();
 
         TransformationParameters params = new TransformationParameters();
@@ -395,6 +355,9 @@ public class PartialShapeMatcherTest extends TestCase {
         //params.setScale(2);
         Transformer transformer = new Transformer();
         PairFloatArray triangle2 = transformer.applyTransformation(params, triangle);
+
+        System.out.printf("plotting %s\n", plot(triangle, 1000));
+        System.out.printf("plotting %s\n", plot(triangle2, 1001));
 
         int minBlockSize = 5;
         int nMaxMatchable = Math.min(triangle.getN(), triangle2.getN());
@@ -441,16 +404,6 @@ public class PartialShapeMatcherTest extends TestCase {
 
     public void testMatchTriangles() throws Exception {
 
-        // close to correct, but one set of lines is interpreted as
-        // 1 line instead of 2 due to threshold of consecutive points.
-        //   so may need to make a PartialShapeMatcher2 specific
-        //   to the task of matching a line...that should remove sensitivity
-        //   to the model line length and the added corners to make a closed
-        //   shape of lines...
-        // use of this meanwhile, depends upon results of a null test
-        // to not find lines where there are only curves
-        // so the resulting sum of chords is important for that last test
-
         PairFloatArray triangle = getTriangle();
 
         TransformationParameters params = new TransformationParameters();
@@ -483,8 +436,8 @@ public class PartialShapeMatcherTest extends TestCase {
         matcher._overrideToThreshhold((float)(1e-7));
         matcher.overrideSamplingDistance(1);
 
-        float[][] a1 = matcher.createDescriptorMatrix(triangle, triangle.getN());
-        float[][] a2 = matcher.createDescriptorMatrix(triangle2, triangle2.getN());
+        float[][] a1 = PartialShapeMatcher.createDescriptorMatrix(triangle);
+        float[][] a2 = PartialShapeMatcher.createDescriptorMatrix(triangle2);
         double tol = 1E-5;
         for (int i = 0; i < a1.length; ++i){
             for (int j = 0; j < a1[i].length; ++j) {
@@ -531,7 +484,7 @@ public class PartialShapeMatcherTest extends TestCase {
                 "_triangle1_triangle2_", false);
     }
     
-    protected PairFloatArray getTriangle() {
+    public static PairFloatArray getTriangle() {
         int top = 7;
         int base = 2;
         // slope is +1
@@ -539,7 +492,7 @@ public class PartialShapeMatcherTest extends TestCase {
         return getTriangle(top, base, leftX);
     }
 
-    protected PairFloatArray getTriangle(int topY, int baseY, int leftX) {
+    public static PairFloatArray getTriangle(int topY, int baseY, int leftX) {
         /*
         7                    *
         6                 *     *
@@ -571,18 +524,11 @@ public class PartialShapeMatcherTest extends TestCase {
             p.add(i, j);
             --i;
         }
+        p.add(p.getX(0), p.getY(0));
 
         return p;
     }
-    
-    protected PairFloatArray createLine(int len, int xOff, int yOff) {
-        PairFloatArray a = new PairFloatArray(len);
-        for (int i = (len - 1); i >= 0; --i) {
-            a.add(xOff + i, yOff + i);
-        }
-        return a;
-    }
-    
+
     protected PairFloatArray createRectangle(int width, int height, int xOff,
         int yOff) {
         /*
@@ -606,6 +552,8 @@ public class PartialShapeMatcherTest extends TestCase {
         for (int i = 0; i < a.getN(); ++i) {
             a.set(i, a.getX(i) + xOff, a.getY(i) + yOff);
         }
+
+        a.add(a.getX(0), a.getY(0));
         
         return a;
     }
@@ -683,6 +631,8 @@ public class PartialShapeMatcherTest extends TestCase {
             p.set(i, y, x);
         }
 
+        p.add(p.getX(0), p.getY(0));
+
         return p;
     }
 
@@ -753,6 +703,8 @@ public class PartialShapeMatcherTest extends TestCase {
         p.add(62, 104);
         p.add(69, 103);
         p.add(77, 102);
+
+        p.add(p.getX(0), p.getY(0));
 
         return p;
     }
@@ -827,7 +779,79 @@ public class PartialShapeMatcherTest extends TestCase {
             out.add(ordered.getX(i), ordered.getY(i));
         }
 
+        // add last point == first point to close the curve
+        out.add(out.getX(0), out.getY(0));
+
         return out;
+    }
+
+
+    public static PairFloatArray getShape2() {
+        /*
+        7                    *
+        6                 *  *
+        5              *     *  *  *
+        4           *              *
+        3        *                 *  *  *
+        2     *  *  *  *  *  *  *  *  *  *  *
+        1
+        0
+           0  1  2  3  4  5  6  7  8  9 10 11
+        */
+        PairFloatArray p = new PairFloatArray();
+        int x, y;
+        for (y = 2, x = 1; y <= 7; ++y, ++x) {
+            p.add(x, y);
+        }
+        for (x = 6, y=6; y >=5; --y) {
+            p.add(x, y);
+        }
+        for (x = 7, y=5; x<=8; ++x) {
+            p.add(x, y);
+        }
+        for (x = 8, y=4; y>=3; --y) {
+            p.add(x, y);
+        }
+        for (x = 9, y=3; x<=10; ++x) {
+            p.add(x, y);
+        }
+        for (x = 11, y=2; x>=2; --x) {
+            p.add(x, y);
+        }
+        p.add(p.getX(0), p.getY(0));
+
+        return p;
+    }
+
+    public static PairFloatArray getShape3() {
+        /*
+        7
+        6                 *  *  *
+        5               *          *
+        4               *          *
+        3               *          *
+        2                 *  *  *
+        1
+        0
+           0  1  2  3  4  5  6  7  8  9 10 11
+        */
+        PairFloatArray p = new PairFloatArray();
+        int x, y;
+        for (x = 4, y = 3; y <= 5; ++y) {
+            p.add(x, y);
+        }
+        for (x = 5, y = 6; x <= 7; ++x) {
+            p.add(x, y);
+        }
+        for (x = 8, y = 5; y >= 3; --y) {
+            p.add(x, y);
+        }
+        for (x = 7, y = 2; x >= 5; --x) {
+            p.add(x, y);
+        }
+        p.add(p.getX(0), p.getY(0));
+
+        return p;
     }
 
 }

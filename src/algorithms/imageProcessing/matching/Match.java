@@ -74,7 +74,7 @@ public class Match implements Comparable<Match> {
     }
 
     /**
-     * class to hold the result matches in a format easy to use and reverse p,with q, and scal if needed.
+     * class to hold the result matches in a format easy to use and reverse p,with q, and scale if needed.
      */
     public static class Points {
         int[] pIdxs;
@@ -235,7 +235,7 @@ public class Match implements Comparable<Match> {
     protected static int fnv321aInit = 0x811c9dc5;
     protected static int fnv32Prime = 0x01000193;
     protected int fnvHashCode() {
-        int sum = fnv321aInit;
+        long sum = fnv321aInit;
 
         for (int i = 0; i < starts1.length; ++i) {
             sum ^= starts1[i];
@@ -265,7 +265,7 @@ public class Match implements Comparable<Match> {
         sum ^= Double.hashCode(maxChordSum);
         sum *= fnv32Prime;
 
-        return sum;
+        return (int)sum;
     }
 
     /**
