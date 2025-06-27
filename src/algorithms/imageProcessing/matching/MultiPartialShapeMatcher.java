@@ -1,9 +1,11 @@
 package algorithms.imageProcessing.matching;
 
 import algorithms.matrix.MatrixUtil;
+import algorithms.misc.MiscMath;
 import algorithms.signalProcessing.CurveResampler;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
+import algorithms.util.PolygonAndPointPlotter;
 import com.spotify.voyager.jni.Index;
 
 import java.util.*;
@@ -264,28 +266,35 @@ public class MultiPartialShapeMatcher {
 
     // return list of curve index, and offset to start match
     public static class Results {
-        final List<PairFloatArray> curves;
+        final List<PairFloatArray> dbCurves;
+        final List<Integer> dbCurveIndexes;
         final List<Integer> offsetsQuery;
         final List<Integer> offsetsTargets;
         final List<Integer> matchingLengths;
         final List<Float> distances;
         public Results(int n) {
-            curves = new ArrayList<>();
+            dbCurves = new ArrayList<>();
+            dbCurveIndexes = new ArrayList<>();
             offsetsTargets = new ArrayList<>();
             offsetsQuery = new ArrayList<>();
             matchingLengths = new ArrayList<>();
             distances = new ArrayList<>();
         }
-        public void add(PairFloatArray curve, int targetOffset, int queryOffset, int length, float distance) {
-            curves.add(curve);
+        public void add(int dbCurveIndex, PairFloatArray dbCurve, int targetOffset, int queryOffset, int length, float distance) {
+            dbCurves.add(dbCurve);
+            dbCurveIndexes.add(dbCurveIndex);
             offsetsTargets.add(targetOffset);
             offsetsQuery.add(queryOffset);
             matchingLengths.add(length);
             distances.add(distance);
         }
 
-        public List<PairFloatArray> getCurves() {
-            return curves;
+        public List<PairFloatArray> getDBCurves() {
+            return dbCurves;
+        }
+
+        public List<Integer> getDBCurveIndexes() {
+            return dbCurveIndexes;
         }
 
         public List<Integer> getOffsetsQuery() {
@@ -336,8 +345,8 @@ public class MultiPartialShapeMatcher {
                 float len1 = o1[1];
                 float diff2 = o2[0];
                 float len2 = o2[1];
-                float d1 = calcSalukDist(diff1, maxDiff, len1, maxLength);
-                float d2 = calcSalukDist(diff2, maxDiff, len2, maxLength);
+                float d1 = calcSalukDist(diff1/len1, maxDiff, len1, maxLength);
+                float d2 = calcSalukDist(diff2/len2, maxDiff, len2, maxLength);
                 return Double.compare(d1, d2);
             }
         });
@@ -354,8 +363,9 @@ public class MultiPartialShapeMatcher {
         Index.QueryResults res = indexer.query(embedding, topK);
         long[] labels = res.getLabels();
         float[] dists = res.getDistances();
+        int queryOffset = 0;
         for (int i = 0; i < dists.length; ++i) {
-            float[] result = new float[]{dists[i], embedding.length, labels[i], 0};
+            float[] result = new float[]{dists[i], embedding.length, labels[i], queryOffset};
             results.add(result);
             if (results.size() > topK) {
                 results.removeLast();
@@ -390,14 +400,17 @@ public class MultiPartialShapeMatcher {
                 idsQ[j] = iDiag;
                 ++j;
             }
+            // there is a Index.QueryResults for every embeddingsQ, which has same index as idsQ
             Index.QueryResults[] indexResults = indexer.query(embeddingsQ, topK);
+
             for (int ii = 0; ii < indexResults.length; ++ii) {
+                queryOffset = (int)idsQ[ii];
                 Index.QueryResults indexRes = indexResults[ii];
                 labels = indexRes.getLabels();
                 dists = indexRes.getDistances();
                 for (int i = 0; i < dists.length; ++i) {
                     // store in result, the dist, length, codedIndexLabel, query curve offset index
-                    float[] result = new float[]{dists[i], len, labels[i], idsQ[ii]};
+                    float[] result = new float[]{dists[i], len, labels[i], queryOffset};
                     results.add(result);
                     if (results.size() > topK) {
                         results.removeLast();
@@ -423,8 +436,13 @@ public class MultiPartialShapeMatcher {
             int targetOffset = (int) Math.round(iDiag * factor);
             int length = (int) Math.round(result[1] * factor);
             double qFactor = (this.curveDimension - 1.)/(queryCurve.getN() - 1.);
-            int queryOffset = (int) Math.round(result[3] * qFactor);
-            out.add(curve, targetOffset, queryOffset, length, result[0]);
+            queryOffset = (int) Math.round(result[3] * qFactor);
+            /*{
+                System.out.printf("iCurve=%d, off=%d, off_query=%d, len=%d, dist=%.3e, saluk=%.3e\n",
+                        iCurve, targetOffset, queryOffset, length, result[0],
+                        calcSalukDist(result[0]/result[1], maxDiff, length, maxLength));
+            }*/
+            out.add(iCurve, curve, targetOffset, queryOffset, length, result[0]);
             ++i;
         }
 
@@ -507,10 +525,32 @@ public class MultiPartialShapeMatcher {
         for (int i = 0; i < closedCurves.size(); ++i) {
             PairFloatArray p = closedCurves.get(i);
             PairFloatArray p2 = createScaledCurve(p, curveDimension);
+            /*if (true) {
+                try {
+                    plot(p2, System.currentTimeMillis());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }*/
             float[][] a2 = PartialShapeMatcher.createDescriptorMatrix(p2);
             descriptors[i] = a2;
         }
         return descriptors;
+    }
+
+    private static String plot(PairFloatArray p, long fn) throws Exception {
+
+        float[] x = Arrays.copyOf(p.getX(), p.getN());
+        float[] y = Arrays.copyOf(p.getY(), p.getN());
+        float xMax = MiscMath.findMax(x) + 1;
+        float yMax = MiscMath.findMax(y) + 1;
+
+        PolygonAndPointPlotter plot = new PolygonAndPointPlotter();
+
+        plot.addPlot(0, xMax, 0, yMax,
+                x, y, x, y, "");
+
+        return plot.writeFile(fn);
     }
 
 }

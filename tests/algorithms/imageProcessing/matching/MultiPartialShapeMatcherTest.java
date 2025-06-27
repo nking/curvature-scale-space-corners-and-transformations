@@ -32,7 +32,7 @@ public class MultiPartialShapeMatcherTest extends TestCase {
         //https://dabi.temple.edu/external/shape/MPEG7/dataset.html
     }
 
-    public void testTriangles() throws Exception {
+    public void testSimple0() throws Exception {
 
         /* shape 1:
 
@@ -89,18 +89,84 @@ public class MultiPartialShapeMatcherTest extends TestCase {
         int topK = 10;
         MultiPartialShapeMatcher.Results results = m.query(shape1, topK);
         assertEquals(topK, results.distances.size());
+        assertEquals(0, results.getDBCurveIndexes().get(0).intValue());
         assertEquals(n - 1, results.matchingLengths.get(0).intValue());
         assertEquals(0, results.offsetsTargets.get(0).intValue());
         assertTrue(Math.abs(results.getDistances().get(0).floatValue()) < 1E-6);
         assertEquals(0, results.getOffsetsQuery().get(0).intValue());
 
         /*
-        curves = new ArrayList<>();
+        results:
+            curves = new ArrayList<>();
             offsetsTargets = new ArrayList<>();
             offsetsQuery = new ArrayList<>();
             matchingLengths = new ArrayList<>();
             distances = new ArrayList<>();
          */
+    }
+
+    public void testSimple1() throws Exception {
+
+        /* shape 1:
+
+        7                    *
+        6                 *     *
+        5              *           *
+        4           *                 *
+        3        *                       *
+        2     *  *  *  *  *  *  *  *  *  *  *
+        1
+        0
+           0  1  2  3  4  5  6  7  8  9 10 11
+
+
+        shape 2:
+        7                    *
+        6                 *  *
+        5              *     *  *  *
+        4           *              *
+        3        *                 *  *  *
+        2     *  *  *  *  *  *  *  *  *  *  *
+        1
+        0
+           0  1  2  3  4  5  6  7  8  9 10 11
+
+        shape 3:
+        7
+        6                 *  *  *
+        5               *          *
+        4               *          *
+        3               *          *
+        2                 *  *  *
+        1
+        0
+           0  1  2  3  4  5  6  7  8  9 10 11
+        */
+
+        PairFloatArray shape1 = PartialShapeMatcherTest.getTriangle();
+        PairFloatArray shape2 = PartialShapeMatcherTest.getShape2();
+        PairFloatArray shape3 = PartialShapeMatcherTest.getShape3();
+
+        List<PairFloatArray> curves = new ArrayList<>();
+        curves.add(shape3);
+        curves.add(shape2);
+
+        //System.out.printf("plotting %s\n", plot(shape1, 1));
+        //System.out.printf("plotting %s\n", plot(shape2, 2));
+        //System.out.printf("plotting %s\n", plot(shape3, 3));
+
+        int n = shape1.getN();
+        MultiPartialShapeMatcher m = new MultiPartialShapeMatcher(n, 3, curves);
+
+        int topK = 10;
+        MultiPartialShapeMatcher.Results results = m.query(shape1, topK);
+        assertEquals(topK, results.distances.size());
+        assertEquals(1, results.getDBCurveIndexes().get(0).intValue());
+        assertEquals(0, results.offsetsTargets.get(0).intValue());
+        assertEquals(0, results.getOffsetsQuery().get(0).intValue());
+        assertEquals(1, results.getDBCurveIndexes().get(1).intValue());
+        assertEquals(0, results.getOffsetsQuery().get(1).intValue());
+
     }
 
     public void _testAndroidStatues() throws IOException {
@@ -172,7 +238,7 @@ public class MultiPartialShapeMatcherTest extends TestCase {
                     MultiPartialShapeMatcher.convert(curves));
 
             MultiPartialShapeMatcher.Results result = matcher.query(queryCurve, 10);
-            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), result.curves,
+            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), result.getDBCurves(),
                     fileName1Root + "_found_");
 
             //write_centroids(labels, img, fileName1Root);
