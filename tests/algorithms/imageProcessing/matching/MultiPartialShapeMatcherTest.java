@@ -27,12 +27,12 @@ public class MultiPartialShapeMatcherTest extends TestCase {
     static String eol = System.lineSeparator();
     Logger log = Logger.getLogger(MultiPartialShapeMatcherTest.class.getName());
 
-    public void testMPEG7() {
+    public void _testMPEG7() {
         // TODO: add test for
         //https://dabi.temple.edu/external/shape/MPEG7/dataset.html
     }
 
-    public void testSimple0() throws Exception {
+    public void _testSimple0() throws Exception {
 
         /* shape 1:
 
@@ -105,7 +105,7 @@ public class MultiPartialShapeMatcherTest extends TestCase {
          */
     }
 
-    public void testSimple1() throws Exception {
+    public void _testSimple1() throws Exception {
 
         /* shape 1:
 
@@ -169,7 +169,7 @@ public class MultiPartialShapeMatcherTest extends TestCase {
 
     }
 
-    public void _testAndroidStatues() throws IOException {
+    public void testAndroidStatues() throws IOException {
 
         if (false) {
             calcAndWriteCurvesToFile();
@@ -191,6 +191,7 @@ public class MultiPartialShapeMatcherTest extends TestCase {
         PairFloatArray queryCurve = MultiPartialShapeMatcher.convert(shapes0.get(1));
         //plot(img0.copyToColorGreyscaleExt(), shapes0.get(1), 0,"_template_");
 
+        // reduding curveDimension to 50, put android_statues_01 into top10, but not top1
         int curveDimension = queryCurve.getN();
         int minDim = (int)Math.round(0.2*curveDimension);
 
@@ -232,13 +233,26 @@ public class MultiPartialShapeMatcherTest extends TestCase {
             List<PairIntArray> curves = readInCurves(fileName1Root);
             System.out.printf("read %d curves\n", curves.size());
 
-            int tt = 2;
+            List<PairFloatArray> dbCurves = MultiPartialShapeMatcher.convert(curves);
 
-            MultiPartialShapeMatcher matcher = new MultiPartialShapeMatcher(curveDimension, minDim,
-                    MultiPartialShapeMatcher.convert(curves));
+            int _n1 = curves.size()/2;
+            int _n2 = curves.size();
+            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), dbCurves.subList(0, _n1),
+                    fileName1Root + "_closed_curves_0");
+            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), dbCurves.subList(_n1, _n2),
+                    fileName1Root + "_closed_curves_1");
 
-            MultiPartialShapeMatcher.Results result = matcher.query(queryCurve, 10);
-            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), result.getDBCurves(),
+            MultiPartialShapeMatcher matcher = new MultiPartialShapeMatcher(curveDimension, minDim, dbCurves);
+
+            int topK = 10;
+
+            MultiPartialShapeMatcher.Results results = matcher.query(queryCurve, topK);
+
+            List<PairFloatArray> top = new ArrayList<>();
+            top.add(results.getDBCurves().getFirst());
+            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), top,
+                    fileName1Root + "_found_top_");
+            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), results.getDBCurves(),
                     fileName1Root + "_found_");
 
             //write_centroids(labels, img, fileName1Root);

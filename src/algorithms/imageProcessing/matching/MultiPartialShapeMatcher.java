@@ -3,6 +3,7 @@ package algorithms.imageProcessing.matching;
 import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.signalProcessing.CurveResampler;
+import algorithms.util.FormatArray;
 import algorithms.util.PairFloatArray;
 import algorithms.util.PairIntArray;
 import algorithms.util.PolygonAndPointPlotter;
@@ -147,10 +148,10 @@ public class MultiPartialShapeMatcher {
 
             // DEBUG trying a subset.  succeeds with only 10 embeddings of length 30276.
             // succeeds w/ 100 embeddings of length 30276.
-            // and also w/ 1000 embeddings of length 30276 but takes quite a long time.
+            // and also w/ 1000 embeddings of length 30276 but takes a long time.
             // fails for 30176 embeddings of length 30276.
 
-            //TODO: batching could be improved w/ a look at memory and stack properties or allow user to
+            //TODO: batching could be improved w/ a look at memory and stack properties or allow user
             // more configuration options
 
             Index index = indexMap.get(len);
@@ -216,24 +217,27 @@ public class MultiPartialShapeMatcher {
         //assert(descriptors[0].length == this.curveDimension);
         //assert(descriptors[0][0].length == this.curveDimension);
 
+        /*{//DEBUG
+            print(descriptors[13][0]);
+        }*/
+
         Indexer indexer = new Indexer(L);
         addEmbeddingsToIndexes(descriptors, indexer, minBlockSize);
         this.indexer = indexer;
         this.targetCurves = targetCurves;
         this.curveDimension = curveDimension;
         this.minBlockSize = minBlockSize;
-
     }
 
     protected static void addEmbeddingsToIndexes(float[][][] descriptors, Indexer indexer, int minBlockSize) {
         int L = descriptors.length;
 
         int n = descriptors[0].length;
-
         int nr = (int)(Math.log(n)/Math.log(2));
+        int dr = n/nr;
 
         for (int r = 0; r < nr; ++r){
-            int len = n/(1<<r);
+            int len = n - (r*dr);
             if (len < minBlockSize) {
                 break;
             }
@@ -326,15 +330,29 @@ public class MultiPartialShapeMatcher {
 
         PairFloatArray q1 = createScaledCurve(queryCurve, this.curveDimension);
 
+        /*{ //DEBUG
+            try {
+                plot(q1, System.currentTimeMillis());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }*/
+
         float[][] descriptor = PartialShapeMatcher.createDescriptorMatrix(q1);
+
+        /*{//DEBUG
+            System.out.printf("QUERY:\n");
+            print(descriptor[0]);
+        }*/
 
         final float maxLength = descriptor.length;
 
         // build a TreeSet to sort topK results from queries:
-        // calculate maxDist as euclidean distance of 2 vectors of chord differences, where a
+        // calculate maxDist as Euclidean distance of 2 vectors of chord differences, where a
         // single chord diff maximum possible value is up to 2*pi
         // so maxDiff = this.curveDimension*2*pi
-        final float maxDiff = (float)(1.1 * maxLength * Math.PI * 2.);
+        //final float maxDiff = (float)(1.1 * maxLength * Math.PI * 2.);
+        float maxDiff = (float)(Math.PI * 2.);
 
         // storing search results as: distance, embedding length, id.
         // using a tree to keep to reduce the sort from O(n*log(n)) to O(n*(log(k)) by removing when tree size > k
@@ -345,8 +363,10 @@ public class MultiPartialShapeMatcher {
                 float len1 = o1[1];
                 float diff2 = o2[0];
                 float len2 = o2[1];
-                float d1 = calcSalukDist(diff1/len1, maxDiff, len1, maxLength);
-                float d2 = calcSalukDist(diff2/len2, maxDiff, len2, maxLength);
+                float normalizedD1 = (float)(diff1 / Math.sqrt(len1));
+                float normalizedD2 = (float)(diff2 / Math.sqrt(len2));
+                float d1 = calcSalukDist(normalizedD1, maxDiff, len1, maxLength);
+                float d2 = calcSalukDist(normalizedD2, maxDiff, len2, maxLength);
                 return Double.compare(d1, d2);
             }
         });
@@ -375,11 +395,11 @@ public class MultiPartialShapeMatcher {
         int L = this.targetCurves.size();
 
         int n = descriptor.length;
-
         int nr = (int)(Math.log(n)/Math.log(2));
+        int dr = n/nr;
 
-        for (int r = 1; r < nr; ++r){
-            int len = n/(1<<r);
+        for (int r = 0; r < nr; ++r){
+            int len = n - (r*dr);
             if (len < this.minBlockSize) {
                 break;
             }
@@ -409,6 +429,7 @@ public class MultiPartialShapeMatcher {
                 labels = indexRes.getLabels();
                 dists = indexRes.getDistances();
                 for (int i = 0; i < dists.length; ++i) {
+
                     // store in result, the dist, length, codedIndexLabel, query curve offset index
                     float[] result = new float[]{dists[i], len, labels[i], queryOffset};
                     results.add(result);
@@ -440,7 +461,7 @@ public class MultiPartialShapeMatcher {
             /*{
                 System.out.printf("iCurve=%d, off=%d, off_query=%d, len=%d, dist=%.3e, saluk=%.3e\n",
                         iCurve, targetOffset, queryOffset, length, result[0],
-                        calcSalukDist(result[0]/result[1], maxDiff, length, maxLength));
+                        calcSalukDist((float)(result[0]/Math.sqrt(result[1])), maxDiff, length, maxLength));
             }*/
             out.add(iCurve, curve, targetOffset, queryOffset, length, result[0]);
             ++i;
@@ -467,30 +488,6 @@ public class MultiPartialShapeMatcher {
         pxy[0] = Arrays.copyOf(p.getX(), p.getN());
         pxy[1] = Arrays.copyOf(p.getY(), p.getN());
         float[][] xyOut = CurveResampler.resample(pxy, curveDimension);
-        /*try {
-            xyOut = CurveResampler.resample(pxy, this.curveDimension);
-        } catch(Throwable t) {
-            int t2 = 2;
-            StringBuilder sb = new StringBuilder();
-            sb.append(String.format("float[][] pxy = new float[2][%d];\n", p.getN()));
-            sb.append(String.format("pxy[0] = new float[]{"));
-            for (int i = 0; i < pxy[0].length; ++i) {
-                if (i > 0) {
-                    sb.append(",");
-                }
-                sb.append(String.format("%.3f", pxy[0][i])).append("f");
-            }
-            sb.append("};\n");
-            sb.append(String.format("pxy[1] = new float[]{"));
-            for (int i = 0; i < pxy[1].length; ++i) {
-                if (i > 0) {
-                    sb.append(",");
-                }
-                sb.append(String.format("%.3f", pxy[1][i])).append("f");
-            }
-            sb.append("};\n");
-            System.out.println(sb.toString());
-        }*/
         PairFloatArray p2 = new PairFloatArray();
         for (int i = 0; i < xyOut[0].length; ++i) {
             p2.add(xyOut[0][i], xyOut[1][i]);
@@ -525,9 +522,9 @@ public class MultiPartialShapeMatcher {
         for (int i = 0; i < closedCurves.size(); ++i) {
             PairFloatArray p = closedCurves.get(i);
             PairFloatArray p2 = createScaledCurve(p, curveDimension);
-            /*if (true) {
+            /*{//DEBUG
                 try {
-                    plot(p2, System.currentTimeMillis());
+                    plot(p2, i);//System.currentTimeMillis());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -552,5 +549,10 @@ public class MultiPartialShapeMatcher {
 
         return plot.writeFile(fn);
     }
+
+    private static void print(float[] emb) {
+        System.out.printf("b=%s\n", FormatArray.toString(emb, "%.3f"));
+    }
+
 
 }
