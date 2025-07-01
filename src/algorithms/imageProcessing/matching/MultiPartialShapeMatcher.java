@@ -97,6 +97,7 @@ public class MultiPartialShapeMatcher {
         /**
          * map of different size indexes to search.  key = embedding length, value = the Voyager indexer
          */
+
         public final Map<Integer, Index> indexMap;
         public final int nEmbeddings;
         public Indexer(int nEmbeddings) {
@@ -131,6 +132,8 @@ public class MultiPartialShapeMatcher {
             if (index.getNumElements() < Integer.MAX_VALUE) {
                 topK = Math.min(topK, (int) index.getNumElements());
             }
+            //DEBUG
+            //System.out.printf("Indexer %d, nEmb=%d\n", len, index.getNumElements());
             return index.query(embeddings, topK, -1);
         }
 
@@ -159,7 +162,7 @@ public class MultiPartialShapeMatcher {
             long nE = embeddings.length;
             if (nE * len < 10_000_000) {
                 // -1 is numThreads.  If -1 (the default), the number of CPUs available on the current machine will be used.
-                index.addItems(embeddings, ids, -1);
+                long[] outIds = index.addItems(embeddings, ids, -1);
             } else {
                 double nB = Math.ceil(nE * len / 1E7);
                 int batchSize = (int)Math.ceil(nE / nB);
@@ -172,7 +175,7 @@ public class MultiPartialShapeMatcher {
                     // copy from [i, i+b-1] into arrays to load
                     float[][] embeddings2 = copy(embeddings, i, i+b-1);
                     long[] ids2 = Arrays.copyOfRange(ids, i, i+b);
-                    index.addItems(embeddings2, ids2, -1);
+                    long[] outIds = index.addItems(embeddings2, ids2, -1);
                 }
             }
         }
@@ -241,15 +244,15 @@ public class MultiPartialShapeMatcher {
             if (len < minBlockSize) {
                 break;
             }
+
             // ids are a composite of iCurve and iDiag.
             // idx = iCurve * n + iDiag.
             // iCurve = idx / n;
             // iDiag = idx % n
             long[] ids = new long[L*n];
             float[][] embeddings = new float[L*n][len];
-            int j = 0;
-            for (int iCurve = 0; iCurve < L; ++iCurve) {
-                for (int iDiag = 0; iDiag < n; ++iDiag) {
+            for (int iCurve = 0, j=0; iCurve < L; ++iCurve) {
+                for (int iDiag = 0; iDiag < n; ++iDiag, ++j) {
                     if ((iDiag + len) > n) {
                         int len1 = n - iDiag;
                         System.arraycopy(descriptors[iCurve][iDiag], iDiag, embeddings[j], 0, len1);
@@ -260,7 +263,6 @@ public class MultiPartialShapeMatcher {
                         System.arraycopy(descriptors[iCurve][iDiag], iDiag, embeddings[j], 0, len);
                     }
                     ids[j] = iCurve * n + iDiag;
-                    ++j;
                 }
             }
             // store in indexer
@@ -284,7 +286,8 @@ public class MultiPartialShapeMatcher {
             matchingLengths = new ArrayList<>();
             distances = new ArrayList<>();
         }
-        public void add(int dbCurveIndex, PairFloatArray dbCurve, int targetOffset, int queryOffset, int length, float distance) {
+        public void add(int dbCurveIndex, PairFloatArray dbCurve, int targetOffset, int queryOffset,
+                        int length, float distance) {
             dbCurves.add(dbCurve);
             dbCurveIndexes.add(dbCurveIndex);
             offsetsTargets.add(targetOffset);
@@ -340,6 +343,8 @@ public class MultiPartialShapeMatcher {
 
         float[][] descriptor = PartialShapeMatcher.createDescriptorMatrix(q1);
 
+        final int n = descriptor.length;
+
         /*{//DEBUG
             System.out.printf("QUERY:\n");
             print(descriptor[0]);
@@ -347,27 +352,27 @@ public class MultiPartialShapeMatcher {
 
         final float maxLength = descriptor.length;
 
-        // build a TreeSet to sort topK results from queries:
+        // build a TreeSet to sort topK resultsTree from queries:
         // calculate maxDist as Euclidean distance of 2 vectors of chord differences, where a
         // single chord diff maximum possible value is up to 2*pi
         // so maxDiff = this.curveDimension*2*pi
         //final float maxDiff = (float)(1.1 * maxLength * Math.PI * 2.);
         float maxDiff = (float)(Math.PI * 2.);
 
-        // storing search results as: distance, embedding length, id.
         // using a tree to keep to reduce the sort from O(n*log(n)) to O(n*(log(k)) by removing when tree size > k
-        TreeSet<float[]> results = new TreeSet<>(new Comparator<float[]>() {
+        TreeSet<float[]> resultsTree = new TreeSet<>(new Comparator<float[]>() {
             @Override
             public int compare(float[] o1, float[] o2) {
-                float diff1 = o1[0];
-                float len1 = o1[1];
-                float diff2 = o2[0];
-                float len2 = o2[1];
-                float normalizedD1 = (float)(diff1 / Math.sqrt(len1));
-                float normalizedD2 = (float)(diff2 / Math.sqrt(len2));
-                float d1 = calcSalukDist(normalizedD1, maxDiff, len1, maxLength);
-                float d2 = calcSalukDist(normalizedD2, maxDiff, len2, maxLength);
-                return Double.compare(d1, d2);
+                // salukwdze comparator:
+                //int c = Double.compare(o1[5], o2[5]);
+                // euclidean distance normalized by length, comparator:
+                int c = Double.compare(o1[0]/o1[1], o2[0]/o2[1]);
+                if (c != 0) {
+                    return c;
+                }
+                // compare the insertion number.  this is here only to make sure entries with same salk dist
+                // are unique tree entries
+                return Float.compare(o1[4], o2[4]);
             }
         });
 
@@ -379,22 +384,28 @@ public class MultiPartialShapeMatcher {
         (2) the log(N)-1 embeddings of row 0-N-1
          */
 
+        long insId = 0;
+
         float[] embedding = Arrays.copyOf(descriptor[0], descriptor[0].length);
         Index.QueryResults res = indexer.query(embedding, topK);
+
+        //DEBUG
+        //print(res, embedding.length, 0, n);
+
         long[] labels = res.getLabels();
-        float[] dists = res.getDistances();
+        float[] distsSq = res.getDistances();
         int queryOffset = 0;
-        for (int i = 0; i < dists.length; ++i) {
-            float[] result = new float[]{dists[i], embedding.length, labels[i], queryOffset};
-            results.add(result);
-            if (results.size() > topK) {
-                results.removeLast();
+        for (int i = 0; i < distsSq.length; ++i, ++insId) {
+            float d = (float)Math.sqrt(distsSq[i]);
+            float[] result = new float[]{d, embedding.length, labels[i], queryOffset, insId,
+                    normalizeAndCalcSalukDist(d, maxDiff, embedding.length, maxLength)};
+            resultsTree.add(result);
+            if (resultsTree.size() > topK) {
+                resultsTree.removeLast();
             }
         }
 
         int L = this.targetCurves.size();
-
-        int n = descriptor.length;
         int nr = (int)(Math.log(n)/Math.log(2));
         int dr = n/nr;
 
@@ -404,10 +415,9 @@ public class MultiPartialShapeMatcher {
                 break;
             }
             // idsQ are iDiag, that is, the reference point, the offset from 0
-            long[] idsQ = new long[n];
+            int[] idsQ = new int[n];
             float[][] embeddingsQ = new float[n][len];
-            int j = 0;
-            for (int iDiag = 0; iDiag < n; ++iDiag) {
+            for (int iDiag = 0, j=0; iDiag < n; ++iDiag, ++j) {
                 if ((iDiag + len) > n) {
                     int len1 = n - iDiag;
                     System.arraycopy(descriptor[iDiag], iDiag, embeddingsQ[j], 0, len1);
@@ -418,39 +428,46 @@ public class MultiPartialShapeMatcher {
                     System.arraycopy(descriptor[iDiag], iDiag, embeddingsQ[j], 0, len);
                 }
                 idsQ[j] = iDiag;
-                ++j;
             }
+            /*{//DEBUG
+                if (len < 20) {
+                    System.out.printf("Desc=%s\n", FormatArray.toString(descriptor, "%.2f"));
+                    System.out.printf("embeddings=%s\n", FormatArray.toString(embeddingsQ, "%.2f"));
+                }
+            }*/
             // there is a Index.QueryResults for every embeddingsQ, which has same index as idsQ
             Index.QueryResults[] indexResults = indexer.query(embeddingsQ, topK);
 
-            for (int ii = 0; ii < indexResults.length; ++ii) {
-                queryOffset = (int)idsQ[ii];
+            for (int ii = 0; ii < indexResults.length; ++ii, ++insId) {
+                queryOffset = idsQ[ii];
                 Index.QueryResults indexRes = indexResults[ii];
                 labels = indexRes.getLabels();
-                dists = indexRes.getDistances();
-                for (int i = 0; i < dists.length; ++i) {
+                distsSq = indexRes.getDistances();
 
+                for (int i = 0; i < distsSq.length; ++i) {
+                    float d = (float)Math.sqrt(distsSq[i]);
                     // store in result, the dist, length, codedIndexLabel, query curve offset index
-                    float[] result = new float[]{dists[i], len, labels[i], queryOffset};
-                    results.add(result);
-                    if (results.size() > topK) {
-                        results.removeLast();
+                    float[] result = new float[]{d, len, labels[i], queryOffset, insId,
+                            normalizeAndCalcSalukDist(d, maxDiff, len, maxLength)};
+                    resultsTree.add(result);
+                    if (resultsTree.size() > topK) {
+                        resultsTree.removeLast();
                     }
                 }
             }
         }
 
-        Results out = new Results(results.size());
+        Results out = new Results(resultsTree.size());
 
         // resolve the curve index, shift index, and iDiag ref index to get the point offset index
         // and then use the scale to estimate the offset index within the original curve
         int i = 0;
         long id;
-        for (float[] result : results) {
+        for (float[] result : resultsTree) {
             //result: the dist, length, codedIndexLabel, query curve offset index
             id = (long)result[2];
-            int iCurve = (int)(id / n);
-            int iDiag = (int)(id % n);
+            int iCurve = (int)(id / (long)n);
+            int iDiag = (int)(id % (long)n);
             PairFloatArray curve = this.targetCurves.get(iCurve);
             // undo the scaling used in curve resampler:
             double factor = (this.curveDimension - 1.)/(curve.getN() - 1.);
@@ -458,9 +475,12 @@ public class MultiPartialShapeMatcher {
             int length = (int) Math.round(result[1] * factor);
             double qFactor = (this.curveDimension - 1.)/(queryCurve.getN() - 1.);
             queryOffset = (int) Math.round(result[3] * qFactor);
-            /*{
-                System.out.printf("iCurve=%d, off=%d, off_query=%d, len=%d, dist=%.3e, saluk=%.3e\n",
-                        iCurve, targetOffset, queryOffset, length, result[0],
+            /*{//DEBUG
+                System.out.printf("targetIdx=%d, target_p0=(%f,%f), query_q0=(%f,%f), len=%.0f, dist=%.3e, saluk=%.3e\n",
+                        iCurve,
+                        curve.getX(iDiag), curve.getY(iDiag),
+                        q1.getX((int)result[3]), q1.getY((int)result[3]),
+                        result[1], result[0],
                         calcSalukDist((float)(result[0]/Math.sqrt(result[1])), maxDiff, length, maxLength));
             }*/
             out.add(iCurve, curve, targetOffset, queryOffset, length, result[0]);
@@ -468,6 +488,22 @@ public class MultiPartialShapeMatcher {
         }
 
         return out;
+    }
+
+    private void print(Index.QueryResults res, int len, int queryOffset, int n) {
+        System.out.printf("queryOffset=%d, length=%d, res=\n",queryOffset, len);
+        for (int i = 0; i < res.getLabels().length; ++i) {
+            long id = res.getLabels()[i];
+            System.out.printf("id=%d, target_curve=%d, target_offset=%d, distSq=%f, dist=%f\n",
+                    id, id/n, id%n, res.getDistances()[i],
+                    Math.sqrt(res.getDistances()[i]));
+        }
+    }
+
+    protected static float normalizeAndCalcSalukDist(float compChord, float maxChord,
+                                         float length, float maxMatchable) {
+        //return calcSalukDist((float)(compChord/Math.sqrt(length)), maxChord, length, maxMatchable);
+        return calcSalukDist(compChord/length, maxChord, length, maxMatchable);
     }
 
     protected static float calcSalukDist(float compChord, float maxChord,
@@ -502,6 +538,14 @@ public class MultiPartialShapeMatcher {
         }
         return out;
     }
+    public static float[][] convertToArray(PairFloatArray p) {
+        float[][] out = new float[p.getN()][];
+        for (int i = 0; i < p.getN(); ++i) {
+            out[i] = new float[]{p.getX(i), p.getY(i)};
+        }
+        return out;
+    }
+
     public static PairFloatArray convert(PairIntArray p) {
         PairFloatArray f = new PairFloatArray(p.getN());
         for (int i = 0; i < p.getN(); ++i) {
@@ -523,8 +567,9 @@ public class MultiPartialShapeMatcher {
             PairFloatArray p = closedCurves.get(i);
             PairFloatArray p2 = createScaledCurve(p, curveDimension);
             /*{//DEBUG
+                //if (i == 1191)
                 try {
-                    plot(p2, i);//System.currentTimeMillis());
+                    plot(p2, i*10000);//System.currentTimeMillis());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

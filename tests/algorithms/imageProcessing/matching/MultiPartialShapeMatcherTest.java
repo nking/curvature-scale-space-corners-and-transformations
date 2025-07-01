@@ -12,12 +12,15 @@ import algorithms.imageProcessing.transform.Transformer;
 import algorithms.misc.MiscDebug;
 import algorithms.misc.MiscMath;
 import algorithms.util.*;
+import com.spotify.voyager.jni.Index;
 import gnu.trove.set.TIntSet;
 import junit.framework.TestCase;
 
 import java.io.*;
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -27,12 +30,186 @@ public class MultiPartialShapeMatcherTest extends TestCase {
     static String eol = System.lineSeparator();
     Logger log = Logger.getLogger(MultiPartialShapeMatcherTest.class.getName());
 
-    public void _testMPEG7() {
-        // TODO: add test for
-        //https://dabi.temple.edu/external/shape/MPEG7/dataset.html
+    public void testDB() {
+        // ns is length of an embedding
+        int[] ns = new int[]{20, 15, 10};
+        long seed = System.nanoTime();
+        seed = 272458813734000L;
+        System.out.printf("seed=%d\n", seed);
+        Random rand = new Random(seed);
+
+        double max = 2*Math.PI;
+        int nEmb = 10; // number of embeddings, that is, number of samples
+        float tol = 0.001f;
+
+        for (int i = 0; i < ns.length; ++i) {
+            float[][] embeddings = new float[nEmb][ns[i]];
+            float[] q = new float[ns[i]];
+            float[][] qs = new float[nEmb][ns[i]];
+            long[] ids = new long[nEmb];
+            int topK = nEmb;
+            for (int j = 0; j < nEmb; ++j) {
+                embeddings[j] = new float[ns[i]];
+                for (int k = 0; k < ns[i]; ++k) {
+                    embeddings[j][k] = (float) rand.nextDouble(max);
+                }
+                ids[j] = j;
+            }
+            for (int k = 0; k < ns[i]; ++k) {
+                q[k] = (float) rand.nextDouble(max);
+            }
+
+            Index index = new Index(Index.SpaceType.Euclidean, ns[i]);
+
+            long[] outIds = index.addItems(embeddings, ids, -1);
+
+            float[] expectedDist = new float[nEmb];
+            for (int j = 0; j < nEmb; ++j) {
+                expectedDist[j] = euclidSq(q, embeddings[j]);
+            }
+            Index.QueryResults res = index.query(q, topK);
+            for (int j = 0; j < res.getLabels().length; ++j) {
+                float d = res.getDistances()[j];
+                int idx = (int)res.getLabels()[j];
+                float expected = expectedDist[idx];
+                assertTrue(Math.abs(expected - d) <= tol);
+            }
+        }
+        //TODO: multiple queries
     }
 
-    public void _testSimple0() throws Exception {
+    protected float euclidSq(float[] a, float[] b) {
+        double sum = 0;
+        double diff;
+        for (int i = 0; i < a.length; ++i) {
+            diff = a[i] - b[i];
+            sum += (diff * diff);
+        }
+        return (float)sum;
+    }
+
+    public void testMPEG7_0() throws Exception {
+        /** test using the MPEG-7 shape dataset
+
+        https://dabi.temple.edu/external/shape/MPEG7/dataset.html
+
+         each class (category) has several contours of the same object with small differences in articulation or occlusion,
+         and more.
+
+         testing whether one from each class can be randomly extracted and placed in a database, and then
+         all other contours become queries to the database to see if the same class is found.
+
+         the method tested returns the topk best hits even if it returns the same contour more than once,
+         but different offsets or lengths.
+        */
+
+        long seed = System.nanoTime();
+        seed = 211649731957458L;
+        System.out.printf("seed=%d\n", seed);
+        Random rand = new Random(seed);
+
+        // the randomly chosen single class member from each class:
+        List<PairFloatArray> queries = new ArrayList<>();
+        List<PairFloatArray> targets = new ArrayList<>();
+
+        // key = target index, value = file_name
+        Map<Integer, String> indexFileNameMap = new HashMap<>();
+        Map<Integer, String> queryFileNameMap = new HashMap<>();
+
+
+        // === load the contours ====
+        String dataPath = ResourceFinder.findTestResourcesDirectory() + sep  +"mpeg7";
+        File dataDir = new File(dataPath);
+
+        String[] classes = Files.lines(Paths.get(dataPath + sep + "CLASSES.txt")).toArray(String[]::new);
+
+        // for each class, load the contours into queries or targets, depending upon random choic of query
+        for (int i = 0; i < classes.length; ++i) {
+            final String category = classes[i];
+            File[] contourFiles = dataDir.listFiles(new FilenameFilter() {
+                @Override
+                public boolean accept(File dir, String name) {
+                    return name.startsWith(category + "-");
+                }
+            });
+            if (contourFiles.length == 1) {
+                continue;
+            }
+            int qIdx = rand.nextInt(contourFiles.length);
+
+            for (int j = 0; j < contourFiles.length; ++j) {
+                File file = contourFiles[j];
+                String[] lines = Files.lines(file.toPath()).toArray(String[]::new);
+                PairFloatArray p = new PairFloatArray(lines.length);
+                for (String line : lines) {
+                    String[] items = line.split(",");
+                    p.add(Float.valueOf(items[0]), Float.valueOf(items[1]));
+                }
+                if (j == qIdx) {
+                    queryFileNameMap.put(queries.size(), file.getName());
+                    queries.add(p);
+                } else {
+                    indexFileNameMap.put(targets.size(), file.getName());
+                    targets.add(p);
+                }
+            }
+        }
+
+        int topK = 10;
+        int n = 100;
+        int minBlockSize = (int)Math.round(0.25*n);
+        long start = System.nanoTime();
+        MultiPartialShapeMatcher m = new MultiPartialShapeMatcher(n, minBlockSize, targets);
+        long stop = System.nanoTime();
+        double diffSec = (stop - start)/1.E9;
+        System.out.printf("build index took %f sec (%d ns)\n", diffSec, stop-start);
+        System.out.flush();
+
+        for (int i = 1; i < classes.length; ++i) {
+            String category = classes[i];
+            System.out.printf("i=%d, category=%s\n", i, category);
+            PairFloatArray q = queries.get(i);
+            MultiPartialShapeMatcher.Results results = m.query(q, topK);
+            assertEquals(topK, results.getDBCurveIndexes().size());
+            for (int j = 0; j < topK; ++j) {
+                float dist = results.getDistances().get(j);
+                int idx = results.getDBCurveIndexes().get(j);
+                int tOffIdx = results.getOffsetsTargets().get(j);
+                int qOffIdx = results.getOffsetsQuery().get(j);
+                int len = results.getMatchingLengths().get(j);
+                String targetFileName = indexFileNameMap.get(idx);
+                System.out.printf("  k=%d, res=%s (q=%s), len=%d\n",
+                        j, targetFileName, queryFileNameMap.get(i), len);
+                if (!(targetFileName.startsWith(category + "-"))) {
+                    PairFloatArray t = targets.get(idx);
+                    PairFloatArray tRes = results.getDBCurves().get(j);
+                    System.out.printf("follow up: i=%d, targetIdx=%d, qOffIdx=%d (qS=(%f,%f)), tOffIdx=%d (pS=(%f,%f)), len=%d\n",
+                            i, idx, qOffIdx, q.getX(qOffIdx), q.getY(qOffIdx),
+                            tOffIdx, tRes.getX(tOffIdx), tRes.getY(tOffIdx), len);
+                    //System.out.printf("plotting query %s\n", plot(q, i));
+                    //System.out.printf("plotting target false positive %s\n", plot(tRes, j + queries.size()));
+                }
+                assertTrue(targetFileName.startsWith(category + "-"));
+            }
+        }
+    }
+
+    public void _testMPEG7_1() throws IOException {
+        /** test using the MPEG-7 shape dataset
+
+         https://dabi.temple.edu/external/shape/MPEG7/dataset.html
+
+         each class (category) has several contours of the same object with small differences in articulation or occlusion,
+         and more.
+
+         randomly extract one contour from each class, then put all other contours in the database.
+         the single contours are the queries.
+
+         test the method for topK by unique contours.
+         */
+    }
+
+    public void testSimple0() throws Exception {
 
         /* shape 1:
 
@@ -105,7 +282,7 @@ public class MultiPartialShapeMatcherTest extends TestCase {
          */
     }
 
-    public void _testSimple1() throws Exception {
+    public void testSimple1() throws Exception {
 
         /* shape 1:
 
@@ -156,20 +333,19 @@ public class MultiPartialShapeMatcherTest extends TestCase {
         //System.out.printf("plotting %s\n", plot(shape3, 3));
 
         int n = shape1.getN();
-        MultiPartialShapeMatcher m = new MultiPartialShapeMatcher(n, 3, curves);
+        int minBlockSize = n/2;
+        MultiPartialShapeMatcher m = new MultiPartialShapeMatcher(n, minBlockSize, curves);
 
         int topK = 10;
         MultiPartialShapeMatcher.Results results = m.query(shape1, topK);
         assertEquals(topK, results.distances.size());
         assertEquals(1, results.getDBCurveIndexes().get(0).intValue());
-        assertEquals(0, results.offsetsTargets.get(0).intValue());
-        assertEquals(0, results.getOffsetsQuery().get(0).intValue());
-        assertEquals(1, results.getDBCurveIndexes().get(1).intValue());
-        assertEquals(0, results.getOffsetsQuery().get(1).intValue());
-
+        assertEquals(12, results.offsetsTargets.get(0).intValue());
+        assertTrue( results.getOffsetsQuery().get(0).intValue() >= 10
+                && results.getOffsetsQuery().get(0).intValue() <= 14);
     }
 
-    public void testAndroidStatues() throws IOException {
+    public void _testAndroidStatues() throws IOException {
 
         if (false) {
             calcAndWriteCurvesToFile();
