@@ -1,6 +1,5 @@
 package algorithms.imageProcessing.matching;
 
-import algorithms.matrix.MatrixUtil;
 import algorithms.misc.MiscMath;
 import algorithms.signalProcessing.CurveResampler;
 import algorithms.util.FormatArray;
@@ -82,6 +81,8 @@ public class MultiPartialShapeMatcher {
     protected final Indexer indexer;
 
     protected final List<PairFloatArray> targetCurves;
+    protected final Map<Integer, Integer> originalIndexes;
+    protected final List<Float> unscaleFactors;
 
     /**
      * class to build and hold Voyager indexes of target curves
@@ -207,16 +208,24 @@ public class MultiPartialShapeMatcher {
      */
     public MultiPartialShapeMatcher(int curveDimension, int minBlockSize, List<PairFloatArray> closedCurves) {
 
-        int L = closedCurves.size();
+        //TODO: consider refactoring to improve testability
 
+        // filter for minBlockSize
+        Map<Integer, Integer> originalIndexes = new HashMap<>();
         List<PairFloatArray> targetCurves = new ArrayList<>();
-        for (PairFloatArray curve : closedCurves) {
-            targetCurves.add(curve.copy());
+        List<Float> unscaleFactors = new ArrayList<>();
+        for (int i = 0; i < closedCurves.size(); ++i) {
+            PairFloatArray p = closedCurves.get(i);
+            if (p.getN() >= minBlockSize) {
+                originalIndexes.put(targetCurves.size(), i);
+                targetCurves.add(p);
+                unscaleFactors.add((p.getN() - 1.f)/(curveDimension - 1.f));
+            }
         }
 
         //[closedCurves.size][this.curveDimension-1][this.curveDimension-1]
-        float[][][] descriptors = createDescriptors(closedCurves, curveDimension);
-        assert(descriptors.length == L);
+        float[][][] descriptors = createDescriptors(curveDimension, minBlockSize, targetCurves);
+        assert(descriptors.length == targetCurves.size());
         //assert(descriptors[0].length == this.curveDimension);
         //assert(descriptors[0][0].length == this.curveDimension);
 
@@ -224,15 +233,18 @@ public class MultiPartialShapeMatcher {
             print(descriptors[13][0]);
         }*/
 
-        Indexer indexer = new Indexer(L);
-        addEmbeddingsToIndexes(descriptors, indexer, minBlockSize);
+        Indexer indexer = new Indexer(targetCurves.size());
+        addEmbeddingsToIndexes(descriptors, indexer, minBlockSize, unscaleFactors);
         this.indexer = indexer;
         this.targetCurves = targetCurves;
         this.curveDimension = curveDimension;
         this.minBlockSize = minBlockSize;
+        this.originalIndexes = originalIndexes;
+        this.unscaleFactors = unscaleFactors;
     }
 
-    protected static void addEmbeddingsToIndexes(float[][][] descriptors, Indexer indexer, int minBlockSize) {
+    protected static void addEmbeddingsToIndexes(float[][][] descriptors, Indexer indexer, int minBlockSize,
+                                                 List<Float> unscaleFactors) {
         int L = descriptors.length;
 
         int n = descriptors[0].length;
@@ -244,15 +256,18 @@ public class MultiPartialShapeMatcher {
             if (len < minBlockSize) {
                 break;
             }
-
             // ids are a composite of iCurve and iDiag.
             // idx = iCurve * n + iDiag.
             // iCurve = idx / n;
             // iDiag = idx % n
             long[] ids = new long[L*n];
             float[][] embeddings = new float[L*n][len];
-            for (int iCurve = 0, j=0; iCurve < L; ++iCurve) {
-                for (int iDiag = 0; iDiag < n; ++iDiag, ++j) {
+            int j = 0;
+            for (int iCurve = 0; iCurve < L; ++iCurve) {
+                if (Math.round(len * unscaleFactors.get(iCurve)) < minBlockSize) {
+                    continue;
+                }
+                for (int iDiag = 0; iDiag < n; ++iDiag) {
                     if ((iDiag + len) > n) {
                         int len1 = n - iDiag;
                         System.arraycopy(descriptors[iCurve][iDiag], iDiag, embeddings[j], 0, len1);
@@ -263,8 +278,11 @@ public class MultiPartialShapeMatcher {
                         System.arraycopy(descriptors[iCurve][iDiag], iDiag, embeddings[j], 0, len);
                     }
                     ids[j] = iCurve * n + iDiag;
+                    ++j;
                 }
             }
+            embeddings = copyRows(embeddings, j);
+            ids = Arrays.copyOf(ids, j);
             // store in indexer
             indexer.addEmbeddingsIndex(embeddings, ids);
         }
@@ -272,24 +290,26 @@ public class MultiPartialShapeMatcher {
 
     // return list of curve index, and offset to start match
     public static class Results {
+        // top k curves found int he database
         final List<PairFloatArray> dbCurves;
-        final List<Integer> dbCurveIndexes;
+        // the indexes w.r.t. the original list of curves to place in the database.  they were filtered by minBlockSize.
+        final List<Integer> originalCurveIndexes;
         final List<Integer> offsetsQuery;
         final List<Integer> offsetsTargets;
         final List<Integer> matchingLengths;
         final List<Float> distances;
         public Results(int n) {
             dbCurves = new ArrayList<>();
-            dbCurveIndexes = new ArrayList<>();
+            originalCurveIndexes = new ArrayList<>();
             offsetsTargets = new ArrayList<>();
             offsetsQuery = new ArrayList<>();
             matchingLengths = new ArrayList<>();
             distances = new ArrayList<>();
         }
-        public void add(int dbCurveIndex, PairFloatArray dbCurve, int targetOffset, int queryOffset,
+        public void add(int origCurveIndex, PairFloatArray dbCurve, int targetOffset, int queryOffset,
                         int length, float distance) {
             dbCurves.add(dbCurve);
-            dbCurveIndexes.add(dbCurveIndex);
+            originalCurveIndexes.add(origCurveIndex);
             offsetsTargets.add(targetOffset);
             offsetsQuery.add(queryOffset);
             matchingLengths.add(length);
@@ -300,8 +320,8 @@ public class MultiPartialShapeMatcher {
             return dbCurves;
         }
 
-        public List<Integer> getDBCurveIndexes() {
-            return dbCurveIndexes;
+        public List<Integer> getOriginalCurveIndexes() {
+            return originalCurveIndexes;
         }
 
         public List<Integer> getOffsetsQuery() {
@@ -332,6 +352,8 @@ public class MultiPartialShapeMatcher {
     public Results query(PairFloatArray queryCurve, final int topK) {
 
         PairFloatArray q1 = createScaledCurve(queryCurve, this.curveDimension);
+
+        float unscaleFactorQ = (queryCurve.getN() - 1.f)/(this.curveDimension - 1.f);
 
         /*{ //DEBUG
             try {
@@ -414,10 +436,14 @@ public class MultiPartialShapeMatcher {
             if (len < this.minBlockSize) {
                 break;
             }
+            if (Math.round(len * unscaleFactorQ) < this.minBlockSize) {
+                continue;
+            }
             // idsQ are iDiag, that is, the reference point, the offset from 0
             int[] idsQ = new int[n];
             float[][] embeddingsQ = new float[n][len];
-            for (int iDiag = 0, j=0; iDiag < n; ++iDiag, ++j) {
+            int j = 0;
+            for (int iDiag = 0; iDiag < n; ++iDiag) {
                 if ((iDiag + len) > n) {
                     int len1 = n - iDiag;
                     System.arraycopy(descriptor[iDiag], iDiag, embeddingsQ[j], 0, len1);
@@ -428,6 +454,7 @@ public class MultiPartialShapeMatcher {
                     System.arraycopy(descriptor[iDiag], iDiag, embeddingsQ[j], 0, len);
                 }
                 idsQ[j] = iDiag;
+                ++j;
             }
             /*{//DEBUG
                 if (len < 20) {
@@ -435,6 +462,8 @@ public class MultiPartialShapeMatcher {
                     System.out.printf("embeddings=%s\n", FormatArray.toString(embeddingsQ, "%.2f"));
                 }
             }*/
+            assert(j == n);
+
             // there is a Index.QueryResults for every embeddingsQ, which has same index as idsQ
             Index.QueryResults[] indexResults = indexer.query(embeddingsQ, topK);
 
@@ -470,11 +499,10 @@ public class MultiPartialShapeMatcher {
             int iDiag = (int)(id % (long)n);
             PairFloatArray curve = this.targetCurves.get(iCurve);
             // undo the scaling used in curve resampler:
-            double factor = (this.curveDimension - 1.)/(curve.getN() - 1.);
-            int targetOffset = (int) Math.round(iDiag * factor);
-            int length = (int) Math.round(result[1] * factor);
-            double qFactor = (this.curveDimension - 1.)/(queryCurve.getN() - 1.);
-            queryOffset = (int) Math.round(result[3] * qFactor);
+            float unscaleFactorT = this.unscaleFactors.get(iCurve);
+            int targetOffset = Math.round(iDiag * unscaleFactorT);
+            int length = Math.round(result[1] * unscaleFactorT);
+            queryOffset = Math.round(result[3] * unscaleFactorQ);
             /*{//DEBUG
                 System.out.printf("targetIdx=%d, target_p0=(%f,%f), query_q0=(%f,%f), len=%.0f, dist=%.3e, saluk=%.3e\n",
                         iCurve,
@@ -483,7 +511,7 @@ public class MultiPartialShapeMatcher {
                         result[1], result[0],
                         calcSalukDist((float)(result[0]/Math.sqrt(result[1])), maxDiff, length, maxLength));
             }*/
-            out.add(iCurve, curve, targetOffset, queryOffset, length, result[0]);
+            out.add(this.originalIndexes.get(iCurve), curve, targetOffset, queryOffset, length, result[0]);
             ++i;
         }
 
@@ -559,7 +587,9 @@ public class MultiPartialShapeMatcher {
      * @param closedCurves
      * @return descriptors array with dimensions: [closedCurves.size][this.curveDimension-1][this.curveDimension-1]
      */
-    protected static float[][][] createDescriptors(List<PairFloatArray> closedCurves, int curveDimension) {
+    protected static float[][][] createDescriptors(int curveDimension, int minBlockSize,
+        List<PairFloatArray> closedCurves) {
+
         float[][][] descriptors = new float[closedCurves.size()][][];
         // building the descriptors:
         // r.t.c. is O(n * curveDimension^2)
@@ -578,6 +608,14 @@ public class MultiPartialShapeMatcher {
             descriptors[i] = a2;
         }
         return descriptors;
+    }
+
+    private static float[][] copyRows(float[][] a, int nRows) {
+        float[][] b = new float[nRows][];
+        for (int i = 0; i < nRows; ++i) {
+            b[i] = Arrays.copyOf(a[i], a[i].length);
+        }
+        return b;
     }
 
     private static String plot(PairFloatArray p, long fn) throws Exception {
