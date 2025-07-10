@@ -212,7 +212,7 @@ public class MultiPartialShapeMatcherTest extends TestCase {
         }
     }
 
-    public void _testMPEG7_1() throws IOException {
+    public void testMPEG7_1() throws IOException {
         /** test using the MPEG-7 shape dataset
 
          https://dabi.temple.edu/external/shape/MPEG7/dataset.html
@@ -225,6 +225,9 @@ public class MultiPartialShapeMatcherTest extends TestCase {
 
          test the method for topK by unique contours.
          */
+
+        //TODO: implement method for keeping topK matches, but unique contours among those
+
     }
 
     public void testSimple0() throws Exception {

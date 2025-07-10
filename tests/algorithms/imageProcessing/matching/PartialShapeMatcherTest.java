@@ -35,11 +35,11 @@ public class PartialShapeMatcherTest extends TestCase {
 
         // 60
         PairFloatArray p = getScissors1();
-        plot(p, 200);
+        //plot(p, 200);
 
         // 63
         PairFloatArray q = getScissors2();
-        plot(q, 201);
+        //plot(q, 201);
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
@@ -102,10 +102,10 @@ public class PartialShapeMatcherTest extends TestCase {
         p.removeRange(p.getN()-1, p.getN()-1);
         p.rotateLeft(16);
         p.add(p.getX(0), p.getY(0));
-        plot(p, 200);
+        //plot(p, 200);
 
         PairFloatArray q = getScissors2();
-        plot(q, 201);
+        //plot(q, 201);
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
@@ -146,11 +146,11 @@ public class PartialShapeMatcherTest extends TestCase {
         Transformer transformer = new Transformer();
         PairFloatArray b = transformer.applyTransformation(params, p);
          */
-        plot(p, 210);
+        //plot(p, 210);
 
         PairFloatArray q = getScissors2();
         //q = curveHelper.scaleDown(q, 0.5f);
-        plot(q, 211);
+        //plot(q, 211);
 
         log.info("p.n=" + p.getN() + " q.n=" + q.getN());
 
@@ -183,7 +183,7 @@ public class PartialShapeMatcherTest extends TestCase {
         ImageExt img0 = ImageIOHelper.readImageExt(filePath0);
 
         PairFloatArray p = extractOrderedBoundary(img0);
-        plot(p, 100);
+        //plot(p, 100);
 
         String fileName1 = "";
 
@@ -231,7 +231,7 @@ public class PartialShapeMatcherTest extends TestCase {
                 ImageExt img = ImageIOHelper.readImageExt(filePath1);
 
                 PairFloatArray q = extractOrderedBoundary(img);
-                plot(q, (i+1)*100 + 1);
+                //plot(q, (i+1)*100 + 1);
 
                 log.info("type=" + type + " i=" + i + " matching " + fileName0Root
                 + " to " + fileName1Root + " (" + p.getN()
@@ -270,7 +270,7 @@ public class PartialShapeMatcherTest extends TestCase {
 
         PairFloatArray p = extractOrderedBoundary(img0, sigma);
         //p = curveHelper.scaleDown(p, 0.5f);
-        plot(p, 100);
+        //plot(p, 100);
 
         String fileName1 = "";
 
@@ -306,7 +306,7 @@ public class PartialShapeMatcherTest extends TestCase {
             ImageExt img = ImageIOHelper.readImageExt(filePath1);
 
             PairFloatArray q = extractOrderedBoundary(img, sigma);
-            plot(q, (i+1)*100 + 1);
+            //plot(q, (i+1)*100 + 1);
 
             log.info("matching " + fileName0Root + " to " + fileName1Root + " (" + p.getN()
             + " points to " + q.getN() + " points");

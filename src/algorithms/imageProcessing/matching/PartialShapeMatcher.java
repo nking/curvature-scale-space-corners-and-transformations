@@ -292,6 +292,8 @@ public class PartialShapeMatcher {
             q = p;
         }
 
+        //p.n <= q.n
+
         // resample if needed:
         PairFloatArray p2 = null;
 
@@ -354,7 +356,7 @@ public class PartialShapeMatcher {
 
         if (useSameNumberOfPoints && n1 != n2) {
             // multiply by n1 and divide by n2
-            float factor = (float)n1/(float)n2;
+            float factor = (n1 - 1.f)/(n2 - 1.f);
             if (interchange) {
                 factor = 1.f/factor;
             }
