@@ -150,8 +150,8 @@ public class GradientIntegralHistograms {
                     
                     out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);
                                         
-                    out[pixIdx][b0] += (f0 * v);
-                    out[pixIdx][b1] += (f1 * v);
+                    out[pixIdx][b0] += (int)Math.round(f0 * v);
+                    out[pixIdx][b1] += (int)Math.round(f1 * v);
                     
                     // add bin, add pixIdxB and subtract pixIdxLB
                     HOGUtil.add(out[pixIdx], out[pixIdxB]);
@@ -163,8 +163,8 @@ public class GradientIntegralHistograms {
                          
                     out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);
                     
-                    out[pixIdx][b0] += (f0 * v);
-                    out[pixIdx][b1] += (f1 * v);
+                    out[pixIdx][b0] += (int)Math.round(f0 * v);
+                    out[pixIdx][b1] += (int)Math.round(f1 * v);
                     
                 } else if (y > 0) {
                 
@@ -172,8 +172,8 @@ public class GradientIntegralHistograms {
                      
                     out[pixIdx] = Arrays.copyOf(out[pixIdxB], nBins);
                     
-                    out[pixIdx][b0] += (f0 * v);
-                    out[pixIdx][b1] += (f1 * v);
+                    out[pixIdx][b0] += (int)Math.round(f0 * v);
+                    out[pixIdx][b1] += (int)Math.round(f1 * v);
                 }
             }
         }

@@ -890,9 +890,9 @@ public class Region {
          *
          * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
          */
-        int mask = (1 << 31) - 1;
-        int shift = 32;
-        int sum = fnv321aInit;
+        long mask = (1L << 31L) - 1L;
+        long shift = 32L;
+        long sum = (long)fnv321aInit;
         long b0, b1;
         
         sum ^= pixel_;
@@ -914,6 +914,6 @@ public class Region {
             sum *= fnv32Prime;
         }
         
-        return sum;
+        return (int)sum;
     }
 }

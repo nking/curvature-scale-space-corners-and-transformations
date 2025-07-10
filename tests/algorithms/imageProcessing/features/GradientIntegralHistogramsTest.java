@@ -404,8 +404,8 @@ public class GradientIntegralHistogramsTest extends TestCase {
                     f0 = bilinearParams[3];
                     f1 = bilinearParams[4];
                     
-                    sumH[b0] += (f0 * v);
-                    sumH[b1] += (f1 * v);
+                    sumH[b0] += (float)(f0 * v);
+                    sumH[b1] += (float)(f1 * v);
                 }
             }
             //System.out.format("(%d:%d, %d:%d) testN=%d\n", x1, x2, y1, y2, i);

@@ -69,11 +69,11 @@ public class TransformationParameters {
      * @param theRotationInRadians the rotation to set in units of radians
      */
     public void setRotationInRadians(float theRotationInRadians) {
-        double twoPi = 2. * Math.PI;
+        float twoPi = (float)(2. * Math.PI);
         if (theRotationInRadians < 0) {
             theRotationInRadians += twoPi;
         } else if (theRotationInRadians > twoPi) {
-            double m = (int)(theRotationInRadians/twoPi) * twoPi;
+            float m = (int)(theRotationInRadians/twoPi) * twoPi;
             theRotationInRadians -= m;
         }
         this.rotationInRadians = theRotationInRadians;

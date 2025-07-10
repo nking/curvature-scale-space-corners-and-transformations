@@ -36,9 +36,9 @@ public class CurvatureScaleSpaceImageMakerTest extends TestCase {
         xMax *= 1.1f;
         float yMin = MiscMath.findMin(y);
         if (yMin < 0) {
-            yMin *= 1.1;
+            yMin *= 1.1f;
         } else {
-            yMin *= 0.9;
+            yMin *= 0.9f;
         }
         float yMax = MiscMath.findMax(y);
         
