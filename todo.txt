@@ -1,4 +1,5 @@
-- implement MultiPartialShapeMatcher
+-- replace com.github.fommil.netlib with
+   https://github.com/luhenry/netlib
 
 - revise this todo list
 
