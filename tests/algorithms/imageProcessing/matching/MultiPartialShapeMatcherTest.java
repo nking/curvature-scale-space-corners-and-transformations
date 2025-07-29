@@ -23,6 +23,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Logger;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 public class MultiPartialShapeMatcherTest extends TestCase {
 
@@ -367,12 +372,43 @@ public class MultiPartialShapeMatcherTest extends TestCase {
 
     }
 
-    public void _testAndroidStatues() throws IOException {
+    public void testAndroidStatues_SAM2_contours() throws IOException {
 
-        if (false) {
-            calcAndWriteCurvesToFile();
+        PairFloatArray queryCurve = getAndroidQueryCurve();
+
+        // reducing curveDimension to 50, put android_statues_01 into top10, but not top1
+        int curveDimension = queryCurve.getN();
+        int minDim = (int)Math.round(0.2*curveDimension);
+
+        String dirPath = ResourceFinder.findTestResourcesDirectory();
+        String contourDirPath = dirPath + sep + "android_contours";
+        for (int andI = 1; andI <= 4; ++andI) {
+            String filenameRoot = "android_statues_0" + andI;
+
+            String filePrefix = filenameRoot + "_contour";
+            List<PairFloatArray> curves = readCurves(contourDirPath, filePrefix);
+
+            ImageExt img = ImageIOHelper.readImageExt(dirPath + sep + filenameRoot + ".jpg");
+            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), curves,
+                    filenameRoot + "_closed_curves_sam2_", 3);
+
+            MultiPartialShapeMatcher matcher = new MultiPartialShapeMatcher(curveDimension, minDim, curves);
+
+            int topK = 10;
+            MultiPartialShapeMatcher.Results results = matcher.query(queryCurve, topK);
+
+            List<PairFloatArray> top = new ArrayList<>();
+            top.add(results.getDBCurves().getFirst());
+            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), top,
+                    filenameRoot + "_found_top_sam2_", 1);
+            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), results.getDBCurves(),
+                    filenameRoot + "_found_sam2_", 1);
+
         }
 
+    }
+
+    protected PairFloatArray getAndroidQueryCurve() throws IOException {
         String fileName0 = "android_statues_03_sz1_mask_small.png";
         int idx0 = fileName0.lastIndexOf(".");
         String fileName0Root = fileName0.substring(0, idx0);
@@ -388,8 +424,19 @@ public class MultiPartialShapeMatcherTest extends TestCase {
         Map<Integer, PairIntArray> shapes0 = PerimeterFinder3.extractOrderedBorders(labels0, img0.getWidth(), img0.getHeight());
         PairFloatArray queryCurve = MultiPartialShapeMatcher.convert(shapes0.get(1));
         //plot(img0.copyToColorGreyscaleExt(), shapes0.get(1), 0,"_template_");
+        return queryCurve;
+    }
 
-        // reduding curveDimension to 50, put android_statues_01 into top10, but not top1
+    public void testAndroidStatues() throws IOException {
+        // this uses quick segmentation made from SLIC Super Pixels with polar angle theta of U and V in CIE LUV color space
+
+        if (false) {
+            calcAndWriteCurvesToFile();
+        }
+
+        PairFloatArray queryCurve = getAndroidQueryCurve();
+
+        // reducing curveDimension to 50, put android_statues_01 into top10, but not top1
         int curveDimension = queryCurve.getN();
         int minDim = (int)Math.round(0.2*curveDimension);
 
@@ -433,12 +480,16 @@ public class MultiPartialShapeMatcherTest extends TestCase {
 
             List<PairFloatArray> dbCurves = MultiPartialShapeMatcher.convert(curves);
 
+            /*
             int _n1 = curves.size()/2;
             int _n2 = curves.size();
             plot(img.copyToGreyscale().copyToColorGreyscaleExt(), dbCurves.subList(0, _n1),
                     fileName1Root + "_closed_curves_0");
             plot(img.copyToGreyscale().copyToColorGreyscaleExt(), dbCurves.subList(_n1, _n2),
                     fileName1Root + "_closed_curves_1");
+            */
+            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), dbCurves,
+                    fileName1Root + "_closed_curves_", 3);
 
             MultiPartialShapeMatcher matcher = new MultiPartialShapeMatcher(curveDimension, minDim, dbCurves);
 
@@ -449,9 +500,9 @@ public class MultiPartialShapeMatcherTest extends TestCase {
             List<PairFloatArray> top = new ArrayList<>();
             top.add(results.getDBCurves().getFirst());
             plot(img.copyToGreyscale().copyToColorGreyscaleExt(), top,
-                    fileName1Root + "_found_top_");
+                    fileName1Root + "_found_top_", 1);
             plot(img.copyToGreyscale().copyToColorGreyscaleExt(), results.getDBCurves(),
-                    fileName1Root + "_found_");
+                    fileName1Root + "_found_", 1);
 
             //write_centroids(labels, img, fileName1Root);
 
@@ -622,7 +673,7 @@ public class MultiPartialShapeMatcherTest extends TestCase {
                 }
                 list1.add(f);
             }
-            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), list1, fileName1Root + "_closed_curves_under");
+            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), list1, fileName1Root + "_closed_curves_under", 1);
 
             /*List<PairFloatArray> list2 = new ArrayList<>();
             for (Map.Entry<Integer, PairIntArray> entry : shapes2.entrySet()) {
@@ -648,7 +699,7 @@ public class MultiPartialShapeMatcherTest extends TestCase {
                 }
                 list3.add(f);
             }
-            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), list3, fileName1Root + "_closed_curves_under_over");
+            plot(img.copyToGreyscale().copyToColorGreyscaleExt(), list3, fileName1Root + "_closed_curves_under_over", 1);
 
             writeOutCurves(shapes3, fileName1Root, minSz, maxSz);
         }
@@ -792,11 +843,10 @@ public class MultiPartialShapeMatcherTest extends TestCase {
     }
 
     private void plot(ImageExt img, List<PairFloatArray> shapes,
-                      String fileSuffix) throws IOException {
+                      String fileSuffix, int nDot) throws IOException {
 
         Image im = img.copyToGreyscale().copyToColorGreyscale();
         int[] clr;
-        int nDot = 1;
         for (int ii = 0; ii < shapes.size(); ++ii) {
             clr = ImageIOHelper.getNextRGB(ii);
             ImageIOHelper.addCurveToImage(shapes.get(ii), im, nDot, clr[0],
@@ -1041,4 +1091,30 @@ public class MultiPartialShapeMatcherTest extends TestCase {
 
         return plot.writeFile(fn);
     }
+
+    private List<PairFloatArray> readCurves(String contourDirPath, String filePrefix) throws IOException {
+
+        List<PairFloatArray> curves = new ArrayList<>();
+
+        String globPattern = filePrefix + "_*.csv";
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(contourDirPath), globPattern)) {
+            for (Path entry : stream) {
+                if (Files.isRegularFile(entry)) { // Ensure it's a file, not a directory
+                    PairFloatArray curve = new PairFloatArray();
+                    try (Stream<String> lines = Files.lines(entry)) {
+                        lines.map(line -> line.split(","))
+                        .forEach(parts -> {
+                            curve.add(Float.valueOf(parts[0]), Float.valueOf(parts[1]));
+                        });
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    curves.add(curve);
+                }
+            }
+        }
+
+        return curves;
+    }
+
 }
