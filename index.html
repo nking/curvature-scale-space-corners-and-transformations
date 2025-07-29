@@ -84,15 +84,30 @@
 
 <p>Highlights of computer vision algorithms (without machine learning):</p>
     <ul>
-        <li> Finding an object in a segmented image by shape alone (ShapeFinder2.java)
-             has the true solution in the top matches, but not necessarily the top match,
-             and is more computationally expensive than other methods listed.
+        <li> Finding an object in a segmented image by shape alone. 
+        PartialShapeMatcher can find a matching articulated, occluded object in an
+        image and MultiPartialShapeMatcher can find the same object among a 
+        database of candidate objects.
+        The quality of the closed curve contours matters.  Here are shapshots from
+        using MultiPartialShapeMatcher on a database of contours constructed using
+        Segment Anything Model-2 (SAM-2) and using the gingerbread man as a query object.
+        Also shown are the results when the contours are formed using a quick custom
+        segmentation method.
             <table>
             <tr>
             <td>
-            <a href="images/shape_matcher.png">
-            <img alt="snapshots of shape matching results"
-                src="images/shape_matcher.png"
+            <a href="images/multipartialshapematcher_with_sam2_seg.png">
+            <img alt="snapshots of shape matching results for gingerbread man query on SAM2 contours"
+                src="images/multipartialshapematcher_with_sam2_seg.png"
+                width="30" height="30"/>
+            </a>
+            </td>
+            </tr>
+            <tr>
+            <td>
+            <a href="images/multipartialshapematcher_with_quick_seg.png">
+            <img alt="snapshots of shape matching results for gingerbread man query on quick segmentatin contours"
+                src="images/multipartialshapematcher_with_quick_seg.png"
                 width="30" height="30"/>
             </a>
             </td>
