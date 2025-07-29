@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LabelHelper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.segmentation</a> &gt; <span class="el_source">LabelHelper.java</span></div><h1>LabelHelper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.segmentation;
+
+import algorithms.compGeometry.PerimeterFinder3;
+import algorithms.disjointSets.UnionFind;
+import algorithms.misc.MiscMath0;
+
+import java.util.*;
+
+/**
+ * TODO: consider moving all the miscelaneous label helper methods into this class
+ */
+<span class="nc" id="L12">public class LabelHelper {</span>
+
+<span class="nc" id="L14">    protected static int[][] offsets4 = new int[][]{</span>
+            {0, -1}, {-1, 0}, {0, 1}, {1, 0}
+    };
+<span class="nc" id="L17">    protected static int[][] offsets8 = new int[][]{</span>
+            {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}, {1,1}, {1, 0}, {1, -1},
+    };
+
+    /**
+     * given the labels, further divide each lable by connectedness.  e.g. if
+     * 2 regions share the same label but have no adjacent pixels, they will be
+     * relabeled to have 2 separate labels.
+     * @param labels indexes are pixel indexes following the convention idx = row * width + col
+     * @param imgWidth width of image
+     * @param imgHeight height of image
+     * @param use4Neighors if true, considers a neighbor to be in 4 neighbor neighborhood, else uses 8 neighbor region
+     @return the number of unique labels in labels now
+     */
+    public static int resolveByConnectedness(int[] labels, int imgWidth, int imgHeight, boolean use4Neighors) {
+
+<span class="nc" id="L33">        Map&lt;Integer, Set&lt;Integer&gt;&gt; pointsMap = PerimeterFinder3.getLabeledPointsMap(labels);</span>
+
+<span class="nc" id="L35">        int maxLabel = MiscMath0.findMax(labels);</span>
+
+        int[][] offsets;
+<span class="nc bnc" id="L38" title="All 2 branches missed.">        if (use4Neighors) {</span>
+<span class="nc" id="L39">            offsets = offsets4;</span>
+        } else {
+<span class="nc" id="L41">            offsets = offsets8;</span>
+        }
+
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        for (Map.Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : pointsMap.entrySet()) {</span>
+<span class="nc" id="L45">            final int label = entry.getKey();</span>
+<span class="nc" id="L46">            Set&lt;Integer&gt; points = entry.getValue();</span>
+<span class="nc" id="L47">            UnionFind uf = new UnionFind(labels.length);</span>
+<span class="nc" id="L48">            Deque&lt;Integer&gt; q = new ArrayDeque&lt;&gt;(points);</span>
+<span class="nc" id="L49">            Set&lt;Integer&gt; visited = new HashSet&lt;&gt;();</span>
+            int r1, r2, c1, c2, idx1, idx2;
+<span class="nc bnc" id="L51" title="All 2 branches missed.">            while (!q.isEmpty()) {</span>
+<span class="nc" id="L52">                idx1 = q.pollFirst();</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">                if (visited.contains(idx1)) {</span>
+<span class="nc" id="L54">                    continue;</span>
+                }
+<span class="nc" id="L56">                visited.add(idx1);</span>
+<span class="nc" id="L57">                r1 = idx1 / imgWidth;</span>
+<span class="nc" id="L58">                c1 = idx1 % imgWidth;</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">                for (int[] offset : offsets) {</span>
+<span class="nc" id="L60">                    r2 = offset[0] + r1;</span>
+<span class="nc" id="L61">                    c2 = offset[1] + c1;</span>
+<span class="nc bnc" id="L62" title="All 8 branches missed.">                    if (r2 &lt; 0 || c2 &lt; 0 || r2 == imgHeight || c2 == imgWidth) {</span>
+<span class="nc" id="L63">                        continue;</span>
+                    }
+<span class="nc" id="L65">                    idx2 = r2 * imgWidth + c2;</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">                    if (!points.contains(idx2)) {</span>
+<span class="nc" id="L67">                        continue;</span>
+                    }
+<span class="nc bnc" id="L69" title="All 2 branches missed.">                    if (uf.find(idx1) != uf.find(idx2)) {</span>
+<span class="nc" id="L70">                        uf.union(idx1, idx2);</span>
+                    }
+                }
+            }
+            // extract the connected regions within this label
+<span class="nc" id="L75">            Map&lt;Integer, Set&lt;Integer&gt;&gt; labelMap = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">            for (int idx : points) {</span>
+<span class="nc" id="L77">                int p = uf.find(uf.getParent()[idx]);</span>
+<span class="nc" id="L78">                labelMap.putIfAbsent(p, new HashSet&lt;&gt;());</span>
+<span class="nc" id="L79">                labelMap.get(p).add(idx);</span>
+<span class="nc" id="L80">            }</span>
+            //relabel them if there is more than 1 region
+<span class="nc bnc" id="L82" title="All 2 branches missed.">            if (labelMap.size() &gt; 1) {</span>
+<span class="nc" id="L83">                int nI = -1;</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">                for (Map.Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry2 : labelMap.entrySet()) {</span>
+<span class="nc" id="L85">                    ++nI;</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">                    if (nI == 0) {</span>
+<span class="nc" id="L87">                        continue; // keeps default label</span>
+                    }
+<span class="nc" id="L89">                    ++maxLabel;</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">                    for (int idx : entry2.getValue()) {</span>
+<span class="nc" id="L91">                        labels[idx] = maxLabel;</span>
+<span class="nc" id="L92">                    }</span>
+<span class="nc" id="L93">                }</span>
+            }
+<span class="nc" id="L95">        }</span>
+<span class="nc" id="L96">        return maxLabel;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

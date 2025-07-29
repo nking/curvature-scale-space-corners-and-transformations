@@ -1,0 +1,672 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MergeLabels.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.segmentation</a> &gt; <span class="el_source">MergeLabels.java</span></div><h1>MergeLabels.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.segmentation;
+
+import algorithms.disjointSets.UnionFind;
+import algorithms.imageProcessing.*;
+import algorithms.imageProcessing.features.HCPT;
+import algorithms.misc.MiscMath0;
+
+import java.util.*;
+
+<span class="nc" id="L10">public class MergeLabels {</span>
+
+<span class="fc" id="L12">    protected static int[][] offsets = new int[][]{</span>
+            {-1, 0}, {0, 1}, {1, 0}, {-1, 0},
+            {-1,1}, {-1,-1}, {1,-1}, {1, 1}
+    };
+
+    public static enum METHOD {
+        MEAN, MODE, MIN_GRADIENT
+    }
+
+    /**
+     * merge adjacent labeled regions if the deltaE2000 color difference between two adjacent regions is
+     * less than the given thresh.
+     *
+     * @param img
+     * @param labels input labels, they are updated in place with merged labels
+     * @param thresh threshold for the deltaE2000 color difference.  The JND (just noticeable difference) threshold is
+     *               about 2.3 and the maximum value is 20?  (TODO: calculate this).
+     *               Caveat is that the if the method is MEAN of color histograms of regions are taken as the representative
+     *               color for the region, and so a threshold between 0 and 1.0 performs better.
+     *               For MODE,
+     * @param method mean or mode
+     * @return number of unique labels
+     */
+    public static int mergeUsingDeltaE2000(ImageExt img, int[] labels, double thresh, METHOD method) {
+
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        if (method == null) {</span>
+<span class="nc" id="L38">            throw new IllegalArgumentException(&quot;method cannot be null&quot;);</span>
+        }
+
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (method == METHOD.MIN_GRADIENT) {</span>
+<span class="fc" id="L42">            ImageSegmentation seg = new ImageSegmentation();</span>
+<span class="fc" id="L43">            EdgeFilterProducts edgeProducts = seg.createGradient(img, 0, System.currentTimeMillis());</span>
+<span class="fc" id="L44">            GreyscaleImage grad = edgeProducts.getGradientXY();</span>
+<span class="fc" id="L45">            return mergeWithMinGrad(img, labels, thresh, grad);</span>
+        }
+
+        // merging adjacent labels if their deltaE2000 are &lt; thresh
+        //
+        // will use the mode of each labeled region
+        //
+        // datastructures:
+        //  hashmap w/ key = label, value = color histogram
+        //  hashmap w/ key = label, value = set of adjacent labels
+        //
+        // will use BFS traversal of adjacency map and when deltaE2000 of parent and child are &lt; thresh
+        // will merge the two using union find.
+        //
+        // the final components are the parents in union find.
+        // for each original label, there will be a new label and total number of unique labels is &lt;= original number.
+
+<span class="fc" id="L62">        CIEChromaticity cieC = new CIEChromaticity();</span>
+
+        int r1, c1, r2, c2, i2, label2;
+<span class="fc" id="L65">        int w = img.getWidth();</span>
+<span class="fc" id="L66">        int h = img.getHeight();</span>
+<span class="fc" id="L67">        Map&lt;Integer, Set&lt;Integer&gt;&gt; adjLabelMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L68">        Map&lt;Integer, int[][]&gt; labelHistMap = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L70">        int[][] tmp = new int[3][51];</span>
+
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        for (int i1 = 0; i1 &lt; labels.length; ++i1) {</span>
+<span class="fc" id="L73">            int label1 = labels[i1];</span>
+<span class="fc" id="L74">            adjLabelMap.putIfAbsent(label1, new HashSet&lt;&gt;());</span>
+
+<span class="fc" id="L76">            r1 = img.getRow(i1);</span>
+<span class="fc" id="L77">            c1 = img.getCol(i1);</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">            for (int[] offset : offsets) {</span>
+<span class="fc" id="L79">                r2 = r1 + offset[0];</span>
+<span class="fc" id="L80">                c2 = c1 + offset[1];</span>
+<span class="fc bfc" id="L81" title="All 8 branches covered.">                if (r2 &lt; 0 || c2 &lt; 0 || r2 == h || c2 == w) {</span>
+<span class="fc" id="L82">                    continue;</span>
+                }
+<span class="fc" id="L84">                i2 = img.getInternalIndex(c2, r2);</span>
+<span class="fc" id="L85">                label2 = labels[i2];</span>
+
+<span class="fc bfc" id="L87" title="All 2 branches covered.">                if (label1 == label2) {</span>
+<span class="fc" id="L88">                    continue;</span>
+                }
+
+<span class="fc" id="L91">                adjLabelMap.putIfAbsent(label2, new HashSet&lt;&gt;());</span>
+
+<span class="fc" id="L93">                adjLabelMap.get(label1).add(label2);</span>
+<span class="fc" id="L94">                adjLabelMap.get(label2).add(label1);</span>
+            }
+
+            // add to histogram entry.  use bin sizes of 5. 255/5 = 51.
+<span class="fc" id="L98">            labelHistMap.putIfAbsent(label1, new int[3][51]);</span>
+
+<span class="fc" id="L100">            int[][] lHist = labelHistMap.get(label1);</span>
+<span class="fc" id="L101">            lHist[0][img.getR(i1)/51]++;</span>
+<span class="fc" id="L102">            lHist[1][img.getG(i1)/51]++;</span>
+<span class="fc" id="L103">            lHist[2][img.getB(i1)/51]++;</span>
+        }
+
+<span class="fc" id="L106">        int nLabels = adjLabelMap.size();</span>
+<span class="fc" id="L107">        UnionFind uf = new UnionFind(nLabels);</span>
+
+        // BFS traverse adj map
+<span class="fc" id="L110">        Set&lt;Integer&gt; visited = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L111">        Deque&lt;Integer&gt; q = new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L112">        q.add(labels[0]);</span>
+        int u;
+        int[][] uHist;
+        int[][] vHist;
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        while (!q.isEmpty()) {</span>
+<span class="fc" id="L117">            u = q.poll();</span>
+<span class="fc" id="L118">            visited.add(u);</span>
+<span class="fc" id="L119">            uHist = labelHistMap.get(u);</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">            for (int v : adjLabelMap.get(u)) {</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">                if (visited.contains(v)) {</span>
+<span class="fc" id="L122">                    continue;</span>
+                }
+<span class="fc" id="L124">                q.add(v);</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">                if (uf.find(u) == uf.find(v)) {</span>
+<span class="nc" id="L126">                    continue;</span>
+                }
+<span class="fc" id="L128">                vHist = labelHistMap.get(v);</span>
+<span class="fc" id="L129">                double diff = calcColorDiff(cieC, uHist, vHist, method);</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">                if (diff &lt; thresh) {</span>
+<span class="fc" id="L131">                    uf.union(u, v);</span>
+                    // update uHist and vHist
+<span class="fc" id="L133">                    add(uHist, vHist, tmp);</span>
+                }
+<span class="fc" id="L135">            }</span>
+        }
+
+<span class="fc" id="L138">        Map&lt;Integer, Set&lt;Integer&gt;&gt; mergedLabelMap = uf.getComponents();</span>
+
+<span class="fc" id="L140">        int j = 0;</span>
+        // reverse the map so given previous label, we have new label, but renumber new label from 0 to size()-1
+<span class="fc" id="L142">        int[] rev = new int[nLabels];</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : mergedLabelMap.entrySet()) {</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">            for (int oldLabel : entry.getValue()) {</span>
+<span class="fc" id="L145">                rev[oldLabel] = j;</span>
+<span class="fc" id="L146">            }</span>
+<span class="fc" id="L147">            ++j;</span>
+<span class="fc" id="L148">        }</span>
+
+<span class="fc bfc" id="L150" title="All 2 branches covered.">        for (int i = 0; i &lt; labels.length; ++i) {</span>
+<span class="fc" id="L151">            labels[i] = rev[labels[i]];</span>
+        }
+
+<span class="fc" id="L154">        return mergedLabelMap.size();</span>
+    }
+
+    /**
+     * experimental method to merge labels where input image is CIE LUV polar theta image.
+     * not yet tested.
+     * The values in a pixel
+     * are circular, so differences are the min(max-(abs(a-b)), abs(a-b)), hence, this &quot;merging&quot; is very different than
+     * would be applied to a standard greyscale image.
+     *
+     * @param img CIE LUV polar theta image created with maxValue=255.
+     * @param labels input labels, they are updated in place with merged labels
+     * @param thresh threshold lower limit for which the difference will be considered different regions.
+     * @return number of unique labels
+     */
+    public static int mergeCIELUVPolarTheta(GreyscaleImage img, int[] labels, int thresh) {
+
+        // will use the mean of each labeled region.  the descriptors will hold the sums and number of elements.
+        //
+        // datastructures:
+        //  hashmap w/ key = label, value = color histogram
+        //  hashmap w/ key = label, value = set of adjacent labels
+        //
+        // will use BFS traversal of adjacency map and when deltaE2000 of parent and child are &lt; thresh
+        // will merge the two using union find.
+        //
+        // the final components are the parents in union find.
+        // for each original label, there will be a new label and total number of unique labels is &lt;= original number.
+
+        int r1, c1, r2, c2, i2, label2;
+<span class="nc" id="L184">        int w = img.getWidth();</span>
+<span class="nc" id="L185">        int h = img.getHeight();</span>
+<span class="nc" id="L186">        Map&lt;Integer, Set&lt;Integer&gt;&gt; adjLabelMap = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L187">        Map&lt;Integer, long[]&gt; labelDescriptorMap = new HashMap&lt;&gt;();</span>
+
+<span class="nc" id="L189">        long[] tmp = new long[2];</span>
+
+<span class="nc bnc" id="L191" title="All 2 branches missed.">        for (int i1 = 0; i1 &lt; labels.length; ++i1) {</span>
+<span class="nc" id="L192">            int label1 = labels[i1];</span>
+<span class="nc" id="L193">            adjLabelMap.putIfAbsent(label1, new HashSet&lt;&gt;());</span>
+
+<span class="nc" id="L195">            r1 = img.getRow(i1);</span>
+<span class="nc" id="L196">            c1 = img.getCol(i1);</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">            for (int[] offset : offsets) {</span>
+<span class="nc" id="L198">                r2 = r1 + offset[0];</span>
+<span class="nc" id="L199">                c2 = c1 + offset[1];</span>
+<span class="nc bnc" id="L200" title="All 8 branches missed.">                if (r2 &lt; 0 || c2 &lt; 0 || r2 == h || c2 == w) {</span>
+<span class="nc" id="L201">                    continue;</span>
+                }
+<span class="nc" id="L203">                i2 = img.getInternalIndex(c2, r2);</span>
+<span class="nc" id="L204">                label2 = labels[i2];</span>
+
+<span class="nc bnc" id="L206" title="All 2 branches missed.">                if (label1 == label2) {</span>
+<span class="nc" id="L207">                    continue;</span>
+                }
+
+<span class="nc" id="L210">                adjLabelMap.putIfAbsent(label2, new HashSet&lt;&gt;());</span>
+
+<span class="nc" id="L212">                adjLabelMap.get(label1).add(label2);</span>
+<span class="nc" id="L213">                adjLabelMap.get(label2).add(label1);</span>
+            }
+
+<span class="nc" id="L216">            labelDescriptorMap.putIfAbsent(label1, new long[2]);</span>
+
+<span class="nc" id="L218">            long[] desc = labelDescriptorMap.get(label1);</span>
+<span class="nc" id="L219">            desc[0] += img.getValue(i1);</span>
+<span class="nc" id="L220">            desc[1]++;</span>
+        }
+
+<span class="nc" id="L223">        int nLabels = adjLabelMap.size();</span>
+<span class="nc" id="L224">        UnionFind uf = new UnionFind(nLabels);</span>
+
+        // BFS traverse adj map
+<span class="nc" id="L227">        Set&lt;Integer&gt; visited = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L228">        Deque&lt;Integer&gt; q = new ArrayDeque&lt;&gt;();</span>
+<span class="nc" id="L229">        q.add(labels[0]);</span>
+        int u;
+        long[] uDesc;
+        long[] vDesc;
+        double uMean, vMean;
+<span class="nc bnc" id="L234" title="All 2 branches missed.">        while (!q.isEmpty()) {</span>
+<span class="nc" id="L235">            u = q.poll();</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">            if (visited.contains(u)) {</span>
+<span class="nc" id="L237">                continue;</span>
+            }
+<span class="nc" id="L239">            visited.add(u);</span>
+<span class="nc" id="L240">            uDesc = labelDescriptorMap.get(u);</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">            for (int v : adjLabelMap.get(u)) {</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">                if (visited.contains(v)) {</span>
+<span class="nc" id="L243">                    continue;</span>
+                }
+<span class="nc" id="L245">                q.add(v);</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">                if (uf.find(u) == uf.find(v)) {</span>
+<span class="nc" id="L247">                    continue;</span>
+                }
+<span class="nc" id="L249">                vDesc = labelDescriptorMap.get(v);</span>
+<span class="nc" id="L250">                uMean = uDesc[0] / (double)uDesc[1];</span>
+<span class="nc" id="L251">                vMean = vDesc[0] / (double)vDesc[1];</span>
+<span class="nc" id="L252">                double diff = Math.abs(uMean - vMean);</span>
+<span class="nc" id="L253">                diff = Math.min(255 - diff, diff);</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">                if (diff &lt; thresh) {</span>
+<span class="nc" id="L255">                    uf.union(u, v);</span>
+                    // update the descriptors for the merge
+<span class="nc bnc" id="L257" title="All 2 branches missed.">                    if (uMean &gt; vMean) {</span>
+<span class="nc" id="L258">                        uDesc[0] = (255 * uDesc[1]) - uDesc[0];</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">                    } else if (uMean &lt; vMean) {</span>
+<span class="nc" id="L260">                        vDesc[0] = (255 * vDesc[1]) - vDesc[0];</span>
+                    }
+<span class="nc" id="L262">                    System.arraycopy(uDesc, 0, tmp, 0, uDesc.length);</span>
+<span class="nc" id="L263">                    uDesc[0] += vDesc[0];</span>
+<span class="nc" id="L264">                    uDesc[1] += vDesc[1];</span>
+<span class="nc" id="L265">                    vDesc[0] += tmp[0];</span>
+<span class="nc" id="L266">                    vDesc[1] += tmp[1];</span>
+                }
+<span class="nc" id="L268">            }</span>
+        }
+
+<span class="nc" id="L271">        Map&lt;Integer, Set&lt;Integer&gt;&gt; mergedLabelMap = uf.getComponents();</span>
+
+<span class="nc" id="L273">        int j = 0;</span>
+        // reverse the map so given previous label, we have new label, but renumber new label from 0 to size()-1
+<span class="nc" id="L275">        int[] rev = new int[nLabels];</span>
+<span class="nc bnc" id="L276" title="All 2 branches missed.">        for (Map.Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : mergedLabelMap.entrySet()) {</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">            for (int oldLabel : entry.getValue()) {</span>
+<span class="nc" id="L278">                rev[oldLabel] = j;</span>
+<span class="nc" id="L279">            }</span>
+<span class="nc" id="L280">            ++j;</span>
+<span class="nc" id="L281">        }</span>
+
+<span class="nc bnc" id="L283" title="All 2 branches missed.">        for (int i = 0; i &lt; labels.length; ++i) {</span>
+<span class="nc" id="L284">            labels[i] = rev[labels[i]];</span>
+        }
+
+<span class="nc" id="L287">        return mergedLabelMap.size();</span>
+    }
+
+    /**
+     * experimental method to merge labels where input image is CIE LUV polar theta image
+     * and histograms are used.
+     * not yet tested.
+     * The values in a pixel
+     * are circular, so differences are the min(max-(abs(a-b)), abs(a-b)), hence, this &quot;merging&quot; is very different than
+     * would be applied to a standard greyscale image.
+     *
+     * @param img CIE LUV polar theta image created with maxValue=255.
+     * @param labels input labels, they are updated in place with merged labels
+     * @param thresh value between 0 and 1 for similarity threshold, above which regions will be merged.
+     * @return number of unique labels
+     */
+    public static int mergeCIELUVPolarThetaH(GreyscaleImage img, int[] labels, double thresh) {
+
+        // will use the histograms of each labeled region.  the descriptors will hold the sums and number of elements.
+        //
+        // datastructures:
+        //  hashmap w/ key = label, value = color histogram
+        //  hashmap w/ key = label, value = set of adjacent labels
+        //
+        // will use BFS traversal of adjacency map and when deltaE2000 of parent and child are &lt; thresh
+        // will merge the two using union find.
+        //
+        // the final components are the parents in union find.
+        // for each original label, there will be a new label and total number of unique labels is &lt;= original number.
+
+        int r1, c1, r2, c2, i2, label2;
+<span class="nc" id="L318">        int w = img.getWidth();</span>
+<span class="nc" id="L319">        int h = img.getHeight();</span>
+<span class="nc" id="L320">        Map&lt;Integer, Set&lt;Integer&gt;&gt; adjLabelMap = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L321">        Map&lt;Integer, int[]&gt; labelDescriptorMap = new HashMap&lt;&gt;();</span>
+
+        //TODO: change to use HOGUtil.createHCPTHist...integral image methods, and sets of labeled points
+
+<span class="nc" id="L325">        int nBins = 16;</span>
+        // 1st 16 bins are the histogram, last bin is the count
+<span class="nc" id="L327">        int[] tmp = new int[nBins + 1];</span>
+
+<span class="nc bnc" id="L329" title="All 2 branches missed.">        for (int i1 = 0; i1 &lt; labels.length; ++i1) {</span>
+<span class="nc" id="L330">            int label1 = labels[i1];</span>
+<span class="nc" id="L331">            adjLabelMap.putIfAbsent(label1, new HashSet&lt;&gt;());</span>
+
+<span class="nc" id="L333">            r1 = img.getRow(i1);</span>
+<span class="nc" id="L334">            c1 = img.getCol(i1);</span>
+<span class="nc bnc" id="L335" title="All 2 branches missed.">            for (int[] offset : offsets) {</span>
+<span class="nc" id="L336">                r2 = r1 + offset[0];</span>
+<span class="nc" id="L337">                c2 = c1 + offset[1];</span>
+<span class="nc bnc" id="L338" title="All 8 branches missed.">                if (r2 &lt; 0 || c2 &lt; 0 || r2 == h || c2 == w) {</span>
+<span class="nc" id="L339">                    continue;</span>
+                }
+<span class="nc" id="L341">                i2 = img.getInternalIndex(c2, r2);</span>
+<span class="nc" id="L342">                label2 = labels[i2];</span>
+
+<span class="nc bnc" id="L344" title="All 2 branches missed.">                if (label1 == label2) {</span>
+<span class="nc" id="L345">                    continue;</span>
+                }
+
+<span class="nc" id="L348">                adjLabelMap.putIfAbsent(label2, new HashSet&lt;&gt;());</span>
+
+<span class="nc" id="L350">                adjLabelMap.get(label1).add(label2);</span>
+<span class="nc" id="L351">                adjLabelMap.get(label2).add(label1);</span>
+            }
+
+<span class="nc" id="L354">            labelDescriptorMap.putIfAbsent(label1, new int[nBins + 1]);</span>
+
+<span class="nc" id="L356">            int[] desc = labelDescriptorMap.get(label1);</span>
+<span class="nc" id="L357">            int bin = img.getValue(i1) / (nBins + 1);</span>
+<span class="nc" id="L358">            desc[bin]++;</span>
+<span class="nc" id="L359">            desc[nBins]++;</span>
+        }
+
+<span class="nc" id="L362">        int nLabels = adjLabelMap.size();</span>
+<span class="nc" id="L363">        UnionFind uf = new UnionFind(nLabels);</span>
+
+        // BFS traverse adj map
+<span class="nc" id="L366">        Set&lt;Integer&gt; visited = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L367">        Deque&lt;Integer&gt; q = new ArrayDeque&lt;&gt;();</span>
+<span class="nc" id="L368">        q.add(labels[0]);</span>
+        int u;
+        int[] uDesc;
+        int[] vDesc;
+        double uMean, vMean;
+<span class="nc bnc" id="L373" title="All 2 branches missed.">        while (!q.isEmpty()) {</span>
+<span class="nc" id="L374">            u = q.poll();</span>
+<span class="nc bnc" id="L375" title="All 2 branches missed.">            if (visited.contains(u)) {</span>
+                //continue;
+            }
+<span class="nc" id="L378">            visited.add(u);</span>
+<span class="nc" id="L379">            uDesc = labelDescriptorMap.get(u);</span>
+<span class="nc bnc" id="L380" title="All 2 branches missed.">            for (int v : adjLabelMap.get(u)) {</span>
+<span class="nc bnc" id="L381" title="All 2 branches missed.">                if (visited.contains(v)) {</span>
+<span class="nc" id="L382">                    continue;</span>
+                }
+<span class="nc" id="L384">                q.add(v);</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">                if (uf.find(u) == uf.find(v)) {</span>
+<span class="nc" id="L386">                    continue;</span>
+                }
+<span class="nc" id="L388">                vDesc = labelDescriptorMap.get(v);</span>
+<span class="nc" id="L389">                double intersection = intersection(uDesc, vDesc);</span>
+<span class="nc bnc" id="L390" title="All 2 branches missed.">                if (intersection &gt; thresh) {</span>
+<span class="nc" id="L391">                    uf.union(u, v);</span>
+<span class="nc" id="L392">                    System.arraycopy(uDesc, 0, tmp, 0, uDesc.length);</span>
+<span class="nc bnc" id="L393" title="All 2 branches missed.">                    for (int k = 0; k &lt; tmp.length; ++k) {</span>
+<span class="nc" id="L394">                        uDesc[k] += vDesc[k];</span>
+                    }
+<span class="nc bnc" id="L396" title="All 2 branches missed.">                    for (int k = 0; k &lt; tmp.length; ++k) {</span>
+<span class="nc" id="L397">                        vDesc[k] += tmp[k];</span>
+                    }
+                }
+<span class="nc" id="L400">            }</span>
+        }
+
+<span class="nc" id="L403">        Map&lt;Integer, Set&lt;Integer&gt;&gt; mergedLabelMap = uf.getComponents();</span>
+
+<span class="nc" id="L405">        int j = 0;</span>
+        // reverse the map so given previous label, we have new label, but renumber new label from 0 to size()-1
+<span class="nc" id="L407">        int[] rev = new int[nLabels];</span>
+<span class="nc bnc" id="L408" title="All 2 branches missed.">        for (Map.Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : mergedLabelMap.entrySet()) {</span>
+<span class="nc bnc" id="L409" title="All 2 branches missed.">            for (int oldLabel : entry.getValue()) {</span>
+<span class="nc" id="L410">                rev[oldLabel] = j;</span>
+<span class="nc" id="L411">            }</span>
+<span class="nc" id="L412">            ++j;</span>
+<span class="nc" id="L413">        }</span>
+
+<span class="nc bnc" id="L415" title="All 2 branches missed.">        for (int i = 0; i &lt; labels.length; ++i) {</span>
+<span class="nc" id="L416">            labels[i] = rev[labels[i]];</span>
+        }
+
+<span class="nc" id="L419">        return mergedLabelMap.size();</span>
+    }
+
+    // histogram last items are the number of points
+    private static double intersection(int[] histA, int[] histB) {
+
+<span class="nc bnc" id="L425" title="All 2 branches missed.">        if ((histA.length != histB.length)) {</span>
+<span class="nc" id="L426">            throw new IllegalArgumentException(</span>
+                    &quot;histA and histB must be same dimensions&quot;);
+        }
+
+<span class="nc" id="L430">        int nBins = histA.length - 1;</span>
+
+        /*
+        normalize histograms, then:
+
+        K(a,b) =
+            (summation_over_i_from_1_to_n( min(a_i, b_i))
+             /
+            (min(summation_over_i(a_i), summation_over_i(b_i))
+        */
+
+<span class="nc" id="L441">        double nA = histA[histA.length - 1];</span>
+<span class="nc" id="L442">        double nB = histB[histB.length - 1];</span>
+
+<span class="nc" id="L444">        double sum = 0;</span>
+<span class="nc" id="L445">        double sumA = 0;</span>
+<span class="nc" id="L446">        double sumB = 0;</span>
+<span class="nc bnc" id="L447" title="All 2 branches missed.">        for (int j = 0; j &lt; nBins; ++j) {</span>
+
+<span class="nc" id="L449">            double yA = histA[j] / nA;</span>
+<span class="nc" id="L450">            double yB = histB[j] / nB;</span>
+
+<span class="nc" id="L452">            sum += Math.min(yA, yB);</span>
+<span class="nc" id="L453">            sumA += yA;</span>
+<span class="nc" id="L454">            sumB += yB;</span>
+
+            //System.out.println(&quot; &quot; + yA + &quot; -- &quot; + yB + &quot; sum=&quot;+sum + &quot;, &quot; + sumA + &quot;,&quot; + sumB);
+        }
+
+<span class="nc" id="L459">        double d = 1E-7 +  Math.min(sumA, sumB);</span>
+
+<span class="nc" id="L461">        double sim = sum/d;</span>
+
+<span class="nc" id="L463">        return sim;</span>
+    }
+
+
+    /**
+     * the color descriptor of each label is determined from the point which has the min gradient for each label region
+     * as was done in the SuperPixels algorithm.
+     * @param img
+     * @param labels
+     * @param thresh
+     * @return the number of unique labels after merging
+     */
+    public static int mergeWithMinGrad(ImageExt img, int[] labels, double thresh, GreyscaleImage gradImg) {
+
+<span class="fc" id="L477">        CIEChromaticity cieC = new CIEChromaticity();</span>
+
+        int r1, c1, r2, c2, i2, label2;
+<span class="fc" id="L480">        int w = img.getWidth();</span>
+<span class="fc" id="L481">        int h = img.getHeight();</span>
+<span class="fc" id="L482">        Map&lt;Integer, Set&lt;Integer&gt;&gt; adjLabelMap = new HashMap&lt;&gt;();</span>
+
+        // descriptor is [L, A, B, minGrad, x, y]
+<span class="fc" id="L485">        Map&lt;Integer, float[]&gt; labelDescMap = new HashMap&lt;&gt;();</span>
+
+<span class="fc bfc" id="L487" title="All 2 branches covered.">        for (int i1 = 0; i1 &lt; labels.length; ++i1) {</span>
+<span class="fc" id="L488">            int label1 = labels[i1];</span>
+<span class="fc" id="L489">            adjLabelMap.putIfAbsent(label1, new HashSet&lt;&gt;());</span>
+
+<span class="fc" id="L491">            r1 = img.getRow(i1);</span>
+<span class="fc" id="L492">            c1 = img.getCol(i1);</span>
+<span class="fc bfc" id="L493" title="All 2 branches covered.">            for (int[] offset : offsets) {</span>
+<span class="fc" id="L494">                r2 = r1 + offset[0];</span>
+<span class="fc" id="L495">                c2 = c1 + offset[1];</span>
+<span class="fc bfc" id="L496" title="All 8 branches covered.">                if (r2 &lt; 0 || c2 &lt; 0 || r2 == h || c2 == w) {</span>
+<span class="fc" id="L497">                    continue;</span>
+                }
+<span class="fc" id="L499">                i2 = img.getInternalIndex(c2, r2);</span>
+<span class="fc" id="L500">                label2 = labels[i2];</span>
+
+<span class="fc bfc" id="L502" title="All 2 branches covered.">                if (label1 == label2) {</span>
+<span class="fc" id="L503">                    continue;</span>
+                }
+
+<span class="fc" id="L506">                adjLabelMap.putIfAbsent(label2, new HashSet&lt;&gt;());</span>
+
+<span class="fc" id="L508">                adjLabelMap.get(label1).add(label2);</span>
+<span class="fc" id="L509">                adjLabelMap.get(label2).add(label1);</span>
+            }
+
+<span class="fc" id="L512">            labelDescMap.putIfAbsent(label1, new float[]{0.f, 0.f, 0.f, Integer.MAX_VALUE, 0.f, 0.f});</span>
+
+<span class="fc" id="L514">            int gradient = gradImg.getValue(c1, r1);</span>
+<span class="fc bfc" id="L515" title="All 2 branches covered.">            if (gradient &lt; labelDescMap.get(label1)[3]) {</span>
+<span class="fc" id="L516">                float[] lab = img.getCIELAB(c1, r1);</span>
+<span class="fc" id="L517">                float[] tmp = labelDescMap.get(label1);</span>
+<span class="fc" id="L518">                System.arraycopy(lab, 0, tmp, 0, lab.length);</span>
+<span class="fc" id="L519">                tmp[3] = gradient;</span>
+<span class="fc" id="L520">                tmp[4] = c1;</span>
+<span class="fc" id="L521">                tmp[5] = r1;</span>
+            }
+        }
+
+<span class="fc" id="L525">        int nLabels = adjLabelMap.size();</span>
+<span class="fc" id="L526">        UnionFind uf = new UnionFind(nLabels);</span>
+
+        // BFS traverse adj map
+<span class="fc" id="L529">        Set&lt;Integer&gt; visited = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L530">        Deque&lt;Integer&gt; q = new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L531">        q.add(labels[0]);</span>
+        int u;
+        float[] uDesc;
+        float[] vDesc;
+<span class="fc bfc" id="L535" title="All 2 branches covered.">        while (!q.isEmpty()) {</span>
+<span class="fc" id="L536">            u = q.poll();</span>
+<span class="pc bpc" id="L537" title="1 of 2 branches missed.">            if (visited.contains(u)) {</span>
+<span class="nc" id="L538">                continue;</span>
+            }
+<span class="fc" id="L540">            visited.add(u);</span>
+<span class="fc" id="L541">            uDesc = labelDescMap.get(u);</span>
+
+<span class="fc bfc" id="L543" title="All 2 branches covered.">            for (int v : adjLabelMap.get(u)) {</span>
+<span class="fc bfc" id="L544" title="All 2 branches covered.">                if (visited.contains(v)) {</span>
+<span class="fc" id="L545">                    continue;</span>
+                }
+<span class="fc" id="L547">                q.add(v);</span>
+<span class="pc bpc" id="L548" title="1 of 2 branches missed.">                if (uf.find(u) == uf.find(v)) {</span>
+<span class="nc" id="L549">                    continue;</span>
+                }
+<span class="fc" id="L551">                vDesc = labelDescMap.get(v);</span>
+<span class="fc" id="L552">                double deltaE = cieC.calcDeltaECIE2000( uDesc[0], uDesc[1], uDesc[2], vDesc[0], vDesc[1], vDesc[2]);</span>
+<span class="pc bpc" id="L553" title="1 of 2 branches missed.">                if (deltaE &lt; thresh) {</span>
+<span class="nc" id="L554">                    uf.union(u, v);</span>
+                    // update uDesc and vDesc
+<span class="nc bnc" id="L556" title="All 2 branches missed.">                    if (uDesc[3] &lt;= vDesc[3]) {</span>
+<span class="nc" id="L557">                        System.arraycopy(uDesc, 0, vDesc, 0, uDesc.length);</span>
+                    } else {
+<span class="nc" id="L559">                        System.arraycopy(vDesc, 0, uDesc, 0, vDesc.length);</span>
+                    }
+                }
+<span class="fc" id="L562">            }</span>
+        }
+
+<span class="fc" id="L565">        Map&lt;Integer, Set&lt;Integer&gt;&gt; mergedLabelMap = uf.getComponents();</span>
+
+<span class="fc" id="L567">        int j = 0;</span>
+        // reverse the map so given previous label, we have new label, but renumber new label from 0 to size()-1
+<span class="fc" id="L569">        int[] rev = new int[nLabels];</span>
+<span class="fc bfc" id="L570" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : mergedLabelMap.entrySet()) {</span>
+<span class="fc bfc" id="L571" title="All 2 branches covered.">            for (int oldLabel : entry.getValue()) {</span>
+<span class="fc" id="L572">                rev[oldLabel] = j;</span>
+<span class="fc" id="L573">            }</span>
+<span class="fc" id="L574">            ++j;</span>
+<span class="fc" id="L575">        }</span>
+
+<span class="fc bfc" id="L577" title="All 2 branches covered.">        for (int i = 0; i &lt; labels.length; ++i) {</span>
+<span class="fc" id="L578">            labels[i] = rev[labels[i]];</span>
+        }
+
+<span class="fc" id="L581">        return mergedLabelMap.size();</span>
+    }
+
+    private static void add(int[][] uHist, int[][] vHist, int[][] tmp) {
+<span class="fc bfc" id="L585" title="All 2 branches covered.">        for (int c = 0; c &lt; 3; ++c) {</span>
+<span class="fc" id="L586">            System.arraycopy(uHist[c], 0, tmp[c], 0, uHist[c].length);</span>
+        }
+        // u += v
+<span class="fc bfc" id="L589" title="All 2 branches covered.">        for (int c = 0; c &lt; 3; ++c) {</span>
+<span class="fc bfc" id="L590" title="All 2 branches covered.">            for (int i = 0; i &lt; uHist[c].length; ++i) {</span>
+<span class="fc" id="L591">                uHist[c][i] += vHist[c][i];</span>
+            }
+        }
+        // v += tmp
+<span class="fc bfc" id="L595" title="All 2 branches covered.">        for (int c = 0; c &lt; 3; ++c) {</span>
+<span class="fc bfc" id="L596" title="All 2 branches covered.">            for (int i = 0; i &lt; vHist[c].length; ++i) {</span>
+<span class="fc" id="L597">                vHist[c][i] += tmp[c][i];</span>
+            }
+        }
+<span class="fc" id="L600">    }</span>
+
+    private static double calcColorDiff(CIEChromaticity cieC, int[][] uHist, int[][] vHist,
+                                        METHOD method) {
+        // ideally, the histograms would have single modes, but cannot guarantee that, so will use mean instead.
+
+        int[] u, v;
+<span class="fc bfc" id="L607" title="All 2 branches covered.">        if (method == METHOD.MEAN) {</span>
+<span class="fc" id="L608">            u = meanRGB(uHist);</span>
+<span class="fc" id="L609">            v = meanRGB(vHist);</span>
+        } else {
+<span class="fc" id="L611">            u = modeRGB(uHist);</span>
+<span class="fc" id="L612">            v = modeRGB(vHist);</span>
+        }
+
+<span class="fc" id="L615">        float[] lab1 = cieC.cieXYZToCIELAB(cieC._rgbToCIEXYZ(u[0], u[1], u[2]));</span>
+<span class="fc" id="L616">        float[] lab2 = cieC.cieXYZToCIELAB(cieC._rgbToCIEXYZ(v[0], v[1], v[2]));</span>
+<span class="fc" id="L617">        return cieC.calcDeltaECIE2000(lab1, lab2);</span>
+    }
+
+    protected static int[] meanRGB(int[][] colorHist) {
+<span class="fc" id="L621">        int[] mean = new int[3];</span>
+<span class="fc bfc" id="L622" title="All 2 branches covered.">        for (int c = 0; c &lt; colorHist.length; ++c) {</span>
+<span class="fc" id="L623">            float total = 0;</span>
+<span class="fc" id="L624">            float sum = 0;</span>
+<span class="fc" id="L625">            float x = 2.5f;</span>
+<span class="fc bfc" id="L626" title="All 2 branches covered.">            for (int i = 0; i &lt; colorHist[c].length; ++i, x += 5.0f) {</span>
+<span class="fc" id="L627">                sum += (x * colorHist[c][i]);</span>
+<span class="fc" id="L628">                total += colorHist[c][i];</span>
+            }
+<span class="fc" id="L630">            mean[c] = Math.round(sum/total);</span>
+        }
+<span class="fc" id="L632">        return mean;</span>
+    }
+
+    protected static int[] modeRGB(int[][] colorHist) {
+<span class="fc" id="L636">        int[] mode = new int[3];</span>
+<span class="fc bfc" id="L637" title="All 2 branches covered.">        for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="fc" id="L638">            int idx = MiscMath0.findMax(colorHist[i]);</span>
+<span class="fc" id="L639">            mode[i] = Math.round((idx * 5)+2.5f);</span>
+        }
+<span class="fc" id="L641">        return mode;</span>
+    }
+
+    /**
+     * calculate centroids of labeled region and return them as
+     * @param labels labels for each point where range of label value = 0 to nUniqeLabels - 1
+     * @param width width of image the labels are relative to.
+     * @return centroids of the labeled regions as
+     * result[0] = {x0, y0}
+     */
+    public static int[][] calculateCentroids(int[] labels, int width) {
+<span class="nc" id="L652">        Set&lt;Integer&gt; uniqueLabels = new HashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L653" title="All 2 branches missed.">        for (int label : labels) {</span>
+<span class="nc" id="L654">            uniqueLabels.add(label);</span>
+        }
+        // each row is a label's summed x, summed y
+<span class="nc" id="L657">        double[][] sums = new double[uniqueLabels.size()][2];</span>
+<span class="nc" id="L658">        int[] nPoints = new int[uniqueLabels.size()];</span>
+<span class="nc bnc" id="L659" title="All 2 branches missed.">        for (int i = 0; i &lt; labels.length; ++i) {</span>
+<span class="nc" id="L660">            sums[labels[i]][0] +=  (i % width);</span>
+<span class="nc" id="L661">            sums[labels[i]][1] +=  (i / width);</span>
+<span class="nc" id="L662">            ++nPoints[labels[i]];</span>
+        }
+<span class="nc" id="L664">        int[][] coords = new int[uniqueLabels.size()][2];</span>
+<span class="nc bnc" id="L665" title="All 2 branches missed.">        for (int i = 0; i &lt; nPoints.length; ++i) {</span>
+<span class="nc" id="L666">            coords[i][0] = (int)Math.round(sums[i][0] / nPoints[i]);</span>
+<span class="nc" id="L667">            coords[i][1] = (int)Math.round(sums[i][1] / nPoints[i]);</span>
+        }
+<span class="nc" id="L669">        return coords;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -925,175 +925,174 @@ import java.util.logging.Logger;
 <span class="fc" id="L925">                pixIdxs.add(pixIdx);</span>
 <span class="fc" id="L926">            }</span>
                         
-<span class="fc" id="L928">            ClusterFinder cFinder = new ClusterFinder(pixIdxs,</span>
-                nRows, nCols);
+<span class="fc" id="L928">            ClusterFinder cFinder = new ClusterFinder(pixIdxs, nRows, nCols);</span>
             //cFinder.setToDebug();
-<span class="fc" id="L931">            cFinder.setThreshholdFactor(1.f);</span>
-<span class="fc" id="L932">            cFinder.setMinimumNumberInCluster(1);</span>
-<span class="fc" id="L933">            cFinder.calculateBackgroundSeparation();</span>
-<span class="fc" id="L934">            cFinder.findClusters();</span>
-<span class="fc" id="L935">            List&lt;TLongSet&gt; groupList = cFinder.getGroups();</span>
-<span class="fc" id="L936">            final int n = groupList.size();</span>
+<span class="fc" id="L930">            cFinder.setThreshholdFactor(1.f);</span>
+<span class="fc" id="L931">            cFinder.setMinimumNumberInCluster(1);</span>
+<span class="fc" id="L932">            cFinder.calculateBackgroundSeparation();</span>
+<span class="fc" id="L933">            cFinder.findClusters();</span>
+<span class="fc" id="L934">            List&lt;TLongSet&gt; groupList = cFinder.getGroups();</span>
+<span class="fc" id="L935">            final int n = groupList.size();</span>
 
-<span class="fc" id="L938">            float[] clusterSizes = new float[n];</span>
-<span class="fc" id="L939">            Image dbg = new Image(nCols, nRows);</span>
-<span class="fc bfc" id="L940" title="All 2 branches covered.">            for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L941">                TLongSet groupPixs = groupList.get(i);</span>
-<span class="fc" id="L942">                clusterSizes[i] = groupPixs.size();</span>
-<span class="fc" id="L943">                int[] clr = ImageIOHelper.getNextRGB(i);</span>
+<span class="fc" id="L937">            float[] clusterSizes = new float[n];</span>
+<span class="fc" id="L938">            Image dbg = new Image(nCols, nRows);</span>
+<span class="fc bfc" id="L939" title="All 2 branches covered.">            for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L940">                TLongSet groupPixs = groupList.get(i);</span>
+<span class="fc" id="L941">                clusterSizes[i] = groupPixs.size();</span>
+<span class="fc" id="L942">                int[] clr = ImageIOHelper.getNextRGB(i);</span>
                 
-<span class="fc" id="L945">                TLongIterator iter3 = groupPixs.iterator();</span>
-<span class="fc bfc" id="L946" title="All 2 branches covered.">                while (iter3.hasNext()) {</span>
-<span class="fc" id="L947">                    long pixIdx = iter3.next();</span>
-<span class="fc" id="L948">                    ph.toPixelCoords(pixIdx, h, xy);</span>
+<span class="fc" id="L944">                TLongIterator iter3 = groupPixs.iterator();</span>
+<span class="fc bfc" id="L945" title="All 2 branches covered.">                while (iter3.hasNext()) {</span>
+<span class="fc" id="L946">                    long pixIdx = iter3.next();</span>
+<span class="fc" id="L947">                    ph.toPixelCoords(pixIdx, h, xy);</span>
                     
-<span class="fc" id="L950">                    ImageIOHelper.addPointToImage(xy[1], xy[0], dbg,</span>
+<span class="fc" id="L949">                    ImageIOHelper.addPointToImage(xy[1], xy[0], dbg,</span>
                         1, clr[0], clr[1], clr[2]);
-<span class="fc" id="L952">                }</span>
+<span class="fc" id="L951">                }</span>
             }
-<span class="fc" id="L954">            MiscDebug.writeImage(dbg, &quot;_a_noise_clusters_&quot;);</span>
+<span class="fc" id="L953">            MiscDebug.writeImage(dbg, &quot;_a_noise_clusters_&quot;);</span>
             
-<span class="fc" id="L956">            HistogramHolder hist = Histogram.createSimpleHistogram(</span>
+<span class="fc" id="L955">            HistogramHolder hist = Histogram.createSimpleHistogram(</span>
                 0, 40, 20, clusterSizes, 
-<span class="fc" id="L958">                Errors.populateYErrorsBySqrt(clusterSizes));</span>
-<span class="fc" id="L959">            int peakIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
-<span class="pc bnc" id="L960" title="All 2 branches missed.">            assert(peakIdx != -1); </span>
-<span class="fc" id="L961">            float sizeLimit = hist.getXHist()[peakIdx];</span>
-<span class="pc bpc" id="L962" title="1 of 2 branches missed.">            if (peakIdx &lt; (hist.getXHist().length - 2)) {</span>
-<span class="fc" id="L963">                sizeLimit = hist.getXHist()[peakIdx + 2];</span>
+<span class="fc" id="L957">                Errors.populateYErrorsBySqrt(clusterSizes));</span>
+<span class="fc" id="L958">            int peakIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+<span class="pc bnc" id="L959" title="All 2 branches missed.">            assert(peakIdx != -1); </span>
+<span class="fc" id="L960">            float sizeLimit = hist.getXHist()[peakIdx];</span>
+<span class="pc bpc" id="L961" title="1 of 2 branches missed.">            if (peakIdx &lt; (hist.getXHist().length - 2)) {</span>
+<span class="fc" id="L962">                sizeLimit = hist.getXHist()[peakIdx + 2];</span>
             }
             
-<span class="fc" id="L966">            System.out.println(&quot;nClusters=&quot; + n </span>
-<span class="fc" id="L967">                + &quot; peakHist y=&quot; + hist.getYHist()[peakIdx] </span>
-<span class="fc" id="L968">                + &quot; peakHist x=&quot; + hist.getXHist()[peakIdx] </span>
-<span class="fc" id="L969">                + &quot; nPix=&quot; + img.getNPixels() + </span>
+<span class="fc" id="L965">            System.out.println(&quot;nClusters=&quot; + n </span>
+<span class="fc" id="L966">                + &quot; peakHist y=&quot; + hist.getYHist()[peakIdx] </span>
+<span class="fc" id="L967">                + &quot; peakHist x=&quot; + hist.getXHist()[peakIdx] </span>
+<span class="fc" id="L968">                + &quot; nPix=&quot; + img.getNPixels() + </span>
                 &quot; peakX/nPix=&quot; + 
-<span class="fc" id="L971">                hist.getXHist()[peakIdx]/(float)img.getNPixels() +</span>
+<span class="fc" id="L970">                hist.getXHist()[peakIdx]/(float)img.getNPixels() +</span>
                 &quot; peakY/nPix=&quot; + 
-<span class="fc" id="L973">                (float)hist.getYHist()[peakIdx]/(float)img.getNPixels()</span>
+<span class="fc" id="L972">                (float)hist.getYHist()[peakIdx]/(float)img.getNPixels()</span>
                 + &quot; peakY/peakX=&quot; +
-<span class="fc" id="L975">                (float)hist.getYHist()[peakIdx]/hist.getXHist()[peakIdx]</span>
+<span class="fc" id="L974">                (float)hist.getYHist()[peakIdx]/hist.getXHist()[peakIdx]</span>
             );
             
             try {
-<span class="fc" id="L979">                hist.plotHistogram(&quot;cluster sizes&quot;, &quot;_cluster_sizes_&quot;);</span>
-<span class="nc" id="L980">            } catch (IOException ex) {</span>
-<span class="nc" id="L981">                Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);</span>
-<span class="fc" id="L982">            }</span>
+<span class="fc" id="L978">                hist.plotHistogram(&quot;cluster sizes&quot;, &quot;_cluster_sizes_&quot;);</span>
+<span class="nc" id="L979">            } catch (IOException ex) {</span>
+<span class="nc" id="L980">                Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L981">            }</span>
 
-<span class="fc" id="L984">            int[] dist = new int[n];           </span>
-<span class="fc" id="L985">            int[] indexes = new int[n];</span>
-<span class="fc" id="L986">            int count = 0;</span>
-<span class="fc bfc" id="L987" title="All 2 branches covered.">            for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L988">                TLongSet groupPixs = groupList.get(i);</span>
-<span class="pc bpc" id="L989" title="1 of 2 branches missed.">                if (groupPixs.size() &gt; sizeLimit) {</span>
-<span class="fc" id="L990">                    continue;</span>
+<span class="fc" id="L983">            int[] dist = new int[n];           </span>
+<span class="fc" id="L984">            int[] indexes = new int[n];</span>
+<span class="fc" id="L985">            int count = 0;</span>
+<span class="fc bfc" id="L986" title="All 2 branches covered.">            for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L987">                TLongSet groupPixs = groupList.get(i);</span>
+<span class="fc bfc" id="L988" title="All 2 branches covered.">                if (groupPixs.size() &gt; sizeLimit) {</span>
+<span class="fc" id="L989">                    continue;</span>
                 }
-<span class="nc" id="L992">                int sumD = 0;</span>
-<span class="nc" id="L993">                int countD = 0;</span>
+<span class="fc" id="L991">                int sumD = 0;</span>
+<span class="fc" id="L992">                int countD = 0;</span>
                 
-<span class="nc" id="L995">                TLongIterator iter3 = groupPixs.iterator();</span>
-<span class="nc bnc" id="L996" title="All 2 branches missed.">                while (iter3.hasNext()) {</span>
-<span class="nc" id="L997">                    long pixIdx = iter3.next();</span>
-<span class="nc" id="L998">                    ph.toPixelCoords(pixIdx, h, xy);</span>
-<span class="nc bnc" id="L999" title="All 4 branches missed.">                    if (noisePoints.contains(new PairInt(xy[1], xy[0])) </span>
+<span class="fc" id="L994">                TLongIterator iter3 = groupPixs.iterator();</span>
+<span class="fc bfc" id="L995" title="All 2 branches covered.">                while (iter3.hasNext()) {</span>
+<span class="fc" id="L996">                    long pixIdx = iter3.next();</span>
+<span class="fc" id="L997">                    ph.toPixelCoords(pixIdx, h, xy);</span>
+<span class="pc bpc" id="L998" title="3 of 4 branches missed.">                    if (noisePoints.contains(new PairInt(xy[1], xy[0])) </span>
                         &amp;&amp; dt[xy[1]][xy[0]] &gt; 0) {
-<span class="nc" id="L1001">                        sumD += dt[xy[1]][xy[0]];</span>
-<span class="nc" id="L1002">                        countD++;</span>
+<span class="nc" id="L1000">                        sumD += dt[xy[1]][xy[0]];</span>
+<span class="nc" id="L1001">                        countD++;</span>
                     }
-<span class="nc" id="L1004">                }</span>
+<span class="fc" id="L1003">                }</span>
                 
-<span class="nc bnc" id="L1006" title="All 2 branches missed.">                if (countD &gt; 0) {</span>
-<span class="nc" id="L1007">                    indexes[count] = i;</span>
-<span class="nc" id="L1008">                    sumD /= countD;</span>
-<span class="nc" id="L1009">                    dist[count] = sumD;</span>
-<span class="nc" id="L1010">                    count++;</span>
+<span class="pc bpc" id="L1005" title="1 of 2 branches missed.">                if (countD &gt; 0) {</span>
+<span class="nc" id="L1006">                    indexes[count] = i;</span>
+<span class="nc" id="L1007">                    sumD /= countD;</span>
+<span class="nc" id="L1008">                    dist[count] = sumD;</span>
+<span class="nc" id="L1009">                    count++;</span>
                 }
             }
-<span class="fc" id="L1013">            indexes = Arrays.copyOf(indexes, count);</span>
-<span class="fc" id="L1014">            dist = Arrays.copyOf(dist, count);</span>
+<span class="fc" id="L1012">            indexes = Arrays.copyOf(indexes, count);</span>
+<span class="fc" id="L1013">            dist = Arrays.copyOf(dist, count);</span>
             
             // sort by decr dist
-<span class="fc" id="L1017">            QuickSort.descendingSort(dist, indexes);</span>
+<span class="fc" id="L1016">            QuickSort.descendingSort(dist, indexes);</span>
             
-<span class="pc bpc" id="L1019" title="1 of 2 branches missed.">            if (doPlot) {</span>
+<span class="pc bpc" id="L1018" title="1 of 2 branches missed.">            if (doPlot) {</span>
                 //histogram of point distances
-<span class="fc" id="L1021">                float[] values = new float[n];</span>
-<span class="pc bpc" id="L1022" title="1 of 2 branches missed.">                for (int i = 0; i &lt; dist.length; ++i) {</span>
-<span class="nc" id="L1023">                    values[i] = dist[i];</span>
+<span class="fc" id="L1020">                float[] values = new float[n];</span>
+<span class="pc bpc" id="L1021" title="1 of 2 branches missed.">                for (int i = 0; i &lt; dist.length; ++i) {</span>
+<span class="nc" id="L1022">                    values[i] = dist[i];</span>
                 }
                 //TODO: consider xmax based on image size
-<span class="fc" id="L1026">                hist = Histogram.createSimpleHistogram(</span>
+<span class="fc" id="L1025">                hist = Histogram.createSimpleHistogram(</span>
                     0, 400, 20, values,
-<span class="fc" id="L1028">                    Errors.populateYErrorsBySqrt(values));</span>
+<span class="fc" id="L1027">                    Errors.populateYErrorsBySqrt(values));</span>
 
                 try {
-<span class="fc" id="L1031">                    hist.plotHistogram(&quot;dist from edges&quot;, &quot;_noise_distances_&quot;);</span>
-<span class="nc" id="L1032">                } catch (IOException ex) {</span>
-<span class="nc" id="L1033">                    Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);</span>
-<span class="fc" id="L1034">                }</span>
+<span class="fc" id="L1030">                    hist.plotHistogram(&quot;dist from edges&quot;, &quot;_noise_distances_&quot;);</span>
+<span class="nc" id="L1031">                } catch (IOException ex) {</span>
+<span class="nc" id="L1032">                    Logger.getLogger(PhaseCongruencyDetector.class.getName()).log(Level.SEVERE, null, ex);</span>
+<span class="fc" id="L1033">                }</span>
             }
 
-<span class="fc" id="L1037">            int end = 100;</span>
-<span class="pc bpc" id="L1038" title="1 of 2 branches missed.">            if (end &gt; dist.length) {</span>
-<span class="fc" id="L1039">                end = dist.length;</span>
+<span class="fc" id="L1036">            int end = 100;</span>
+<span class="pc bpc" id="L1037" title="1 of 2 branches missed.">            if (end &gt; dist.length) {</span>
+<span class="fc" id="L1038">                end = dist.length;</span>
             }
 
-<span class="fc" id="L1042">            int np = 0;</span>
+<span class="fc" id="L1041">            int np = 0;</span>
 
-<span class="fc" id="L1044">            List&lt;Set&lt;PairInt&gt;&gt; subsetNoise = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
-<span class="fc" id="L1045">            Image dbg0 = new Image(nCols, nRows);</span>
-<span class="pc bpc" id="L1046" title="1 of 2 branches missed.">            for (int i = 0; i &lt; end; ++i) {</span>
-<span class="nc bnc" id="L1047" title="All 2 branches missed.">                if (dist[i] &lt; distMinimum) {</span>
-<span class="nc" id="L1048">                    break;</span>
+<span class="fc" id="L1043">            List&lt;Set&lt;PairInt&gt;&gt; subsetNoise = new ArrayList&lt;Set&lt;PairInt&gt;&gt;();</span>
+<span class="fc" id="L1044">            Image dbg0 = new Image(nCols, nRows);</span>
+<span class="pc bpc" id="L1045" title="1 of 2 branches missed.">            for (int i = 0; i &lt; end; ++i) {</span>
+<span class="nc bnc" id="L1046" title="All 2 branches missed.">                if (dist[i] &lt; distMinimum) {</span>
+<span class="nc" id="L1047">                    break;</span>
                 }
-<span class="nc" id="L1050">                int idx = indexes[i];</span>
-<span class="nc" id="L1051">                int[] clr = ImageIOHelper.getNextRGB(i);</span>
+<span class="nc" id="L1049">                int idx = indexes[i];</span>
+<span class="nc" id="L1050">                int[] clr = ImageIOHelper.getNextRGB(i);</span>
                 
-<span class="nc" id="L1053">                TLongSet groupPixs = groupList.get(idx);</span>
+<span class="nc" id="L1052">                TLongSet groupPixs = groupList.get(idx);</span>
                 
-<span class="nc" id="L1055">                Set&lt;PairInt&gt; set2 = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L1056">                TLongIterator iter3 = groupPixs.iterator();</span>
-<span class="nc bnc" id="L1057" title="All 2 branches missed.">                while (iter3.hasNext()) {</span>
-<span class="nc" id="L1058">                    long pixIdx = iter3.next();</span>
-<span class="nc" id="L1059">                    ph.toPixelCoords(pixIdx, h, xy);</span>
+<span class="nc" id="L1054">                Set&lt;PairInt&gt; set2 = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L1055">                TLongIterator iter3 = groupPixs.iterator();</span>
+<span class="nc bnc" id="L1056" title="All 2 branches missed.">                while (iter3.hasNext()) {</span>
+<span class="nc" id="L1057">                    long pixIdx = iter3.next();</span>
+<span class="nc" id="L1058">                    ph.toPixelCoords(pixIdx, h, xy);</span>
                 
-<span class="nc" id="L1061">                    ImageIOHelper.addPointToImage(xy[1], xy[0], dbg0,</span>
+<span class="nc" id="L1060">                    ImageIOHelper.addPointToImage(xy[1], xy[0], dbg0,</span>
                         1, clr[0], clr[1], clr[2]);
-<span class="nc" id="L1063">                    set2.add(new PairInt(xy[1], xy[0]));</span>
-<span class="nc" id="L1064">                }</span>
+<span class="nc" id="L1062">                    set2.add(new PairInt(xy[1], xy[0]));</span>
+<span class="nc" id="L1063">                }</span>
                 
-<span class="nc" id="L1066">                subsetNoise.add(set2);</span>
-<span class="nc" id="L1067">                np += set2.size();</span>
+<span class="nc" id="L1065">                subsetNoise.add(set2);</span>
+<span class="nc" id="L1066">                np += set2.size();</span>
             }
-<span class="fc bfc" id="L1069" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
-<span class="fc bfc" id="L1070" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
-<span class="fc" id="L1071">                    int v = thinnedLowNz[row][col];</span>
-<span class="fc bfc" id="L1072" title="All 2 branches covered.">                    if (v &gt; 0) {</span>
-<span class="fc" id="L1073">                        dbg0.setRGB(col, row, 255, 255, 255);</span>
+<span class="fc bfc" id="L1068" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L1069" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L1070">                    int v = thinnedLowNz[row][col];</span>
+<span class="fc bfc" id="L1071" title="All 2 branches covered.">                    if (v &gt; 0) {</span>
+<span class="fc" id="L1072">                        dbg0.setRGB(col, row, 255, 255, 255);</span>
                     }
                 }
             }
-<span class="fc" id="L1077">            MiscDebug.writeImage(dbg0, &quot;_a_texture_candidates_&quot;);</span>
+<span class="fc" id="L1076">            MiscDebug.writeImage(dbg0, &quot;_a_texture_candidates_&quot;);</span>
          
-<span class="fc" id="L1079">            System.out.println(&quot;np=&quot; + np);</span>
+<span class="fc" id="L1078">            System.out.println(&quot;np=&quot; + np);</span>
             
-<span class="fc" id="L1081">            products.setSubsetNoise(subsetNoise);</span>
+<span class="fc" id="L1080">            products.setSubsetNoise(subsetNoise);</span>
         }
 
-<span class="fc" id="L1084">        long t1 = System.currentTimeMillis();</span>
+<span class="fc" id="L1083">        long t1 = System.currentTimeMillis();</span>
 
-<span class="fc" id="L1086">        System.out.println(((t1 - t0)*1E-3) + &quot; seconds for phasecongmono&quot;);</span>
+<span class="fc" id="L1085">        System.out.println(((t1 - t0)*1E-3) + &quot; seconds for phasecongmono&quot;);</span>
 
-<span class="fc" id="L1088">        return products;</span>
+<span class="fc" id="L1087">        return products;</span>
     }
 
     private double[][] copy(double[][] a) {
-<span class="fc" id="L1092">        double[][] cp = new double[a.length][];</span>
-<span class="fc bfc" id="L1093" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
-<span class="fc" id="L1094">            cp[i] = Arrays.copyOf(a[i], a[i].length);</span>
+<span class="fc" id="L1091">        double[][] cp = new double[a.length][];</span>
+<span class="fc bfc" id="L1092" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="fc" id="L1093">            cp[i] = Arrays.copyOf(a[i], a[i].length);</span>
         }
-<span class="fc" id="L1096">        return cp;</span>
+<span class="fc" id="L1095">        return cp;</span>
     }
 
     /**
@@ -1108,136 +1107,136 @@ import java.util.logging.Logger;
     public int[][] createEdges(double[][] pc, double[][] thinnedPC,
         double[][] phaseAngle, double tLow, double tHigh) {
 
-<span class="fc" id="L1111">        int nRows = phaseAngle.length;</span>
-<span class="fc" id="L1112">        int nCols = phaseAngle[0].length;</span>
+<span class="fc" id="L1110">        int nRows = phaseAngle.length;</span>
+<span class="fc" id="L1111">        int nCols = phaseAngle[0].length;</span>
 
-<span class="fc" id="L1114">        Set&lt;PairInt&gt; brightLinePoints = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L1115">        Set&lt;PairInt&gt; darkLinePoints = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L1116">        Set&lt;PairInt&gt; stepPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1113">        Set&lt;PairInt&gt; brightLinePoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1114">        Set&lt;PairInt&gt; darkLinePoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L1115">        Set&lt;PairInt&gt; stepPoints = new HashSet&lt;PairInt&gt;();</span>
 
-<span class="fc" id="L1118">        double piDiv4 = Math.PI/4.;</span>
-<span class="fc" id="L1119">        double tolerance = piDiv4/2.;</span>
+<span class="fc" id="L1117">        double piDiv4 = Math.PI/4.;</span>
+<span class="fc" id="L1118">        double tolerance = piDiv4/2.;</span>
 
-<span class="fc bfc" id="L1121" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
-<span class="fc bfc" id="L1122" title="All 2 branches covered.">            for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc bfc" id="L1120" title="All 2 branches covered.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L1121" title="All 2 branches covered.">            for (int col = 0; col &lt; nCols; ++col) {</span>
 
-<span class="fc bfc" id="L1124" title="All 2 branches covered.">                if (thinnedPC[row][col] &lt; tLow) {</span>
-<span class="fc" id="L1125">                    continue;</span>
+<span class="fc bfc" id="L1123" title="All 2 branches covered.">                if (thinnedPC[row][col] &lt; tLow) {</span>
+<span class="fc" id="L1124">                    continue;</span>
                 }
                 // placing values closer to -pi/2 than 0 are darklines
                 //         values closer to +p1/2 than 0 are brightlines
                 //         else they are closer to 0 are steps
-<span class="fc" id="L1130">                double v = phaseAngle[row][col];</span>
-<span class="fc bfc" id="L1131" title="All 2 branches covered.">                if (Math.abs(-piDiv4 - v) &lt; tolerance) {</span>
-<span class="fc" id="L1132">                    darkLinePoints.add(new PairInt(row, col));</span>
-<span class="fc bfc" id="L1133" title="All 2 branches covered.">                } else if (Math.abs(piDiv4 - v) &lt; tolerance) {</span>
-<span class="fc" id="L1134">                    brightLinePoints.add(new PairInt(row, col));</span>
+<span class="fc" id="L1129">                double v = phaseAngle[row][col];</span>
+<span class="fc bfc" id="L1130" title="All 2 branches covered.">                if (Math.abs(-piDiv4 - v) &lt; tolerance) {</span>
+<span class="fc" id="L1131">                    darkLinePoints.add(new PairInt(row, col));</span>
+<span class="fc bfc" id="L1132" title="All 2 branches covered.">                } else if (Math.abs(piDiv4 - v) &lt; tolerance) {</span>
+<span class="fc" id="L1133">                    brightLinePoints.add(new PairInt(row, col));</span>
                 } else {
-<span class="fc" id="L1136">                    stepPoints.add(new PairInt(row, col));</span>
+<span class="fc" id="L1135">                    stepPoints.add(new PairInt(row, col));</span>
                 }
             }
         }
 
         //DEBUG
-<span class="fc bfc" id="L1142" title="All 2 branches covered.">        if (doPlot) {</span>
-<span class="fc" id="L1143">            Image paImage = new Image(nCols, nRows);</span>
-<span class="fc" id="L1144">            int nExtraForDot = 0;</span>
-<span class="fc bfc" id="L1145" title="All 2 branches covered.">            for (PairInt p : brightLinePoints) {</span>
-<span class="fc" id="L1146">                int x = p.getY();</span>
-<span class="fc" id="L1147">                int y = p.getX();</span>
-<span class="fc" id="L1148">                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,</span>
+<span class="fc bfc" id="L1141" title="All 2 branches covered.">        if (doPlot) {</span>
+<span class="fc" id="L1142">            Image paImage = new Image(nCols, nRows);</span>
+<span class="fc" id="L1143">            int nExtraForDot = 0;</span>
+<span class="fc bfc" id="L1144" title="All 2 branches covered.">            for (PairInt p : brightLinePoints) {</span>
+<span class="fc" id="L1145">                int x = p.getY();</span>
+<span class="fc" id="L1146">                int y = p.getX();</span>
+<span class="fc" id="L1147">                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,</span>
                     0, 255, 0);
-<span class="fc" id="L1150">            }</span>
-<span class="fc bfc" id="L1151" title="All 2 branches covered.">            for (PairInt p : stepPoints) {</span>
-<span class="fc" id="L1152">                int x = p.getY();</span>
-<span class="fc" id="L1153">                int y = p.getX();</span>
-<span class="fc" id="L1154">                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,</span>
+<span class="fc" id="L1149">            }</span>
+<span class="fc bfc" id="L1150" title="All 2 branches covered.">            for (PairInt p : stepPoints) {</span>
+<span class="fc" id="L1151">                int x = p.getY();</span>
+<span class="fc" id="L1152">                int y = p.getX();</span>
+<span class="fc" id="L1153">                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,</span>
                     255, 0, 0);
-<span class="fc" id="L1156">            }</span>
-<span class="fc bfc" id="L1157" title="All 2 branches covered.">            for (PairInt p : darkLinePoints) {</span>
-<span class="fc" id="L1158">                int x = p.getY();</span>
-<span class="fc" id="L1159">                int y = p.getX();</span>
-<span class="fc" id="L1160">                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,</span>
+<span class="fc" id="L1155">            }</span>
+<span class="fc bfc" id="L1156" title="All 2 branches covered.">            for (PairInt p : darkLinePoints) {</span>
+<span class="fc" id="L1157">                int x = p.getY();</span>
+<span class="fc" id="L1158">                int y = p.getX();</span>
+<span class="fc" id="L1159">                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,</span>
                     127, 0, 255);
-<span class="fc" id="L1162">            }</span>
-<span class="fc" id="L1163">            MiscDebug.writeImage(paImage, &quot;_a_0_pa_components_&quot; +</span>
-<span class="fc" id="L1164">                MiscDebug.getCurrentTimeFormatted());</span>
+<span class="fc" id="L1161">            }</span>
+<span class="fc" id="L1162">            MiscDebug.writeImage(paImage, &quot;_a_0_pa_components_&quot; +</span>
+<span class="fc" id="L1163">                MiscDebug.getCurrentTimeFormatted());</span>
         }
 
-<span class="fc" id="L1167">        stepPoints.addAll(brightLinePoints);</span>
-<span class="fc" id="L1168">        stepPoints.addAll(darkLinePoints);</span>
+<span class="fc" id="L1166">        stepPoints.addAll(brightLinePoints);</span>
+<span class="fc" id="L1167">        stepPoints.addAll(darkLinePoints);</span>
 
-<span class="fc" id="L1170">        double[][] thinned1 = new double[nRows][nCols];</span>
-<span class="fc bfc" id="L1171" title="All 2 branches covered.">        for (int i = 0; i &lt; nRows; ++i) {</span>
-<span class="fc" id="L1172">            thinned1[i] = new double[nCols];</span>
+<span class="fc" id="L1169">        double[][] thinned1 = new double[nRows][nCols];</span>
+<span class="fc bfc" id="L1170" title="All 2 branches covered.">        for (int i = 0; i &lt; nRows; ++i) {</span>
+<span class="fc" id="L1171">            thinned1[i] = new double[nCols];</span>
         }
-<span class="fc bfc" id="L1174" title="All 2 branches covered.">        for (PairInt p : stepPoints) {</span>
-<span class="fc" id="L1175">            thinned1[p.getX()][p.getY()] = pc[p.getX()][p.getY()];</span>
-<span class="fc" id="L1176">        }</span>
-<span class="fc" id="L1177">        stepPoints = null;</span>
+<span class="fc bfc" id="L1173" title="All 2 branches covered.">        for (PairInt p : stepPoints) {</span>
+<span class="fc" id="L1174">            thinned1[p.getX()][p.getY()] = pc[p.getX()][p.getY()];</span>
+<span class="fc" id="L1175">        }</span>
+<span class="fc" id="L1176">        stepPoints = null;</span>
 
-<span class="fc" id="L1179">        int[][] thinned = applyHysThresh(thinned1, phaseAngle, tLow, tHigh, true);</span>
+<span class="fc" id="L1178">        int[][] thinned = applyHysThresh(thinned1, phaseAngle, tLow, tHigh, true);</span>
 
-<span class="fc bfc" id="L1181" title="All 2 branches covered.">        if (doPlot) {</span>
-<span class="fc" id="L1182">            Image pImage = new Image(nCols, nRows);</span>
-<span class="fc" id="L1183">            Image tImage = new Image(nCols, nRows);</span>
-<span class="fc" id="L1184">            int nExtraForDot = 0;</span>
-<span class="fc bfc" id="L1185" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
-<span class="fc bfc" id="L1186" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
-<span class="fc" id="L1187">                    int v = (int)Math.round(255 * pc[row][col]);</span>
-<span class="fc bfc" id="L1188" title="All 2 branches covered.">                    if (thinned[row][col] &gt; 0) {</span>
-<span class="fc" id="L1189">                        ImageIOHelper.addPointToImage(col, row, pImage,</span>
+<span class="fc bfc" id="L1180" title="All 2 branches covered.">        if (doPlot) {</span>
+<span class="fc" id="L1181">            Image pImage = new Image(nCols, nRows);</span>
+<span class="fc" id="L1182">            Image tImage = new Image(nCols, nRows);</span>
+<span class="fc" id="L1183">            int nExtraForDot = 0;</span>
+<span class="fc bfc" id="L1184" title="All 2 branches covered.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="fc bfc" id="L1185" title="All 2 branches covered.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="fc" id="L1186">                    int v = (int)Math.round(255 * pc[row][col]);</span>
+<span class="fc bfc" id="L1187" title="All 2 branches covered.">                    if (thinned[row][col] &gt; 0) {</span>
+<span class="fc" id="L1188">                        ImageIOHelper.addPointToImage(col, row, pImage,</span>
                             nExtraForDot, 255, 255, 255);
-<span class="fc" id="L1191">                        ImageIOHelper.addPointToImage(col, row, tImage,</span>
+<span class="fc" id="L1190">                        ImageIOHelper.addPointToImage(col, row, tImage,</span>
                             nExtraForDot, v, v, v);
                     } else {
-<span class="fc" id="L1194">                        ImageIOHelper.addPointToImage(col, row, tImage,</span>
+<span class="fc" id="L1193">                        ImageIOHelper.addPointToImage(col, row, tImage,</span>
                             nExtraForDot, v, 0, 0);
                     }
                 }
             }
-<span class="fc" id="L1199">            MiscDebug.writeImage(pImage, &quot;_a_1_thinned_1_&quot; +</span>
-<span class="fc" id="L1200">                MiscDebug.getCurrentTimeFormatted());</span>
-<span class="fc" id="L1201">            MiscDebug.writeImage(tImage, &quot;_a_2_pc_1_&quot; +</span>
-<span class="fc" id="L1202">                MiscDebug.getCurrentTimeFormatted());</span>
+<span class="fc" id="L1198">            MiscDebug.writeImage(pImage, &quot;_a_1_thinned_1_&quot; +</span>
+<span class="fc" id="L1199">                MiscDebug.getCurrentTimeFormatted());</span>
+<span class="fc" id="L1200">            MiscDebug.writeImage(tImage, &quot;_a_2_pc_1_&quot; +</span>
+<span class="fc" id="L1201">                MiscDebug.getCurrentTimeFormatted());</span>
         }
 
-<span class="fc" id="L1205">        int[][] thinnedbw = new int[nRows][nCols];</span>
-<span class="fc bfc" id="L1206" title="All 2 branches covered.">        for (int i = 0; i &lt; nRows; ++i) {</span>
-<span class="fc" id="L1207">            thinnedbw[i] = new int[nCols];</span>
-<span class="fc bfc" id="L1208" title="All 2 branches covered.">            for (int j = 0; j &lt; nCols; ++j) {</span>
-<span class="fc bfc" id="L1209" title="All 2 branches covered.">                if (thinned[i][j] &gt; 0) {</span>
-<span class="fc" id="L1210">                    thinnedbw[i][j] = 1;</span>
+<span class="fc" id="L1204">        int[][] thinnedbw = new int[nRows][nCols];</span>
+<span class="fc bfc" id="L1205" title="All 2 branches covered.">        for (int i = 0; i &lt; nRows; ++i) {</span>
+<span class="fc" id="L1206">            thinnedbw[i] = new int[nCols];</span>
+<span class="fc bfc" id="L1207" title="All 2 branches covered.">            for (int j = 0; j &lt; nCols; ++j) {</span>
+<span class="fc bfc" id="L1208" title="All 2 branches covered.">                if (thinned[i][j] &gt; 0) {</span>
+<span class="fc" id="L1209">                    thinnedbw[i][j] = 1;</span>
                 }
             }
         }
 
-<span class="fc" id="L1215">        MorphologicalFilter mFilter = new MorphologicalFilter();</span>
-<span class="fc" id="L1216">        int[][] skel = mFilter.bwMorphThin(thinnedbw, Integer.MAX_VALUE);</span>
+<span class="fc" id="L1214">        MorphologicalFilter mFilter = new MorphologicalFilter();</span>
+<span class="fc" id="L1215">        int[][] skel = mFilter.bwMorphThin(thinnedbw, Integer.MAX_VALUE);</span>
 
-<span class="fc" id="L1218">        Set&lt;PairInt&gt; points = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc bfc" id="L1219" title="All 2 branches covered.">        for (int i = 0; i &lt; nRows; ++i) {</span>
-<span class="fc bfc" id="L1220" title="All 2 branches covered.">            for (int j = 0; j &lt; nCols; ++j) {</span>
-<span class="fc" id="L1221">                int m = skel[i][j];</span>
-<span class="fc" id="L1222">                thinned[i][j] *= m;</span>
-<span class="fc bfc" id="L1223" title="All 2 branches covered.">                if (thinned[i][j] &gt; 0) {</span>
-<span class="fc" id="L1224">                    points.add(new PairInt(i, j));</span>
+<span class="fc" id="L1217">        Set&lt;PairInt&gt; points = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L1218" title="All 2 branches covered.">        for (int i = 0; i &lt; nRows; ++i) {</span>
+<span class="fc bfc" id="L1219" title="All 2 branches covered.">            for (int j = 0; j &lt; nCols; ++j) {</span>
+<span class="fc" id="L1220">                int m = skel[i][j];</span>
+<span class="fc" id="L1221">                thinned[i][j] *= m;</span>
+<span class="fc bfc" id="L1222" title="All 2 branches covered.">                if (thinned[i][j] &gt; 0) {</span>
+<span class="fc" id="L1223">                    points.add(new PairInt(i, j));</span>
                 }
             }
         }
 
         //DEBUG
-<span class="fc bfc" id="L1230" title="All 2 branches covered.">        if (doPlot) {</span>
-<span class="fc" id="L1231">            Image paImage = new Image(nCols, nRows);</span>
-<span class="fc" id="L1232">            int nExtraForDot = 0;</span>
-<span class="fc bfc" id="L1233" title="All 2 branches covered.">            for (PairInt p : points) {</span>
-<span class="fc" id="L1234">                int x = p.getY();</span>
-<span class="fc" id="L1235">                int y = p.getX();</span>
-<span class="fc" id="L1236">                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,</span>
+<span class="fc bfc" id="L1229" title="All 2 branches covered.">        if (doPlot) {</span>
+<span class="fc" id="L1230">            Image paImage = new Image(nCols, nRows);</span>
+<span class="fc" id="L1231">            int nExtraForDot = 0;</span>
+<span class="fc bfc" id="L1232" title="All 2 branches covered.">            for (PairInt p : points) {</span>
+<span class="fc" id="L1233">                int x = p.getY();</span>
+<span class="fc" id="L1234">                int y = p.getX();</span>
+<span class="fc" id="L1235">                ImageIOHelper.addPointToImage(x, y, paImage, nExtraForDot,</span>
                     255, 255, 255);
-<span class="fc" id="L1238">            }</span>
-<span class="fc" id="L1239">            MiscDebug.writeImage(paImage, &quot;_a_3_edge_from_phase_angle_thin_0_&quot; +</span>
-<span class="fc" id="L1240">                MiscDebug.getCurrentTimeFormatted());</span>
+<span class="fc" id="L1237">            }</span>
+<span class="fc" id="L1238">            MiscDebug.writeImage(paImage, &quot;_a_3_edge_from_phase_angle_thin_0_&quot; +</span>
+<span class="fc" id="L1239">                MiscDebug.getCurrentTimeFormatted());</span>
         }
 
         //ImageProcessor imageProcessor = new ImageProcessor();
@@ -1276,7 +1275,7 @@ import java.util.logging.Logger;
         }
         */
 
-<span class="fc" id="L1279">        return thinned;</span>
+<span class="fc" id="L1278">        return thinned;</span>
     }
 
     /**
@@ -1288,23 +1287,23 @@ import java.util.logging.Logger;
     private int countEdgePoints(PhaseCongruencyProducts products,
         double[][] thinnedPC, double tLow, double tHigh) {
 
-<span class="nc" id="L1291">        double[][] phaseAngle = products.getPhaseAngle();</span>
+<span class="nc" id="L1290">        double[][] phaseAngle = products.getPhaseAngle();</span>
 
-<span class="nc" id="L1293">        int nRows = phaseAngle.length;</span>
-<span class="nc" id="L1294">        int nCols = phaseAngle[0].length;</span>
+<span class="nc" id="L1292">        int nRows = phaseAngle.length;</span>
+<span class="nc" id="L1293">        int nCols = phaseAngle[0].length;</span>
 
-<span class="nc" id="L1296">        int count = 0;</span>
+<span class="nc" id="L1295">        int count = 0;</span>
 
-<span class="nc bnc" id="L1298" title="All 2 branches missed.">        for (int row = 0; row &lt; nRows; ++row) {</span>
-<span class="nc bnc" id="L1299" title="All 2 branches missed.">            for (int col = 0; col &lt; nCols; ++col) {</span>
-<span class="nc bnc" id="L1300" title="All 2 branches missed.">                if (thinnedPC[row][col] &lt; tLow) {</span>
-<span class="nc" id="L1301">                    continue;</span>
+<span class="nc bnc" id="L1297" title="All 2 branches missed.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="nc bnc" id="L1298" title="All 2 branches missed.">            for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="nc bnc" id="L1299" title="All 2 branches missed.">                if (thinnedPC[row][col] &lt; tLow) {</span>
+<span class="nc" id="L1300">                    continue;</span>
                 }
-<span class="nc" id="L1303">                count++;</span>
+<span class="nc" id="L1302">                count++;</span>
             }
         }
 
-<span class="nc" id="L1307">        return count;</span>
+<span class="nc" id="L1306">        return count;</span>
     }
 
     public class PhaseCongruencyProducts {
@@ -1513,21 +1512,21 @@ import java.util.logging.Logger;
 
     private Complex[][] copy(Complex[][] a) {
 
-<span class="nc" id="L1516">        Complex[][] b = new Complex[a.length][];</span>
-<span class="nc bnc" id="L1517" title="All 2 branches missed.">        for (int i = 0; i &lt; b.length; ++i) {</span>
-<span class="nc" id="L1518">            b[i] = Arrays.copyOf(a[i], a[i].length);</span>
+<span class="nc" id="L1515">        Complex[][] b = new Complex[a.length][];</span>
+<span class="nc bnc" id="L1516" title="All 2 branches missed.">        for (int i = 0; i &lt; b.length; ++i) {</span>
+<span class="nc" id="L1517">            b[i] = Arrays.copyOf(a[i], a[i].length);</span>
         }
 
-<span class="nc" id="L1521">        return b;</span>
+<span class="nc" id="L1520">        return b;</span>
     }
     private int[][] copy(int[][] a) {
 
-<span class="fc" id="L1525">        int[][] b = new int[a.length][];</span>
-<span class="fc bfc" id="L1526" title="All 2 branches covered.">        for (int i = 0; i &lt; b.length; ++i) {</span>
-<span class="fc" id="L1527">            b[i] = Arrays.copyOf(a[i], a[i].length);</span>
+<span class="fc" id="L1524">        int[][] b = new int[a.length][];</span>
+<span class="fc bfc" id="L1525" title="All 2 branches covered.">        for (int i = 0; i &lt; b.length; ++i) {</span>
+<span class="fc" id="L1526">            b[i] = Arrays.copyOf(a[i], a[i].length);</span>
         }
 
-<span class="fc" id="L1530">        return b;</span>
+<span class="fc" id="L1529">        return b;</span>
     }
 
     /**
@@ -1550,38 +1549,38 @@ import java.util.logging.Logger;
      */
     private double rayleighMode(double[][] data) {
 
-<span class="nc" id="L1553">        int nBins = 50;</span>
+<span class="nc" id="L1552">        int nBins = 50;</span>
 
-<span class="nc" id="L1555">        float[] values = new float[data.length];</span>
-<span class="nc" id="L1556">        float max = Float.NEGATIVE_INFINITY;</span>
-<span class="nc" id="L1557">        int count = 0;</span>
-<span class="nc bnc" id="L1558" title="All 2 branches missed.">        for (int j = 0; j &lt; data.length; ++j) {</span>
-<span class="nc bnc" id="L1559" title="All 2 branches missed.">            for (int i = 0; i &lt; data[j].length; ++i) {</span>
-<span class="nc" id="L1560">                values[count] = (float)data[j][i];</span>
-<span class="nc bnc" id="L1561" title="All 2 branches missed.">                if (values[count] &gt; max) {</span>
-<span class="nc" id="L1562">                    max = values[i];</span>
+<span class="nc" id="L1554">        float[] values = new float[data.length];</span>
+<span class="nc" id="L1555">        float max = Float.NEGATIVE_INFINITY;</span>
+<span class="nc" id="L1556">        int count = 0;</span>
+<span class="nc bnc" id="L1557" title="All 2 branches missed.">        for (int j = 0; j &lt; data.length; ++j) {</span>
+<span class="nc bnc" id="L1558" title="All 2 branches missed.">            for (int i = 0; i &lt; data[j].length; ++i) {</span>
+<span class="nc" id="L1559">                values[count] = (float)data[j][i];</span>
+<span class="nc bnc" id="L1560" title="All 2 branches missed.">                if (values[count] &gt; max) {</span>
+<span class="nc" id="L1561">                    max = values[i];</span>
                 }
-<span class="nc" id="L1564">                count++;</span>
+<span class="nc" id="L1563">                count++;</span>
             }
         }
-<span class="nc" id="L1567">        float[] errs = Errors.populateYErrorsBySqrt(values);</span>
+<span class="nc" id="L1566">        float[] errs = Errors.populateYErrorsBySqrt(values);</span>
 
-<span class="nc" id="L1569">        HistogramHolder hist = Histogram.createSimpleHistogram(0, max, nBins,</span>
+<span class="nc" id="L1568">        HistogramHolder hist = Histogram.createSimpleHistogram(0, max, nBins,</span>
             values, errs);
 
-<span class="nc" id="L1572">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
+<span class="nc" id="L1571">        int yMaxIdx = MiscMath.findYMaxIndex(hist.getYHist());</span>
 
-<span class="nc bnc" id="L1574" title="All 2 branches missed.">        if (yMaxIdx == -1) {</span>
+<span class="nc bnc" id="L1573" title="All 2 branches missed.">        if (yMaxIdx == -1) {</span>
             //should not happen
-<span class="nc" id="L1576">            throw new IllegalStateException(&quot;Error in algorithm for extreme data case. &quot;</span>
+<span class="nc" id="L1575">            throw new IllegalStateException(&quot;Error in algorithm for extreme data case. &quot;</span>
                 + &quot; yMaxIdx=&quot; + yMaxIdx);
-<span class="nc bnc" id="L1578" title="All 2 branches missed.">        } else if (yMaxIdx == (hist.getXHist().length - 1)) {</span>
-<span class="nc" id="L1579">            return hist.getXHist()[yMaxIdx];</span>
+<span class="nc bnc" id="L1577" title="All 2 branches missed.">        } else if (yMaxIdx == (hist.getXHist().length - 1)) {</span>
+<span class="nc" id="L1578">            return hist.getXHist()[yMaxIdx];</span>
         }
 
-<span class="nc" id="L1582">        double rMode = (hist.getXHist()[yMaxIdx] + hist.getXHist()[yMaxIdx + 1])/2.;</span>
+<span class="nc" id="L1581">        double rMode = (hist.getXHist()[yMaxIdx] + hist.getXHist()[yMaxIdx + 1])/2.;</span>
 
-<span class="nc" id="L1584">        return rMode;</span>
+<span class="nc" id="L1583">        return rMode;</span>
     }
 
     /**
@@ -1603,176 +1602,176 @@ import java.util.logging.Logger;
         // the high value.
         // here instead will use an adaptive 2-layer threshold for values &gt; t1.
 
-<span class="fc" id="L1606">        int w = img.length;</span>
-<span class="fc" id="L1607">        int h = img[0].length;</span>
-<span class="fc" id="L1608">        int n = w * h;</span>
+<span class="fc" id="L1605">        int w = img.length;</span>
+<span class="fc" id="L1606">        int h = img[0].length;</span>
+<span class="fc" id="L1607">        int n = w * h;</span>
 
-<span class="pc bpc" id="L1610" title="2 of 4 branches missed.">        if (w &lt; 3 || h &lt; 3) {</span>
-<span class="nc" id="L1611">            throw new IllegalArgumentException(&quot;images should be &gt;= 3x3 in size&quot;);</span>
+<span class="pc bpc" id="L1609" title="2 of 4 branches missed.">        if (w &lt; 3 || h &lt; 3) {</span>
+<span class="nc" id="L1610">            throw new IllegalArgumentException(&quot;images should be &gt;= 3x3 in size&quot;);</span>
         }
 
-<span class="fc" id="L1614">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L1613">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
-<span class="fc" id="L1616">        double[][] threshImg = null;</span>
-<span class="pc bpc" id="L1617" title="1 of 2 branches missed.">        if (useAdaptiveThreshold) {</span>
-<span class="fc" id="L1618">            AdaptiveThresholding th = new AdaptiveThresholding();</span>
-<span class="fc" id="L1619">            threshImg = th.createAdaptiveThresholdImage(img, 15, 0.2);</span>
-<span class="fc bfc" id="L1620" title="All 2 branches covered.">            if (doPlot) {//DEBUG</span>
-<span class="fc" id="L1621">                double[][] imgCp = imageProcessor.copy(img);</span>
-<span class="fc" id="L1622">                double[][] imgCp2 = imageProcessor.copy(threshImg);</span>
-<span class="fc bfc" id="L1623" title="All 2 branches covered.">                for (int i = 0; i &lt; w; ++i) {</span>
-<span class="fc bfc" id="L1624" title="All 2 branches covered.">                    for (int j = 0; j &lt; h; ++j) {</span>
-<span class="fc" id="L1625">                        double t = threshImg[i][j];</span>
-<span class="fc bfc" id="L1626" title="All 4 branches covered.">                        if (imgCp[i][j] &gt; t &amp;&amp; imgCp[i][j] &gt; t1) {</span>
-<span class="fc" id="L1627">                            imgCp[i][j] = 255.;</span>
+<span class="fc" id="L1615">        double[][] threshImg = null;</span>
+<span class="pc bpc" id="L1616" title="1 of 2 branches missed.">        if (useAdaptiveThreshold) {</span>
+<span class="fc" id="L1617">            AdaptiveThresholding th = new AdaptiveThresholding();</span>
+<span class="fc" id="L1618">            threshImg = th.createAdaptiveThresholdImage(img, 15, 0.2);</span>
+<span class="fc bfc" id="L1619" title="All 2 branches covered.">            if (doPlot) {//DEBUG</span>
+<span class="fc" id="L1620">                double[][] imgCp = imageProcessor.copy(img);</span>
+<span class="fc" id="L1621">                double[][] imgCp2 = imageProcessor.copy(threshImg);</span>
+<span class="fc bfc" id="L1622" title="All 2 branches covered.">                for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc bfc" id="L1623" title="All 2 branches covered.">                    for (int j = 0; j &lt; h; ++j) {</span>
+<span class="fc" id="L1624">                        double t = threshImg[i][j];</span>
+<span class="fc bfc" id="L1625" title="All 4 branches covered.">                        if (imgCp[i][j] &gt; t &amp;&amp; imgCp[i][j] &gt; t1) {</span>
+<span class="fc" id="L1626">                            imgCp[i][j] = 255.;</span>
                         } else {
-<span class="fc" id="L1629">                            imgCp[i][j] = 0;</span>
+<span class="fc" id="L1628">                            imgCp[i][j] = 0;</span>
                         }
-<span class="fc" id="L1631">                        imgCp2[i][j] *= 255.;</span>
+<span class="fc" id="L1630">                        imgCp2[i][j] *= 255.;</span>
                     }
                 }
-<span class="fc" id="L1634">                MiscDebug.writeImage(imgCp, &quot;img_a_thresholded_.png&quot;);</span>
-<span class="fc" id="L1635">                MiscDebug.writeImage(imgCp2, &quot;img_a_adaptive_threshold_.png&quot;);</span>
+<span class="fc" id="L1633">                MiscDebug.writeImage(imgCp, &quot;img_a_thresholded_.png&quot;);</span>
+<span class="fc" id="L1634">                MiscDebug.writeImage(imgCp2, &quot;img_a_adaptive_threshold_.png&quot;);</span>
             }
         }
 
-<span class="fc" id="L1639">        int[] dxs = Misc.dx8;</span>
-<span class="fc" id="L1640">        int[] dys = Misc.dy8;</span>
+<span class="fc" id="L1638">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L1639">        int[] dys = Misc.dy8;</span>
 
-<span class="fc" id="L1642">        double tHigh = t2;</span>
-<span class="fc" id="L1643">        double tLow = t1;</span>
+<span class="fc" id="L1641">        double tHigh = t2;</span>
+<span class="fc" id="L1642">        double tLow = t1;</span>
 
-<span class="pc bpc" id="L1645" title="1 of 2 branches missed.">        System.out.println(&quot;tHigh=&quot; + tHigh +</span>
+<span class="pc bpc" id="L1644" title="1 of 2 branches missed.">        System.out.println(&quot;tHigh=&quot; + tHigh +</span>
             &quot; replace with adaptive threshold image = &quot; + (threshImg != null));
 
-<span class="fc" id="L1648">        int[][] img2 = new int[w][];</span>
-<span class="fc bfc" id="L1649" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="fc" id="L1650">            img2[i] = new int[h];</span>
+<span class="fc" id="L1647">        int[][] img2 = new int[w][];</span>
+<span class="fc bfc" id="L1648" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="fc" id="L1649">            img2[i] = new int[h];</span>
         }
 
         // store pixels w/ v &gt; tHigh
         // and store any of it's neighbors w/ v &gt; tLow
 
-<span class="fc bfc" id="L1656" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
-<span class="fc bfc" id="L1657" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
+<span class="fc bfc" id="L1655" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="fc bfc" id="L1656" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
 
-<span class="fc" id="L1659">                double v = img[x][y];</span>
+<span class="fc" id="L1658">                double v = img[x][y];</span>
 
                 double tHigh0, tLow0;
-<span class="pc bpc" id="L1662" title="1 of 2 branches missed.">                if (threshImg != null) {</span>
-<span class="fc" id="L1663">                    tHigh0 = threshImg[x][y];</span>
-<span class="fc" id="L1664">                    tLow0 = tHigh0/2;</span>
+<span class="pc bpc" id="L1661" title="1 of 2 branches missed.">                if (threshImg != null) {</span>
+<span class="fc" id="L1662">                    tHigh0 = threshImg[x][y];</span>
+<span class="fc" id="L1663">                    tLow0 = tHigh0/2;</span>
                 } else {
-<span class="nc" id="L1666">                    tHigh0 = tHigh;</span>
-<span class="nc" id="L1667">                    tLow0 = tLow;</span>
+<span class="nc" id="L1665">                    tHigh0 = tHigh;</span>
+<span class="nc" id="L1666">                    tLow0 = tLow;</span>
                 }
 
-<span class="fc bfc" id="L1670" title="All 4 branches covered.">                if (v &lt; tHigh0 || v &lt; tLow) {</span>
-<span class="fc" id="L1671">                    continue;</span>
+<span class="fc bfc" id="L1669" title="All 4 branches covered.">                if (v &lt; tHigh0 || v &lt; tLow) {</span>
+<span class="fc" id="L1670">                    continue;</span>
                 }
 
-<span class="fc" id="L1674">                img2[x][y] = 255;</span>
+<span class="fc" id="L1673">                img2[x][y] = 255;</span>
 
                 // store any adjacent w/ v &gt; tLow
-<span class="fc bfc" id="L1677" title="All 2 branches covered.">                for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="fc" id="L1678">                    int x2 = x + dxs[k];</span>
-<span class="fc" id="L1679">                    int y2 = y + dys[k];</span>
-<span class="pc bpc" id="L1680" title="4 of 8 branches missed.">                    if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
-<span class="nc" id="L1681">                        continue;</span>
+<span class="fc bfc" id="L1676" title="All 2 branches covered.">                for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L1677">                    int x2 = x + dxs[k];</span>
+<span class="fc" id="L1678">                    int y2 = y + dys[k];</span>
+<span class="pc bpc" id="L1679" title="4 of 8 branches missed.">                    if ((x2 &lt; 0) || (y2 &lt; 0) || (x2 &gt; (w - 1)) || (y2 &gt; (h - 1))) {</span>
+<span class="nc" id="L1680">                        continue;</span>
                     }
-<span class="fc" id="L1683">                    double v2 = img[x2][y2];</span>
-<span class="fc bfc" id="L1684" title="All 2 branches covered.">                    if (v2 &gt; tLow0) {</span>
-<span class="fc" id="L1685">                        img2[x2][y2] = 255;</span>
+<span class="fc" id="L1682">                    double v2 = img[x2][y2];</span>
+<span class="fc bfc" id="L1683" title="All 2 branches covered.">                    if (v2 &gt; tLow0) {</span>
+<span class="fc" id="L1684">                        img2[x2][y2] = 255;</span>
                     }
                 }
             }
         }
 
-<span class="fc" id="L1691">        return img2;</span>
+<span class="fc" id="L1690">        return img2;</span>
     }
 
     private void DEBUG(Complex[][] tmp, String label) {
 
         try {
-<span class="nc" id="L1697">            algorithms.util.PolygonAndPointPlotter plotter</span>
+<span class="nc" id="L1696">            algorithms.util.PolygonAndPointPlotter plotter</span>
                 = new algorithms.util.PolygonAndPointPlotter();
 
-<span class="nc" id="L1700">            int nc = tmp[0].length;</span>
-<span class="nc" id="L1701">            int nr = tmp.length;</span>
+<span class="nc" id="L1699">            int nc = tmp[0].length;</span>
+<span class="nc" id="L1700">            int nr = tmp.length;</span>
 
-<span class="nc" id="L1703">            float[] x = new float[nc];</span>
-<span class="nc bnc" id="L1704" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nc; ++ii) {</span>
-<span class="nc" id="L1705">                x[ii] = ii;</span>
+<span class="nc" id="L1702">            float[] x = new float[nc];</span>
+<span class="nc bnc" id="L1703" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L1704">                x[ii] = ii;</span>
             }
-<span class="nc" id="L1707">            float[] y = new float[nc];</span>
-<span class="nc" id="L1708">            float[] xPolygon = null;</span>
-<span class="nc" id="L1709">            float[] yPolygon = null;</span>
+<span class="nc" id="L1706">            float[] y = new float[nc];</span>
+<span class="nc" id="L1707">            float[] xPolygon = null;</span>
+<span class="nc" id="L1708">            float[] yPolygon = null;</span>
 
             // plot rows 0.25*nRows, 0.5*nRows, and 0.75*nRows
-<span class="nc bnc" id="L1712" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
-<span class="nc" id="L1713">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
-<span class="nc bnc" id="L1714" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
-<span class="nc" id="L1715">                    y[ii] = (float) tmp[rowNumber][ii].re();</span>
+<span class="nc bnc" id="L1711" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
+<span class="nc" id="L1712">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
+<span class="nc bnc" id="L1713" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L1714">                    y[ii] = (float) tmp[rowNumber][ii].re();</span>
                 }
-<span class="nc" id="L1717">                float minY = MiscMath.findMin(y);</span>
-<span class="nc" id="L1718">                float maxY = MiscMath.findMax(y);</span>
-<span class="nc" id="L1719">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
+<span class="nc" id="L1716">                float minY = MiscMath.findMin(y);</span>
+<span class="nc" id="L1717">                float maxY = MiscMath.findMax(y);</span>
+<span class="nc" id="L1718">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
                     yPolygon, label + &quot; row=&quot; + rowNumber + &quot; REAL&quot;);
             }
 
             // do same for complex
-<span class="nc bnc" id="L1724" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
-<span class="nc" id="L1725">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
-<span class="nc bnc" id="L1726" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
-<span class="nc" id="L1727">                    y[ii] = (float) tmp[rowNumber][ii].im();</span>
+<span class="nc bnc" id="L1723" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
+<span class="nc" id="L1724">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
+<span class="nc bnc" id="L1725" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L1726">                    y[ii] = (float) tmp[rowNumber][ii].im();</span>
                 }
-<span class="nc" id="L1729">                float minY = MiscMath.findMin(y);</span>
-<span class="nc" id="L1730">                float maxY = MiscMath.findMax(y);</span>
-<span class="nc" id="L1731">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
+<span class="nc" id="L1728">                float minY = MiscMath.findMin(y);</span>
+<span class="nc" id="L1729">                float maxY = MiscMath.findMax(y);</span>
+<span class="nc" id="L1730">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
                     yPolygon, label + &quot; row=&quot; + rowNumber + &quot; IMAGINARY&quot;);
             }
 
-<span class="nc" id="L1735">            plotter.writeFile();</span>
-<span class="nc" id="L1736">        } catch (Exception e) {</span>
-<span class="nc" id="L1737">        }</span>
-<span class="nc" id="L1738">        int z = 1;</span>
-<span class="nc" id="L1739">    }</span>
+<span class="nc" id="L1734">            plotter.writeFile();</span>
+<span class="nc" id="L1735">        } catch (Exception e) {</span>
+<span class="nc" id="L1736">        }</span>
+<span class="nc" id="L1737">        int z = 1;</span>
+<span class="nc" id="L1738">    }</span>
 
     private void DEBUG(double[][] tmp, String label, long fileNumber) {
 
         try {
-<span class="nc" id="L1744">            algorithms.util.PolygonAndPointPlotter plotter</span>
+<span class="nc" id="L1743">            algorithms.util.PolygonAndPointPlotter plotter</span>
                 = new algorithms.util.PolygonAndPointPlotter();
 
-<span class="nc" id="L1747">            int nc = tmp[0].length;</span>
-<span class="nc" id="L1748">            int nr = tmp.length;</span>
+<span class="nc" id="L1746">            int nc = tmp[0].length;</span>
+<span class="nc" id="L1747">            int nr = tmp.length;</span>
 
-<span class="nc" id="L1750">            float[] x = new float[nc];</span>
-<span class="nc bnc" id="L1751" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nc; ++ii) {</span>
-<span class="nc" id="L1752">                x[ii] = ii;</span>
+<span class="nc" id="L1749">            float[] x = new float[nc];</span>
+<span class="nc bnc" id="L1750" title="All 2 branches missed.">            for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L1751">                x[ii] = ii;</span>
             }
-<span class="nc" id="L1754">            float[] y = new float[nc];</span>
-<span class="nc" id="L1755">            float[] xPolygon = null;</span>
-<span class="nc" id="L1756">            float[] yPolygon = null;</span>
+<span class="nc" id="L1753">            float[] y = new float[nc];</span>
+<span class="nc" id="L1754">            float[] xPolygon = null;</span>
+<span class="nc" id="L1755">            float[] yPolygon = null;</span>
 
-<span class="nc" id="L1758">            float minY = (float)MiscMath.findMin(tmp);</span>
-<span class="nc" id="L1759">            float maxY = (float)MiscMath.findMax(tmp);</span>
+<span class="nc" id="L1757">            float minY = (float)MiscMath.findMin(tmp);</span>
+<span class="nc" id="L1758">            float maxY = (float)MiscMath.findMax(tmp);</span>
 
             // plot rows 0.25*nRows, 0.5*nRows, and 0.75*nRows
-<span class="nc bnc" id="L1762" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
-<span class="nc" id="L1763">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
-<span class="nc bnc" id="L1764" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
-<span class="nc" id="L1765">                    y[ii] = (float) tmp[rowNumber][ii];</span>
+<span class="nc bnc" id="L1761" title="All 2 branches missed.">            for (int nf = 1; nf &lt; 4; nf++) {</span>
+<span class="nc" id="L1762">                int rowNumber = (int) (((float) nf) * 0.25f * nr);</span>
+<span class="nc bnc" id="L1763" title="All 2 branches missed.">                for (int ii = 0; ii &lt; nc; ++ii) {</span>
+<span class="nc" id="L1764">                    y[ii] = (float) tmp[rowNumber][ii];</span>
                 }
-<span class="nc" id="L1767">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
+<span class="nc" id="L1766">                plotter.addPlot(-1, nc + 1, minY, maxY, x, y, xPolygon,</span>
                     yPolygon, label + &quot; row=&quot; + rowNumber);
             }
-<span class="nc" id="L1770">            plotter.writeFile(fileNumber);</span>
-<span class="nc" id="L1771">            MiscDebug.writeImage(tmp, label.replaceAll(&quot;\\s&quot;, &quot;&quot;) + &quot;.png&quot;);</span>
-<span class="nc" id="L1772">        } catch (Exception e) {</span>
-<span class="nc" id="L1773">        }</span>
-<span class="nc" id="L1774">        int z = 1;</span>
-<span class="nc" id="L1775">    }</span>
+<span class="nc" id="L1769">            plotter.writeFile(fileNumber);</span>
+<span class="nc" id="L1770">            MiscDebug.writeImage(tmp, label.replaceAll(&quot;\\s&quot;, &quot;&quot;) + &quot;.png&quot;);</span>
+<span class="nc" id="L1771">        } catch (Exception e) {</span>
+<span class="nc" id="L1772">        }</span>
+<span class="nc" id="L1773">        int z = 1;</span>
+<span class="nc" id="L1774">    }</span>
 
     /**
      * for single purpose use to examine the monogenic transform
@@ -1787,42 +1786,42 @@ import java.util.logging.Logger;
         final int minWavelength, final float mult, final float sigmaOnf,
         int s) {
 
-<span class="nc" id="L1790">        int noiseMethod = -1;</span>
+<span class="nc" id="L1789">        int noiseMethod = -1;</span>
 
-<span class="nc" id="L1792">        int nCols = img.getWidth();</span>
-<span class="nc" id="L1793">        int nRows = img.getHeight();</span>
+<span class="nc" id="L1791">        int nCols = img.getWidth();</span>
+<span class="nc" id="L1792">        int nRows = img.getHeight();</span>
 
-<span class="nc" id="L1795">        FilterGrid fg = new FilterGrid();</span>
-<span class="nc" id="L1796">        FilterGrid.FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);</span>
-<span class="nc" id="L1797">        fgProducts.getRadius()[0][0] = 1;</span>
-<span class="nc" id="L1798">        double[][] radius = fgProducts.getRadius();</span>
+<span class="nc" id="L1794">        FilterGrid fg = new FilterGrid();</span>
+<span class="nc" id="L1795">        FilterGrid.FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);</span>
+<span class="nc" id="L1796">        fgProducts.getRadius()[0][0] = 1;</span>
+<span class="nc" id="L1797">        double[][] radius = fgProducts.getRadius();</span>
 
-<span class="nc" id="L1800">        LowPassFilter lpFilter = new LowPassFilter();</span>
-<span class="nc" id="L1801">        double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);</span>
+<span class="nc" id="L1799">        LowPassFilter lpFilter = new LowPassFilter();</span>
+<span class="nc" id="L1800">        double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);</span>
 
         // keeping taus in case need to increase noise estimate
-<span class="nc" id="L1804">        double logGaborDenom = 2. * Math.pow(Math.log(sigmaOnf), 2);</span>
+<span class="nc" id="L1803">        double logGaborDenom = 2. * Math.pow(Math.log(sigmaOnf), 2);</span>
 
         // Centre frequency of filter.
-<span class="nc" id="L1807">        double wavelength = minWavelength * Math.pow(mult, s);</span>
+<span class="nc" id="L1806">        double wavelength = minWavelength * Math.pow(mult, s);</span>
 
-<span class="nc" id="L1809">        double fo = 1.0/wavelength;</span>
+<span class="nc" id="L1808">        double fo = 1.0/wavelength;</span>
 
         // use notation a[row][col]
-<span class="nc" id="L1812">        double[][] logGabor = new double[nRows][];</span>
-<span class="nc bnc" id="L1813" title="All 2 branches missed.">        for (int row = 0; row &lt; nRows; ++row) {</span>
-<span class="nc" id="L1814">            logGabor[row] = new double[nCols];</span>
-<span class="nc bnc" id="L1815" title="All 2 branches missed.">            for (int col = 0; col &lt; nCols; ++col) {</span>
-<span class="nc" id="L1816">                double v = Math.log(radius[row][col]/fo);</span>
-<span class="nc" id="L1817">                v *= v;</span>
-<span class="nc" id="L1818">                v = Math.exp(-v/logGaborDenom);</span>
+<span class="nc" id="L1811">        double[][] logGabor = new double[nRows][];</span>
+<span class="nc bnc" id="L1812" title="All 2 branches missed.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="nc" id="L1813">            logGabor[row] = new double[nCols];</span>
+<span class="nc bnc" id="L1814" title="All 2 branches missed.">            for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="nc" id="L1815">                double v = Math.log(radius[row][col]/fo);</span>
+<span class="nc" id="L1816">                v *= v;</span>
+<span class="nc" id="L1817">                v = Math.exp(-v/logGaborDenom);</span>
                 //logGabor = logGabor.*lp;
-<span class="nc" id="L1820">                logGabor[row][col] = lp[row][col] * v;</span>
+<span class="nc" id="L1819">                logGabor[row][col] = lp[row][col] * v;</span>
             }
         }
-<span class="nc" id="L1823">        logGabor[0][0] = 0;</span>
+<span class="nc" id="L1822">        logGabor[0][0] = 0;</span>
 
-<span class="nc" id="L1825">        return logGabor;</span>
+<span class="nc" id="L1824">        return logGabor;</span>
     }
 
     /**
@@ -1834,50 +1833,50 @@ import java.util.logging.Logger;
      */
     public static Complex[][] createLowPassFreqDomainFilter(GreyscaleImage img) {
 
-<span class="nc" id="L1837">        int nCols = img.getWidth();</span>
-<span class="nc" id="L1838">        int nRows = img.getHeight();</span>
+<span class="nc" id="L1836">        int nCols = img.getWidth();</span>
+<span class="nc" id="L1837">        int nRows = img.getHeight();</span>
 
-<span class="nc" id="L1840">        FilterGrid fg = new FilterGrid();</span>
-<span class="nc" id="L1841">        FilterGrid.FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);</span>
-<span class="nc" id="L1842">        fgProducts.getRadius()[0][0] = 1;</span>
-<span class="nc" id="L1843">        double[][] radius = fgProducts.getRadius();</span>
+<span class="nc" id="L1839">        FilterGrid fg = new FilterGrid();</span>
+<span class="nc" id="L1840">        FilterGrid.FilterGridProducts fgProducts = fg.filtergrid(nRows, nCols);</span>
+<span class="nc" id="L1841">        fgProducts.getRadius()[0][0] = 1;</span>
+<span class="nc" id="L1842">        double[][] radius = fgProducts.getRadius();</span>
 
-<span class="nc" id="L1845">        LowPassFilter lpFilter = new LowPassFilter();</span>
-<span class="nc" id="L1846">        double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);</span>
+<span class="nc" id="L1844">        LowPassFilter lpFilter = new LowPassFilter();</span>
+<span class="nc" id="L1845">        double[][] lp = lpFilter.lowpassfilter(nRows, nCols, 0.45f, 15);</span>
 
 
         //Periodic Fourier transform of image, using default normalization
         // perfft2 results use notation a[row][col]
-<span class="nc" id="L1851">        PeriodicFFT perfft2 = new PeriodicFFT();</span>
+<span class="nc" id="L1850">        PeriodicFFT perfft2 = new PeriodicFFT();</span>
         //IM = perfft2(im);                   %
         //S, P, s, p where S = FFT of smooth, P = FFT of periodic, s=spatial smooth, p = spatial p
-<span class="nc" id="L1854">        Complex[][][] perfResults = perfft2.perfft2(img, false);</span>
-<span class="nc" id="L1855">        Complex[][] capIm = perfResults[1];</span>
+<span class="nc" id="L1853">        Complex[][][] perfResults = perfft2.perfft2(img, false);</span>
+<span class="nc" id="L1854">        Complex[][] capIm = perfResults[1];</span>
 
-<span class="nc" id="L1857">        ComplexModifiable sumAbs = new ComplexModifiable(0, 0);</span>
-<span class="nc bnc" id="L1858" title="All 2 branches missed.">        for (int row = 0; row &lt; nRows; ++row) {</span>
-<span class="nc bnc" id="L1859" title="All 2 branches missed.">            for (int col = 0; col &lt; nCols; ++col) {</span>
-<span class="nc" id="L1860">                capIm[row][col] = capIm[row][col].times(lp[row][col]);</span>
-<span class="nc" id="L1861">                sumAbs.plus(capIm[row][col]);</span>
+<span class="nc" id="L1856">        ComplexModifiable sumAbs = new ComplexModifiable(0, 0);</span>
+<span class="nc bnc" id="L1857" title="All 2 branches missed.">        for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="nc bnc" id="L1858" title="All 2 branches missed.">            for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="nc" id="L1859">                capIm[row][col] = capIm[row][col].times(lp[row][col]);</span>
+<span class="nc" id="L1860">                sumAbs.plus(capIm[row][col]);</span>
             }
         }
 
         //normalize this to sum of zero and unit standard deviation
-<span class="nc" id="L1866">        sumAbs.times(1./((double)nCols * nRows));</span>
-<span class="nc" id="L1867">        Complex mean = new Complex(sumAbs.re(), sumAbs.im());</span>
-<span class="nc" id="L1868">        Complex factor = new Complex(sumAbs.re(), sumAbs.im());</span>
-<span class="nc" id="L1869">        factor = factor.times(1./Math.sqrt(2));</span>
+<span class="nc" id="L1865">        sumAbs.times(1./((double)nCols * nRows));</span>
+<span class="nc" id="L1866">        Complex mean = new Complex(sumAbs.re(), sumAbs.im());</span>
+<span class="nc" id="L1867">        Complex factor = new Complex(sumAbs.re(), sumAbs.im());</span>
+<span class="nc" id="L1868">        factor = factor.times(1./Math.sqrt(2));</span>
 
-<span class="nc bnc" id="L1871" title="All 2 branches missed.">        if (sumAbs.abs() != 0) {</span>
-<span class="nc bnc" id="L1872" title="All 2 branches missed.">            for (int row = 0; row &lt; nRows; ++row) {</span>
-<span class="nc bnc" id="L1873" title="All 2 branches missed.">                for (int col = 0; col &lt; nCols; ++col) {</span>
-<span class="nc" id="L1874">                    Complex v = capIm[row][col].minus(mean);</span>
-<span class="nc" id="L1875">                    capIm[row][col] = v.times(factor);</span>
+<span class="nc bnc" id="L1870" title="All 2 branches missed.">        if (sumAbs.abs() != 0) {</span>
+<span class="nc bnc" id="L1871" title="All 2 branches missed.">            for (int row = 0; row &lt; nRows; ++row) {</span>
+<span class="nc bnc" id="L1872" title="All 2 branches missed.">                for (int col = 0; col &lt; nCols; ++col) {</span>
+<span class="nc" id="L1873">                    Complex v = capIm[row][col].minus(mean);</span>
+<span class="nc" id="L1874">                    capIm[row][col] = v.times(factor);</span>
                 }
             }
         }
 
-<span class="nc" id="L1880">        return capIm;</span>
+<span class="nc" id="L1879">        return capIm;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -890,9 +890,9 @@ public class Region {
          *
          * Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
          */
-<span class="fc" id="L893">        int mask = (1 &lt;&lt; 31) - 1;</span>
-<span class="fc" id="L894">        int shift = 32;</span>
-<span class="fc" id="L895">        int sum = fnv321aInit;</span>
+<span class="fc" id="L893">        long mask = (1L &lt;&lt; 31L) - 1L;</span>
+<span class="fc" id="L894">        long shift = 32L;</span>
+<span class="fc" id="L895">        long sum = (long)fnv321aInit;</span>
         long b0, b1;
         
 <span class="fc" id="L898">        sum ^= pixel_;</span>
@@ -914,7 +914,7 @@ public class Region {
 <span class="fc" id="L914">            sum *= fnv32Prime;</span>
         }
         
-<span class="fc" id="L917">        return sum;</span>
+<span class="fc" id="L917">        return (int)sum;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

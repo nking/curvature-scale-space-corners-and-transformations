@@ -207,8 +207,8 @@ import java.util.logging.Logger;
 <span class="fc" id="L207">            double numerator = ((xFirstDerivInteg * ySecondDerivInteg) -</span>
                 (yFirstDerivInteg * xSecondDerivInteg));
             
-<span class="fc bfc" id="L210" title="All 2 branches covered.">            double curvature = (denominator == 0)  ? </span>
-<span class="pc bpc" id="L211" title="1 of 2 branches missed.">                (numerator == 0) ? 0 : Double.POSITIVE_INFINITY</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">            double curvature = (denominator == 0)  ? </span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">                (numerator == 0) ? 0 : Double.POSITIVE_INFINITY</span>
 <span class="fc" id="L212">                : numerator / denominator;</span>
            
 <span class="fc" id="L214">            output.add(curve.getX(i), curve.getY(i), (float)curvature, </span>
@@ -250,8 +250,8 @@ import java.util.logging.Logger;
 <span class="fc bfc" id="L250" title="All 2 branches covered.">            if (isZeroCrossing(scaleSpaceCurve.getK(n - 1),</span>
 <span class="fc" id="L251">                scaleSpaceCurve.getK(0))) {</span>
 <span class="fc" id="L252">                float k = scaleSpaceCurve.getK(0);</span>
-<span class="fc bfc" id="L253" title="All 2 branches covered.">                if (k &lt; 0) {</span>
-<span class="fc" id="L254">                    k *= -1;</span>
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">                if (k &lt; 0) {</span>
+<span class="nc" id="L254">                    k *= -1;</span>
                 }
 <span class="pc bpc" id="L256" title="1 of 2 branches missed.">                if (k &gt; maxInflectionK) {</span>
 <span class="fc" id="L257">                    maxInflectionK = k;</span>
@@ -425,4 +425,4 @@ import java.util.logging.Logger;
 
 <span class="nc" id="L426">    }</span>
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

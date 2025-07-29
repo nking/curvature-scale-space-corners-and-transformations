@@ -1,0 +1,456 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PerimeterFinder3.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.compGeometry</a> &gt; <span class="el_source">PerimeterFinder3.java</span></div><h1>PerimeterFinder3.java</h1><pre class="source lang-java linenums">package algorithms.compGeometry;
+
+import algorithms.disjointSets.UnionFind;
+import algorithms.disjointSets.UnionFindExt;
+import algorithms.util.PairInt;
+import algorithms.util.PairIntArray;
+
+import java.util.*;
+
+//TODO: consider adding a minimum size argument to some of the methods or overload to not solve for borders if number
+// of points is fewer thn a minimum size.
+<span class="nc" id="L12">public class PerimeterFinder3 {</span>
+
+    // using convention {col, row}
+<span class="fc" id="L15">    protected static int[][] offsets8 = new int[][]{</span>
+            {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}, {1,1}, {1, 0}, {1, -1},
+    };
+<span class="fc" id="L18">    protected static int[][] offsets16 = new int[][]{</span>
+            {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}, {1,1}, {1, 0}, {1, -1},
+            {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}, {1,1}, {1, 0}, {1, -1},
+    };
+<span class="fc" id="L22">    protected static Map&lt;PairInt, Integer&gt; offsetIndexMap = new HashMap&lt;&gt;();</span>
+    static {
+<span class="fc" id="L24">        offsetIndexMap.put(new PairInt(0, -1), 0);</span>
+<span class="fc" id="L25">        offsetIndexMap.put(new PairInt(-1, -1), 1);</span>
+<span class="fc" id="L26">        offsetIndexMap.put(new PairInt(-1, 0), 2);</span>
+<span class="fc" id="L27">        offsetIndexMap.put(new PairInt(-1,1), 3);</span>
+<span class="fc" id="L28">        offsetIndexMap.put(new PairInt(0,1), 4);</span>
+<span class="fc" id="L29">        offsetIndexMap.put(new PairInt(1,1), 5);</span>
+<span class="fc" id="L30">        offsetIndexMap.put(new PairInt(1,0), 6);</span>
+<span class="fc" id="L31">        offsetIndexMap.put(new PairInt(1,-1), 7);</span>
+<span class="fc" id="L32">    }</span>
+
+    /**
+     * given labels for each pixel image where idx = row * imageWidth + col, extract each region's
+     * border pixels in a connected clockwise manner to form a closed curve, having first point equals last point.
+     * @param labels labels of each image pixel
+     * @param imgWidth width of image
+     * @param imgHeight height of image
+     * @return each region's bounding pixels in a connected clockwise manner to forma closed curve, missing the last point which equals
+     * the first.
+     */
+    public static Map&lt;Integer, PairIntArray&gt; extractOrderedBorders(int[] labels, int imgWidth, int imgHeight) {
+<span class="fc" id="L44">        return extractOrderedBorders(labels, imgWidth, imgHeight, 1, labels.length);</span>
+    }
+
+    /**
+     * given labels for each pixel image where idx = row * imageWidth + col, extract each region's
+     * border pixels in a connected clockwise manner to form a closed curve, missing the last point which equals
+     * the first.
+     * @param labels labels of each image pixel
+     * @param imgWidth width of image
+     * @param imgHeight height of image
+     * @param minSize the minimum size of a filled region to extract boundary from, inclusive.
+     * @param maxSize the maximum size of a filled region to extract a boundary from, inclusive.
+     * @return each region's bounding pixels in a connected clockwise manner to forma closed curve, missing the last point which equals
+     * the first.
+     */
+    public static Map&lt;Integer, PairIntArray&gt; extractOrderedBorders(int[] labels, int imgWidth, int imgHeight,
+                                                                   int minSize, int maxSize) {
+
+<span class="fc" id="L62">        Map&lt;Integer, Set&lt;Integer&gt;&gt; filledRegions = regionFill(labels, imgWidth, imgHeight, minSize, maxSize);</span>
+
+<span class="fc" id="L64">        Map&lt;Integer, PairIntArray&gt; out = new HashMap&lt;&gt;();</span>
+
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : filledRegions.entrySet()) {</span>
+
+<span class="fc" id="L68">            int label = entry.getKey();</span>
+
+<span class="fc" id="L70">            Set&lt;Integer&gt; points = entry.getValue();</span>
+
+            // using Moore boundary tracing algorithm with Jacob's stopping criteria
+            // https://www.imageprocessingplace.com/downloads_V3/root_downloads/tutorials/contour_tracing_Abeer_George_Ghuneim/moore.html
+<span class="fc" id="L74">            PairIntArray bounds = mooreTracingWithJacob(points, imgWidth, imgHeight);</span>
+
+<span class="fc" id="L76">            out.put(label, bounds);</span>
+<span class="fc" id="L77">        }</span>
+
+<span class="fc" id="L79">        return out;</span>
+    }
+
+    /**
+     * given labels for each pixel image where idx = row * imageWidth + col,
+     * for each region, fill in any interior &quot;holes&quot; where a &quot;hole&quot; is any other labeled region.
+     * @param labels labels of each image pixel
+     * @param imgWidth width of image
+     * @param imgHeight height of image
+     * @return a map of labeled regions where each region has been in-filled so that all
+     * interior points are present as a mask where the map holds key=label, value = in-filled region points.
+     */
+    public static Map&lt;Integer, Set&lt;Integer&gt;&gt; regionFill(int[] labels, int imgWidth, int imgHeight) {
+<span class="fc" id="L92">        return regionFill(labels, imgWidth, imgHeight, 1, imgWidth*imgHeight);</span>
+    }
+
+    /**
+     * given labels for each pixel image where idx = row * imageWidth + col,
+     * for each region, fill in any interior &quot;holes&quot; where a &quot;hole&quot; is any other labeled region.
+     * @param labels labels of each image pixel
+     * @param imgWidth width of image
+     * @param imgHeight height of image
+     * @param minSize the minimum size of a filled region to extract boundary from, inclusive.
+     * @param maxSize the maximum size of a filled region to extract a boundary from, inclusive.
+     * @return a map of labeled regions where each region has been in-filled so that all
+     * interior points are present as a mask where the map holds key=label, value = in-filled region points.
+     */
+    public static Map&lt;Integer, Set&lt;Integer&gt;&gt; regionFill(int[] labels, int imgWidth, int imgHeight,
+                                                        int minSize, int maxSize) {
+
+        /*
+        (1) create hashmap w/ key = label, value = indexes of points having that label
+        (2) determine which labels touch any image boundaries by scanning the image boundary pixels
+        (3) for each labeled region, a region-fill algorithm fills in all interior
+            labeled regions, even for complex cases like a region interior to another region.
+            (3.a) determine all labeled regions that touch an image boundary and keep sets of
+                  those that do and those that do not.
+            (3.b) make an adjacency map for the labels.
+            (3.c) for each labeled region:
+                 - create a UnionFind initialized with all boundary labels having same parent.
+                 - take the non-boundary set of labels and subtract current label from it.
+                 - traverse the non-boundary set and union all adjacent pairs excepting current label.
+                 - extract components from union find.  those that are not in the boundary touching
+                   group are internal to the current label and can be merged for the infill.
+
+         */
+
+<span class="fc" id="L126">        Map&lt;Integer, Set&lt;Integer&gt;&gt; labelPointsMap = getLabeledPointsMap(labels);</span>
+
+<span class="fc" id="L128">        int nLabels = labelPointsMap.size();</span>
+
+        // determine which labels touch any image boundaries by scanning bounds
+<span class="fc" id="L131">        Set&lt;Integer&gt; boundaryTouchingLabels = new HashSet&lt;&gt;();</span>
+        int r, c, idx;
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        for (r = 0; r &lt; imgHeight; ++r) {</span>
+<span class="fc" id="L134">            c = 0;</span>
+<span class="fc" id="L135">            idx = r * imgWidth + c;</span>
+<span class="fc" id="L136">            boundaryTouchingLabels.add(labels[idx]);</span>
+<span class="fc" id="L137">            c = imgWidth - 1;</span>
+<span class="fc" id="L138">            idx = r * imgWidth + c;</span>
+<span class="fc" id="L139">            boundaryTouchingLabels.add(labels[idx]);</span>
+        }
+<span class="fc bfc" id="L141" title="All 2 branches covered.">        for (c = 0; c &lt; imgWidth; ++c) {</span>
+<span class="fc" id="L142">            r = 0;</span>
+<span class="fc" id="L143">            idx = r * imgWidth + c;</span>
+<span class="fc" id="L144">            boundaryTouchingLabels.add(labels[idx]);</span>
+<span class="fc" id="L145">            r = imgHeight - 1;</span>
+<span class="fc" id="L146">            idx = r * imgWidth + c;</span>
+<span class="fc" id="L147">            boundaryTouchingLabels.add(labels[idx]);</span>
+        }
+
+        // make a set of all boundary touching labels and remove a set as needed
+<span class="fc" id="L151">        Set&lt;Integer&gt; notBoundaryConnectedLabels = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">        for (int label : labelPointsMap.keySet()) {</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">            if (!boundaryTouchingLabels.contains(label)) {</span>
+<span class="fc" id="L154">                notBoundaryConnectedLabels.add(label);</span>
+            }
+<span class="fc" id="L156">        }</span>
+
+        // union find initialized for all boundary connected labels
+<span class="fc" id="L159">        UnionFind uf = new UnionFind(nLabels);</span>
+<span class="fc" id="L160">        int label0 = -1;</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        for (int label : boundaryTouchingLabels) {</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">            if (label0 == -1) {</span>
+<span class="fc" id="L163">                label0 = label;</span>
+<span class="fc" id="L164">                continue;</span>
+            }
+<span class="fc" id="L166">            uf.union(label0, label);</span>
+<span class="fc" id="L167">        }</span>
+<span class="pc bnc" id="L168" title="All 2 branches missed.">        assert(label0 != -1);</span>
+
+<span class="fc" id="L170">        Map&lt;Integer, Set&lt;Integer&gt;&gt; adjLabelMap = getLabelAdjMap(labels, imgWidth, imgHeight);</span>
+
+<span class="fc" id="L172">        Map&lt;Integer, Set&lt;Integer&gt;&gt; filledRegions = new HashMap&lt;&gt;();</span>
+
+<span class="fc bfc" id="L174" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : labelPointsMap.entrySet()) {</span>
+<span class="pc bpc" id="L175" title="2 of 4 branches missed.">            if (entry.getValue().size() &lt; minSize || entry.getValue().size() &gt; maxSize) {</span>
+<span class="nc" id="L176">                continue;</span>
+            }
+
+<span class="fc" id="L179">            int label = entry.getKey();</span>
+
+            // region filling algorithm:
+            // UF init w/ boundary touching labels:
+<span class="fc" id="L183">            UnionFind uf2 = new UnionFindExt(uf);</span>
+            // non-boundary touching labels minus current label
+<span class="fc" id="L185">            Set&lt;Integer&gt; notBoundingLabels = new HashSet&lt;&gt;(notBoundaryConnectedLabels);</span>
+<span class="fc" id="L186">            notBoundingLabels.remove(label);</span>
+            // traverse notBoundingLabels and use adj map to merge adjacent labels,
+            //  excluding current label.
+<span class="fc" id="L189">            Set&lt;Integer&gt; visited = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L190">            Deque&lt;Integer&gt; q = new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L191">            q.addAll(notBoundingLabels);</span>
+            int u;
+<span class="fc bfc" id="L193" title="All 2 branches covered.">            while (!q.isEmpty()) {</span>
+<span class="fc" id="L194">                u = q.pollFirst();</span>
+<span class="fc" id="L195">                visited.add(u);</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">                if (!adjLabelMap.containsKey(u)) {</span>
+<span class="nc" id="L197">                    continue;</span>
+                }
+<span class="fc bfc" id="L199" title="All 2 branches covered.">                for (int v : adjLabelMap.get(u)) {</span>
+<span class="fc bfc" id="L200" title="All 4 branches covered.">                    if (visited.contains(v) || v == label) {</span>
+<span class="fc" id="L201">                        continue;</span>
+                    }
+<span class="fc bfc" id="L203" title="All 2 branches covered.">                    if (uf2.find(u) != uf2.find(v)) {</span>
+<span class="fc" id="L204">                        uf2.union(u, v);</span>
+                    }
+<span class="fc" id="L206">                }</span>
+            }
+            // and labels connected to the boundary touching labels in uf2 are not internal
+            // to current label region, and all else are
+<span class="fc" id="L210">            Map&lt;Integer, Set&lt;Integer&gt;&gt; labelComponents = uf2.getComponents();</span>
+
+<span class="fc" id="L212">            int boundaryTouchingParent = uf2.find(label0);</span>
+
+<span class="fc" id="L214">            Set&lt;Integer&gt; points = new HashSet&lt;&gt;(entry.getValue());</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">            for (Map.Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry2 : labelComponents.entrySet()) {</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">                if (entry2.getKey() == boundaryTouchingParent) {</span>
+<span class="fc" id="L217">                    continue;</span>
+                }
+<span class="fc bfc" id="L219" title="All 2 branches covered.">                for (int label2 : entry2.getValue()) {</span>
+<span class="fc" id="L220">                    points.addAll(labelPointsMap.get(label2));</span>
+<span class="fc" id="L221">                }</span>
+<span class="fc" id="L222">            }</span>
+
+<span class="fc" id="L224">            filledRegions.put(label, points);</span>
+<span class="fc" id="L225">        }</span>
+
+<span class="fc" id="L227">        return filledRegions;</span>
+    }
+
+    /**
+     * given a set of points containing no holes in it, find the clockwise ordered bounding closed curve.
+     * @param points
+     * @param imgWidth
+     * @param imgHeight
+     * @return
+     */
+    public static PairIntArray mooreTracingWithJacob(Set&lt;Integer&gt; points, int imgWidth, int imgHeight) {
+
+        /*Moore-Neighbor boundary tracing algorithm
+        -- identifying a starting pixel on the border as the bottommost leftmost by scanning up
+        every row for colomn 0, then every row for column 1, etc until find the first
+        pixel in the labeled region, store that position as the first point and save the position of the last non-point
+        visited right before the first point.
+
+       -- then the 8-neighbor clockwise scan pattern for the next point begins (while storing the last non-point)
+          - the current cell becomes the most recently found point and the offset that it starts with is the offset needed
+        between the current cell and the previous non-point from the last 8-neighbor scan.
+          - NOTE: one edge case is that the region is on an image boundary.  the offset needs to be allowed to go outside
+          of the bounds by 1 pixel in order to reach the next region pixel sometimes.
+         */
+
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">        if (points.isEmpty()) {</span>
+<span class="nc" id="L253">            return new PairIntArray();</span>
+        }
+
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">        if (imgWidth &lt; 1) {</span>
+<span class="nc" id="L257">            throw new IllegalArgumentException(&quot;imgWidth must be &gt; 0,  received &quot; + imgWidth);</span>
+        }
+
+<span class="pc bpc" id="L260" title="1 of 2 branches missed.">        if (imgHeight &lt; 1) {</span>
+<span class="nc" id="L261">            throw new IllegalArgumentException(&quot;imgHeight must be &gt; 0,  received &quot; + imgHeight);</span>
+        }
+
+<span class="fc bfc" id="L264" title="All 2 branches covered.">        if (points.size() == 1) {</span>
+<span class="fc" id="L265">            PairIntArray p = new PairIntArray();</span>
+<span class="fc" id="L266">            int idx = points.iterator().next();</span>
+<span class="fc" id="L267">            p.add(idx % imgWidth, idx / imgWidth);</span>
+<span class="fc" id="L268">            return p;</span>
+        }
+
+        // previous (c, r) for the first point
+<span class="fc" id="L272">        int[] beforeCROffset = Arrays.copyOf(offsets8[0], 2);</span>
+<span class="fc" id="L273">        int[] startCR = new int[]{-10, -10};</span>
+
+        // current boundary r, c and its last non-labeled point
+<span class="fc" id="L276">        int[] cr = new int[]{-10, -10};</span>
+<span class="fc" id="L277">        int[] beforeCR = Arrays.copyOf(offsets8[0], 2);</span>
+
+<span class="fc" id="L279">        Map&lt;PairInt, Integer&gt; pCounts = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L281">        PairIntArray p = new PairIntArray();</span>
+
+        // find the starter point.  O(w * h)
+        int idx;
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">        for (int c = 0; c &lt; imgWidth; ++c) {</span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">            for (int r = 0; r &lt; imgHeight; ++r) {</span>
+<span class="fc" id="L287">                idx = r * imgWidth + c;</span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">                if (points.contains(idx)) {</span>
+<span class="fc" id="L289">                    startCR[0] = c;</span>
+<span class="fc" id="L290">                    startCR[1] = r;</span>
+<span class="fc" id="L291">                    p.add(c, r);</span>
+<span class="fc" id="L292">                    pCounts.put(new PairInt(c, r), 1);</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">                    if (r == 0) {</span>
+<span class="fc" id="L294">                        beforeCR[0] = c;</span>
+<span class="fc" id="L295">                        beforeCR[1] = r - 1;</span>
+                    }
+                    break;
+                } else {
+<span class="fc" id="L299">                    beforeCR[0] = c;</span>
+<span class="fc" id="L300">                    beforeCR[1] = r;</span>
+                }
+            }
+<span class="fc bfc" id="L303" title="All 2 branches covered.">            if (p.getN() &gt; 0) {</span>
+<span class="fc" id="L304">                break;</span>
+            }
+        }
+
+        // we start with cr assigned to last point
+<span class="fc" id="L309">        System.arraycopy(startCR, 0, cr, 0, 2);</span>
+<span class="fc" id="L310">        beforeCROffset[0] = beforeCR[0] - startCR[0];</span>
+<span class="fc" id="L311">        beforeCROffset[1] = beforeCR[1] - startCR[1];</span>
+
+        // stopping criteria are that we end up back at the starting point AND the previous non-points point of it is the same
+        // as the stopping previous non-points point also
+<span class="fc" id="L315">        int[] cr2 = new int[2];</span>
+        int idx2;
+<span class="fc" id="L317">        boolean done = false;</span>
+<span class="fc" id="L318">        int nIter = 0;</span>
+<span class="fc" id="L319">        final int nMaxIter = 2 * imgHeight * imgWidth;</span>
+<span class="fc bfc" id="L320" title="All 2 branches covered.">        while (!done) {</span>
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">            if (nIter == nMaxIter) {</span>
+<span class="nc" id="L322">                System.out.printf(&quot;  ERROR:  exceeded nMaxIter.  cr=(%s), beforeCROffset=(%s), beforeCR=(%s)\n&quot;,</span>
+<span class="nc" id="L323">                    Arrays.toString(cr), Arrays.toString(beforeCROffset), Arrays.toString(beforeCR));</span>
+<span class="nc" id="L324">                break;</span>
+            }
+<span class="fc" id="L326">            ++nIter;</span>
+            // nOffIter is the count of 8 neighbors visited on this scan
+<span class="fc" id="L328">            int nOffIter = 0;</span>
+            //System.out.printf(&quot;current (c=%d,r=%d)\n&quot;, cr[0], cr[1]);
+            // pt is used to find the offset relative to the new number
+<span class="fc" id="L331">            PairInt pt = new PairInt(beforeCR[0] - cr[0], beforeCR[1] - cr[1]);</span>
+            {//DEBUG
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">                if (!offsetIndexMap.containsKey(pt)) {</span>
+<span class="nc" id="L334">                    System.out.printf(&quot;  ERROR:  cr=(%s), beforeCR=(%s), beforeCROffset=(%s), =&gt; offset(x,y=%s)\n&quot;,</span>
+<span class="nc" id="L335">                        Arrays.toString(cr), Arrays.toString(beforeCR), Arrays.toString(beforeCROffset), pt.toString());</span>
+                }
+            }
+
+<span class="fc" id="L339">            int offI = offsetIndexMap.get(pt);</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">            while (nOffIter &lt; 8) {</span>
+<span class="fc" id="L341">                int[] offset = offsets16[offI];</span>
+<span class="fc" id="L342">                ++offI;</span>
+<span class="fc" id="L343">                ++nOffIter;</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">                for (int j = 0; j &lt; 2; ++j) {</span>
+<span class="fc" id="L345">                    cr2[j] = cr[j] + offset[j];</span>
+                }
+<span class="fc bfc" id="L347" title="All 8 branches covered.">                if (cr2[0] &lt; 0 || cr2[1] &lt; 0 || cr2[0] == imgWidth || cr2[1] == imgHeight) {</span>
+<span class="fc" id="L348">                    System.arraycopy(cr2, 0, beforeCR, 0, 2);</span>
+<span class="fc" id="L349">                    continue;</span>
+                }
+<span class="fc" id="L351">                idx2 = cr2[1] * imgWidth + cr2[0];</span>
+                //System.out.printf(&quot;  (c2=%d,r2=%d)\n&quot;, cr2[0], cr2[1]);
+<span class="fc bfc" id="L353" title="All 2 branches covered.">                if (!points.contains(idx2)) {</span>
+<span class="fc" id="L354">                    System.arraycopy(cr2, 0, beforeCR, 0, 2);</span>
+<span class="fc" id="L355">                    continue;</span>
+                }
+<span class="fc" id="L357">                PairInt c = new PairInt(cr2[0], cr2[1]);</span>
+
+                // check for stopping criteria
+<span class="fc bfc" id="L360" title="All 4 branches covered.">                if (cr2[0] == startCR[0] &amp;&amp; cr2[1] == startCR[1]) {</span>
+                    //System.out.printf(&quot;   offI=%d\n&quot;, offI);
+<span class="pc bpc" id="L362" title="1 of 2 branches missed.">                    if (offI &gt; 0) {</span>
+                        //System.out.printf(&quot;   %s - %s = (offset=%d,%d) (start off = (%d, %d)\n&quot;, Arrays.toString(offsets16[offI-1]), Arrays.toString(offsets16[offI]),
+                        //        offsets16[offI-1][0] - offsets16[offI][0], offsets16[offI-1][1] - offsets16[offI][1], beforeCROffset[0], beforeCROffset[1]);
+
+<span class="pc bpc" id="L366" title="1 of 4 branches missed.">                        if (offsets16[offI-1][0] - offsets16[offI][0] == beforeCROffset[0] &amp;&amp; offsets16[offI-1][1] - offsets16[offI][1] == beforeCROffset[1]) {</span>
+<span class="fc" id="L367">                            done = true;</span>
+                        }
+<span class="nc bnc" id="L369" title="All 4 branches missed.">                    } else if (offset[0] == beforeCROffset[0] &amp;&amp; offset[1] == beforeCROffset[1]){</span>
+<span class="nc" id="L370">                        done = true;</span>
+                    }
+<span class="fc bfc" id="L372" title="All 2 branches covered.">                } else if (pCounts.getOrDefault(c, 0) &gt; 0) {</span>
+                    // check if previous point == first point, and this point == 2nd point,
+                    // then we've reached the start again, but approached it from another direction
+<span class="fc bfc" id="L375" title="All 4 branches covered.">                    if (p.getX(1) == cr2[0] &amp;&amp; p.getY(1) == cr2[1]</span>
+<span class="fc bfc" id="L376" title="All 4 branches covered.">                        &amp;&amp; p.getX(p.getN() - 1) == startCR[0] &amp;&amp; p.getY(p.getN() - 1) == startCR[1]) {</span>
+<span class="fc" id="L377">                        p.removeRange(p.getN() - 1, p.getN() - 1);</span>
+<span class="fc" id="L378">                        done = true;</span>
+                    }
+                }
+<span class="fc bfc" id="L381" title="All 2 branches covered.">                if (done) {</span>
+<span class="fc" id="L382">                    break;</span>
+                }
+                //System.out.printf(&quot;  * add:(c2=%d, r2=%d), prev:(c=%d, r=%d)\n&quot;, cr2[0], cr2[1], beforeCR[0], beforeCR[1]);
+                // this is the next point.
+<span class="fc" id="L386">                p.add(cr2[0], cr2[1]);</span>
+<span class="fc" id="L387">                pCounts.put(c, pCounts.getOrDefault(c, 0) + 1);</span>
+
+                // the next round should start with cr2
+<span class="fc" id="L390">                System.arraycopy(cr2, 0, cr, 0, 2);</span>
+<span class="fc" id="L391">                break;</span>
+            }
+<span class="fc" id="L393">        }</span>
+<span class="fc" id="L394">        return p;</span>
+    }
+
+    /**
+     * create a map of all points for each label
+     *  given a labeled array whose indexes are image indexes
+     *      * where idx = row * imageWidth + col.
+     * @param labels labels of each pixel in image
+     * @return a map of all points for each label
+     */
+    public static Map&lt;Integer, Set&lt;Integer&gt;&gt; getLabeledPointsMap(int[] labels) {
+
+<span class="fc" id="L406">        int n = labels.length;</span>
+
+<span class="fc" id="L408">        Map&lt;Integer, Set&lt;Integer&gt;&gt; map = new HashMap&lt;&gt;();</span>
+
+<span class="fc bfc" id="L410" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L411">            map.putIfAbsent(labels[i], new HashSet&lt;&gt;());</span>
+<span class="fc" id="L412">            map.get(labels[i]).add(i);</span>
+        }
+
+<span class="fc" id="L415">        return map;</span>
+    }
+
+    /**
+     * create a label adjacency map given a labeled array whose indexes are image indexes
+     * where idx = row * imageWidth + col.
+     * @param labels labels of each pixel in image
+     * @param imgWidth width of image
+     * @param imgHeight height of image
+     * @return the adjacency map of the labels
+     */
+    public static Map&lt;Integer, Set&lt;Integer&gt;&gt; getLabelAdjMap(int[] labels, int imgWidth, int imgHeight) {
+
+<span class="fc" id="L428">        int n = labels.length;</span>
+
+<span class="fc" id="L430">        Map&lt;Integer, Set&lt;Integer&gt;&gt; map = new HashMap&lt;&gt;();</span>
+
+        int r2, c2, label1, label2;
+<span class="fc bfc" id="L433" title="All 2 branches covered.">        for (int r = 0; r &lt; imgHeight; ++r) {</span>
+<span class="fc bfc" id="L434" title="All 2 branches covered.">            for (int c = 0; c &lt; imgWidth; ++c) {</span>
+<span class="fc" id="L435">                label1 = labels[r * imgWidth + c];</span>
+<span class="fc bfc" id="L436" title="All 2 branches covered.">                for (int[] offset : offsets8) {</span>
+<span class="fc" id="L437">                    r2 = r + offset[0];</span>
+<span class="fc" id="L438">                    c2 = c + offset[1];</span>
+<span class="fc bfc" id="L439" title="All 8 branches covered.">                    if (r2 &lt; 0 || c2 &lt; 0 || r2 == imgHeight || c2 == imgWidth) {</span>
+<span class="fc" id="L440">                        continue;</span>
+                    }
+<span class="fc" id="L442">                    label2 = labels[r2 * imgWidth + c2];</span>
+<span class="fc bfc" id="L443" title="All 2 branches covered.">                    if (label1 == label2) {</span>
+<span class="fc" id="L444">                        continue;</span>
+                    }
+<span class="fc" id="L446">                    map.putIfAbsent(label1, new HashSet&lt;&gt;());</span>
+<span class="fc" id="L447">                    map.putIfAbsent(label2, new HashSet&lt;&gt;());</span>
+<span class="fc" id="L448">                    map.get(label1).add(label2);</span>
+<span class="fc" id="L449">                    map.get(label2).add(label1);</span>
+                }
+            }
+        }
+<span class="fc" id="L453">        return map;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

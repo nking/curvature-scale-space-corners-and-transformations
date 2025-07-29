@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MSEREdgesToLabelsHelper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.segmentation</a> &gt; <span class="el_source">MSEREdgesToLabelsHelper.java</span></div><h1>MSEREdgesToLabelsHelper.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.segmentation;
+
+import algorithms.disjointSets.UnionFind;
+import algorithms.imageProcessing.CIEChromaticity;
+import algorithms.imageProcessing.Image;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.set.TIntSet;
+import gnu.trove.set.hash.TIntHashSet;
+
+import java.util.*;
+
+<span class="nc" id="L12">public class MSEREdgesToLabelsHelper {</span>
+
+    /**
+     * populate outLabels given the list of edges and a color image.
+     * @param img
+     * @param edgeList
+     * @param outLabels
+     * @return the number of label components
+     */
+    public static int createLabels(Image img, List&lt;TIntSet&gt; edgeList, int[] outLabels) {
+
+<span class="fc" id="L23">        int n = img.getNPixels();</span>
+<span class="pc bpc" id="L24" title="1 of 2 branches missed.">        if (outLabels.length != n) {</span>
+<span class="nc" id="L25">            throw new IllegalArgumentException(&quot;outLabels.length must == img.getNPixels()&quot;);</span>
+        }
+
+<span class="fc" id="L28">        TIntSet edgePoints = new TIntHashSet();</span>
+<span class="fc bfc" id="L29" title="All 2 branches covered.">        for (TIntSet set : edgeList) {</span>
+<span class="fc" id="L30">            edgePoints.addAll(set);</span>
+<span class="fc" id="L31">        }</span>
+
+<span class="pc bpc" id="L33" title="1 of 2 branches missed.">        if (edgePoints.size() == n) {</span>
+<span class="nc" id="L34">            Arrays.fill(outLabels, 0);</span>
+<span class="nc" id="L35">            return 1;</span>
+        }
+
+<span class="fc" id="L38">        ArrayDeque&lt;Integer&gt; q = new ArrayDeque&lt;&gt;();</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">            if (!edgePoints.contains(i)) {</span>
+<span class="fc" id="L41">                q.add(i);</span>
+            }
+        }
+
+<span class="fc" id="L45">        int w = img.getWidth();</span>
+<span class="fc" id="L46">        int h = img.getHeight();</span>
+
+<span class="fc" id="L48">        UnionFind uf = new UnionFind(n);</span>
+
+        // r,c offsets.  q is populated along columns then next row
+<span class="fc" id="L51">        int[][] offsets0 = new int[][]{</span>
+                //{-1, 0}, {0, 1}, {1, 0}, {-1, 0}
+                {0, 1}, {-1,0},{-1,1}
+        };
+
+        // join neighbors
+        int r, c, r2, c2, i2;
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        while (!q.isEmpty()) {</span>
+<span class="fc" id="L59">            int i = q.pollFirst();</span>
+<span class="fc" id="L60">            r = img.getRow(i);</span>
+<span class="fc" id="L61">            c = img.getCol(i);</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">            for (int[] offset : offsets0) {</span>
+<span class="fc" id="L63">                r2 = r + offset[0];</span>
+<span class="fc" id="L64">                c2 = c + offset[1];</span>
+<span class="pc bpc" id="L65" title="4 of 8 branches missed.">                if (r2 &lt; 0 || c2 &lt; 0 || r2 == h || c2 == w) {</span>
+<span class="nc" id="L66">                    continue;</span>
+                }
+<span class="fc" id="L68">                i2 = img.getInternalIndex(c2, r2);</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">                if (!edgePoints.contains(i2)) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">                    if (uf.find(i) != uf.find(i2)) {</span>
+<span class="fc" id="L71">                        uf.union(i, i2);</span>
+                    }
+                }
+            }
+<span class="fc" id="L75">        }</span>
+
+<span class="fc" id="L77">        Map&lt;Integer, Set&lt;Integer&gt;&gt; components = uf.getComponents();</span>
+
+        // remove edgePoints.  they are sets of size 1
+<span class="fc" id="L80">        Set&lt;Integer&gt; rm = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : components.entrySet()) {</span>
+<span class="pc bpc" id="L82" title="1 of 4 branches missed.">            if (entry.getValue().size() == 1 &amp;&amp; edgePoints.contains(entry.getValue().iterator().next())) {</span>
+<span class="fc" id="L83">                rm.add(entry.getKey());</span>
+            }
+<span class="fc" id="L85">        }</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        for (int label : rm) {</span>
+<span class="fc" id="L87">            components.remove(label);</span>
+<span class="fc" id="L88">        }</span>
+
+<span class="fc" id="L90">        final int nMax = Math.max(w, h);</span>
+        // array of {index, nIter}
+<span class="fc" id="L92">        ArrayDeque&lt;int[]&gt; q2= new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L93">        TIntIterator iter = edgePoints.iterator();</span>
+        // assign parent of edgepoints to -1
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L96">            int i = iter.next();</span>
+<span class="fc" id="L97">            q2.add(new int[]{i, 0});</span>
+<span class="fc" id="L98">            uf.getParent()[i] = -1;</span>
+<span class="fc" id="L99">        }</span>
+
+<span class="fc" id="L101">        int[][] offsets = new int[][]{</span>
+                {-1, 0}, {0, 1}, {1, 0}, {-1, 0},
+                {-1,1}, {-1,-1}, {1,-1}, {1, 1}
+        };
+
+        // assign edge points to closest component in terms of color
+<span class="fc" id="L107">        CIEChromaticity cieC = new CIEChromaticity();</span>
+        float[] f, f2;
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        while (!q2.isEmpty()) {</span>
+<span class="fc" id="L110">            int[] a = q2.pollFirst();</span>
+<span class="fc" id="L111">            int i = a[0];</span>
+<span class="fc" id="L112">            r = img.getRow(i);</span>
+<span class="fc" id="L113">            c = img.getCol(i);</span>
+
+<span class="fc" id="L115">            f = cieC._rgbToCIEXYZ(img.getR(i), img.getG(i), img.getB(i));</span>
+<span class="fc" id="L116">            f = cieC.cieXYZToCIELAB(f);</span>
+
+<span class="fc" id="L118">            double closestDiff = Double.POSITIVE_INFINITY;</span>
+<span class="fc" id="L119">            int closestI = -1;</span>
+
+<span class="fc bfc" id="L121" title="All 2 branches covered.">            for (int[] offset : offsets) {</span>
+<span class="fc" id="L122">                r2 = r + offset[0];</span>
+<span class="fc" id="L123">                c2 = c + offset[1];</span>
+<span class="fc bfc" id="L124" title="All 8 branches covered.">                if (r2 &lt; 0 || c2 &lt; 0 || r2 == h || c2 == w) {</span>
+<span class="fc" id="L125">                    continue;</span>
+                }
+<span class="fc" id="L127">                i2 = img.getInternalIndex(c2, r2);</span>
+                // if it is an assigned edgePoint, proceed, else skip
+<span class="fc bfc" id="L129" title="All 4 branches covered.">                if (edgePoints.contains(i2) &amp;&amp; uf.getParent()[i2] == -1) {</span>
+<span class="fc" id="L130">                    continue;</span>
+                }
+
+                // using delta CIE 2000 as color difference
+<span class="fc" id="L134">                f2 = cieC._rgbToCIEXYZ(img.getR(i2), img.getG(i2), img.getB(i2));</span>
+<span class="fc" id="L135">                f2 = cieC.cieXYZToCIELAB(f2);</span>
+
+<span class="fc" id="L137">                double diff = cieC.calcDeltaECIE2000(f, f2);</span>
+
+<span class="fc bfc" id="L139" title="All 2 branches covered.">                if (diff &lt; closestDiff) {</span>
+<span class="fc" id="L140">                    closestI = i2;</span>
+<span class="fc" id="L141">                    closestDiff = diff;</span>
+                }
+            }
+
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">            if (closestI != -1) {</span>
+<span class="fc" id="L146">                int label = uf.find(closestI);</span>
+<span class="fc" id="L147">                components.get(label).add(i);</span>
+<span class="fc" id="L148">                uf.getParent()[i] = label;</span>
+<span class="pc bnc" id="L149" title="All 2 branches missed.">            } else if (a[1] &lt; nMax) {</span>
+<span class="nc" id="L150">                q2.add(new int[]{i, a[1] + 1});</span>
+            }
+<span class="fc" id="L152">        }</span>
+
+<span class="fc" id="L154">        Arrays.fill(outLabels, -1);</span>
+
+        // extract groups and assign labels
+
+<span class="fc" id="L158">        int label = 0;</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Set&lt;Integer&gt;&gt; entry : components.entrySet()) {</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">            for (int i : entry.getValue()) {</span>
+<span class="fc" id="L161">                outLabels[i] = label;</span>
+<span class="fc" id="L162">            }</span>
+<span class="fc" id="L163">            ++label;</span>
+<span class="fc" id="L164">        }</span>
+
+<span class="fc" id="L166">        return components.size();</span>
+    }
+
+    public static boolean allAreNonNegative(int[] labels) {
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        for (int label : labels) {</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">            if (label &lt; 0) {</span>
+<span class="nc" id="L172">                return false;</span>
+            }
+        }
+<span class="nc" id="L175">        return true;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

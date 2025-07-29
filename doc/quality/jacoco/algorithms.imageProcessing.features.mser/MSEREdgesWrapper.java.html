@@ -11,7 +11,7 @@ import algorithms.imageProcessing.ImageProcessor;
  */
 <span class="fc" id="L12">public class MSEREdgesWrapper {</span>
     
-<span class="fc" id="L14">    private static int maxDimension = 256;</span>
+<span class="fc" id="L14">    private int maxDimension = 256;</span>
     
 <span class="fc" id="L16">    private int binFactor = 1;</span>
     
@@ -31,40 +31,57 @@ import algorithms.imageProcessing.ImageProcessor;
         
 <span class="fc" id="L32">        return mse;</span>
     }
+
+    public MSEREdges extractAndMergeEdges(ImageExt img, int maxDimension) {
+
+<span class="nc" id="L37">        this.maxDimension = maxDimension;</span>
+
+<span class="nc" id="L39">        img = binImage(img);</span>
+
+<span class="nc" id="L41">        MSEREdges mse = new MSEREdges(img);</span>
+
+<span class="nc bnc" id="L43" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L44">            mse.setToDebug();</span>
+        }
+
+<span class="nc" id="L47">        mse.extractAndMergeEdges();</span>
+
+<span class="nc" id="L49">        return mse;</span>
+    }
     
     public MSEREdges extractEdges(ImageExt img) {
         
-<span class="nc" id="L37">        img = binImage(img);</span>
+<span class="nc" id="L54">        img = binImage(img);</span>
         
-<span class="nc" id="L39">        MSEREdges mse = new MSEREdges(img);</span>
+<span class="nc" id="L56">        MSEREdges mse = new MSEREdges(img);</span>
         
-<span class="nc bnc" id="L41" title="All 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L42">            mse.setToDebug();</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L59">            mse.setToDebug();</span>
         }
         
-<span class="nc" id="L45">        mse.extractEdges();</span>
+<span class="nc" id="L62">        mse.extractEdges();</span>
         
-<span class="nc" id="L47">        return mse;</span>
+<span class="nc" id="L64">        return mse;</span>
     }
     
     public void setToDebug() {
-<span class="nc" id="L51">        debug = true;</span>
-<span class="nc" id="L52">    }</span>
+<span class="nc" id="L68">        debug = true;</span>
+<span class="nc" id="L69">    }</span>
     
-    private ImageExt binImage(ImageExt img) {
+    public ImageExt binImage(ImageExt img) {
         
-<span class="fc" id="L56">        int w = img.getWidth();        </span>
-<span class="fc" id="L57">        int h = img.getHeight();</span>
+<span class="fc" id="L73">        int w = img.getWidth();        </span>
+<span class="fc" id="L74">        int h = img.getHeight();</span>
 
-<span class="fc" id="L59">        binFactor = (int) Math.ceil(Math.max((float) w / maxDimension,</span>
+<span class="fc" id="L76">        binFactor = (int) Math.ceil(Math.max((float) w / maxDimension,</span>
             (float) h / maxDimension));
 
-<span class="fc" id="L62">        ImageProcessor imageProcessor = new ImageProcessor();</span>
+<span class="fc" id="L79">        ImageProcessor imageProcessor = new ImageProcessor();</span>
 
-<span class="fc" id="L64">        img = imageProcessor.binImage(img, binFactor);</span>
+<span class="fc" id="L81">        img = imageProcessor.binImage(img, binFactor);</span>
         
-<span class="fc" id="L66">        return img;</span>
+<span class="fc" id="L83">        return img;</span>
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

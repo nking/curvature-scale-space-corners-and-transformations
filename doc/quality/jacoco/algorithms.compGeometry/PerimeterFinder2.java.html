@@ -27,41 +27,45 @@ import java.util.Stack;
 /**
  * class to hold some of the newer methods
  * w.r.t. boundary point extractions.
+ *
+ * This class is deprecated.  Use methods in PerimeterFinder3 instead.
  * 
  * @author nichole
  */
-<span class="fc" id="L33">public class PerimeterFinder2 {</span>
+<span class="fc" id="L35">public class PerimeterFinder2 {</span>
    
     /**
+     * This class is deprecated.  Use methods in PerimeterFinder3 instead.
+     *
      * finds the pixels with neighbors not in given point
      * set, contiguousPoints.  Note, the contiguous points
      * fill out the shape for which the border is found.
-     * 
+     *
      * @param contiguousPoints
      * @return 
      */
     public Set&lt;PairInt&gt; extractBorder(Set&lt;PairInt&gt; contiguousPoints) {
 
-<span class="fc" id="L45">        Set&lt;PairInt&gt; border = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L49">        Set&lt;PairInt&gt; border = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc" id="L47">        int[] dxs = Misc.dx8;</span>
-<span class="fc" id="L48">        int[] dys = Misc.dy8;</span>
+<span class="fc" id="L51">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L52">        int[] dys = Misc.dy8;</span>
         
-<span class="fc bfc" id="L50" title="All 2 branches covered.">        for (PairInt p : contiguousPoints) {</span>
-<span class="fc" id="L51">            int x = p.getX();</span>
-<span class="fc" id="L52">            int y = p.getY();</span>
-<span class="fc bfc" id="L53" title="All 2 branches covered.">            for (int i = 0; i &lt; dxs.length; ++i) {</span>
-<span class="fc" id="L54">                int x2 = x + dxs[i];</span>
-<span class="fc" id="L55">                int y2 = y + dys[i];</span>
-<span class="fc" id="L56">                PairInt p2 = new PairInt(x2, y2);</span>
-<span class="fc bfc" id="L57" title="All 2 branches covered.">                if (!contiguousPoints.contains(p2)) {</span>
-<span class="fc" id="L58">                    border.add(p);</span>
-<span class="fc" id="L59">                    break;</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        for (PairInt p : contiguousPoints) {</span>
+<span class="fc" id="L55">            int x = p.getX();</span>
+<span class="fc" id="L56">            int y = p.getY();</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">            for (int i = 0; i &lt; dxs.length; ++i) {</span>
+<span class="fc" id="L58">                int x2 = x + dxs[i];</span>
+<span class="fc" id="L59">                int y2 = y + dys[i];</span>
+<span class="fc" id="L60">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">                if (!contiguousPoints.contains(p2)) {</span>
+<span class="fc" id="L62">                    border.add(p);</span>
+<span class="fc" id="L63">                    break;</span>
                 }
             }
-<span class="fc" id="L62">        }</span>
+<span class="fc" id="L66">        }</span>
         
-<span class="fc" id="L64">        return border;</span>
+<span class="fc" id="L68">        return border;</span>
     }
     
     /**
@@ -71,74 +75,74 @@ import java.util.Stack;
      */
     public Set&lt;PairInt&gt; findEmbeddedGaps(Set&lt;PairInt&gt; contiguousPoints) {
         
-<span class="fc" id="L74">        int[] minmaxXY = MiscMath.findMinMaxXY(contiguousPoints);</span>
+<span class="fc" id="L78">        int[] minmaxXY = MiscMath.findMinMaxXY(contiguousPoints);</span>
         
         // visit the 1 pixel region surrounding the shape and
         // place the pixels in a stack.
         // then visit their neighbors that are not in contig points
         // until have reached them all
         
-<span class="fc" id="L81">        int startX = minmaxXY[0] - 1;</span>
-<span class="fc" id="L82">        int startY = minmaxXY[2] - 1;</span>
-<span class="fc" id="L83">        int stopX = minmaxXY[1] + 1;</span>
-<span class="fc" id="L84">        int stopY = minmaxXY[3] + 1;</span>
+<span class="fc" id="L85">        int startX = minmaxXY[0] - 1;</span>
+<span class="fc" id="L86">        int startY = minmaxXY[2] - 1;</span>
+<span class="fc" id="L87">        int stopX = minmaxXY[1] + 1;</span>
+<span class="fc" id="L88">        int stopY = minmaxXY[3] + 1;</span>
         
-<span class="fc" id="L86">        Stack&lt;PairInt&gt; stack = new Stack&lt;PairInt&gt;();</span>
-<span class="fc bfc" id="L87" title="All 2 branches covered.">        for (int i = startX; i &lt;= stopX; ++i) {</span>
-<span class="fc" id="L88">            stack.add(new PairInt(i, startY));</span>
-<span class="fc" id="L89">            stack.add(new PairInt(i, stopY));</span>
+<span class="fc" id="L90">        Stack&lt;PairInt&gt; stack = new Stack&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        for (int i = startX; i &lt;= stopX; ++i) {</span>
+<span class="fc" id="L92">            stack.add(new PairInt(i, startY));</span>
+<span class="fc" id="L93">            stack.add(new PairInt(i, stopY));</span>
         }
-<span class="fc bfc" id="L91" title="All 2 branches covered.">        for (int j = startY+1; j &lt;= stopY-1; ++j) {</span>
-<span class="fc" id="L92">            stack.add(new PairInt(startX, j));</span>
-<span class="fc" id="L93">            stack.add(new PairInt(stopX, j));</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        for (int j = startY+1; j &lt;= stopY-1; ++j) {</span>
+<span class="fc" id="L96">            stack.add(new PairInt(startX, j));</span>
+<span class="fc" id="L97">            stack.add(new PairInt(stopX, j));</span>
         }
         
-<span class="fc" id="L96">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L100">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
         
-<span class="fc" id="L98">        Set&lt;PairInt&gt; surrounding = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L99">        int[] dxs = Misc.dx4;</span>
-<span class="fc" id="L100">        int[] dys = Misc.dy4;</span>
-<span class="fc bfc" id="L101" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
-<span class="fc" id="L102">            PairInt s = stack.pop();</span>
-<span class="fc bfc" id="L103" title="All 2 branches covered.">            if (visited.contains(s)) {</span>
-<span class="fc" id="L104">                continue;</span>
+<span class="fc" id="L102">        Set&lt;PairInt&gt; surrounding = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L103">        int[] dxs = Misc.dx4;</span>
+<span class="fc" id="L104">        int[] dys = Misc.dy4;</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+<span class="fc" id="L106">            PairInt s = stack.pop();</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">            if (visited.contains(s)) {</span>
+<span class="fc" id="L108">                continue;</span>
             }
-<span class="fc" id="L106">            surrounding.add(s);</span>
-<span class="fc" id="L107">            int x = s.getX();</span>
-<span class="fc" id="L108">            int y = s.getY();</span>
-<span class="fc bfc" id="L109" title="All 2 branches covered.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="fc" id="L110">                int x2 = x + dxs[k];</span>
-<span class="fc" id="L111">                int y2 = y + dys[k];</span>
-<span class="fc bfc" id="L112" title="All 8 branches covered.">                if (x2 &lt; startX || y2 &lt; startY || x2 &gt; stopX ||</span>
+<span class="fc" id="L110">            surrounding.add(s);</span>
+<span class="fc" id="L111">            int x = s.getX();</span>
+<span class="fc" id="L112">            int y = s.getY();</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L114">                int x2 = x + dxs[k];</span>
+<span class="fc" id="L115">                int y2 = y + dys[k];</span>
+<span class="fc bfc" id="L116" title="All 8 branches covered.">                if (x2 &lt; startX || y2 &lt; startY || x2 &gt; stopX ||</span>
                     y2 &gt; stopY) {
-<span class="fc" id="L114">                    continue;</span>
+<span class="fc" id="L118">                    continue;</span>
                 }
-<span class="fc" id="L116">                PairInt p2 = new PairInt(x2, y2);</span>
-<span class="fc bfc" id="L117" title="All 2 branches covered.">                if (!contiguousPoints.contains(p2)) {</span>
-<span class="fc" id="L118">                    stack.add(p2);</span>
+<span class="fc" id="L120">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">                if (!contiguousPoints.contains(p2)) {</span>
+<span class="fc" id="L122">                    stack.add(p2);</span>
                 }
             }
-<span class="fc" id="L121">            visited.add(s);</span>
-<span class="fc" id="L122">        }</span>
+<span class="fc" id="L125">            visited.add(s);</span>
+<span class="fc" id="L126">        }</span>
        
         // visit entire region within min and max, and place
         // any point not in surrounding nor in contig into
         // embedded
-<span class="fc" id="L127">        startX++;</span>
-<span class="fc" id="L128">        stopX--;</span>
-<span class="fc" id="L129">        startY++;</span>
-<span class="fc" id="L130">        stopY--;</span>
-<span class="fc" id="L131">        Set&lt;PairInt&gt; embedded = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc bfc" id="L132" title="All 2 branches covered.">        for (int i = startX; i &lt;= stopX; ++i) {</span>
-<span class="fc bfc" id="L133" title="All 2 branches covered.">            for (int j = startY; j &lt;= stopY; ++j) {</span>
-<span class="fc" id="L134">                PairInt p = new PairInt(i, j);</span>
-<span class="pc bpc" id="L135" title="1 of 4 branches missed.">                if (!contiguousPoints.contains(p) &amp;&amp; !surrounding.contains(p)) {</span>
-<span class="nc" id="L136">                    embedded.add(p);</span>
+<span class="fc" id="L131">        startX++;</span>
+<span class="fc" id="L132">        stopX--;</span>
+<span class="fc" id="L133">        startY++;</span>
+<span class="fc" id="L134">        stopY--;</span>
+<span class="fc" id="L135">        Set&lt;PairInt&gt; embedded = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        for (int i = startX; i &lt;= stopX; ++i) {</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            for (int j = startY; j &lt;= stopY; ++j) {</span>
+<span class="fc" id="L138">                PairInt p = new PairInt(i, j);</span>
+<span class="pc bpc" id="L139" title="1 of 4 branches missed.">                if (!contiguousPoints.contains(p) &amp;&amp; !surrounding.contains(p)) {</span>
+<span class="nc" id="L140">                    embedded.add(p);</span>
                 }
             }
         }
         
-<span class="fc" id="L141">        return embedded;</span>
+<span class="fc" id="L145">        return embedded;</span>
     }
     
     /**
@@ -148,16 +152,17 @@ import java.util.Stack;
     public Set&lt;PairInt&gt; findEmbeddedGaps(TIntList contiguousXPoints,
         TIntList contiguousYPoints) {
         
-<span class="fc" id="L151">        Set&lt;PairInt&gt; contiguousPoints = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc bfc" id="L152" title="All 2 branches covered.">        for (int i = 0; i &lt; contiguousXPoints.size(); ++i) {</span>
-<span class="fc" id="L153">            contiguousPoints.add(new PairInt(</span>
-<span class="fc" id="L154">                contiguousXPoints.get(i), contiguousYPoints.get(i)));</span>
+<span class="fc" id="L155">        Set&lt;PairInt&gt; contiguousPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        for (int i = 0; i &lt; contiguousXPoints.size(); ++i) {</span>
+<span class="fc" id="L157">            contiguousPoints.add(new PairInt(</span>
+<span class="fc" id="L158">                contiguousXPoints.get(i), contiguousYPoints.get(i)));</span>
         }
         
-<span class="fc" id="L157">        return findEmbeddedGaps(contiguousPoints);</span>
+<span class="fc" id="L161">        return findEmbeddedGaps(contiguousPoints);</span>
     }
     
     /**
+     * This class is deprecated.  Use methods in PerimeterFinder3 instead.
      * finds any gaps embedded in the contiguous points.
      * @param contiguousPoints
      * @param outputEmbedded output variable
@@ -166,70 +171,70 @@ import java.util.Stack;
     public void extractBorder2(Set&lt;PairInt&gt; contiguousPoints,
         Set&lt;PairInt&gt; outputEmbedded, Set&lt;PairInt&gt; outputBoundary) {
         
-<span class="fc" id="L169">        int[] minmaxXY = MiscMath.findMinMaxXY(contiguousPoints);</span>
+<span class="fc" id="L174">        int[] minmaxXY = MiscMath.findMinMaxXY(contiguousPoints);</span>
         
         // visit the 1 pixel region surrounding the shape and
         // place the pixels in a stack.
         // then visit their neighbors that are not in contig points
         // until have reached them all
         
-<span class="fc" id="L176">        int startX = minmaxXY[0] - 1;</span>
-<span class="fc" id="L177">        int startY = minmaxXY[2] - 1;</span>
-<span class="fc" id="L178">        int stopX = minmaxXY[1] + 1;</span>
-<span class="fc" id="L179">        int stopY = minmaxXY[3] + 1;</span>
+<span class="fc" id="L181">        int startX = minmaxXY[0] - 1;</span>
+<span class="fc" id="L182">        int startY = minmaxXY[2] - 1;</span>
+<span class="fc" id="L183">        int stopX = minmaxXY[1] + 1;</span>
+<span class="fc" id="L184">        int stopY = minmaxXY[3] + 1;</span>
         
-<span class="fc" id="L181">        Stack&lt;PairInt&gt; stack = new Stack&lt;PairInt&gt;();</span>
-<span class="fc bfc" id="L182" title="All 2 branches covered.">        for (int i = startX; i &lt;= stopX; ++i) {</span>
-<span class="fc" id="L183">            stack.add(new PairInt(i, startY));</span>
-<span class="fc" id="L184">            stack.add(new PairInt(i, stopY));</span>
+<span class="fc" id="L186">        Stack&lt;PairInt&gt; stack = new Stack&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        for (int i = startX; i &lt;= stopX; ++i) {</span>
+<span class="fc" id="L188">            stack.add(new PairInt(i, startY));</span>
+<span class="fc" id="L189">            stack.add(new PairInt(i, stopY));</span>
         }
-<span class="fc bfc" id="L186" title="All 2 branches covered.">        for (int j = startY+1; j &lt;= stopY-1; ++j) {</span>
-<span class="fc" id="L187">            stack.add(new PairInt(startX, j));</span>
-<span class="fc" id="L188">            stack.add(new PairInt(stopX, j));</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        for (int j = startY+1; j &lt;= stopY-1; ++j) {</span>
+<span class="fc" id="L192">            stack.add(new PairInt(startX, j));</span>
+<span class="fc" id="L193">            stack.add(new PairInt(stopX, j));</span>
         }
         
-<span class="fc" id="L191">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L192">        Set&lt;PairInt&gt; surrounding = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L193">        int[] dxs = Misc.dx4;</span>
-<span class="fc" id="L194">        int[] dys = Misc.dy4;</span>
-<span class="fc bfc" id="L195" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
-<span class="fc" id="L196">            PairInt s = stack.pop();</span>
-<span class="fc bfc" id="L197" title="All 2 branches covered.">            if (visited.contains(s)) {</span>
-<span class="fc" id="L198">                continue;</span>
+<span class="fc" id="L196">        Set&lt;PairInt&gt; visited = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L197">        Set&lt;PairInt&gt; surrounding = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L198">        int[] dxs = Misc.dx4;</span>
+<span class="fc" id="L199">        int[] dys = Misc.dy4;</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+<span class="fc" id="L201">            PairInt s = stack.pop();</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">            if (visited.contains(s)) {</span>
+<span class="fc" id="L203">                continue;</span>
             }
-<span class="fc" id="L200">            surrounding.add(s);</span>
-<span class="fc" id="L201">            int x = s.getX();</span>
-<span class="fc" id="L202">            int y = s.getY();</span>
-<span class="fc bfc" id="L203" title="All 2 branches covered.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="fc" id="L204">                int x2 = x + dxs[k];</span>
-<span class="fc" id="L205">                int y2 = y + dys[k];</span>
-<span class="fc bfc" id="L206" title="All 8 branches covered.">                if (x2 &lt; startX || y2 &lt; startY || x2 &gt; stopX || y2 &gt; stopY) {</span>
-<span class="fc" id="L207">                    continue;</span>
+<span class="fc" id="L205">            surrounding.add(s);</span>
+<span class="fc" id="L206">            int x = s.getX();</span>
+<span class="fc" id="L207">            int y = s.getY();</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L209">                int x2 = x + dxs[k];</span>
+<span class="fc" id="L210">                int y2 = y + dys[k];</span>
+<span class="fc bfc" id="L211" title="All 8 branches covered.">                if (x2 &lt; startX || y2 &lt; startY || x2 &gt; stopX || y2 &gt; stopY) {</span>
+<span class="fc" id="L212">                    continue;</span>
                 }
-<span class="fc" id="L209">                PairInt p2 = new PairInt(x2, y2);</span>
-<span class="fc bfc" id="L210" title="All 2 branches covered.">                if (!contiguousPoints.contains(p2)) {</span>
+<span class="fc" id="L214">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">                if (!contiguousPoints.contains(p2)) {</span>
                     // add the spaces to the stack
-<span class="fc" id="L212">                    stack.add(p2);</span>
+<span class="fc" id="L217">                    stack.add(p2);</span>
                 } else {
                     // if not a space, it's an outer boundary point
-<span class="fc" id="L215">                    outputBoundary.add(p2);</span>
+<span class="fc" id="L220">                    outputBoundary.add(p2);</span>
                 }
             }
-<span class="fc" id="L218">            visited.add(s);</span>
-<span class="fc" id="L219">        }</span>
+<span class="fc" id="L223">            visited.add(s);</span>
+<span class="fc" id="L224">        }</span>
         
         // visit entire region within min and max, and place
         // any point not in surrounding nor in contig into
         // embedded
-<span class="fc" id="L224">        startX++;</span>
-<span class="fc" id="L225">        stopX--;</span>
-<span class="fc" id="L226">        startY++;</span>
-<span class="fc" id="L227">        stopY--;</span>
-<span class="fc bfc" id="L228" title="All 2 branches covered.">        for (int i = startX; i &lt;= stopX; ++i) {</span>
-<span class="fc bfc" id="L229" title="All 2 branches covered.">            for (int j = startY; j &lt;= stopY; ++j) {</span>
-<span class="fc" id="L230">                PairInt p = new PairInt(i, j);</span>
-<span class="pc bpc" id="L231" title="1 of 4 branches missed.">                if (!contiguousPoints.contains(p) &amp;&amp; !surrounding.contains(p)) {</span>
-<span class="nc" id="L232">                    outputEmbedded.add(p);</span>
+<span class="fc" id="L229">        startX++;</span>
+<span class="fc" id="L230">        stopX--;</span>
+<span class="fc" id="L231">        startY++;</span>
+<span class="fc" id="L232">        stopY--;</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">        for (int i = startX; i &lt;= stopX; ++i) {</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">            for (int j = startY; j &lt;= stopY; ++j) {</span>
+<span class="fc" id="L235">                PairInt p = new PairInt(i, j);</span>
+<span class="pc bpc" id="L236" title="1 of 4 branches missed.">                if (!contiguousPoints.contains(p) &amp;&amp; !surrounding.contains(p)) {</span>
+<span class="nc" id="L237">                    outputEmbedded.add(p);</span>
                 }
             }
         }
@@ -288,9 +293,10 @@ import java.util.Stack;
         } catch (Throwable t) {
 
         }*/
-<span class="fc" id="L291">    }</span>
+<span class="fc" id="L296">    }</span>
     
     /**
+     * This class is deprecated.  Use methods in PerimeterFinder3 instead.
      * finds any gaps embedded in the contiguous points.
      * The runtime complexity is roughly O(N_contiguousPoints).
      * 
@@ -302,7 +308,7 @@ import java.util.Stack;
         TIntSet outputEmbedded, TIntSet outputBoundary,
         int imgWidth) {
         
-<span class="fc" id="L305">        int[] minmaxXY = MiscMath.findMinMaxXY(contiguousPoints, </span>
+<span class="fc" id="L311">        int[] minmaxXY = MiscMath.findMinMaxXY(contiguousPoints, </span>
             imgWidth);
         
         // visit the 1 pixel region surrounding the shape and
@@ -310,75 +316,76 @@ import java.util.Stack;
         // then visit their neighbors that are not in contig points
         // until have reached them all
         
-<span class="fc" id="L313">        int startX = minmaxXY[0] - 1;</span>
-<span class="fc" id="L314">        int startY = minmaxXY[2] - 1;</span>
-<span class="fc" id="L315">        int stopX = minmaxXY[1] + 1;</span>
-<span class="fc" id="L316">        int stopY = minmaxXY[3] + 1;</span>
+<span class="fc" id="L319">        int startX = minmaxXY[0] - 1;</span>
+<span class="fc" id="L320">        int startY = minmaxXY[2] - 1;</span>
+<span class="fc" id="L321">        int stopX = minmaxXY[1] + 1;</span>
+<span class="fc" id="L322">        int stopY = minmaxXY[3] + 1;</span>
         
-<span class="fc" id="L318">        Stack&lt;PairInt&gt; stack = new Stack&lt;PairInt&gt;();</span>
-<span class="fc bfc" id="L319" title="All 2 branches covered.">        for (int i = startX; i &lt;= stopX; ++i) {</span>
-<span class="fc" id="L320">            stack.add(new PairInt(i, startY));</span>
-<span class="fc" id="L321">            stack.add(new PairInt(i, stopY));</span>
+<span class="fc" id="L324">        Stack&lt;PairInt&gt; stack = new Stack&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L325" title="All 2 branches covered.">        for (int i = startX; i &lt;= stopX; ++i) {</span>
+<span class="fc" id="L326">            stack.add(new PairInt(i, startY));</span>
+<span class="fc" id="L327">            stack.add(new PairInt(i, stopY));</span>
         }
-<span class="fc bfc" id="L323" title="All 2 branches covered.">        for (int j = startY+1; j &lt;= stopY-1; ++j) {</span>
-<span class="fc" id="L324">            stack.add(new PairInt(startX, j));</span>
-<span class="fc" id="L325">            stack.add(new PairInt(stopX, j));</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">        for (int j = startY+1; j &lt;= stopY-1; ++j) {</span>
+<span class="fc" id="L330">            stack.add(new PairInt(startX, j));</span>
+<span class="fc" id="L331">            stack.add(new PairInt(stopX, j));</span>
         }
         
-<span class="fc" id="L328">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L334">        PixelHelper ph = new PixelHelper();</span>
         
-<span class="fc" id="L330">        TIntSet visited = new TIntHashSet();</span>
-<span class="fc" id="L331">        TIntSet surrounding = new TIntHashSet();</span>
-<span class="fc" id="L332">        int[] dxs = Misc.dx4;</span>
-<span class="fc" id="L333">        int[] dys = Misc.dy4;</span>
-<span class="fc bfc" id="L334" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
-<span class="fc" id="L335">            PairInt s = stack.pop();</span>
-<span class="fc" id="L336">            int x = s.getX();</span>
-<span class="fc" id="L337">            int y = s.getY();</span>
-<span class="fc" id="L338">            int pixIdx = (int)ph.toPixelIndex(x, y, imgWidth);</span>
-<span class="fc bfc" id="L339" title="All 2 branches covered.">            if (visited.contains(pixIdx)) {</span>
-<span class="fc" id="L340">                continue;</span>
+<span class="fc" id="L336">        TIntSet visited = new TIntHashSet();</span>
+<span class="fc" id="L337">        TIntSet surrounding = new TIntHashSet();</span>
+<span class="fc" id="L338">        int[] dxs = Misc.dx4;</span>
+<span class="fc" id="L339">        int[] dys = Misc.dy4;</span>
+<span class="fc bfc" id="L340" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+<span class="fc" id="L341">            PairInt s = stack.pop();</span>
+<span class="fc" id="L342">            int x = s.getX();</span>
+<span class="fc" id="L343">            int y = s.getY();</span>
+<span class="fc" id="L344">            int pixIdx = (int)ph.toPixelIndex(x, y, imgWidth);</span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">            if (visited.contains(pixIdx)) {</span>
+<span class="fc" id="L346">                continue;</span>
             }
-<span class="fc" id="L342">            surrounding.add(pixIdx);</span>
+<span class="fc" id="L348">            surrounding.add(pixIdx);</span>
             
-<span class="fc bfc" id="L344" title="All 2 branches covered.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="fc" id="L345">                int x2 = x + dxs[k];</span>
-<span class="fc" id="L346">                int y2 = y + dys[k];</span>
-<span class="fc bfc" id="L347" title="All 8 branches covered.">                if (x2 &lt; startX || y2 &lt; startY || x2 &gt; stopX || y2 &gt; stopY) {</span>
-<span class="fc" id="L348">                    continue;</span>
+<span class="fc bfc" id="L350" title="All 2 branches covered.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L351">                int x2 = x + dxs[k];</span>
+<span class="fc" id="L352">                int y2 = y + dys[k];</span>
+<span class="fc bfc" id="L353" title="All 8 branches covered.">                if (x2 &lt; startX || y2 &lt; startY || x2 &gt; stopX || y2 &gt; stopY) {</span>
+<span class="fc" id="L354">                    continue;</span>
                 }
-<span class="fc" id="L350">                int pixIdx2 = (y2 * imgWidth) + x2;</span>
-<span class="fc bfc" id="L351" title="All 2 branches covered.">                if (!contiguousPoints.contains(pixIdx2)) {</span>
+<span class="fc" id="L356">                int pixIdx2 = (y2 * imgWidth) + x2;</span>
+<span class="fc bfc" id="L357" title="All 2 branches covered.">                if (!contiguousPoints.contains(pixIdx2)) {</span>
                     // add the spaces to the stack
-<span class="fc" id="L353">                    stack.add(new PairInt(x2, y2));</span>
+<span class="fc" id="L359">                    stack.add(new PairInt(x2, y2));</span>
                 } else {
                     // if not a space, it's an outer boundary point
-<span class="fc" id="L356">                    outputBoundary.add(pixIdx2);</span>
+<span class="fc" id="L362">                    outputBoundary.add(pixIdx2);</span>
                 }
             }
-<span class="fc" id="L359">            visited.add(pixIdx);</span>
-<span class="fc" id="L360">        }</span>
+<span class="fc" id="L365">            visited.add(pixIdx);</span>
+<span class="fc" id="L366">        }</span>
         
         // visit entire region within min and max, and place
         // any point not in surrounding nor in contig into
         // embedded
-<span class="fc" id="L365">        startX++;</span>
-<span class="fc" id="L366">        stopX--;</span>
-<span class="fc" id="L367">        startY++;</span>
-<span class="fc" id="L368">        stopY--;</span>
-<span class="fc bfc" id="L369" title="All 2 branches covered.">        for (int i = startX; i &lt;= stopX; ++i) {</span>
-<span class="fc bfc" id="L370" title="All 2 branches covered.">            for (int j = startY; j &lt;= stopY; ++j) {</span>
-<span class="fc" id="L371">                int pixIdx = (int)ph.toPixelIndex(i, j, imgWidth);</span>
-<span class="fc bfc" id="L372" title="All 4 branches covered.">                if (!contiguousPoints.contains(pixIdx) &amp;&amp; !surrounding.contains(pixIdx)) {</span>
-<span class="fc" id="L373">                    outputEmbedded.add(pixIdx);</span>
+<span class="fc" id="L371">        startX++;</span>
+<span class="fc" id="L372">        stopX--;</span>
+<span class="fc" id="L373">        startY++;</span>
+<span class="fc" id="L374">        stopY--;</span>
+<span class="fc bfc" id="L375" title="All 2 branches covered.">        for (int i = startX; i &lt;= stopX; ++i) {</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">            for (int j = startY; j &lt;= stopY; ++j) {</span>
+<span class="fc" id="L377">                int pixIdx = (int)ph.toPixelIndex(i, j, imgWidth);</span>
+<span class="fc bfc" id="L378" title="All 4 branches covered.">                if (!contiguousPoints.contains(pixIdx) &amp;&amp; !surrounding.contains(pixIdx)) {</span>
+<span class="fc" id="L379">                    outputEmbedded.add(pixIdx);</span>
                 }
             }
         }
         
-<span class="fc" id="L378">    }</span>
-    
-  
+<span class="fc" id="L384">    }</span>
+
     /**
+     * This class is deprecated.  Use methods in PerimeterFinder3 instead.
+     *
      * finds the outer boundary points of the contiguous points.
      * any embedded holes in the contiguousPoints are not included
      * in the result boundary.
@@ -387,42 +394,44 @@ import java.util.Stack;
      */
     public Set&lt;PairInt&gt; extractOuterBorder(Set&lt;PairInt&gt; contiguousPoints) {
         
-<span class="nc" id="L390">        Set&lt;PairInt&gt; embedded = findEmbeddedGaps(contiguousPoints);</span>
+<span class="nc" id="L397">        Set&lt;PairInt&gt; embedded = findEmbeddedGaps(contiguousPoints);</span>
         
-<span class="nc" id="L392">        Set&lt;PairInt&gt; set2 = new HashSet&lt;PairInt&gt;(contiguousPoints);</span>
-<span class="nc" id="L393">        set2.addAll(embedded);        </span>
+<span class="nc" id="L399">        Set&lt;PairInt&gt; set2 = new HashSet&lt;PairInt&gt;(contiguousPoints);</span>
+<span class="nc" id="L400">        set2.addAll(embedded);        </span>
         
-<span class="nc" id="L395">        return extractBorder(set2);</span>
+<span class="nc" id="L402">        return extractBorder(set2);</span>
     }
     
     public void thinTheBoundary(Set&lt;PairInt&gt; boundary,
         Set&lt;PairInt&gt; removedPoints,
         Set&lt;PairInt&gt; contiguousPoints) {
         
-<span class="nc" id="L402">        Set&lt;PairInt&gt; b = new HashSet&lt;PairInt&gt;(boundary);</span>
+<span class="nc" id="L409">        Set&lt;PairInt&gt; b = new HashSet&lt;PairInt&gt;(boundary);</span>
         
-<span class="nc" id="L404">        int[] minMaxXY = MiscMath.findMinMaxXY(b); </span>
+<span class="nc" id="L411">        int[] minMaxXY = MiscMath.findMinMaxXY(b); </span>
         
-<span class="nc" id="L406">        ImageProcessor imp = new ImageProcessor();</span>
-<span class="nc" id="L407">        imp.applyThinning(boundary, minMaxXY[1] + 1, </span>
+<span class="nc" id="L413">        ImageProcessor imp = new ImageProcessor();</span>
+<span class="nc" id="L414">        imp.applyThinning(boundary, minMaxXY[1] + 1, </span>
             minMaxXY[3] + 1);
         
-<span class="nc" id="L410">        SpurRemover spurRm = new SpurRemover();</span>
-<span class="nc" id="L411">        spurRm.remove(b, minMaxXY[1] + 3, </span>
+<span class="nc" id="L417">        SpurRemover spurRm = new SpurRemover();</span>
+<span class="nc" id="L418">        spurRm.remove(b, minMaxXY[1] + 3, </span>
             minMaxXY[3] + 3);
         
         // store the removed points
-<span class="nc" id="L415">        removedPoints.addAll(boundary);</span>
-<span class="nc" id="L416">        removedPoints.removeAll(b);</span>
+<span class="nc" id="L422">        removedPoints.addAll(boundary);</span>
+<span class="nc" id="L423">        removedPoints.removeAll(b);</span>
         
         //System.out.println(&quot;line thinning removed &quot; +
         //    removedPoints.size() + &quot; from the boundary&quot;);
         
-<span class="nc" id="L421">        boundary.clear();</span>
-<span class="nc" id="L422">        boundary.addAll(b);</span>
-<span class="nc" id="L423">    }</span>
+<span class="nc" id="L428">        boundary.clear();</span>
+<span class="nc" id="L429">        boundary.addAll(b);</span>
+<span class="nc" id="L430">    }</span>
     
     /**
+     * This class is deprecated.  Use methods in PerimeterFinder3 instead.
+     *
      * NOT READY FOR USE...needs alot more testing.
      * 
      * given a set of contiguous points, fills in embedded points
@@ -441,23 +450,23 @@ import java.util.Stack;
      */
     public PairIntArray extractOrderedBorder(Set&lt;PairInt&gt; contiguousPoints) {
        
-<span class="pc bpc" id="L444" title="1 of 2 branches missed.">        if (contiguousPoints.size() &lt; 4) {</span>
-<span class="nc" id="L445">            PairIntArray output = new PairIntArray(contiguousPoints.size());</span>
-<span class="nc bnc" id="L446" title="All 2 branches missed.">            for (PairInt p : contiguousPoints) {</span>
-<span class="nc" id="L447">                output.add(p.getX(), p.getY());</span>
-<span class="nc" id="L448">            }</span>
-<span class="nc" id="L449">            return output;</span>
+<span class="pc bpc" id="L453" title="1 of 2 branches missed.">        if (contiguousPoints.size() &lt; 4) {</span>
+<span class="nc" id="L454">            PairIntArray output = new PairIntArray(contiguousPoints.size());</span>
+<span class="nc bnc" id="L455" title="All 2 branches missed.">            for (PairInt p : contiguousPoints) {</span>
+<span class="nc" id="L456">                output.add(p.getX(), p.getY());</span>
+<span class="nc" id="L457">            }</span>
+<span class="nc" id="L458">            return output;</span>
         }
         
         //O(8*N)
-<span class="fc" id="L453">        Set&lt;PairInt&gt; embedded = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L454">        Set&lt;PairInt&gt; boundary = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L455">        extractBorder2(contiguousPoints, embedded, boundary);</span>
-<span class="fc" id="L456">        Set&lt;PairInt&gt; set2 = new HashSet&lt;PairInt&gt;(contiguousPoints);</span>
-<span class="fc" id="L457">        set2.addAll(embedded);</span>
+<span class="fc" id="L462">        Set&lt;PairInt&gt; embedded = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L463">        Set&lt;PairInt&gt; boundary = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L464">        extractBorder2(contiguousPoints, embedded, boundary);</span>
+<span class="fc" id="L465">        Set&lt;PairInt&gt; set2 = new HashSet&lt;PairInt&gt;(contiguousPoints);</span>
+<span class="fc" id="L466">        set2.addAll(embedded);</span>
         
-<span class="pc bpc" id="L459" title="2 of 4 branches missed.">        if (boundary == null || boundary.size() == 0) {</span>
-<span class="nc" id="L460">            return null;</span>
+<span class="pc bpc" id="L468" title="2 of 4 branches missed.">        if (boundary == null || boundary.size() == 0) {</span>
+<span class="nc" id="L469">            return null;</span>
         }
         
         /*
@@ -480,183 +489,183 @@ import java.util.Stack;
         */
         
         //using a list so can use bit vectors for quick set intersections
-<span class="fc" id="L483">        List&lt;PairInt&gt; boundaryList = new ArrayList&lt;PairInt&gt;(boundary);</span>
+<span class="fc" id="L492">        List&lt;PairInt&gt; boundaryList = new ArrayList&lt;PairInt&gt;(boundary);</span>
         
-<span class="fc" id="L485">        TObjectIntMap&lt;PairInt&gt; pointIndexes = new TObjectIntHashMap&lt;PairInt&gt;();</span>
-<span class="fc bfc" id="L486" title="All 2 branches covered.">        for (int i = 0; i &lt; boundaryList.size(); ++i) {</span>
-<span class="fc" id="L487">            pointIndexes.put(boundaryList.get(i), i);</span>
+<span class="fc" id="L494">        TObjectIntMap&lt;PairInt&gt; pointIndexes = new TObjectIntHashMap&lt;PairInt&gt;();</span>
+<span class="fc bfc" id="L495" title="All 2 branches covered.">        for (int i = 0; i &lt; boundaryList.size(); ++i) {</span>
+<span class="fc" id="L496">            pointIndexes.put(boundaryList.get(i), i);</span>
         }
         
         // index = index of boundaryList, item = bitstring with neighbors set
-<span class="fc" id="L491">        VeryLongBitString[] pointNeighbors = createPointNeighborArray(</span>
+<span class="fc" id="L500">        VeryLongBitString[] pointNeighbors = createPointNeighborArray(</span>
             boundaryList, pointIndexes);
         
         // corner junctions
-<span class="fc" id="L495">        TIntSet junctions = findJunctions(pointNeighbors);</span>
+<span class="fc" id="L504">        TIntSet junctions = findJunctions(pointNeighbors);</span>
        
-<span class="fc" id="L497">        PairIntArray orderedOutput = new PairIntArray(boundary.size());</span>
+<span class="fc" id="L506">        PairIntArray orderedOutput = new PairIntArray(boundary.size());</span>
         
-<span class="fc" id="L499">        Set&lt;PairInt&gt; remaining = new HashSet&lt;PairInt&gt;(boundary);</span>
+<span class="fc" id="L508">        Set&lt;PairInt&gt; remaining = new HashSet&lt;PairInt&gt;(boundary);</span>
                 
-<span class="fc" id="L501">        PairInt curr = findSmallestXY(remaining);</span>
-<span class="fc" id="L502">        remaining.remove(curr);</span>
-<span class="fc" id="L503">        orderedOutput.add(curr.getX(), curr.getY());</span>
-<span class="fc" id="L504">        junctions.remove(pointIndexes.get(curr));</span>
+<span class="fc" id="L510">        PairInt curr = findSmallestXY(remaining);</span>
+<span class="fc" id="L511">        remaining.remove(curr);</span>
+<span class="fc" id="L512">        orderedOutput.add(curr.getX(), curr.getY());</span>
+<span class="fc" id="L513">        junctions.remove(pointIndexes.get(curr));</span>
         
         // fake point for angle calc refs.  since curr is smallest x, should be
         // safe to make a point to left of it.
-<span class="fc" id="L508">        PairInt prev = new PairInt(curr.getX() - 1, curr.getY());</span>
+<span class="fc" id="L517">        PairInt prev = new PairInt(curr.getX() - 1, curr.getY());</span>
         
         // idx w.r.t. orderedOutput.  used for walking back up array
-<span class="fc" id="L511">        int outIdx = -1;</span>
+<span class="fc" id="L520">        int outIdx = -1;</span>
         
-<span class="fc bfc" id="L513" title="All 2 branches covered.">        while (!remaining.isEmpty()) {</span>
+<span class="fc bfc" id="L522" title="All 2 branches covered.">        while (!remaining.isEmpty()) {</span>
        
             // among the neighbors of curr that are in remaining, chose
             // the one which has the smallest clockwise angle w/ prev and curr
             
-<span class="fc" id="L518">            double minAngle = Double.MAX_VALUE;</span>
-<span class="fc" id="L519">            PairInt minP = null;</span>
+<span class="fc" id="L527">            double minAngle = Double.MAX_VALUE;</span>
+<span class="fc" id="L528">            PairInt minP = null;</span>
             
-<span class="fc" id="L521">            int x = curr.getX();</span>
-<span class="fc" id="L522">            int y = curr.getY();</span>
-<span class="fc" id="L523">            int xPrev = prev.getX();</span>
-<span class="fc" id="L524">            int yPrev = prev.getY();</span>
+<span class="fc" id="L530">            int x = curr.getX();</span>
+<span class="fc" id="L531">            int y = curr.getY();</span>
+<span class="fc" id="L532">            int xPrev = prev.getX();</span>
+<span class="fc" id="L533">            int yPrev = prev.getY();</span>
             
-<span class="fc" id="L526">            int[] currNbrs = pointNeighbors[pointIndexes.get(curr)].getSetBits();</span>
+<span class="fc" id="L535">            int[] currNbrs = pointNeighbors[pointIndexes.get(curr)].getSetBits();</span>
             
-<span class="fc bfc" id="L528" title="All 2 branches covered.">            for (int nbrIdx : currNbrs) {</span>
-<span class="fc" id="L529">                PairInt p2 = boundaryList.get(nbrIdx);</span>
-<span class="fc bfc" id="L530" title="All 2 branches covered.">                if (!remaining.contains(p2)) {</span>
-<span class="fc" id="L531">                    continue;</span>
+<span class="fc bfc" id="L537" title="All 2 branches covered.">            for (int nbrIdx : currNbrs) {</span>
+<span class="fc" id="L538">                PairInt p2 = boundaryList.get(nbrIdx);</span>
+<span class="fc bfc" id="L539" title="All 2 branches covered.">                if (!remaining.contains(p2)) {</span>
+<span class="fc" id="L540">                    continue;</span>
                 }
-<span class="pc bnc" id="L533" title="All 2 branches missed.">                assert(!prev.equals(p2));</span>
-<span class="fc" id="L534">                double angle = LinesAndAngles.calcClockwiseAngle(</span>
-<span class="fc" id="L535">                    xPrev, yPrev, p2.getX(), p2.getY(), x, y);</span>
-<span class="pc bpc" id="L536" title="1 of 2 branches missed.">                if (Double.isNaN(angle)) {</span>
+<span class="pc bnc" id="L542" title="All 2 branches missed.">                assert(!prev.equals(p2));</span>
+<span class="fc" id="L543">                double angle = LinesAndAngles.calcClockwiseAngle(</span>
+<span class="fc" id="L544">                    xPrev, yPrev, p2.getX(), p2.getY(), x, y);</span>
+<span class="pc bpc" id="L545" title="1 of 2 branches missed.">                if (Double.isNaN(angle)) {</span>
                     // can occur is prev==p or p2==p
-<span class="nc" id="L538">                    throw new IllegalStateException(&quot;error: unexpected NaN, &quot;</span>
+<span class="nc" id="L547">                    throw new IllegalStateException(&quot;error: unexpected NaN, &quot;</span>
                         + &quot; due to equal points&quot;);
                 } 
                     
-<span class="fc bfc" id="L542" title="All 2 branches covered.">                if (angle &lt; minAngle) {</span>
-<span class="fc" id="L543">                    minAngle = angle;</span>
-<span class="fc" id="L544">                    minP = p2;</span>
+<span class="fc bfc" id="L551" title="All 2 branches covered.">                if (angle &lt; minAngle) {</span>
+<span class="fc" id="L552">                    minAngle = angle;</span>
+<span class="fc" id="L553">                    minP = p2;</span>
                 }
             }
             
-<span class="fc bfc" id="L548" title="All 2 branches covered.">            if (minP == null) {</span>
+<span class="fc bfc" id="L557" title="All 2 branches covered.">            if (minP == null) {</span>
                 
                 // when remaining.size is &gt;= (bounds.size - junctions.size)
                 //   start checking for whether have reached the starting
                 //   point, and look for whether the remaining points are
                 //   junctions that need to be inserted in their 90 degree 
                 //   positions.
-<span class="pc bpc" id="L555" title="1 of 2 branches missed.">                if (remaining.size() &lt;= (boundaryList.size() - junctions.size())) {</span>
-<span class="pc bpc" id="L556" title="1 of 2 branches missed.">                    if (isAdjacent(curr, orderedOutput.getX(0), </span>
-<span class="fc" id="L557">                        orderedOutput.getY(0))) {</span>
+<span class="pc bpc" id="L564" title="1 of 2 branches missed.">                if (remaining.size() &lt;= (boundaryList.size() - junctions.size())) {</span>
+<span class="pc bpc" id="L565" title="1 of 2 branches missed.">                    if (isAdjacent(curr, orderedOutput.getX(0), </span>
+<span class="fc" id="L566">                        orderedOutput.getY(0))) {</span>
                         
-<span class="nc" id="L559">                        TIntSet remIdxs = new TIntHashSet();</span>
-<span class="nc bnc" id="L560" title="All 2 branches missed.">                        for (PairInt p : remaining) {</span>
-<span class="nc" id="L561">                            remIdxs.add(pointIndexes.get(p));</span>
-<span class="nc" id="L562">                        }</span>
-<span class="nc" id="L563">                        remIdxs.removeAll(junctions);</span>
-<span class="nc bnc" id="L564" title="All 2 branches missed.">                        if (remIdxs.isEmpty()) {</span>
-<span class="nc" id="L565">                            break;</span>
+<span class="nc" id="L568">                        TIntSet remIdxs = new TIntHashSet();</span>
+<span class="nc bnc" id="L569" title="All 2 branches missed.">                        for (PairInt p : remaining) {</span>
+<span class="nc" id="L570">                            remIdxs.add(pointIndexes.get(p));</span>
+<span class="nc" id="L571">                        }</span>
+<span class="nc" id="L572">                        remIdxs.removeAll(junctions);</span>
+<span class="nc bnc" id="L573" title="All 2 branches missed.">                        if (remIdxs.isEmpty()) {</span>
+<span class="nc" id="L574">                            break;</span>
                         }
                     }
                 }
                 
                 // walk back up the output to try previous points, looking for
                 //   one w/ an unassigned neighbor
-<span class="fc" id="L572">                outIdx--;</span>
+<span class="fc" id="L581">                outIdx--;</span>
                 
-<span class="pc bpc" id="L574" title="1 of 2 branches missed.">                if (outIdx &lt; 1) {</span>
+<span class="pc bpc" id="L583" title="1 of 2 branches missed.">                if (outIdx &lt; 1) {</span>
                     
-<span class="nc" id="L576">                    int nj = junctions.size();</span>
-<span class="nc" id="L577">                    int nb = boundaryList.size();</span>
+<span class="nc" id="L585">                    int nj = junctions.size();</span>
+<span class="nc" id="L586">                    int nb = boundaryList.size();</span>
                     
-<span class="nc" id="L579">                    debug(contiguousPoints, boundary, orderedOutput);</span>
+<span class="nc" id="L588">                    debug(contiguousPoints, boundary, orderedOutput);</span>
                     
-<span class="nc" id="L581">                    System.out.println(&quot;output.n=&quot; </span>
-<span class="nc" id="L582">                        + orderedOutput.getN() </span>
-<span class="nc" id="L583">                        + &quot; rem.n=&quot; + remaining.size() + &quot; &quot; + </span>
-<span class="nc" id="L584">                        boundary.size());</span>
+<span class="nc" id="L590">                    System.out.println(&quot;output.n=&quot; </span>
+<span class="nc" id="L591">                        + orderedOutput.getN() </span>
+<span class="nc" id="L592">                        + &quot; rem.n=&quot; + remaining.size() + &quot; &quot; + </span>
+<span class="nc" id="L593">                        boundary.size());</span>
                     
-<span class="nc" id="L586">                    throw new IllegalStateException(&quot;Error in closed curve shape.&quot;);</span>
+<span class="nc" id="L595">                    throw new IllegalStateException(&quot;Error in closed curve shape.&quot;);</span>
                 }
                 
-<span class="fc" id="L589">                curr = new PairInt(orderedOutput.getX(outIdx), </span>
-<span class="fc" id="L590">                    orderedOutput.getY(outIdx));</span>
+<span class="fc" id="L598">                curr = new PairInt(orderedOutput.getX(outIdx), </span>
+<span class="fc" id="L599">                    orderedOutput.getY(outIdx));</span>
                 
-<span class="fc" id="L592">                prev = new PairInt(orderedOutput.getX(outIdx - 1), </span>
-<span class="fc" id="L593">                    orderedOutput.getY(outIdx - 1));</span>
+<span class="fc" id="L601">                prev = new PairInt(orderedOutput.getX(outIdx - 1), </span>
+<span class="fc" id="L602">                    orderedOutput.getY(outIdx - 1));</span>
                                 
-<span class="fc" id="L595">                continue;</span>
+<span class="fc" id="L604">                continue;</span>
             }
             
-<span class="pc bnc" id="L598" title="All 2 branches missed.">            assert(minP != null);</span>
+<span class="pc bnc" id="L607" title="All 2 branches missed.">            assert(minP != null);</span>
             
-<span class="fc" id="L600">            prev = curr;</span>
-<span class="fc" id="L601">            curr = minP;</span>
+<span class="fc" id="L609">            prev = curr;</span>
+<span class="fc" id="L610">            curr = minP;</span>
         
-<span class="fc" id="L603">            outIdx = orderedOutput.getN();</span>
+<span class="fc" id="L612">            outIdx = orderedOutput.getN();</span>
             
-<span class="fc" id="L605">            remaining.remove(curr);</span>
-<span class="fc" id="L606">            orderedOutput.add(curr.getX(), curr.getY());</span>
-<span class="fc" id="L607">            junctions.remove(pointIndexes.get(curr));</span>
-<span class="fc" id="L608">        }</span>
+<span class="fc" id="L614">            remaining.remove(curr);</span>
+<span class="fc" id="L615">            orderedOutput.add(curr.getX(), curr.getY());</span>
+<span class="fc" id="L616">            junctions.remove(pointIndexes.get(curr));</span>
+<span class="fc" id="L617">        }</span>
         
-<span class="pc bpc" id="L610" title="1 of 2 branches missed.">        if (!junctions.isEmpty()) {</span>
+<span class="pc bpc" id="L619" title="1 of 2 branches missed.">        if (!junctions.isEmpty()) {</span>
             //insert between junction neigbhors
             //TODO: this could be improved, but for now, will use
             //  a pattern that has worse case runtime near
             //  O(junctions.size * output.size)
-<span class="nc" id="L615">            TIntIterator iter = junctions.iterator();</span>
-<span class="nc bnc" id="L616" title="All 2 branches missed.">            while (iter.hasNext()) {</span>
-<span class="nc" id="L617">                int jIdx = iter.next();</span>
-<span class="nc" id="L618">                PairInt p = boundaryList.get(jIdx);</span>
-<span class="nc" id="L619">                int[] nbrs = pointNeighbors[jIdx].getSetBits();</span>
-<span class="nc" id="L620">                Set&lt;PairInt&gt; nbrsSet = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc bnc" id="L621" title="All 2 branches missed.">                for (int nbrIdx : nbrs) {</span>
-<span class="nc" id="L622">                    nbrsSet.add(boundaryList.get(nbrIdx));</span>
+<span class="nc" id="L624">            TIntIterator iter = junctions.iterator();</span>
+<span class="nc bnc" id="L625" title="All 2 branches missed.">            while (iter.hasNext()) {</span>
+<span class="nc" id="L626">                int jIdx = iter.next();</span>
+<span class="nc" id="L627">                PairInt p = boundaryList.get(jIdx);</span>
+<span class="nc" id="L628">                int[] nbrs = pointNeighbors[jIdx].getSetBits();</span>
+<span class="nc" id="L629">                Set&lt;PairInt&gt; nbrsSet = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L630" title="All 2 branches missed.">                for (int nbrIdx : nbrs) {</span>
+<span class="nc" id="L631">                    nbrsSet.add(boundaryList.get(nbrIdx));</span>
                 }
                 
                 // add junction after first of it's neighbors it finds
-<span class="nc" id="L626">                boolean found = false;</span>
-<span class="nc bnc" id="L627" title="All 2 branches missed.">                for (int ii = 0; ii &lt; orderedOutput.getN(); ++ii) {</span>
+<span class="nc" id="L635">                boolean found = false;</span>
+<span class="nc bnc" id="L636" title="All 2 branches missed.">                for (int ii = 0; ii &lt; orderedOutput.getN(); ++ii) {</span>
                     
-<span class="nc" id="L629">                    PairInt nbr = new PairInt(orderedOutput.getX(ii),</span>
-<span class="nc" id="L630">                        orderedOutput.getY(ii));</span>
+<span class="nc" id="L638">                    PairInt nbr = new PairInt(orderedOutput.getX(ii),</span>
+<span class="nc" id="L639">                        orderedOutput.getY(ii));</span>
                     
-<span class="nc bnc" id="L632" title="All 2 branches missed.">                    if (nbrsSet.contains(nbr)) {</span>
+<span class="nc bnc" id="L641" title="All 2 branches missed.">                    if (nbrsSet.contains(nbr)) {</span>
                         // this cannot be last point, because other neighbor
                         // would have been found before, so can assume
                         // the next point is one of the other neighbors
-<span class="nc bnc" id="L636" title="All 2 branches missed.">                        assert(ii &lt; (orderedOutput.getN() - 1));</span>
+<span class="nc bnc" id="L645" title="All 2 branches missed.">                        assert(ii &lt; (orderedOutput.getN() - 1));</span>
                     
-<span class="nc" id="L638">                        int x2 = orderedOutput.getX(ii + 1);</span>
-<span class="nc" id="L639">                        int y2 = orderedOutput.getY(ii + 1);</span>
+<span class="nc" id="L647">                        int x2 = orderedOutput.getX(ii + 1);</span>
+<span class="nc" id="L648">                        int y2 = orderedOutput.getY(ii + 1);</span>
                         
-<span class="nc" id="L641">                        int diffX = Math.abs(x2 - nbr.getX());</span>
-<span class="nc" id="L642">                        int diffY = Math.abs(y2 - nbr.getY());</span>
-<span class="nc bnc" id="L643" title="All 8 branches missed.">                        assert((diffX == 0 &amp;&amp; diffY == 1) || </span>
+<span class="nc" id="L650">                        int diffX = Math.abs(x2 - nbr.getX());</span>
+<span class="nc" id="L651">                        int diffY = Math.abs(y2 - nbr.getY());</span>
+<span class="nc bnc" id="L652" title="All 8 branches missed.">                        assert((diffX == 0 &amp;&amp; diffY == 1) || </span>
                             (diffX == 1 &amp;&amp; diffY == 0));
-<span class="nc" id="L645">                        PairInt p2 = new PairInt(x2, y2);</span>
+<span class="nc" id="L654">                        PairInt p2 = new PairInt(x2, y2);</span>
                         
-<span class="nc bnc" id="L647" title="All 2 branches missed.">                        assert(nbrsSet.contains(p2));</span>
+<span class="nc bnc" id="L656" title="All 2 branches missed.">                        assert(nbrsSet.contains(p2));</span>
                         
-<span class="nc" id="L649">                        orderedOutput.insert(ii, nbr.getX(), nbr.getY());</span>
+<span class="nc" id="L658">                        orderedOutput.insert(ii, nbr.getX(), nbr.getY());</span>
                         
-<span class="nc" id="L651">                        found = true;</span>
-<span class="nc" id="L652">                        break;</span>
+<span class="nc" id="L660">                        found = true;</span>
+<span class="nc" id="L661">                        break;</span>
                     }
                 }
-<span class="nc bnc" id="L655" title="All 2 branches missed.">                assert(found);</span>
-<span class="nc" id="L656">            }</span>
+<span class="nc bnc" id="L664" title="All 2 branches missed.">                assert(found);</span>
+<span class="nc" id="L665">            }</span>
         }
 
-<span class="fc" id="L659">        return orderedOutput;    </span>
+<span class="fc" id="L668">        return orderedOutput;    </span>
     }   
      
     /**
@@ -674,23 +683,23 @@ import java.util.Stack;
         Set&lt;PairInt&gt; remaining, int[] neighborsX,
         int[] neighborsY) {
         
-<span class="nc" id="L677">        int[] dxs = Misc.dx8;</span>
-<span class="nc" id="L678">        int[] dys = Misc.dy8;</span>
+<span class="nc" id="L686">        int[] dxs = Misc.dx8;</span>
+<span class="nc" id="L687">        int[] dys = Misc.dy8;</span>
         
-<span class="nc" id="L680">        int ns = 0;</span>
-<span class="nc bnc" id="L681" title="All 2 branches missed.">        for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="nc" id="L682">            int x2 = x + dxs[k];</span>
-<span class="nc" id="L683">            int y2 = y + dys[k];</span>
-<span class="nc" id="L684">            PairInt p2 = new PairInt(x2, y2);</span>
-<span class="nc bnc" id="L685" title="All 2 branches missed.">            if (!remaining.contains(p2)) {</span>
-<span class="nc" id="L686">                continue;</span>
+<span class="nc" id="L689">        int ns = 0;</span>
+<span class="nc bnc" id="L690" title="All 2 branches missed.">        for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="nc" id="L691">            int x2 = x + dxs[k];</span>
+<span class="nc" id="L692">            int y2 = y + dys[k];</span>
+<span class="nc" id="L693">            PairInt p2 = new PairInt(x2, y2);</span>
+<span class="nc bnc" id="L694" title="All 2 branches missed.">            if (!remaining.contains(p2)) {</span>
+<span class="nc" id="L695">                continue;</span>
             }
-<span class="nc" id="L688">            neighborsX[ns] = x2;</span>
-<span class="nc" id="L689">            neighborsY[ns] = y2;</span>
-<span class="nc" id="L690">            ++ns;</span>
+<span class="nc" id="L697">            neighborsX[ns] = x2;</span>
+<span class="nc" id="L698">            neighborsY[ns] = y2;</span>
+<span class="nc" id="L699">            ++ns;</span>
         }
         
-<span class="nc" id="L693">        return ns;</span>
+<span class="nc" id="L702">        return ns;</span>
     }
 
     /**
@@ -700,21 +709,21 @@ import java.util.Stack;
      */
     protected PairInt findMinXY(Set&lt;PairInt&gt; set) {
 
-<span class="fc" id="L703">        int minX = Integer.MAX_VALUE;</span>
-<span class="fc" id="L704">        int minXsY = Integer.MAX_VALUE;        </span>
-<span class="fc bfc" id="L705" title="All 2 branches covered.">        for (PairInt p : set) {</span>
-<span class="fc bfc" id="L706" title="All 2 branches covered.">            if (p.getX() &lt; minX) {</span>
-<span class="fc" id="L707">                minX = p.getX();</span>
-<span class="fc" id="L708">                minXsY = p.getY();</span>
-<span class="fc bfc" id="L709" title="All 2 branches covered.">            } else if (p.getX() == minX) {</span>
-<span class="pc bpc" id="L710" title="1 of 2 branches missed.">                if (p.getY() &lt; minXsY) {</span>
-<span class="nc" id="L711">                    minX = p.getX();</span>
-<span class="nc" id="L712">                    minXsY = p.getY();</span>
+<span class="fc" id="L712">        int minX = Integer.MAX_VALUE;</span>
+<span class="fc" id="L713">        int minXsY = Integer.MAX_VALUE;        </span>
+<span class="fc bfc" id="L714" title="All 2 branches covered.">        for (PairInt p : set) {</span>
+<span class="fc bfc" id="L715" title="All 2 branches covered.">            if (p.getX() &lt; minX) {</span>
+<span class="fc" id="L716">                minX = p.getX();</span>
+<span class="fc" id="L717">                minXsY = p.getY();</span>
+<span class="fc bfc" id="L718" title="All 2 branches covered.">            } else if (p.getX() == minX) {</span>
+<span class="pc bpc" id="L719" title="1 of 2 branches missed.">                if (p.getY() &lt; minXsY) {</span>
+<span class="nc" id="L720">                    minX = p.getX();</span>
+<span class="nc" id="L721">                    minXsY = p.getY();</span>
                 }
             }
-<span class="fc" id="L715">        }</span>
+<span class="fc" id="L724">        }</span>
         
-<span class="fc" id="L717">        return new PairInt(minX, minXsY);</span>
+<span class="fc" id="L726">        return new PairInt(minX, minXsY);</span>
     }
 
     /**
@@ -728,7 +737,6 @@ import java.util.Stack;
      * @param neighborsX
      * @param neighborsY
      * @param nn
-     * @param medAxis0 closest medial axis point to (x, y)
      * @return index of neighborsX, neighborsY that
      * has the smallest angle subtended by the medial axis
      */
@@ -756,15 +764,15 @@ import java.util.Stack;
         can use the number of non-shape neighbors in common.
         */
 
-<span class="nc bnc" id="L759" title="All 2 branches missed.">        if (nXY &gt; 2) {</span>
+<span class="nc bnc" id="L767" title="All 2 branches missed.">        if (nXY &gt; 2) {</span>
             // modifies neighborsX and neighborsY
-<span class="nc" id="L761">            nXY = filterForLargestNonShapeIntersection(</span>
+<span class="nc" id="L769">            nXY = filterForLargestNonShapeIntersection(</span>
                 x, y, nXY, neighborsX, neighborsY,
                 contiguousShapePoints);
-<span class="nc bnc" id="L764" title="All 2 branches missed.">            assert(nXY != 0);</span>
+<span class="nc bnc" id="L772" title="All 2 branches missed.">            assert(nXY != 0);</span>
         }
-<span class="nc bnc" id="L766" title="All 2 branches missed.">        if (nXY == 1) {</span>
-<span class="nc" id="L767">            return 0;</span>
+<span class="nc bnc" id="L774" title="All 2 branches missed.">        if (nXY == 1) {</span>
+<span class="nc" id="L775">            return 0;</span>
         }
        
         /*
@@ -773,17 +781,17 @@ import java.util.Stack;
                 P2
         */
         
-<span class="nc" id="L776">        Set&lt;PairInt&gt; medAxisClosest = nn.findClosest(x, y);</span>
+<span class="nc" id="L784">        Set&lt;PairInt&gt; medAxisClosest = nn.findClosest(x, y);</span>
  
-<span class="nc bnc" id="L778" title="All 2 branches missed.">        assert(!medAxisClosest.isEmpty());</span>
-<span class="nc" id="L779">        PairInt medAxisP = medAxisClosest.iterator().next();</span>
+<span class="nc bnc" id="L786" title="All 2 branches missed.">        assert(!medAxisClosest.isEmpty());</span>
+<span class="nc" id="L787">        PairInt medAxisP = medAxisClosest.iterator().next();</span>
         
         //System.out.println(
         //    String.format(&quot;x,y=(%d,%d) medAxis=(%d,%d)&quot;, x, y, 
         //        medAxisP.getX(), medAxisP.getY()));
         
-<span class="nc" id="L785">        double minAngle = Double.MAX_VALUE;</span>
-<span class="nc" id="L786">        int minIdx = -1;</span>
+<span class="nc" id="L793">        double minAngle = Double.MAX_VALUE;</span>
+<span class="nc" id="L794">        int minIdx = -1;</span>
         
         //System.out.println(
         //    String.format(&quot;    (%d,%d) (%d,%d) (%d,%d) nXY=%d&quot;, 
@@ -792,26 +800,26 @@ import java.util.Stack;
         // if (x,y) == medAxisP or (x2,y2) == medAxisP
         // angle is NAN
 
-<span class="nc bnc" id="L795" title="All 4 branches missed.">        if (!(medAxisP.getX() == x &amp;&amp; medAxisP.getY() == y)) {</span>
-<span class="nc bnc" id="L796" title="All 2 branches missed.">            for (int i = 0; i &lt; nXY; ++i) {</span>
-<span class="nc" id="L797">                int x2 = neighborsX[i];</span>
-<span class="nc" id="L798">                int y2 = neighborsY[i];</span>
+<span class="nc bnc" id="L803" title="All 4 branches missed.">        if (!(medAxisP.getX() == x &amp;&amp; medAxisP.getY() == y)) {</span>
+<span class="nc bnc" id="L804" title="All 2 branches missed.">            for (int i = 0; i &lt; nXY; ++i) {</span>
+<span class="nc" id="L805">                int x2 = neighborsX[i];</span>
+<span class="nc" id="L806">                int y2 = neighborsY[i];</span>
 
-<span class="nc" id="L800">                double angle = LinesAndAngles.calcClockwiseAngle(</span>
-<span class="nc" id="L801">                    x, y, x2, y2, medAxisP.getX(), medAxisP.getY());</span>
+<span class="nc" id="L808">                double angle = LinesAndAngles.calcClockwiseAngle(</span>
+<span class="nc" id="L809">                    x, y, x2, y2, medAxisP.getX(), medAxisP.getY());</span>
 
-<span class="nc bnc" id="L803" title="All 2 branches missed.">                if (Double.isNaN(angle)) {</span>
-<span class="nc bnc" id="L804" title="All 4 branches missed.">                    if (x == x2 &amp;&amp; x == medAxisP.getX()) {</span>
-<span class="nc bnc" id="L805" title="All 2 branches missed.">                        if (y &lt; y2) {</span>
-<span class="nc" id="L806">                            angle = 0;</span>
+<span class="nc bnc" id="L811" title="All 2 branches missed.">                if (Double.isNaN(angle)) {</span>
+<span class="nc bnc" id="L812" title="All 4 branches missed.">                    if (x == x2 &amp;&amp; x == medAxisP.getX()) {</span>
+<span class="nc bnc" id="L813" title="All 2 branches missed.">                        if (y &lt; y2) {</span>
+<span class="nc" id="L814">                            angle = 0;</span>
                         } else {
-<span class="nc" id="L808">                            angle = Math.PI;</span>
+<span class="nc" id="L816">                            angle = Math.PI;</span>
                         }
-<span class="nc bnc" id="L810" title="All 4 branches missed.">                    } else if (y == y2 &amp;&amp; y == medAxisP.getY()) {</span>
-<span class="nc bnc" id="L811" title="All 2 branches missed.">                        if (x &lt; x2) {</span>
-<span class="nc" id="L812">                            angle = Math.PI/2.;</span>
+<span class="nc bnc" id="L818" title="All 4 branches missed.">                    } else if (y == y2 &amp;&amp; y == medAxisP.getY()) {</span>
+<span class="nc bnc" id="L819" title="All 2 branches missed.">                        if (x &lt; x2) {</span>
+<span class="nc" id="L820">                            angle = Math.PI/2.;</span>
                         } else {
-<span class="nc" id="L814">                            angle = 3. * Math.PI/2.;</span>
+<span class="nc" id="L822">                            angle = 3. * Math.PI/2.;</span>
                         }
                     }
                 }
@@ -820,37 +828,37 @@ import java.util.Stack;
                 //    &quot;    (%d,%d) a=%.4f&quot;, 
                 //    x2, y2, (float) angle));
                 
-<span class="nc bnc" id="L823" title="All 2 branches missed.">                if (angle &lt; minAngle) {</span>
-<span class="nc" id="L824">                    minAngle = angle;</span>
-<span class="nc" id="L825">                    minIdx = i;</span>
+<span class="nc bnc" id="L831" title="All 2 branches missed.">                if (angle &lt; minAngle) {</span>
+<span class="nc" id="L832">                    minAngle = angle;</span>
+<span class="nc" id="L833">                    minIdx = i;</span>
                 }
             }
         } else {
             // since the medial axis is same as (x,y), try using
             // the previous point in output as (x,y) and
             // current (x,y) for the medAxisP
-<span class="nc bnc" id="L832" title="All 2 branches missed.">            if (prevX == -1) {</span>
-<span class="nc" id="L833">                return -1;</span>
+<span class="nc bnc" id="L840" title="All 2 branches missed.">            if (prevX == -1) {</span>
+<span class="nc" id="L841">                return -1;</span>
             }
-<span class="nc bnc" id="L835" title="All 2 branches missed.">            for (int i = 0; i &lt; nXY; ++i) {</span>
-<span class="nc" id="L836">                int x2 = neighborsX[i];</span>
-<span class="nc" id="L837">                int y2 = neighborsY[i];</span>
+<span class="nc bnc" id="L843" title="All 2 branches missed.">            for (int i = 0; i &lt; nXY; ++i) {</span>
+<span class="nc" id="L844">                int x2 = neighborsX[i];</span>
+<span class="nc" id="L845">                int y2 = neighborsY[i];</span>
 
-<span class="nc" id="L839">                double angle = LinesAndAngles.calcClockwiseAngle(</span>
+<span class="nc" id="L847">                double angle = LinesAndAngles.calcClockwiseAngle(</span>
                     prevX, prevY, x2, y2, x, y);
 
-<span class="nc bnc" id="L842" title="All 2 branches missed.">                if (Double.isNaN(angle)) {</span>
-<span class="nc bnc" id="L843" title="All 4 branches missed.">                    if (x == x2 &amp;&amp; x == medAxisP.getX()) {</span>
-<span class="nc bnc" id="L844" title="All 2 branches missed.">                        if (y &lt; y2) {</span>
-<span class="nc" id="L845">                            angle = 0;</span>
+<span class="nc bnc" id="L850" title="All 2 branches missed.">                if (Double.isNaN(angle)) {</span>
+<span class="nc bnc" id="L851" title="All 4 branches missed.">                    if (x == x2 &amp;&amp; x == medAxisP.getX()) {</span>
+<span class="nc bnc" id="L852" title="All 2 branches missed.">                        if (y &lt; y2) {</span>
+<span class="nc" id="L853">                            angle = 0;</span>
                         } else {
-<span class="nc" id="L847">                            angle = Math.PI;</span>
+<span class="nc" id="L855">                            angle = Math.PI;</span>
                         }
-<span class="nc bnc" id="L849" title="All 4 branches missed.">                    } else if (y == y2 &amp;&amp; y == medAxisP.getY()) {</span>
-<span class="nc bnc" id="L850" title="All 2 branches missed.">                        if (x &lt; x2) {</span>
-<span class="nc" id="L851">                            angle = Math.PI/2.;</span>
+<span class="nc bnc" id="L857" title="All 4 branches missed.">                    } else if (y == y2 &amp;&amp; y == medAxisP.getY()) {</span>
+<span class="nc bnc" id="L858" title="All 2 branches missed.">                        if (x &lt; x2) {</span>
+<span class="nc" id="L859">                            angle = Math.PI/2.;</span>
                         } else {
-<span class="nc" id="L853">                            angle = 3. * Math.PI/2.;</span>
+<span class="nc" id="L861">                            angle = 3. * Math.PI/2.;</span>
                         }
                     }
                 }
@@ -860,355 +868,355 @@ import java.util.Stack;
                 //        x2, y2, (float) angle));
                 
                 
-<span class="nc bnc" id="L863" title="All 2 branches missed.">                if (angle &lt; minAngle) {</span>
-<span class="nc" id="L864">                    minAngle = angle;</span>
-<span class="nc" id="L865">                    minIdx = i;</span>
+<span class="nc bnc" id="L871" title="All 2 branches missed.">                if (angle &lt; minAngle) {</span>
+<span class="nc" id="L872">                    minAngle = angle;</span>
+<span class="nc" id="L873">                    minIdx = i;</span>
                 }
             }
         }
         
-<span class="nc" id="L870">        return minIdx;</span>
+<span class="nc" id="L878">        return minIdx;</span>
     }
     
     private double distSq(double x1, double y1, double x2, double y2) {
-<span class="nc" id="L874">        double diffX = x1 - x2;</span>
-<span class="nc" id="L875">        double diffY = y1 - y2;</span>
-<span class="nc" id="L876">        return (diffX * diffX + diffY * diffY);</span>
+<span class="nc" id="L882">        double diffX = x1 - x2;</span>
+<span class="nc" id="L883">        double diffY = y1 - y2;</span>
+<span class="nc" id="L884">        return (diffX * diffX + diffY * diffY);</span>
     }
 
     private int filterForLargestNonShapeIntersection(
         int x, int y, int nXY, int[] neighborsX, int[] neighborsY, 
         Set&lt;PairInt&gt; contiguousShapePoints) {
 
-<span class="nc" id="L883">        int maxNS = Integer.MIN_VALUE;</span>
-<span class="nc" id="L884">        int[] maxNSIdx = new int[8];</span>
-<span class="nc" id="L885">        int n = 0;</span>
-<span class="nc bnc" id="L886" title="All 2 branches missed.">        for (int i = 0; i &lt; nXY; ++i) {</span>
-<span class="nc" id="L887">            int nIterNS = </span>
+<span class="nc" id="L891">        int maxNS = Integer.MIN_VALUE;</span>
+<span class="nc" id="L892">        int[] maxNSIdx = new int[8];</span>
+<span class="nc" id="L893">        int n = 0;</span>
+<span class="nc bnc" id="L894" title="All 2 branches missed.">        for (int i = 0; i &lt; nXY; ++i) {</span>
+<span class="nc" id="L895">            int nIterNS = </span>
                 calcNumberOfNonShapeNeigbhorsInCommon
-<span class="nc" id="L889">                (x, y, neighborsX[i], neighborsY[i],</span>
+<span class="nc" id="L897">                (x, y, neighborsX[i], neighborsY[i],</span>
                 contiguousShapePoints);
-<span class="nc bnc" id="L891" title="All 2 branches missed.">            if (nIterNS &gt; maxNS) {</span>
-<span class="nc" id="L892">                maxNS = nIterNS;</span>
-<span class="nc" id="L893">                n = 0;</span>
-<span class="nc" id="L894">                maxNSIdx[n] = i;</span>
-<span class="nc" id="L895">                n++;</span>
-<span class="nc bnc" id="L896" title="All 2 branches missed.">            } else if (nIterNS == maxNS) {</span>
-<span class="nc" id="L897">                maxNSIdx[n] = i;</span>
-<span class="nc" id="L898">                n++;</span>
+<span class="nc bnc" id="L899" title="All 2 branches missed.">            if (nIterNS &gt; maxNS) {</span>
+<span class="nc" id="L900">                maxNS = nIterNS;</span>
+<span class="nc" id="L901">                n = 0;</span>
+<span class="nc" id="L902">                maxNSIdx[n] = i;</span>
+<span class="nc" id="L903">                n++;</span>
+<span class="nc bnc" id="L904" title="All 2 branches missed.">            } else if (nIterNS == maxNS) {</span>
+<span class="nc" id="L905">                maxNSIdx[n] = i;</span>
+<span class="nc" id="L906">                n++;</span>
             }
         }
 
-<span class="nc bnc" id="L902" title="All 2 branches missed.">        if (n == nXY) {</span>
+<span class="nc bnc" id="L910" title="All 2 branches missed.">        if (n == nXY) {</span>
             // NOTE: does this happen?
-<span class="nc" id="L904">            return nXY;</span>
+<span class="nc" id="L912">            return nXY;</span>
         }
         
-<span class="nc bnc" id="L907" title="All 2 branches missed.">        if (n == 0) {</span>
-<span class="nc" id="L908">            return 0;</span>
+<span class="nc bnc" id="L915" title="All 2 branches missed.">        if (n == 0) {</span>
+<span class="nc" id="L916">            return 0;</span>
         }
 
         // place maxNSIdx at top of neighbors
-<span class="nc bnc" id="L912" title="All 2 branches missed.">        assert(nXY &lt; (neighborsX.length - 1));</span>
+<span class="nc bnc" id="L920" title="All 2 branches missed.">        assert(nXY &lt; (neighborsX.length - 1));</span>
         
         // shift neighborsX,Y down by 1
-<span class="nc bnc" id="L915" title="All 2 branches missed.">        for (int i = (neighborsX.length - 1); i &gt; 0; --i) {</span>
-<span class="nc" id="L916">            neighborsX[i] = neighborsX[i - 1];</span>
-<span class="nc" id="L917">            neighborsY[i] = neighborsY[i - 1];</span>
+<span class="nc bnc" id="L923" title="All 2 branches missed.">        for (int i = (neighborsX.length - 1); i &gt; 0; --i) {</span>
+<span class="nc" id="L924">            neighborsX[i] = neighborsX[i - 1];</span>
+<span class="nc" id="L925">            neighborsY[i] = neighborsY[i - 1];</span>
         }
-<span class="nc bnc" id="L919" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="nc" id="L920">            int idx = maxNSIdx[i] + 1;</span>
-<span class="nc bnc" id="L921" title="All 2 branches missed.">            assert(idx &gt; i);</span>
-<span class="nc" id="L922">            neighborsX[i] = neighborsX[idx];</span>
-<span class="nc" id="L923">            neighborsY[i] = neighborsY[idx];</span>
+<span class="nc bnc" id="L927" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc" id="L928">            int idx = maxNSIdx[i] + 1;</span>
+<span class="nc bnc" id="L929" title="All 2 branches missed.">            assert(idx &gt; i);</span>
+<span class="nc" id="L930">            neighborsX[i] = neighborsX[idx];</span>
+<span class="nc" id="L931">            neighborsY[i] = neighborsY[idx];</span>
         }
 
-<span class="nc" id="L926">        return n;</span>
+<span class="nc" id="L934">        return n;</span>
     }
 
     private int calcNumberOfNonShapeNeigbhorsInCommon(
         int x1, int y1, int x2, int y2, 
         Set&lt;PairInt&gt; contiguousShapePoints) {
 
-<span class="nc" id="L933">        Set&lt;PairInt&gt; set1 = findNonShapeNeighbors(x1, y1, </span>
+<span class="nc" id="L941">        Set&lt;PairInt&gt; set1 = findNonShapeNeighbors(x1, y1, </span>
             contiguousShapePoints);
         
-<span class="nc" id="L936">        Set&lt;PairInt&gt; set2 = findNonShapeNeighbors(x2, y2, </span>
+<span class="nc" id="L944">        Set&lt;PairInt&gt; set2 = findNonShapeNeighbors(x2, y2, </span>
             contiguousShapePoints);
         
         // set1 = (a + intersection)
         // set2 = (b + intersection)
         // nItersection = set1.size - (set1.removeall(set2)).size
         
-<span class="nc" id="L943">        int n1 = set1.size();</span>
-<span class="nc" id="L944">        set1.removeAll(set2);</span>
-<span class="nc" id="L945">        int nInterNS = n1 - set1.size();</span>
+<span class="nc" id="L951">        int n1 = set1.size();</span>
+<span class="nc" id="L952">        set1.removeAll(set2);</span>
+<span class="nc" id="L953">        int nInterNS = n1 - set1.size();</span>
         
-<span class="nc" id="L947">        return nInterNS;</span>
+<span class="nc" id="L955">        return nInterNS;</span>
     }
 
     private Set&lt;PairInt&gt; findNonShapeNeighbors(
         int x, int y, Set&lt;PairInt&gt; contiguousShapePoints) {
         
-<span class="nc" id="L953">        int[] dxs = Misc.dx8;</span>
-<span class="nc" id="L954">        int[] dys = Misc.dy8;</span>
+<span class="nc" id="L961">        int[] dxs = Misc.dx8;</span>
+<span class="nc" id="L962">        int[] dys = Misc.dy8;</span>
 
-<span class="nc" id="L956">        Set&lt;PairInt&gt; pointsNS = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc bnc" id="L957" title="All 2 branches missed.">        for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="nc" id="L958">            int x2 = x + dxs[k];</span>
-<span class="nc" id="L959">            int y2 = y + dys[k];</span>
-<span class="nc" id="L960">            PairInt p2 = new PairInt(x2, y2);</span>
-<span class="nc bnc" id="L961" title="All 2 branches missed.">            if (!contiguousShapePoints.contains(p2)) {</span>
-<span class="nc" id="L962">                pointsNS.add(p2);</span>
+<span class="nc" id="L964">        Set&lt;PairInt&gt; pointsNS = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L965" title="All 2 branches missed.">        for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="nc" id="L966">            int x2 = x + dxs[k];</span>
+<span class="nc" id="L967">            int y2 = y + dys[k];</span>
+<span class="nc" id="L968">            PairInt p2 = new PairInt(x2, y2);</span>
+<span class="nc bnc" id="L969" title="All 2 branches missed.">            if (!contiguousShapePoints.contains(p2)) {</span>
+<span class="nc" id="L970">                pointsNS.add(p2);</span>
             }
         }
         
-<span class="nc" id="L966">        return pointsNS;</span>
+<span class="nc" id="L974">        return pointsNS;</span>
     }
     
     private void debug(Set&lt;PairInt&gt; contiguousShapePoints,
         PairIntArray output) {
         try {
 
-<span class="nc" id="L973">            int[] xPolygon = null;</span>
-<span class="nc" id="L974">            int[] yPolygon = null;</span>
-<span class="nc" id="L975">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
-<span class="nc" id="L976">            int[] xminmxyminmiac = MiscMath.findMinMaxXY(</span>
+<span class="nc" id="L981">            int[] xPolygon = null;</span>
+<span class="nc" id="L982">            int[] yPolygon = null;</span>
+<span class="nc" id="L983">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
+<span class="nc" id="L984">            int[] xminmxyminmiac = MiscMath.findMinMaxXY(</span>
                 contiguousShapePoints);
             int[] xp, yp;
             int n, count;
 
-<span class="nc" id="L981">            n = output.getN();</span>
-<span class="nc" id="L982">            xp = new int[n];</span>
-<span class="nc" id="L983">            yp = new int[n];</span>
-<span class="nc bnc" id="L984" title="All 2 branches missed.">            for (int i = 0; i &lt; output.getN(); ++i) {</span>
-<span class="nc" id="L985">                xp[i] = output.getX(i);</span>
-<span class="nc" id="L986">                yp[i] = output.getY(i);</span>
+<span class="nc" id="L989">            n = output.getN();</span>
+<span class="nc" id="L990">            xp = new int[n];</span>
+<span class="nc" id="L991">            yp = new int[n];</span>
+<span class="nc bnc" id="L992" title="All 2 branches missed.">            for (int i = 0; i &lt; output.getN(); ++i) {</span>
+<span class="nc" id="L993">                xp[i] = output.getX(i);</span>
+<span class="nc" id="L994">                yp[i] = output.getY(i);</span>
             }
-<span class="nc" id="L988">            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],</span>
+<span class="nc" id="L996">            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],</span>
                 xminmxyminmiac[2], xminmxyminmiac[3],
                 xp, yp, xPolygon, yPolygon, &quot;ordered bounds&quot;);
 
-<span class="nc" id="L992">            n = contiguousShapePoints.size();</span>
-<span class="nc" id="L993">            xp = new int[n];</span>
-<span class="nc" id="L994">            yp = new int[n];</span>
-<span class="nc" id="L995">            int i = 0;</span>
-<span class="nc bnc" id="L996" title="All 2 branches missed.">            for (PairInt p : contiguousShapePoints) {</span>
-<span class="nc" id="L997">                xp[i] = p.getX();</span>
-<span class="nc" id="L998">                yp[i] = p.getY();</span>
-<span class="nc" id="L999">                i++;</span>
-<span class="nc" id="L1000">            }</span>
-<span class="nc" id="L1001">            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],</span>
+<span class="nc" id="L1000">            n = contiguousShapePoints.size();</span>
+<span class="nc" id="L1001">            xp = new int[n];</span>
+<span class="nc" id="L1002">            yp = new int[n];</span>
+<span class="nc" id="L1003">            int i = 0;</span>
+<span class="nc bnc" id="L1004" title="All 2 branches missed.">            for (PairInt p : contiguousShapePoints) {</span>
+<span class="nc" id="L1005">                xp[i] = p.getX();</span>
+<span class="nc" id="L1006">                yp[i] = p.getY();</span>
+<span class="nc" id="L1007">                i++;</span>
+<span class="nc" id="L1008">            }</span>
+<span class="nc" id="L1009">            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],</span>
                 xminmxyminmiac[2], xminmxyminmiac[3],
                 xp, yp, xPolygon, yPolygon, &quot;filled shape&quot;);
 
-<span class="nc" id="L1005">            plotter.writeFile2();</span>
+<span class="nc" id="L1013">            plotter.writeFile2();</span>
 
-<span class="nc" id="L1007">            System.out.println(&quot;output=&quot; + output.toString());</span>
-<span class="nc" id="L1008">        } catch (Throwable t) {</span>
+<span class="nc" id="L1015">            System.out.println(&quot;output=&quot; + output.toString());</span>
+<span class="nc" id="L1016">        } catch (Throwable t) {</span>
 
-<span class="nc" id="L1010">        }</span>
-<span class="nc" id="L1011">    }</span>
+<span class="nc" id="L1018">        }</span>
+<span class="nc" id="L1019">    }</span>
     
     private void debug(TIntSet contiguousShapePoints,
         PairIntArray output, int imgWidth) {
-<span class="nc" id="L1015">        PixelHelper ph = new PixelHelper();</span>
+<span class="nc" id="L1023">        PixelHelper ph = new PixelHelper();</span>
         try {
 
-<span class="nc" id="L1018">            int[] xPolygon = null;</span>
-<span class="nc" id="L1019">            int[] yPolygon = null;</span>
-<span class="nc" id="L1020">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
-<span class="nc" id="L1021">            int[] minMaxXY = MiscMath.findMinMaxXY(</span>
+<span class="nc" id="L1026">            int[] xPolygon = null;</span>
+<span class="nc" id="L1027">            int[] yPolygon = null;</span>
+<span class="nc" id="L1028">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
+<span class="nc" id="L1029">            int[] minMaxXY = MiscMath.findMinMaxXY(</span>
                 contiguousShapePoints, imgWidth);
             int[] xp, yp;
             int n, count;
 
-<span class="nc" id="L1026">            n = output.getN();</span>
-<span class="nc" id="L1027">            xp = new int[n];</span>
-<span class="nc" id="L1028">            yp = new int[n];</span>
-<span class="nc bnc" id="L1029" title="All 2 branches missed.">            for (int i = 0; i &lt; output.getN(); ++i) {</span>
-<span class="nc" id="L1030">                xp[i] = output.getX(i);</span>
-<span class="nc" id="L1031">                yp[i] = output.getY(i);</span>
+<span class="nc" id="L1034">            n = output.getN();</span>
+<span class="nc" id="L1035">            xp = new int[n];</span>
+<span class="nc" id="L1036">            yp = new int[n];</span>
+<span class="nc bnc" id="L1037" title="All 2 branches missed.">            for (int i = 0; i &lt; output.getN(); ++i) {</span>
+<span class="nc" id="L1038">                xp[i] = output.getX(i);</span>
+<span class="nc" id="L1039">                yp[i] = output.getY(i);</span>
             }
-<span class="nc" id="L1033">            plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], </span>
+<span class="nc" id="L1041">            plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], </span>
                 minMaxXY[3], xp, yp, xPolygon, yPolygon, &quot;ordered bounds&quot;);
             
-<span class="nc" id="L1036">            n = contiguousShapePoints.size();</span>
-<span class="nc" id="L1037">            xp = new int[n];</span>
-<span class="nc" id="L1038">            yp = new int[n];</span>
-<span class="nc" id="L1039">            int[] xyout = new int[2];</span>
-<span class="nc" id="L1040">            int i = 0;</span>
-<span class="nc" id="L1041">            TIntIterator iter = contiguousShapePoints.iterator();</span>
-<span class="nc bnc" id="L1042" title="All 2 branches missed.">            while (iter.hasNext()) {</span>
-<span class="nc" id="L1043">                int pixIdx = iter.next();</span>
-<span class="nc" id="L1044">                ph.toPixelCoords(pixIdx, imgWidth, xyout);</span>
-<span class="nc" id="L1045">                yp[i] = xyout[1];</span>
-<span class="nc" id="L1046">                xp[i] = xyout[0];</span>
-<span class="nc" id="L1047">                ++i;</span>
-<span class="nc" id="L1048">            }</span>
-<span class="nc" id="L1049">            plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3],</span>
+<span class="nc" id="L1044">            n = contiguousShapePoints.size();</span>
+<span class="nc" id="L1045">            xp = new int[n];</span>
+<span class="nc" id="L1046">            yp = new int[n];</span>
+<span class="nc" id="L1047">            int[] xyout = new int[2];</span>
+<span class="nc" id="L1048">            int i = 0;</span>
+<span class="nc" id="L1049">            TIntIterator iter = contiguousShapePoints.iterator();</span>
+<span class="nc bnc" id="L1050" title="All 2 branches missed.">            while (iter.hasNext()) {</span>
+<span class="nc" id="L1051">                int pixIdx = iter.next();</span>
+<span class="nc" id="L1052">                ph.toPixelCoords(pixIdx, imgWidth, xyout);</span>
+<span class="nc" id="L1053">                yp[i] = xyout[1];</span>
+<span class="nc" id="L1054">                xp[i] = xyout[0];</span>
+<span class="nc" id="L1055">                ++i;</span>
+<span class="nc" id="L1056">            }</span>
+<span class="nc" id="L1057">            plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3],</span>
                 xp, yp, xPolygon, yPolygon, &quot;filled shape&quot;);
             
-<span class="nc" id="L1052">            plotter.writeFile2();</span>
+<span class="nc" id="L1060">            plotter.writeFile2();</span>
 
-<span class="nc" id="L1054">            System.out.println(&quot;output=&quot; + output.toString());</span>
-<span class="nc" id="L1055">        } catch (Throwable t) {</span>
+<span class="nc" id="L1062">            System.out.println(&quot;output=&quot; + output.toString());</span>
+<span class="nc" id="L1063">        } catch (Throwable t) {</span>
 
-<span class="nc" id="L1057">        }</span>
-<span class="nc" id="L1058">    }    </span>
+<span class="nc" id="L1065">        }</span>
+<span class="nc" id="L1066">    }    </span>
 
     private void debug(Set&lt;PairInt&gt; contiguousShapePoints,
         Set&lt;PairInt&gt; boundary, PairIntArray output) {
         try {
 
-<span class="nc" id="L1064">            int[] xPolygon = null;</span>
-<span class="nc" id="L1065">            int[] yPolygon = null;</span>
-<span class="nc" id="L1066">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
-<span class="nc" id="L1067">            int[] xminmxyminmiac = MiscMath.findMinMaxXY(</span>
+<span class="nc" id="L1072">            int[] xPolygon = null;</span>
+<span class="nc" id="L1073">            int[] yPolygon = null;</span>
+<span class="nc" id="L1074">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
+<span class="nc" id="L1075">            int[] xminmxyminmiac = MiscMath.findMinMaxXY(</span>
                 contiguousShapePoints);
             int[] xp, yp;
             int n, count;
 
-<span class="nc" id="L1072">            n = output.getN();</span>
-<span class="nc" id="L1073">            xp = new int[n];</span>
-<span class="nc" id="L1074">            yp = new int[n];</span>
-<span class="nc bnc" id="L1075" title="All 2 branches missed.">            for (int i = 0; i &lt; output.getN(); ++i) {</span>
-<span class="nc" id="L1076">                xp[i] = output.getX(i);</span>
-<span class="nc" id="L1077">                yp[i] = output.getY(i);</span>
+<span class="nc" id="L1080">            n = output.getN();</span>
+<span class="nc" id="L1081">            xp = new int[n];</span>
+<span class="nc" id="L1082">            yp = new int[n];</span>
+<span class="nc bnc" id="L1083" title="All 2 branches missed.">            for (int i = 0; i &lt; output.getN(); ++i) {</span>
+<span class="nc" id="L1084">                xp[i] = output.getX(i);</span>
+<span class="nc" id="L1085">                yp[i] = output.getY(i);</span>
             }
-<span class="nc" id="L1079">            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],</span>
+<span class="nc" id="L1087">            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],</span>
                 xminmxyminmiac[2], xminmxyminmiac[3],
                 xp, yp, xPolygon, yPolygon, &quot;ordered bounds&quot;);
             
-<span class="nc" id="L1083">            n = boundary.size();</span>
-<span class="nc" id="L1084">            xp = new int[n];</span>
-<span class="nc" id="L1085">            yp = new int[n];</span>
-<span class="nc" id="L1086">            int i = 0;</span>
-<span class="nc bnc" id="L1087" title="All 2 branches missed.">            for (PairInt p : boundary) {</span>
-<span class="nc" id="L1088">                xp[i] = p.getX();</span>
-<span class="nc" id="L1089">                yp[i] = p.getY();</span>
-<span class="nc" id="L1090">                i++;</span>
-<span class="nc" id="L1091">            }</span>
-<span class="nc" id="L1092">            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],</span>
+<span class="nc" id="L1091">            n = boundary.size();</span>
+<span class="nc" id="L1092">            xp = new int[n];</span>
+<span class="nc" id="L1093">            yp = new int[n];</span>
+<span class="nc" id="L1094">            int i = 0;</span>
+<span class="nc bnc" id="L1095" title="All 2 branches missed.">            for (PairInt p : boundary) {</span>
+<span class="nc" id="L1096">                xp[i] = p.getX();</span>
+<span class="nc" id="L1097">                yp[i] = p.getY();</span>
+<span class="nc" id="L1098">                i++;</span>
+<span class="nc" id="L1099">            }</span>
+<span class="nc" id="L1100">            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],</span>
                 xminmxyminmiac[2], xminmxyminmiac[3],
                 xp, yp, xPolygon, yPolygon, &quot;boundary&quot;);
             
-<span class="nc" id="L1096">            n = contiguousShapePoints.size();</span>
-<span class="nc" id="L1097">            xp = new int[n];</span>
-<span class="nc" id="L1098">            yp = new int[n];</span>
-<span class="nc" id="L1099">            i = 0;</span>
-<span class="nc bnc" id="L1100" title="All 2 branches missed.">            for (PairInt p : contiguousShapePoints) {</span>
-<span class="nc" id="L1101">                xp[i] = p.getX();</span>
-<span class="nc" id="L1102">                yp[i] = p.getY();</span>
-<span class="nc" id="L1103">                i++;</span>
-<span class="nc" id="L1104">            }</span>
-<span class="nc" id="L1105">            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],</span>
+<span class="nc" id="L1104">            n = contiguousShapePoints.size();</span>
+<span class="nc" id="L1105">            xp = new int[n];</span>
+<span class="nc" id="L1106">            yp = new int[n];</span>
+<span class="nc" id="L1107">            i = 0;</span>
+<span class="nc bnc" id="L1108" title="All 2 branches missed.">            for (PairInt p : contiguousShapePoints) {</span>
+<span class="nc" id="L1109">                xp[i] = p.getX();</span>
+<span class="nc" id="L1110">                yp[i] = p.getY();</span>
+<span class="nc" id="L1111">                i++;</span>
+<span class="nc" id="L1112">            }</span>
+<span class="nc" id="L1113">            plotter.addPlot(xminmxyminmiac[0], xminmxyminmiac[1],</span>
                 xminmxyminmiac[2], xminmxyminmiac[3],
                 xp, yp, xPolygon, yPolygon, &quot;filled shape&quot;);
             
-<span class="nc" id="L1109">            plotter.writeFile2();</span>
+<span class="nc" id="L1117">            plotter.writeFile2();</span>
 
-<span class="nc" id="L1111">            System.out.println(&quot;output=&quot; + output.toString());</span>
-<span class="nc" id="L1112">        } catch (Throwable t) {</span>
+<span class="nc" id="L1119">            System.out.println(&quot;output=&quot; + output.toString());</span>
+<span class="nc" id="L1120">        } catch (Throwable t) {</span>
 
-<span class="nc" id="L1114">        }</span>
-<span class="nc" id="L1115">    }</span>
+<span class="nc" id="L1122">        }</span>
+<span class="nc" id="L1123">    }</span>
 
     private void debug(TIntSet contiguousShapePoints, TIntSet boundary, 
         PairIntArray output, int imgWidth) {
         
         try {
 
-<span class="fc" id="L1122">            int[] xPolygon = null;</span>
-<span class="fc" id="L1123">            int[] yPolygon = null;</span>
-<span class="fc" id="L1124">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
-<span class="fc" id="L1125">            int[] minMaxXY = MiscMath.findMinMaxXY(</span>
+<span class="fc" id="L1130">            int[] xPolygon = null;</span>
+<span class="fc" id="L1131">            int[] yPolygon = null;</span>
+<span class="fc" id="L1132">            PolygonAndPointPlotter plotter = new PolygonAndPointPlotter();</span>
+<span class="fc" id="L1133">            int[] minMaxXY = MiscMath.findMinMaxXY(</span>
                 contiguousShapePoints, imgWidth);
             int[] xp, yp;
             int n, count;
 
-<span class="fc" id="L1130">            PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L1138">            PixelHelper ph = new PixelHelper();</span>
             
-<span class="fc" id="L1132">            n = output.getN();</span>
-<span class="fc" id="L1133">            xp = new int[n];</span>
-<span class="fc" id="L1134">            yp = new int[n];</span>
-<span class="fc bfc" id="L1135" title="All 2 branches covered.">            for (int i = 0; i &lt; output.getN(); ++i) {</span>
-<span class="fc" id="L1136">                xp[i] = output.getX(i);</span>
-<span class="fc" id="L1137">                yp[i] = output.getY(i);</span>
+<span class="fc" id="L1140">            n = output.getN();</span>
+<span class="fc" id="L1141">            xp = new int[n];</span>
+<span class="fc" id="L1142">            yp = new int[n];</span>
+<span class="fc bfc" id="L1143" title="All 2 branches covered.">            for (int i = 0; i &lt; output.getN(); ++i) {</span>
+<span class="fc" id="L1144">                xp[i] = output.getX(i);</span>
+<span class="fc" id="L1145">                yp[i] = output.getY(i);</span>
             }
-<span class="fc" id="L1139">            plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3],</span>
+<span class="fc" id="L1147">            plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3],</span>
                 xp, yp, xPolygon, yPolygon, &quot;ordered bounds&quot;);
             
-<span class="fc" id="L1142">            n = boundary.size();</span>
-<span class="fc" id="L1143">            xp = new int[n];</span>
-<span class="fc" id="L1144">            yp = new int[n];</span>
-<span class="fc" id="L1145">            int[] xyout = new int[2];</span>
-<span class="fc" id="L1146">            int i = 0;</span>
-<span class="fc" id="L1147">            TIntIterator iter = boundary.iterator();</span>
-<span class="fc bfc" id="L1148" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
-<span class="fc" id="L1149">                int pixIdx = iter.next();</span>
-<span class="fc" id="L1150">                ph.toPixelCoords(pixIdx, imgWidth, xyout);</span>
-<span class="fc" id="L1151">                yp[i] = xyout[1];</span>
-<span class="fc" id="L1152">                xp[i] = xyout[0];</span>
+<span class="fc" id="L1150">            n = boundary.size();</span>
+<span class="fc" id="L1151">            xp = new int[n];</span>
+<span class="fc" id="L1152">            yp = new int[n];</span>
+<span class="fc" id="L1153">            int[] xyout = new int[2];</span>
+<span class="fc" id="L1154">            int i = 0;</span>
+<span class="fc" id="L1155">            TIntIterator iter = boundary.iterator();</span>
+<span class="fc bfc" id="L1156" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
+<span class="fc" id="L1157">                int pixIdx = iter.next();</span>
+<span class="fc" id="L1158">                ph.toPixelCoords(pixIdx, imgWidth, xyout);</span>
+<span class="fc" id="L1159">                yp[i] = xyout[1];</span>
+<span class="fc" id="L1160">                xp[i] = xyout[0];</span>
                 
-<span class="fc" id="L1154">                ++i;</span>
-<span class="fc" id="L1155">            }</span>
-<span class="fc" id="L1156">            plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3],</span>
+<span class="fc" id="L1162">                ++i;</span>
+<span class="fc" id="L1163">            }</span>
+<span class="fc" id="L1164">            plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3],</span>
                 xp, yp, xPolygon, yPolygon, &quot;boundary&quot;);
             
-<span class="fc" id="L1159">            n = contiguousShapePoints.size();</span>
-<span class="fc" id="L1160">            xp = new int[n];</span>
-<span class="fc" id="L1161">            yp = new int[n];</span>
-<span class="fc" id="L1162">            i = 0;</span>
-<span class="fc" id="L1163">            iter = boundary.iterator();</span>
-<span class="fc bfc" id="L1164" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
-<span class="fc" id="L1165">                int pixIdx = iter.next();</span>
-<span class="fc" id="L1166">                ph.toPixelCoords(pixIdx, imgWidth, xyout);</span>
-<span class="fc" id="L1167">                yp[i] = xyout[1];</span>
-<span class="fc" id="L1168">                xp[i] = xyout[0];</span>
-<span class="fc" id="L1169">                ++i;</span>
-<span class="fc" id="L1170">            }</span>
-<span class="fc" id="L1171">            plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3],</span>
+<span class="fc" id="L1167">            n = contiguousShapePoints.size();</span>
+<span class="fc" id="L1168">            xp = new int[n];</span>
+<span class="fc" id="L1169">            yp = new int[n];</span>
+<span class="fc" id="L1170">            i = 0;</span>
+<span class="fc" id="L1171">            iter = boundary.iterator();</span>
+<span class="fc bfc" id="L1172" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
+<span class="fc" id="L1173">                int pixIdx = iter.next();</span>
+<span class="fc" id="L1174">                ph.toPixelCoords(pixIdx, imgWidth, xyout);</span>
+<span class="fc" id="L1175">                yp[i] = xyout[1];</span>
+<span class="fc" id="L1176">                xp[i] = xyout[0];</span>
+<span class="fc" id="L1177">                ++i;</span>
+<span class="fc" id="L1178">            }</span>
+<span class="fc" id="L1179">            plotter.addPlot(minMaxXY[0], minMaxXY[1], minMaxXY[2], minMaxXY[3],</span>
                 xp, yp, xPolygon, yPolygon, &quot;filled shape&quot;);
             
-<span class="fc" id="L1174">            String file = plotter.writeFile2();</span>
-<span class="fc" id="L1175">            System.out.println(&quot;wrote debug file=&quot; + file);</span>
-<span class="fc" id="L1176">            System.out.println(&quot;output=&quot; + output.toString());</span>
-<span class="nc" id="L1177">        } catch (Throwable t) {</span>
+<span class="fc" id="L1182">            String file = plotter.writeFile2();</span>
+<span class="fc" id="L1183">            System.out.println(&quot;wrote debug file=&quot; + file);</span>
+<span class="fc" id="L1184">            System.out.println(&quot;output=&quot; + output.toString());</span>
+<span class="nc" id="L1185">        } catch (Throwable t) {</span>
 
-<span class="fc" id="L1179">        }</span>
-<span class="fc" id="L1180">    }</span>
+<span class="fc" id="L1187">        }</span>
+<span class="fc" id="L1188">    }</span>
     
     private void debugPrint(PairIntArray ob1, PairIntArray ob2, 
         PairIntArray output) {
         
-<span class="nc" id="L1185">        int[] minMaxXY1 = MiscMath.findMinMaxXY(ob1);</span>
-<span class="nc" id="L1186">        int[] minMaxXY2 = MiscMath.findMinMaxXY(ob2);</span>
-<span class="nc" id="L1187">        int[] minMaxXY = MiscMath.findMinMaxXY(output);</span>
+<span class="nc" id="L1193">        int[] minMaxXY1 = MiscMath.findMinMaxXY(ob1);</span>
+<span class="nc" id="L1194">        int[] minMaxXY2 = MiscMath.findMinMaxXY(ob2);</span>
+<span class="nc" id="L1195">        int[] minMaxXY = MiscMath.findMinMaxXY(output);</span>
         
-<span class="nc" id="L1189">        int maxX = Math.max(minMaxXY1[1], minMaxXY2[1]);</span>
-<span class="nc" id="L1190">        maxX = Math.max(maxX, minMaxXY[1]);</span>
+<span class="nc" id="L1197">        int maxX = Math.max(minMaxXY1[1], minMaxXY2[1]);</span>
+<span class="nc" id="L1198">        maxX = Math.max(maxX, minMaxXY[1]);</span>
         
-<span class="nc" id="L1192">        int maxY = Math.max(minMaxXY1[3], minMaxXY2[3]);</span>
-<span class="nc" id="L1193">        maxY = Math.max(maxY, minMaxXY[3]);</span>
+<span class="nc" id="L1200">        int maxY = Math.max(minMaxXY1[3], minMaxXY2[3]);</span>
+<span class="nc" id="L1201">        maxY = Math.max(maxY, minMaxXY[3]);</span>
         
-<span class="nc" id="L1195">        algorithms.imageProcessing.Image img </span>
+<span class="nc" id="L1203">        algorithms.imageProcessing.Image img </span>
             = new algorithms.imageProcessing.Image(maxX + 10, maxY + 10);
         
-<span class="nc" id="L1198">        long ts = algorithms.misc.MiscDebug.getCurrentTimeFormatted();</span>
+<span class="nc" id="L1206">        long ts = algorithms.misc.MiscDebug.getCurrentTimeFormatted();</span>
         
-<span class="nc" id="L1200">        algorithms.imageProcessing.ImageIOHelper.</span>
-<span class="nc" id="L1201">             addCurveToImage(ob1, img, </span>
+<span class="nc" id="L1208">        algorithms.imageProcessing.ImageIOHelper.</span>
+<span class="nc" id="L1209">             addCurveToImage(ob1, img, </span>
              2, 0, 255, 0);
-<span class="nc" id="L1203">        algorithms.imageProcessing.ImageIOHelper.</span>
-<span class="nc" id="L1204">             addCurveToImage(ob2, img, </span>
+<span class="nc" id="L1211">        algorithms.imageProcessing.ImageIOHelper.</span>
+<span class="nc" id="L1212">             addCurveToImage(ob2, img, </span>
              1, 0, 0, 255);
-<span class="nc" id="L1206">        algorithms.imageProcessing.ImageIOHelper.</span>
-<span class="nc" id="L1207">             addCurveToImage(output, img, </span>
+<span class="nc" id="L1214">        algorithms.imageProcessing.ImageIOHelper.</span>
+<span class="nc" id="L1215">             addCurveToImage(output, img, </span>
              0, 255, 0, 0);
-<span class="nc" id="L1209">        algorithms.misc.MiscDebug.writeImage(img, &quot;_m_&quot; + ts);</span>
-<span class="nc" id="L1210">        System.out.println(&quot;wrote &quot; + ts);</span>
-<span class="nc" id="L1211">    }</span>
+<span class="nc" id="L1217">        algorithms.misc.MiscDebug.writeImage(img, &quot;_m_&quot; + ts);</span>
+<span class="nc" id="L1218">        System.out.println(&quot;wrote &quot; + ts);</span>
+<span class="nc" id="L1219">    }</span>
     
     /**
      * calculate the minimum angle where the vertex is
@@ -1221,7 +1229,6 @@ import java.util.Stack;
      * @param neighborsX
      * @param neighborsY
      * @param nn
-     * @param medAxis0 closest medial axis point to (x, y)
      * @return index of neighborsX, neighborsY that
      * has the smallest angle subtended by the medial axis
      */
@@ -1248,8 +1255,8 @@ import java.util.Stack;
         can use the number of non-shape neighbors in common.
         */
 
-<span class="nc bnc" id="L1251" title="All 2 branches missed.">        if (nXY == 1) {</span>
-<span class="nc" id="L1252">            return 0;</span>
+<span class="nc bnc" id="L1258" title="All 2 branches missed.">        if (nXY == 1) {</span>
+<span class="nc" id="L1259">            return 0;</span>
         }
        
         /*
@@ -1258,9 +1265,9 @@ import java.util.Stack;
                 P2
         */
         
-<span class="nc" id="L1261">        Set&lt;PairInt&gt; medAxisClosest = nn.findClosest(x, y);</span>
-<span class="nc bnc" id="L1262" title="All 2 branches missed.">        assert(!medAxisClosest.isEmpty());</span>
-<span class="nc" id="L1263">        PairInt medAxisP = medAxisClosest.iterator().next();</span>
+<span class="nc" id="L1268">        Set&lt;PairInt&gt; medAxisClosest = nn.findClosest(x, y);</span>
+<span class="nc bnc" id="L1269" title="All 2 branches missed.">        assert(!medAxisClosest.isEmpty());</span>
+<span class="nc" id="L1270">        PairInt medAxisP = medAxisClosest.iterator().next();</span>
        
         /*
         System.out.println(
@@ -1268,8 +1275,8 @@ import java.util.Stack;
                 medAxisP.getX(), medAxisP.getY()));
         */
         
-<span class="nc" id="L1271">        double minAngle = Double.MAX_VALUE;</span>
-<span class="nc" id="L1272">        int minIdx = -1;</span>
+<span class="nc" id="L1278">        double minAngle = Double.MAX_VALUE;</span>
+<span class="nc" id="L1279">        int minIdx = -1;</span>
 
         /*
         System.out.println(
@@ -1280,26 +1287,26 @@ import java.util.Stack;
         // if (x,y) == medAxisP or (x2,y2) == medAxisP
         // angle is NAN
 
-<span class="nc bnc" id="L1283" title="All 4 branches missed.">        if (!(medAxisP.getX() == x &amp;&amp; medAxisP.getY() == y)) {</span>
-<span class="nc bnc" id="L1284" title="All 2 branches missed.">            for (int i = 0; i &lt; nXY; ++i) {</span>
-<span class="nc" id="L1285">                int x2 = neighborsX[i];</span>
-<span class="nc" id="L1286">                int y2 = neighborsY[i];</span>
+<span class="nc bnc" id="L1290" title="All 4 branches missed.">        if (!(medAxisP.getX() == x &amp;&amp; medAxisP.getY() == y)) {</span>
+<span class="nc bnc" id="L1291" title="All 2 branches missed.">            for (int i = 0; i &lt; nXY; ++i) {</span>
+<span class="nc" id="L1292">                int x2 = neighborsX[i];</span>
+<span class="nc" id="L1293">                int y2 = neighborsY[i];</span>
 
-<span class="nc" id="L1288">                double angle = LinesAndAngles.calcClockwiseAngle(</span>
-<span class="nc" id="L1289">                    x, y, x2, y2, medAxisP.getX(), medAxisP.getY());</span>
+<span class="nc" id="L1295">                double angle = LinesAndAngles.calcClockwiseAngle(</span>
+<span class="nc" id="L1296">                    x, y, x2, y2, medAxisP.getX(), medAxisP.getY());</span>
 
-<span class="nc bnc" id="L1291" title="All 2 branches missed.">                if (Double.isNaN(angle)) {</span>
-<span class="nc bnc" id="L1292" title="All 4 branches missed.">                    if (x == x2 &amp;&amp; x == medAxisP.getX()) {</span>
-<span class="nc bnc" id="L1293" title="All 2 branches missed.">                        if (y &lt; y2) {</span>
-<span class="nc" id="L1294">                            angle = 0;</span>
+<span class="nc bnc" id="L1298" title="All 2 branches missed.">                if (Double.isNaN(angle)) {</span>
+<span class="nc bnc" id="L1299" title="All 4 branches missed.">                    if (x == x2 &amp;&amp; x == medAxisP.getX()) {</span>
+<span class="nc bnc" id="L1300" title="All 2 branches missed.">                        if (y &lt; y2) {</span>
+<span class="nc" id="L1301">                            angle = 0;</span>
                         } else {
-<span class="nc" id="L1296">                            angle = Math.PI;</span>
+<span class="nc" id="L1303">                            angle = Math.PI;</span>
                         }
-<span class="nc bnc" id="L1298" title="All 4 branches missed.">                    } else if (y == y2 &amp;&amp; y == medAxisP.getY()) {</span>
-<span class="nc bnc" id="L1299" title="All 2 branches missed.">                        if (x &lt; x2) {</span>
-<span class="nc" id="L1300">                            angle = Math.PI/2.;</span>
+<span class="nc bnc" id="L1305" title="All 4 branches missed.">                    } else if (y == y2 &amp;&amp; y == medAxisP.getY()) {</span>
+<span class="nc bnc" id="L1306" title="All 2 branches missed.">                        if (x &lt; x2) {</span>
+<span class="nc" id="L1307">                            angle = Math.PI/2.;</span>
                         } else {
-<span class="nc" id="L1302">                            angle = 3. * Math.PI/2.;</span>
+<span class="nc" id="L1309">                            angle = 3. * Math.PI/2.;</span>
                         }
                     }
                 }
@@ -1309,37 +1316,37 @@ import java.util.Stack;
                     String.format(&quot;    (%d,%d) a=%.4f&quot;, x2, y2, (float) angle));
                 */
                 
-<span class="nc bnc" id="L1312" title="All 2 branches missed.">                if (angle &lt; minAngle) {</span>
-<span class="nc" id="L1313">                    minAngle = angle;</span>
-<span class="nc" id="L1314">                    minIdx = i;</span>
+<span class="nc bnc" id="L1319" title="All 2 branches missed.">                if (angle &lt; minAngle) {</span>
+<span class="nc" id="L1320">                    minAngle = angle;</span>
+<span class="nc" id="L1321">                    minIdx = i;</span>
                 }
             }
         } else {
             // since the medial axis is same as (x,y), try using
             // the previous point in output as (x,y) and
             // current (x,y) for the medAxisP
-<span class="nc bnc" id="L1321" title="All 2 branches missed.">            if (prevX == -1) {</span>
-<span class="nc" id="L1322">                return -1;</span>
+<span class="nc bnc" id="L1328" title="All 2 branches missed.">            if (prevX == -1) {</span>
+<span class="nc" id="L1329">                return -1;</span>
             }
-<span class="nc bnc" id="L1324" title="All 2 branches missed.">            for (int i = 0; i &lt; nXY; ++i) {</span>
-<span class="nc" id="L1325">                int x2 = neighborsX[i];</span>
-<span class="nc" id="L1326">                int y2 = neighborsY[i];</span>
+<span class="nc bnc" id="L1331" title="All 2 branches missed.">            for (int i = 0; i &lt; nXY; ++i) {</span>
+<span class="nc" id="L1332">                int x2 = neighborsX[i];</span>
+<span class="nc" id="L1333">                int y2 = neighborsY[i];</span>
 
-<span class="nc" id="L1328">                double angle = LinesAndAngles.calcClockwiseAngle(</span>
+<span class="nc" id="L1335">                double angle = LinesAndAngles.calcClockwiseAngle(</span>
                     prevX, prevY, x2, y2, x, y);
 
-<span class="nc bnc" id="L1331" title="All 2 branches missed.">                if (Double.isNaN(angle)) {</span>
-<span class="nc bnc" id="L1332" title="All 4 branches missed.">                    if (x == x2 &amp;&amp; x == medAxisP.getX()) {</span>
-<span class="nc bnc" id="L1333" title="All 2 branches missed.">                        if (y &lt; y2) {</span>
-<span class="nc" id="L1334">                            angle = 0;</span>
+<span class="nc bnc" id="L1338" title="All 2 branches missed.">                if (Double.isNaN(angle)) {</span>
+<span class="nc bnc" id="L1339" title="All 4 branches missed.">                    if (x == x2 &amp;&amp; x == medAxisP.getX()) {</span>
+<span class="nc bnc" id="L1340" title="All 2 branches missed.">                        if (y &lt; y2) {</span>
+<span class="nc" id="L1341">                            angle = 0;</span>
                         } else {
-<span class="nc" id="L1336">                            angle = Math.PI;</span>
+<span class="nc" id="L1343">                            angle = Math.PI;</span>
                         }
-<span class="nc bnc" id="L1338" title="All 4 branches missed.">                    } else if (y == y2 &amp;&amp; y == medAxisP.getY()) {</span>
-<span class="nc bnc" id="L1339" title="All 2 branches missed.">                        if (x &lt; x2) {</span>
-<span class="nc" id="L1340">                            angle = Math.PI/2.;</span>
+<span class="nc bnc" id="L1345" title="All 4 branches missed.">                    } else if (y == y2 &amp;&amp; y == medAxisP.getY()) {</span>
+<span class="nc bnc" id="L1346" title="All 2 branches missed.">                        if (x &lt; x2) {</span>
+<span class="nc" id="L1347">                            angle = Math.PI/2.;</span>
                         } else {
-<span class="nc" id="L1342">                            angle = 3. * Math.PI/2.;</span>
+<span class="nc" id="L1349">                            angle = 3. * Math.PI/2.;</span>
                         }
                     }
                 }
@@ -1350,144 +1357,144 @@ import java.util.Stack;
                         x2, y2, (float) angle));
                 */
                 
-<span class="nc bnc" id="L1353" title="All 2 branches missed.">                if (angle &lt; minAngle) {</span>
-<span class="nc" id="L1354">                    minAngle = angle;</span>
-<span class="nc" id="L1355">                    minIdx = i;</span>
+<span class="nc bnc" id="L1360" title="All 2 branches missed.">                if (angle &lt; minAngle) {</span>
+<span class="nc" id="L1361">                    minAngle = angle;</span>
+<span class="nc" id="L1362">                    minIdx = i;</span>
                 }
             }
         }
         
-<span class="nc" id="L1360">        return minIdx;</span>
+<span class="nc" id="L1367">        return minIdx;</span>
     }
 
     private PairInt findSmallestXY(Set&lt;PairInt&gt; points) {
 
-<span class="fc" id="L1365">        PairInt minP = null;</span>
+<span class="fc" id="L1372">        PairInt minP = null;</span>
         
-<span class="fc bfc" id="L1367" title="All 2 branches covered.">        for (PairInt p : points) {</span>
-<span class="fc bfc" id="L1368" title="All 2 branches covered.">            if (minP == null) {</span>
-<span class="fc" id="L1369">                minP = p;</span>
-<span class="fc bfc" id="L1370" title="All 2 branches covered.">            } else if (p.getX() &lt; minP.getX()) {</span>
-<span class="fc" id="L1371">                minP = p;</span>
-<span class="fc bfc" id="L1372" title="All 2 branches covered.">            } else if (p.getX() == minP.getX()) {</span>
-<span class="fc bfc" id="L1373" title="All 2 branches covered.">                if (p.getY() &lt; minP.getY()) {</span>
-<span class="fc" id="L1374">                    minP = p;</span>
+<span class="fc bfc" id="L1374" title="All 2 branches covered.">        for (PairInt p : points) {</span>
+<span class="fc bfc" id="L1375" title="All 2 branches covered.">            if (minP == null) {</span>
+<span class="fc" id="L1376">                minP = p;</span>
+<span class="fc bfc" id="L1377" title="All 2 branches covered.">            } else if (p.getX() &lt; minP.getX()) {</span>
+<span class="fc" id="L1378">                minP = p;</span>
+<span class="fc bfc" id="L1379" title="All 2 branches covered.">            } else if (p.getX() == minP.getX()) {</span>
+<span class="fc bfc" id="L1380" title="All 2 branches covered.">                if (p.getY() &lt; minP.getY()) {</span>
+<span class="fc" id="L1381">                    minP = p;</span>
                 }
             }
-<span class="fc" id="L1377">        }</span>
+<span class="fc" id="L1384">        }</span>
         
-<span class="fc" id="L1379">        return minP;</span>
+<span class="fc" id="L1386">        return minP;</span>
     }
     
     private int findSmallestXY(TIntSet pixIdxs, int imgWidth) {
 
-<span class="pc bpc" id="L1384" title="1 of 2 branches missed.">        if (pixIdxs.isEmpty()) {</span>
-<span class="nc" id="L1385">            return -1;</span>
+<span class="pc bpc" id="L1391" title="1 of 2 branches missed.">        if (pixIdxs.isEmpty()) {</span>
+<span class="nc" id="L1392">            return -1;</span>
         }
         
-<span class="fc" id="L1388">        int minPX = -1;</span>
-<span class="fc" id="L1389">        int minPY = -1;</span>
-<span class="fc" id="L1390">        PixelHelper ph = new PixelHelper();</span>
-<span class="fc" id="L1391">        int[] xyout = new int[2];</span>
-<span class="fc" id="L1392">        TIntIterator iter = pixIdxs.iterator();</span>
-<span class="fc bfc" id="L1393" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
-<span class="fc" id="L1394">            int pixIdx = iter.next();</span>
-<span class="fc" id="L1395">            ph.toPixelCoords(pixIdx, imgWidth, xyout);</span>
-<span class="fc" id="L1396">            int y = xyout[1];</span>
-<span class="fc" id="L1397">            int x = xyout[0];                </span>
-<span class="fc bfc" id="L1398" title="All 2 branches covered.">            if (minPX == -1) {</span>
-<span class="fc" id="L1399">                minPX = x;</span>
-<span class="fc" id="L1400">                minPY = y;</span>
-<span class="fc bfc" id="L1401" title="All 2 branches covered.">            } else if (x &lt; minPX) {</span>
-<span class="fc" id="L1402">                minPX = x;</span>
-<span class="fc" id="L1403">                minPY = y;</span>
-<span class="fc bfc" id="L1404" title="All 2 branches covered.">            } else if (x == minPX) {</span>
-<span class="fc bfc" id="L1405" title="All 2 branches covered.">                if (y &lt; minPY) {</span>
-<span class="fc" id="L1406">                    minPX = x;</span>
-<span class="fc" id="L1407">                    minPY = y;</span>
+<span class="fc" id="L1395">        int minPX = -1;</span>
+<span class="fc" id="L1396">        int minPY = -1;</span>
+<span class="fc" id="L1397">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L1398">        int[] xyout = new int[2];</span>
+<span class="fc" id="L1399">        TIntIterator iter = pixIdxs.iterator();</span>
+<span class="fc bfc" id="L1400" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L1401">            int pixIdx = iter.next();</span>
+<span class="fc" id="L1402">            ph.toPixelCoords(pixIdx, imgWidth, xyout);</span>
+<span class="fc" id="L1403">            int y = xyout[1];</span>
+<span class="fc" id="L1404">            int x = xyout[0];                </span>
+<span class="fc bfc" id="L1405" title="All 2 branches covered.">            if (minPX == -1) {</span>
+<span class="fc" id="L1406">                minPX = x;</span>
+<span class="fc" id="L1407">                minPY = y;</span>
+<span class="fc bfc" id="L1408" title="All 2 branches covered.">            } else if (x &lt; minPX) {</span>
+<span class="fc" id="L1409">                minPX = x;</span>
+<span class="fc" id="L1410">                minPY = y;</span>
+<span class="fc bfc" id="L1411" title="All 2 branches covered.">            } else if (x == minPX) {</span>
+<span class="fc bfc" id="L1412" title="All 2 branches covered.">                if (y &lt; minPY) {</span>
+<span class="fc" id="L1413">                    minPX = x;</span>
+<span class="fc" id="L1414">                    minPY = y;</span>
                 }
             }
-<span class="fc" id="L1410">        }</span>
+<span class="fc" id="L1417">        }</span>
         
-<span class="pc bpc" id="L1412" title="1 of 2 branches missed.">        if (minPY == -1) {</span>
-<span class="nc" id="L1413">            throw new IllegalStateException(&quot;no minimum was found&quot;);</span>
+<span class="pc bpc" id="L1419" title="1 of 2 branches missed.">        if (minPY == -1) {</span>
+<span class="nc" id="L1420">            throw new IllegalStateException(&quot;no minimum was found&quot;);</span>
         }
         
-<span class="fc" id="L1416">        int minP = (minPY * imgWidth) + minPX;</span>
+<span class="fc" id="L1423">        int minP = (minPY * imgWidth) + minPX;</span>
         
-<span class="fc" id="L1418">        return minP;</span>
+<span class="fc" id="L1425">        return minP;</span>
     }
 
     private VeryLongBitString[] createPointNeighborArray(
         List&lt;PairInt&gt; points, TObjectIntMap&lt;PairInt&gt; pointIndexes) {
         
-<span class="fc" id="L1424">        int n = points.size();</span>
+<span class="fc" id="L1431">        int n = points.size();</span>
         
-<span class="fc" id="L1426">        VeryLongBitString[] out = new VeryLongBitString[n];</span>
+<span class="fc" id="L1433">        VeryLongBitString[] out = new VeryLongBitString[n];</span>
                 
-<span class="fc" id="L1428">        int[] dxs = Misc.dx8;</span>
-<span class="fc" id="L1429">        int[] dys = Misc.dy8;</span>
+<span class="fc" id="L1435">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L1436">        int[] dys = Misc.dy8;</span>
         
-<span class="fc bfc" id="L1431" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc bfc" id="L1438" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
             
-<span class="fc" id="L1433">            PairInt p = points.get(i);</span>
+<span class="fc" id="L1440">            PairInt p = points.get(i);</span>
             
-<span class="fc" id="L1435">            out[i] = new VeryLongBitString(n);</span>
+<span class="fc" id="L1442">            out[i] = new VeryLongBitString(n);</span>
                         
-<span class="fc" id="L1437">            int x = p.getX();</span>
-<span class="fc" id="L1438">            int y = p.getY();</span>
+<span class="fc" id="L1444">            int x = p.getX();</span>
+<span class="fc" id="L1445">            int y = p.getY();</span>
                         
-<span class="fc bfc" id="L1440" title="All 2 branches covered.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="fc" id="L1441">                int x2 = x + dxs[k];</span>
-<span class="fc" id="L1442">                int y2 = y + dys[k];</span>
-<span class="fc" id="L1443">                PairInt p2 = new PairInt(x2, y2);</span>
-<span class="fc bfc" id="L1444" title="All 2 branches covered.">                if (pointIndexes.containsKey(p2)) {</span>
-<span class="fc" id="L1445">                    out[i].setBit(pointIndexes.get(p2));</span>
+<span class="fc bfc" id="L1447" title="All 2 branches covered.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L1448">                int x2 = x + dxs[k];</span>
+<span class="fc" id="L1449">                int y2 = y + dys[k];</span>
+<span class="fc" id="L1450">                PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc bfc" id="L1451" title="All 2 branches covered.">                if (pointIndexes.containsKey(p2)) {</span>
+<span class="fc" id="L1452">                    out[i].setBit(pointIndexes.get(p2));</span>
                 }
             }
         }
         
-<span class="fc" id="L1450">        return out;</span>
+<span class="fc" id="L1457">        return out;</span>
     }
     
     private VeryLongBitString[] createPointNeighborArray(
         int[] pixIdxs, TIntIntMap pointIndexes, int imgWidth, int imgHeight) {
         
-<span class="fc" id="L1456">        int n = pixIdxs.length;</span>
+<span class="fc" id="L1463">        int n = pixIdxs.length;</span>
         
-<span class="fc" id="L1458">        VeryLongBitString[] out = new VeryLongBitString[n];</span>
+<span class="fc" id="L1465">        VeryLongBitString[] out = new VeryLongBitString[n];</span>
                 
-<span class="fc" id="L1460">        int[] dxs = Misc.dx8;</span>
-<span class="fc" id="L1461">        int[] dys = Misc.dy8;</span>
+<span class="fc" id="L1467">        int[] dxs = Misc.dx8;</span>
+<span class="fc" id="L1468">        int[] dys = Misc.dy8;</span>
         
-<span class="fc" id="L1463">        PixelHelper ph = new PixelHelper();</span>
-<span class="fc" id="L1464">        int[] xyout = new int[2];</span>
+<span class="fc" id="L1470">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L1471">        int[] xyout = new int[2];</span>
         
-<span class="fc bfc" id="L1466" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc bfc" id="L1473" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
             
-<span class="fc" id="L1468">            int pixIdx = pixIdxs[i];</span>
+<span class="fc" id="L1475">            int pixIdx = pixIdxs[i];</span>
             
-<span class="fc" id="L1470">            out[i] = new VeryLongBitString(n);</span>
+<span class="fc" id="L1477">            out[i] = new VeryLongBitString(n);</span>
                   
-<span class="fc" id="L1472">            ph.toPixelCoords(pixIdx, imgWidth, xyout);</span>
-<span class="fc" id="L1473">            int y = xyout[1];</span>
-<span class="fc" id="L1474">            int x = xyout[0];</span>
+<span class="fc" id="L1479">            ph.toPixelCoords(pixIdx, imgWidth, xyout);</span>
+<span class="fc" id="L1480">            int y = xyout[1];</span>
+<span class="fc" id="L1481">            int x = xyout[0];</span>
                         
-<span class="fc bfc" id="L1476" title="All 2 branches covered.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
-<span class="fc" id="L1477">                int x2 = x + dxs[k];</span>
-<span class="fc" id="L1478">                int y2 = y + dys[k];</span>
-<span class="fc bfc" id="L1479" title="All 8 branches covered.">                if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (imgWidth - 1)) || </span>
+<span class="fc bfc" id="L1483" title="All 2 branches covered.">            for (int k = 0; k &lt; dxs.length; ++k) {</span>
+<span class="fc" id="L1484">                int x2 = x + dxs[k];</span>
+<span class="fc" id="L1485">                int y2 = y + dys[k];</span>
+<span class="fc bfc" id="L1486" title="All 8 branches covered.">                if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (imgWidth - 1)) || </span>
                     (y2 &gt; (imgHeight - 1))) {
-<span class="fc" id="L1481">                    continue;</span>
+<span class="fc" id="L1488">                    continue;</span>
                 }
-<span class="fc" id="L1483">                int pixIdx2 = (y2 * imgWidth) + x2;</span>
-<span class="fc bfc" id="L1484" title="All 2 branches covered.">                if (pointIndexes.containsKey(pixIdx2)) {</span>
-<span class="fc" id="L1485">                    out[i].setBit(pointIndexes.get(pixIdx2));</span>
+<span class="fc" id="L1490">                int pixIdx2 = (y2 * imgWidth) + x2;</span>
+<span class="fc bfc" id="L1491" title="All 2 branches covered.">                if (pointIndexes.containsKey(pixIdx2)) {</span>
+<span class="fc" id="L1492">                    out[i].setBit(pointIndexes.get(pixIdx2));</span>
                 }
             }
         }
         
-<span class="fc" id="L1490">        return out;</span>
+<span class="fc" id="L1497">        return out;</span>
     }
 
     private TIntSet findJunctions(VeryLongBitString[] pointNeighbors) {
@@ -1513,49 +1520,49 @@ import java.util.Stack;
         
         */
         
-<span class="fc" id="L1516">        TIntSet out = new TIntHashSet();</span>
+<span class="fc" id="L1523">        TIntSet out = new TIntHashSet();</span>
         
-<span class="fc" id="L1518">        int n = pointNeighbors.length;</span>
-<span class="fc bfc" id="L1519" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L1520">            VeryLongBitString bs1 = pointNeighbors[i];</span>
-<span class="fc bfc" id="L1521" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; n; ++j) {</span>
-<span class="fc" id="L1522">                VeryLongBitString bs2 = pointNeighbors[j];</span>
+<span class="fc" id="L1525">        int n = pointNeighbors.length;</span>
+<span class="fc bfc" id="L1526" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="fc" id="L1527">            VeryLongBitString bs1 = pointNeighbors[i];</span>
+<span class="fc bfc" id="L1528" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; n; ++j) {</span>
+<span class="fc" id="L1529">                VeryLongBitString bs2 = pointNeighbors[j];</span>
                 
-<span class="fc" id="L1524">                VeryLongBitString intersection = bs1.and(bs2);</span>
+<span class="fc" id="L1531">                VeryLongBitString intersection = bs1.and(bs2);</span>
                 
-<span class="fc" id="L1526">                int[] setBits = intersection.getSetBits();</span>
+<span class="fc" id="L1533">                int[] setBits = intersection.getSetBits();</span>
             
-<span class="fc bfc" id="L1528" title="All 2 branches covered.">                if (setBits.length &gt; 0) {</span>
+<span class="fc bfc" id="L1535" title="All 2 branches covered.">                if (setBits.length &gt; 0) {</span>
                     //System.out.println(&quot;i=&quot; + i + &quot; j=&quot; + j +
                     //    &quot; intersection=&quot; + Arrays.toString(setBits));
-<span class="fc" id="L1531">                    out.addAll(setBits);</span>
+<span class="fc" id="L1538">                    out.addAll(setBits);</span>
                 }
             }
         }
         
-<span class="fc" id="L1536">        return out;</span>
+<span class="fc" id="L1543">        return out;</span>
     }
 
     private boolean isAdjacent(PairInt p, int x, int y) {
 
-<span class="fc" id="L1541">        int diffX = Math.abs(p.getX() - x);</span>
-<span class="fc" id="L1542">        int diffY = Math.abs(p.getY() - y);</span>
-<span class="pc bpc" id="L1543" title="6 of 8 branches missed.">        if ((diffX == 1 &amp;&amp; diffY &lt;= 1) || (diffY == 1 &amp;&amp; diffX &lt;= 1)) {</span>
-<span class="nc" id="L1544">            return true;</span>
+<span class="fc" id="L1548">        int diffX = Math.abs(p.getX() - x);</span>
+<span class="fc" id="L1549">        int diffY = Math.abs(p.getY() - y);</span>
+<span class="pc bpc" id="L1550" title="6 of 8 branches missed.">        if ((diffX == 1 &amp;&amp; diffY &lt;= 1) || (diffY == 1 &amp;&amp; diffX &lt;= 1)) {</span>
+<span class="nc" id="L1551">            return true;</span>
         } 
         
-<span class="fc" id="L1547">        return false;</span>
+<span class="fc" id="L1554">        return false;</span>
     }
     
     private boolean isAdjacent(int x0, int y0, int x, int y) {
 
-<span class="fc" id="L1552">        int diffX = Math.abs(x0 - x);</span>
-<span class="fc" id="L1553">        int diffY = Math.abs(y0 - y);</span>
-<span class="fc bfc" id="L1554" title="All 8 branches covered.">        if ((diffX == 1 &amp;&amp; diffY &lt;= 1) || (diffY == 1 &amp;&amp; diffX &lt;= 1)) {</span>
-<span class="fc" id="L1555">            return true;</span>
+<span class="fc" id="L1559">        int diffX = Math.abs(x0 - x);</span>
+<span class="fc" id="L1560">        int diffY = Math.abs(y0 - y);</span>
+<span class="fc bfc" id="L1561" title="All 8 branches covered.">        if ((diffX == 1 &amp;&amp; diffY &lt;= 1) || (diffY == 1 &amp;&amp; diffX &lt;= 1)) {</span>
+<span class="fc" id="L1562">            return true;</span>
         } 
         
-<span class="fc" id="L1558">        return false;</span>
+<span class="fc" id="L1565">        return false;</span>
     }
 
     /**
@@ -1578,40 +1585,40 @@ import java.util.Stack;
     public PairIntArray extractOrderedBorder(TIntSet contiguousPoints, 
         int imgWidth, int imgHeight) throws Exception {
        
-<span class="fc" id="L1581">        PixelHelper ph = new PixelHelper();</span>
-<span class="fc" id="L1582">        int[] xyout = new int[2];</span>
-<span class="pc bpc" id="L1583" title="1 of 2 branches missed.">        if (contiguousPoints.size() &lt; 4) {</span>
-<span class="nc" id="L1584">            PairIntArray output = new PairIntArray(contiguousPoints.size());</span>
-<span class="nc" id="L1585">            TIntIterator iter = contiguousPoints.iterator();</span>
-<span class="nc bnc" id="L1586" title="All 2 branches missed.">            while (iter.hasNext()) {</span>
-<span class="nc" id="L1587">                int pixIdx = iter.next();</span>
-<span class="nc" id="L1588">                ph.toPixelCoords(pixIdx, imgWidth, xyout);</span>
-<span class="nc" id="L1589">                int y = xyout[1];</span>
-<span class="nc" id="L1590">                int x = xyout[0];</span>
-<span class="nc" id="L1591">                output.add(x, y);</span>
-<span class="nc" id="L1592">            }</span>
-<span class="nc" id="L1593">            return output;</span>
+<span class="fc" id="L1588">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L1589">        int[] xyout = new int[2];</span>
+<span class="pc bpc" id="L1590" title="1 of 2 branches missed.">        if (contiguousPoints.size() &lt; 4) {</span>
+<span class="nc" id="L1591">            PairIntArray output = new PairIntArray(contiguousPoints.size());</span>
+<span class="nc" id="L1592">            TIntIterator iter = contiguousPoints.iterator();</span>
+<span class="nc bnc" id="L1593" title="All 2 branches missed.">            while (iter.hasNext()) {</span>
+<span class="nc" id="L1594">                int pixIdx = iter.next();</span>
+<span class="nc" id="L1595">                ph.toPixelCoords(pixIdx, imgWidth, xyout);</span>
+<span class="nc" id="L1596">                int y = xyout[1];</span>
+<span class="nc" id="L1597">                int x = xyout[0];</span>
+<span class="nc" id="L1598">                output.add(x, y);</span>
+<span class="nc" id="L1599">            }</span>
+<span class="nc" id="L1600">            return output;</span>
         }
                 
         //O(8*N)
-<span class="fc" id="L1597">        TIntSet embedded = new TIntHashSet();</span>
-<span class="fc" id="L1598">        TIntSet boundary = new TIntHashSet();</span>
-<span class="fc" id="L1599">        extractBorder2(contiguousPoints, embedded, boundary, imgWidth);</span>
-<span class="fc" id="L1600">        TIntSet set2 = new TIntHashSet(contiguousPoints);</span>
-<span class="fc" id="L1601">        set2.addAll(embedded);</span>
+<span class="fc" id="L1604">        TIntSet embedded = new TIntHashSet();</span>
+<span class="fc" id="L1605">        TIntSet boundary = new TIntHashSet();</span>
+<span class="fc" id="L1606">        extractBorder2(contiguousPoints, embedded, boundary, imgWidth);</span>
+<span class="fc" id="L1607">        TIntSet set2 = new TIntHashSet(contiguousPoints);</span>
+<span class="fc" id="L1608">        set2.addAll(embedded);</span>
         
-<span class="pc bpc" id="L1603" title="2 of 4 branches missed.">        if (boundary == null || boundary.size() == 0) {</span>
-<span class="nc" id="L1604">            return null;</span>
+<span class="pc bpc" id="L1610" title="2 of 4 branches missed.">        if (boundary == null || boundary.size() == 0) {</span>
+<span class="nc" id="L1611">            return null;</span>
         }
         
-<span class="fc" id="L1607">        return orderTheBoundary(boundary, imgWidth, imgHeight);</span>
+<span class="fc" id="L1614">        return orderTheBoundary(boundary, imgWidth, imgHeight);</span>
     }
      
     public PairIntArray orderTheBoundary(TIntSet boundary, int imgWidth, 
         int imgHeight) throws Exception {
         
-<span class="fc" id="L1613">        PixelHelper ph = new PixelHelper();</span>
-<span class="fc" id="L1614">        int[] xyout = new int[2];</span>
+<span class="fc" id="L1620">        PixelHelper ph = new PixelHelper();</span>
+<span class="fc" id="L1621">        int[] xyout = new int[2];</span>
         
         /*
         the algorithm finds the leftmost and smallest xy point in the boundary, 
@@ -1633,214 +1640,214 @@ import java.util.Stack;
         */
         
         //using a list so can use bit vectors for quick set intersections
-<span class="fc" id="L1636">        int[] boundaryArray = boundary.toArray(new int[boundary.size()]);</span>
+<span class="fc" id="L1643">        int[] boundaryArray = boundary.toArray(new int[boundary.size()]);</span>
                  
          // key = pixIdx
-<span class="fc" id="L1639">        TIntIntMap pointIndexes = new TIntIntHashMap();</span>
+<span class="fc" id="L1646">        TIntIntMap pointIndexes = new TIntIntHashMap();</span>
      
-<span class="fc bfc" id="L1641" title="All 2 branches covered.">        for (int i = 0; i &lt; boundaryArray.length; ++i) {</span>
-<span class="fc" id="L1642">            pointIndexes.put(boundaryArray[i], i);</span>
+<span class="fc bfc" id="L1648" title="All 2 branches covered.">        for (int i = 0; i &lt; boundaryArray.length; ++i) {</span>
+<span class="fc" id="L1649">            pointIndexes.put(boundaryArray[i], i);</span>
         }
         
         // index = index of boundaryArray, item = bitstring with neighbors set
         //                              where bits are indexes in boundaryArray
-<span class="fc" id="L1647">        VeryLongBitString[] pointNeighbors = createPointNeighborArray(</span>
+<span class="fc" id="L1654">        VeryLongBitString[] pointNeighbors = createPointNeighborArray(</span>
             boundaryArray, pointIndexes, imgWidth, imgHeight);
         
         // corner junctions as indexes of boundaryArray
-<span class="fc" id="L1651">        TIntSet junctions = findJunctions(pointNeighbors);</span>
+<span class="fc" id="L1658">        TIntSet junctions = findJunctions(pointNeighbors);</span>
   
-<span class="fc" id="L1653">        PairIntArray orderedOutput = new PairIntArray(boundary.size());</span>
+<span class="fc" id="L1660">        PairIntArray orderedOutput = new PairIntArray(boundary.size());</span>
         
-<span class="fc" id="L1655">        TIntSet remaining = new TIntHashSet(boundary);</span>
+<span class="fc" id="L1662">        TIntSet remaining = new TIntHashSet(boundary);</span>
                 
-<span class="fc" id="L1657">        int currPix = findSmallestXY(remaining, imgWidth);</span>
-<span class="fc" id="L1658">        remaining.remove(currPix);</span>
-<span class="fc" id="L1659">        ph.toPixelCoords(currPix, imgWidth, xyout);</span>
-<span class="fc" id="L1660">        int currY = xyout[1];</span>
-<span class="fc" id="L1661">        int currX = xyout[0];</span>
+<span class="fc" id="L1664">        int currPix = findSmallestXY(remaining, imgWidth);</span>
+<span class="fc" id="L1665">        remaining.remove(currPix);</span>
+<span class="fc" id="L1666">        ph.toPixelCoords(currPix, imgWidth, xyout);</span>
+<span class="fc" id="L1667">        int currY = xyout[1];</span>
+<span class="fc" id="L1668">        int currX = xyout[0];</span>
         
-<span class="fc" id="L1663">        orderedOutput.add(currX, currY);</span>
-<span class="fc" id="L1664">        junctions.remove(pointIndexes.get(currPix));</span>
+<span class="fc" id="L1670">        orderedOutput.add(currX, currY);</span>
+<span class="fc" id="L1671">        junctions.remove(pointIndexes.get(currPix));</span>
         
         // fake point for angle calc refs.  since curr is smallest x, should be
         // safe to make a point to left of it.
-<span class="fc" id="L1668">        int prevPixX = currX - 1;</span>
-<span class="fc" id="L1669">        int prevPixY = currY;</span>
+<span class="fc" id="L1675">        int prevPixX = currX - 1;</span>
+<span class="fc" id="L1676">        int prevPixY = currY;</span>
         
         // idx w.r.t. orderedOutput.  used for walking back up array
-<span class="fc" id="L1672">        int outIdx = -1;</span>
+<span class="fc" id="L1679">        int outIdx = -1;</span>
         
-<span class="fc bfc" id="L1674" title="All 2 branches covered.">        while (!remaining.isEmpty()) {</span>
+<span class="fc bfc" id="L1681" title="All 2 branches covered.">        while (!remaining.isEmpty()) {</span>
        
             // among the neighbors of curr that are in remaining, chose
             // the one which has the smallest clockwise angle w/ prev and curr
             
-<span class="fc" id="L1679">            double minAngle = Double.MAX_VALUE;</span>
-<span class="fc" id="L1680">            int minPX = -1;</span>
-<span class="fc" id="L1681">            int minPY = -1;</span>
-<span class="fc" id="L1682">            int minP = -1;</span>
+<span class="fc" id="L1686">            double minAngle = Double.MAX_VALUE;</span>
+<span class="fc" id="L1687">            int minPX = -1;</span>
+<span class="fc" id="L1688">            int minPY = -1;</span>
+<span class="fc" id="L1689">            int minP = -1;</span>
             
-<span class="fc" id="L1684">            int x = currX;</span>
-<span class="fc" id="L1685">            int y = currY;</span>
-<span class="fc" id="L1686">            int prevX = prevPixX;</span>
-<span class="fc" id="L1687">            int prevY = prevPixY;</span>
+<span class="fc" id="L1691">            int x = currX;</span>
+<span class="fc" id="L1692">            int y = currY;</span>
+<span class="fc" id="L1693">            int prevX = prevPixX;</span>
+<span class="fc" id="L1694">            int prevY = prevPixY;</span>
             
             // these are indexes in boundaryArray
-<span class="fc" id="L1690">            int[] currNbrs = pointNeighbors[pointIndexes.get(currPix)].getSetBits();</span>
+<span class="fc" id="L1697">            int[] currNbrs = pointNeighbors[pointIndexes.get(currPix)].getSetBits();</span>
             
-<span class="fc bfc" id="L1692" title="All 2 branches covered.">            for (int nbrIdx : currNbrs) {</span>
-<span class="fc" id="L1693">                int pixIdx2 = boundaryArray[nbrIdx];</span>
+<span class="fc bfc" id="L1699" title="All 2 branches covered.">            for (int nbrIdx : currNbrs) {</span>
+<span class="fc" id="L1700">                int pixIdx2 = boundaryArray[nbrIdx];</span>
                 
-<span class="fc bfc" id="L1695" title="All 2 branches covered.">                if (!remaining.contains(pixIdx2)) {</span>
-<span class="fc" id="L1696">                    continue;</span>
+<span class="fc bfc" id="L1702" title="All 2 branches covered.">                if (!remaining.contains(pixIdx2)) {</span>
+<span class="fc" id="L1703">                    continue;</span>
                 }
-<span class="fc" id="L1698">                ph.toPixelCoords(pixIdx2, imgWidth, xyout);</span>
-<span class="fc" id="L1699">                int y2 = xyout[1];</span>
-<span class="fc" id="L1700">                int x2 = xyout[0];        </span>
-<span class="pc bnc" id="L1701" title="All 4 branches missed.">                assert(!(prevX == x2 &amp;&amp; prevY == y2));</span>
-<span class="fc" id="L1702">                double angle = LinesAndAngles.calcClockwiseAngle(</span>
+<span class="fc" id="L1705">                ph.toPixelCoords(pixIdx2, imgWidth, xyout);</span>
+<span class="fc" id="L1706">                int y2 = xyout[1];</span>
+<span class="fc" id="L1707">                int x2 = xyout[0];        </span>
+<span class="pc bnc" id="L1708" title="All 4 branches missed.">                assert(!(prevX == x2 &amp;&amp; prevY == y2));</span>
+<span class="fc" id="L1709">                double angle = LinesAndAngles.calcClockwiseAngle(</span>
                     prevX, prevY, x2, y2, x, y);
-<span class="pc bpc" id="L1704" title="1 of 2 branches missed.">                if (Double.isNaN(angle)) {</span>
+<span class="pc bpc" id="L1711" title="1 of 2 branches missed.">                if (Double.isNaN(angle)) {</span>
                     // can occur is prev==p or p2==p
-<span class="nc" id="L1706">                    throw new IllegalStateException(&quot;error: unexpected NaN, &quot;</span>
+<span class="nc" id="L1713">                    throw new IllegalStateException(&quot;error: unexpected NaN, &quot;</span>
                         + &quot; due to equal points&quot;);
                 }
 
-<span class="fc bfc" id="L1710" title="All 2 branches covered.">                if (angle &lt; minAngle) {</span>
-<span class="fc" id="L1711">                    minAngle = angle;</span>
-<span class="fc" id="L1712">                    minP = pixIdx2;</span>
-<span class="fc" id="L1713">                    minPX = x2;</span>
-<span class="fc" id="L1714">                    minPY = y2;</span>
+<span class="fc bfc" id="L1717" title="All 2 branches covered.">                if (angle &lt; minAngle) {</span>
+<span class="fc" id="L1718">                    minAngle = angle;</span>
+<span class="fc" id="L1719">                    minP = pixIdx2;</span>
+<span class="fc" id="L1720">                    minPX = x2;</span>
+<span class="fc" id="L1721">                    minPY = y2;</span>
                 }
                 
                 //System.out.format(&quot;(%d,%d) (%d,%d) (%d,%d) angle=%.4f  minP=%d\n&quot;,
                 //    prevX, prevY, x, y, x2, y2, (float)angle, minP);
             }
             
-<span class="fc bfc" id="L1721" title="All 2 branches covered.">            if (minP == -1) {</span>
+<span class="fc bfc" id="L1728" title="All 2 branches covered.">            if (minP == -1) {</span>
                 
                 // when remaining.size is &gt;= (bounds.size - junctions.size)
                 //   start checking for whether have reached the starting
                 //   point, and look for whether the remaining points are
                 //   junctions that need to be inserted in their 90 degree 
                 //   positions.
-<span class="fc bfc" id="L1728" title="All 2 branches covered.">                if (remaining.size() &lt;= (boundaryArray.length - junctions.size())) {</span>
-<span class="fc bfc" id="L1729" title="All 2 branches covered.">                    if (isAdjacent(currX, currY, orderedOutput.getX(0), </span>
-<span class="fc" id="L1730">                        orderedOutput.getY(0))) {</span>
+<span class="fc bfc" id="L1735" title="All 2 branches covered.">                if (remaining.size() &lt;= (boundaryArray.length - junctions.size())) {</span>
+<span class="fc bfc" id="L1736" title="All 2 branches covered.">                    if (isAdjacent(currX, currY, orderedOutput.getX(0), </span>
+<span class="fc" id="L1737">                        orderedOutput.getY(0))) {</span>
                         
                         // remIdxs holds indexes of boudaryArray
-<span class="fc" id="L1733">                        TIntSet remIdxs = new TIntHashSet();</span>
-<span class="fc" id="L1734">                        TIntIterator iter3 = remaining.iterator();</span>
-<span class="fc bfc" id="L1735" title="All 2 branches covered.">                        while (iter3.hasNext()) {</span>
-<span class="fc" id="L1736">                            int pixIdx3 = iter3.next();</span>
-<span class="fc" id="L1737">                            remIdxs.add(pointIndexes.get(pixIdx3));</span>
-<span class="fc" id="L1738">                        }</span>
-<span class="fc" id="L1739">                        remIdxs.removeAll(junctions);</span>
-<span class="fc bfc" id="L1740" title="All 2 branches covered.">                        if (remIdxs.isEmpty()) {</span>
-<span class="fc" id="L1741">                            break;</span>
+<span class="fc" id="L1740">                        TIntSet remIdxs = new TIntHashSet();</span>
+<span class="fc" id="L1741">                        TIntIterator iter3 = remaining.iterator();</span>
+<span class="fc bfc" id="L1742" title="All 2 branches covered.">                        while (iter3.hasNext()) {</span>
+<span class="fc" id="L1743">                            int pixIdx3 = iter3.next();</span>
+<span class="fc" id="L1744">                            remIdxs.add(pointIndexes.get(pixIdx3));</span>
+<span class="fc" id="L1745">                        }</span>
+<span class="fc" id="L1746">                        remIdxs.removeAll(junctions);</span>
+<span class="fc bfc" id="L1747" title="All 2 branches covered.">                        if (remIdxs.isEmpty()) {</span>
+<span class="fc" id="L1748">                            break;</span>
                         }
                     }
                 }
                 
                 // walk back up the output to try previous points, looking for
                 //   one w/ an unassigned neighbor
-<span class="fc" id="L1748">                outIdx--;</span>
+<span class="fc" id="L1755">                outIdx--;</span>
                 
-<span class="fc bfc" id="L1750" title="All 2 branches covered.">                if (outIdx &lt; 1) {</span>
+<span class="fc bfc" id="L1757" title="All 2 branches covered.">                if (outIdx &lt; 1) {</span>
                     
-<span class="fc" id="L1752">                    int nj = junctions.size();</span>
-<span class="fc" id="L1753">                    int nb = boundaryArray.length;</span>
+<span class="fc" id="L1759">                    int nj = junctions.size();</span>
+<span class="fc" id="L1760">                    int nb = boundaryArray.length;</span>
                     
-<span class="fc" id="L1755">                    debug(boundary, boundary, orderedOutput, imgWidth);</span>
+<span class="fc" id="L1762">                    debug(boundary, boundary, orderedOutput, imgWidth);</span>
                     
-<span class="fc" id="L1757">                    System.out.println(&quot;output.n=&quot; </span>
-<span class="fc" id="L1758">                        + orderedOutput.getN() </span>
-<span class="fc" id="L1759">                        + &quot; rem.n=&quot; + remaining.size() + &quot; &quot; + </span>
-<span class="fc" id="L1760">                        boundary.size());</span>
+<span class="fc" id="L1764">                    System.out.println(&quot;output.n=&quot; </span>
+<span class="fc" id="L1765">                        + orderedOutput.getN() </span>
+<span class="fc" id="L1766">                        + &quot; rem.n=&quot; + remaining.size() + &quot; &quot; + </span>
+<span class="fc" id="L1767">                        boundary.size());</span>
                     
-<span class="fc" id="L1762">                    throw new Exception(&quot;Error in closed curve shape.&quot;);</span>
+<span class="fc" id="L1769">                    throw new Exception(&quot;Error in closed curve shape.&quot;);</span>
                 }
                 
-<span class="fc" id="L1765">                currX = orderedOutput.getX(outIdx);</span>
-<span class="fc" id="L1766">                currY = orderedOutput.getY(outIdx);</span>
-<span class="fc" id="L1767">                currPix = (currY * imgWidth) + currX;</span>
+<span class="fc" id="L1772">                currX = orderedOutput.getX(outIdx);</span>
+<span class="fc" id="L1773">                currY = orderedOutput.getY(outIdx);</span>
+<span class="fc" id="L1774">                currPix = (currY * imgWidth) + currX;</span>
                 
-<span class="fc" id="L1769">                prevPixX = orderedOutput.getX(outIdx - 1);</span>
-<span class="fc" id="L1770">                prevPixY = orderedOutput.getY(outIdx - 1);</span>
+<span class="fc" id="L1776">                prevPixX = orderedOutput.getX(outIdx - 1);</span>
+<span class="fc" id="L1777">                prevPixY = orderedOutput.getY(outIdx - 1);</span>
                        
-<span class="fc" id="L1772">                continue;</span>
+<span class="fc" id="L1779">                continue;</span>
             }
             
-<span class="pc bnc" id="L1775" title="All 2 branches missed.">            assert(minP != -1);</span>
+<span class="pc bnc" id="L1782" title="All 2 branches missed.">            assert(minP != -1);</span>
             
-<span class="fc" id="L1777">            prevPixX = currX;</span>
-<span class="fc" id="L1778">            prevPixY = currY;</span>
-<span class="fc" id="L1779">            currX = minPX;</span>
-<span class="fc" id="L1780">            currY = minPY;</span>
-<span class="fc" id="L1781">            currPix = (int)ph.toPixelIndex(currX, currY, imgWidth);</span>
+<span class="fc" id="L1784">            prevPixX = currX;</span>
+<span class="fc" id="L1785">            prevPixY = currY;</span>
+<span class="fc" id="L1786">            currX = minPX;</span>
+<span class="fc" id="L1787">            currY = minPY;</span>
+<span class="fc" id="L1788">            currPix = (int)ph.toPixelIndex(currX, currY, imgWidth);</span>
             
-<span class="fc" id="L1783">            outIdx = orderedOutput.getN();</span>
+<span class="fc" id="L1790">            outIdx = orderedOutput.getN();</span>
             
-<span class="fc" id="L1785">            remaining.remove(currPix);</span>
-<span class="fc" id="L1786">            orderedOutput.add(currX, currY);</span>
-<span class="fc" id="L1787">            junctions.remove(pointIndexes.get(currPix));</span>
-<span class="fc" id="L1788">        }</span>
+<span class="fc" id="L1792">            remaining.remove(currPix);</span>
+<span class="fc" id="L1793">            orderedOutput.add(currX, currY);</span>
+<span class="fc" id="L1794">            junctions.remove(pointIndexes.get(currPix));</span>
+<span class="fc" id="L1795">        }</span>
         
-<span class="fc bfc" id="L1790" title="All 2 branches covered.">        if (!junctions.isEmpty()) {</span>
+<span class="fc bfc" id="L1797" title="All 2 branches covered.">        if (!junctions.isEmpty()) {</span>
             //insert between junction neigbhors
             //TODO: this could be improved, but for now, will use
             //  a pattern that has worse case runtime near
             //  O(junctions.size * output.size)
-<span class="fc" id="L1795">            TIntIterator iter = junctions.iterator();</span>
-<span class="fc bfc" id="L1796" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
-<span class="fc" id="L1797">                int jIdx = iter.next();</span>
+<span class="fc" id="L1802">            TIntIterator iter = junctions.iterator();</span>
+<span class="fc bfc" id="L1803" title="All 2 branches covered.">            while (iter.hasNext()) {</span>
+<span class="fc" id="L1804">                int jIdx = iter.next();</span>
                 
-<span class="fc" id="L1799">                int pixIdx = boundaryArray[jIdx];</span>
+<span class="fc" id="L1806">                int pixIdx = boundaryArray[jIdx];</span>
                 
-<span class="fc" id="L1801">                int[] nbrs = pointNeighbors[jIdx].getSetBits();</span>
-<span class="fc" id="L1802">                TIntSet nbrsSet = new TIntHashSet();</span>
-<span class="fc bfc" id="L1803" title="All 2 branches covered.">                for (int nbrIdx : nbrs) {</span>
-<span class="fc" id="L1804">                    nbrsSet.add(boundaryArray[nbrIdx]);</span>
+<span class="fc" id="L1808">                int[] nbrs = pointNeighbors[jIdx].getSetBits();</span>
+<span class="fc" id="L1809">                TIntSet nbrsSet = new TIntHashSet();</span>
+<span class="fc bfc" id="L1810" title="All 2 branches covered.">                for (int nbrIdx : nbrs) {</span>
+<span class="fc" id="L1811">                    nbrsSet.add(boundaryArray[nbrIdx]);</span>
                 }
                 
                 // add junction after first of it's neighbors it finds
-<span class="fc" id="L1808">                boolean found = false;</span>
-<span class="pc bpc" id="L1809" title="1 of 2 branches missed.">                for (int ii = 0; ii &lt; orderedOutput.getN(); ++ii) {</span>
+<span class="fc" id="L1815">                boolean found = false;</span>
+<span class="pc bpc" id="L1816" title="1 of 2 branches missed.">                for (int ii = 0; ii &lt; orderedOutput.getN(); ++ii) {</span>
                     
-<span class="fc" id="L1811">                    int nbrX = orderedOutput.getX(ii);</span>
-<span class="fc" id="L1812">                    int nbrY = orderedOutput.getY(ii);</span>
-<span class="fc" id="L1813">                    int nbr = (nbrY * imgWidth) + nbrX;</span>
+<span class="fc" id="L1818">                    int nbrX = orderedOutput.getX(ii);</span>
+<span class="fc" id="L1819">                    int nbrY = orderedOutput.getY(ii);</span>
+<span class="fc" id="L1820">                    int nbr = (nbrY * imgWidth) + nbrX;</span>
                     
-<span class="fc bfc" id="L1815" title="All 2 branches covered.">                    if (nbrsSet.contains(nbr)) {</span>
+<span class="fc bfc" id="L1822" title="All 2 branches covered.">                    if (nbrsSet.contains(nbr)) {</span>
                         // this cannot be last point, because other neighbor
                         // would have been found before, so can assume
                         // the next point is one of the other neighbors
-<span class="pc bnc" id="L1819" title="All 2 branches missed.">                        assert(ii &lt; (orderedOutput.getN() - 1));</span>
+<span class="pc bnc" id="L1826" title="All 2 branches missed.">                        assert(ii &lt; (orderedOutput.getN() - 1));</span>
                     
-<span class="fc" id="L1821">                        int x2 = orderedOutput.getX(ii + 1);</span>
-<span class="fc" id="L1822">                        int y2 = orderedOutput.getY(ii + 1);</span>
+<span class="fc" id="L1828">                        int x2 = orderedOutput.getX(ii + 1);</span>
+<span class="fc" id="L1829">                        int y2 = orderedOutput.getY(ii + 1);</span>
                         
-<span class="fc" id="L1824">                        int diffX = Math.abs(x2 - nbrX);</span>
-<span class="fc" id="L1825">                        int diffY = Math.abs(y2 - nbrY);</span>
+<span class="fc" id="L1831">                        int diffX = Math.abs(x2 - nbrX);</span>
+<span class="fc" id="L1832">                        int diffY = Math.abs(y2 - nbrY);</span>
               
-<span class="pc bnc" id="L1827" title="All 4 branches missed.">                        assert(diffX &lt;= 1 &amp;&amp; diffY &lt;= 1);</span>
+<span class="pc bnc" id="L1834" title="All 4 branches missed.">                        assert(diffX &lt;= 1 &amp;&amp; diffY &lt;= 1);</span>
                         
                         //int pixIdx2 = (int)ph.toPixelIndex(x2, y2, imgWidth);
                         //assert(nbrsSet.contains(pixIdx2));
                         
-<span class="fc" id="L1832">                        orderedOutput.insert(ii, nbrX, nbrY);</span>
+<span class="fc" id="L1839">                        orderedOutput.insert(ii, nbrX, nbrY);</span>
                         
-<span class="fc" id="L1834">                        found = true;</span>
-<span class="fc" id="L1835">                        break;</span>
+<span class="fc" id="L1841">                        found = true;</span>
+<span class="fc" id="L1842">                        break;</span>
                     }
                 }
-<span class="pc bnc" id="L1838" title="All 2 branches missed.">                assert(found);</span>
-<span class="fc" id="L1839">            }</span>
+<span class="pc bnc" id="L1845" title="All 2 branches missed.">                assert(found);</span>
+<span class="fc" id="L1846">            }</span>
         }
 
-<span class="fc" id="L1842">        return orderedOutput;    </span>
+<span class="fc" id="L1849">        return orderedOutput;    </span>
     }   
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

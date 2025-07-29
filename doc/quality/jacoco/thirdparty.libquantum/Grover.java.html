@@ -70,7 +70,10 @@ Implementation of Grover's search algorithm
         
         //NOTE: none of the quantum api methods has to check for unique
         //   quantum numbers before making a change, that is they do not 
-        //   necessarily check pauli exclusion principle, or check for Cooper pairs
+        //   necessarily check pauli exclusion principle, or check for Cooper pairs.
+	//   TODO: walk through consistency for bosons and fermions where needed.
+	//   Bose-Einstein statistics are used for photons (bosons) and
+	//   Fermi-Dirac statistics and Pauli-Excl principle are used for fermions (particles).
         
         /*
          function f(x)
@@ -104,151 +107,151 @@ Implementation of Grover's search algorithm
         */
              
         //DEBUG
-<span class="fc" id="L107">        StringBuilder[] sbs = new StringBuilder[reg.size];</span>
-<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L109" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L110">                StringBuilder sb = new StringBuilder();</span>
-<span class="nc" id="L111">                sbs[ii] = sb;</span>
+<span class="fc" id="L110">        StringBuilder[] sbs = new StringBuilder[reg.size];</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L113">                StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L114">                sbs[ii] = sb;</span>
             }
-<span class="nc bnc" id="L113" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L114">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L115">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L116" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L117">                    str = &quot;0&quot; + str;</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L117">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L118">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L120">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L119">                sb.append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L122">                sb.append(str).append(&quot;  &quot;);</span>
             }
         }
         
         //runtime complexity is O(reg.size * reg.width),
         // (because decoherence lambda is 0.0).
-<span class="fc bfc" id="L125" title="All 2 branches covered.">        for (i = 0; i &lt; width0; i++) {</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        for (i = 0; i &lt; width0; i++) {</span>
             //if query bit i is 0, flip bit i in all node states
-<span class="fc bfc" id="L127" title="All 2 branches covered.">            if ((query &amp; (1 &lt;&lt; i)) == 0) {</span>
-<span class="fc" id="L128">                gates.quantum_sigma_x(i, reg);</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">            if ((query &amp; (1 &lt;&lt; i)) == 0) {</span>
+<span class="fc" id="L131">                gates.quantum_sigma_x(i, reg);</span>
             }
         }
         
         
-<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L134" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L135">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L136">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L137" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L138">                    str = &quot;0&quot; + str;</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L138">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L139">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L141">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L140">                sb.append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L143">                sb.append(str).append(&quot;  &quot;);</span>
             }
         }
 
         //for each node.state: 
         // if bits 0 and 1 are set, it flips the bit reg-&gt;width + 1
-<span class="fc" id="L146">        gates.quantum_toffoli(0, 1, width0 + 1, reg);</span>
+<span class="fc" id="L149">        gates.quantum_toffoli(0, 1, width0 + 1, reg);</span>
         
-<span class="pc bpc" id="L148" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L149" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L150">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L151">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L152" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L153">                    str = &quot;0&quot; + str;</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L153">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L154">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L156">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L155">                sb.append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L158">                sb.append(str).append(&quot;  &quot;);</span>
             }
         }
         
-<span class="fc bfc" id="L159" title="All 2 branches covered.">        for (i = 1; i &lt; width0; i++) {</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        for (i = 1; i &lt; width0; i++) {</span>
             //for each node.state: 
             // if bits i and reg-&gt;width + i are set, 
             // it flips the bit reg-&gt;width + 1 + i
            
-<span class="fc" id="L164">            gates.quantum_toffoli(i, width0 + i, width0 + i + 1, reg);</span>
+<span class="fc" id="L167">            gates.quantum_toffoli(i, width0 + i, width0 + i + 1, reg);</span>
         }
         
-<span class="pc bpc" id="L167" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L168" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L169">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L170">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L171" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L172">                    str = &quot;0&quot; + str;</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L172">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L173">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L175">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L174">                sb.append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L177">                sb.append(str).append(&quot;  &quot;);</span>
             }
         }
         
         //for each node.state: 
         // if bit reg-&gt;width + i is set, 
         // it flips the bit reg-&gt;width
-<span class="fc" id="L181">        gates.quantum_cnot(width0 + i, width0, reg);</span>
+<span class="fc" id="L184">        gates.quantum_cnot(width0 + i, width0, reg);</span>
         
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L184" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L185">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L186">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L187" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L188">                    str = &quot;0&quot; + str;</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L188">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L189">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L191">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L190">                sb.append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L193">                sb.append(str).append(&quot;  &quot;);</span>
             }
         }
         
-<span class="fc bfc" id="L194" title="All 2 branches covered.">        for (i = width0 - 1; i &gt; 0; i--) {</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        for (i = width0 - 1; i &gt; 0; i--) {</span>
             //for each node.state: 
             // if bits i and reg-&gt;width + i are set, 
             // it flips the bit reg.width + 1 + i
             
-<span class="fc" id="L199">            gates.quantum_toffoli(i, width0 + i, width0 + i + 1, reg);</span>
+<span class="fc" id="L202">            gates.quantum_toffoli(i, width0 + i, width0 + i + 1, reg);</span>
         }
         
-<span class="pc bpc" id="L202" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L203" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L204">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L205">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L206" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L207">                    str = &quot;0&quot; + str;</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L207">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L208">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L210">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L209">                sb.append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L212">                sb.append(str).append(&quot;  &quot;);</span>
             }
         }
         
         //for each node.state: 
         // if bits 0 and 1 are set, 
         // it flips the bit reg-&gt;width + 1
-<span class="fc" id="L216">        gates.quantum_toffoli(0, 1, width0 + 1, reg);</span>
+<span class="fc" id="L219">        gates.quantum_toffoli(0, 1, width0 + 1, reg);</span>
 
-<span class="pc bpc" id="L218" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L219" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L220">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L221">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L222" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L223">                    str = &quot;0&quot; + str;</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L223">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L224">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L226">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L225">                sb.append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L228">                sb.append(str).append(&quot;  &quot;);</span>
             }
         }
         
-<span class="fc bfc" id="L229" title="All 2 branches covered.">        for (i = 0; i &lt; width0; i++) {</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">        for (i = 0; i &lt; width0; i++) {</span>
             //if query bit i is 0, flip bit i in all node states
-<span class="fc bfc" id="L231" title="All 2 branches covered.">            if ((query &amp; (1 &lt;&lt; i)) == 0) {</span>
-<span class="fc" id="L232">                gates.quantum_sigma_x(i, reg);</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">            if ((query &amp; (1 &lt;&lt; i)) == 0) {</span>
+<span class="fc" id="L235">                gates.quantum_sigma_x(i, reg);</span>
             }
         }
         
-<span class="pc bpc" id="L236" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L237" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L238">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L239">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L240" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L241">                    str = &quot;0&quot; + str;</span>
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L241">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L242">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L244">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L243">                sb.append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L246">                sb.append(str).append(&quot;  &quot;);</span>
             }
             
-<span class="nc" id="L246">            System.out.println(&quot;END STATES&quot;);</span>
-<span class="nc bnc" id="L247" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L248">                System.out.println(sbs[ii]);</span>
+<span class="nc" id="L249">            System.out.println(&quot;END STATES&quot;);</span>
+<span class="nc bnc" id="L250" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L251">                System.out.println(sbs[ii]);</span>
             }
         }
-<span class="fc" id="L251">    }   </span>
+<span class="fc" id="L254">    }   </span>
     
     /*
     private void oracle3(int query, QuantumReg reg, Gates gates) {
@@ -353,91 +356,91 @@ Implementation of Grover's search algorithm
         // |x&gt;|q&gt; ----&gt; (-1)^(f(x)) * |x&gt;        
              
         //DEBUG
-<span class="fc" id="L356">        StringBuilder[] sbs = new StringBuilder[reg.size];</span>
-<span class="pc bpc" id="L357" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L358" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L359">                StringBuilder sb = new StringBuilder();</span>
-<span class="nc" id="L360">                sbs[ii] = sb;</span>
+<span class="fc" id="L359">        StringBuilder[] sbs = new StringBuilder[reg.size];</span>
+<span class="pc bpc" id="L360" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L362">                StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L363">                sbs[ii] = sb;</span>
             }
-<span class="nc bnc" id="L362" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L363">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L364">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L365" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L366">                    str = &quot;0&quot; + str;</span>
+<span class="nc bnc" id="L365" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L366">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L367">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L368" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L369">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L368">                sb.append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L371">                sb.append(str).append(&quot;  &quot;);</span>
             }
         }
         
         //runtime complexity is O(reg.size * reg.width),
         // (because decoherence lambda is 0.0).
-<span class="fc bfc" id="L374" title="All 2 branches covered.">        for (i = 0; i &lt; width0; i++) {</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">        for (i = 0; i &lt; width0; i++) {</span>
             //if query bit i is 0, flip bit i in all node states
-<span class="fc bfc" id="L376" title="All 2 branches covered.">            if ((query &amp; (1 &lt;&lt; i)) == 0) {</span>
-<span class="fc" id="L377">                gates.quantum_sigma_x(i, reg);</span>
+<span class="fc bfc" id="L379" title="All 2 branches covered.">            if ((query &amp; (1 &lt;&lt; i)) == 0) {</span>
+<span class="fc" id="L380">                gates.quantum_sigma_x(i, reg);</span>
             }
         }
         
         
-<span class="pc bpc" id="L382" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L383" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L384">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L385">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L386" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L387">                    str = &quot;0&quot; + str;</span>
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L387">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L388">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L389" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L390">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L389">                sb.append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L392">                sb.append(str).append(&quot;  &quot;);</span>
             }
         }
 
         //for each node.state: 
         // if bits 0 and 1 are set, it flips the bit reg-&gt;width + 1
-<span class="fc" id="L395">        gates.quantum_toffoli(0, 1, width0 + 1, reg);</span>
+<span class="fc" id="L398">        gates.quantum_toffoli(0, 1, width0 + 1, reg);</span>
         
-<span class="pc bpc" id="L397" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L398" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L399">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L400">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L401" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L402">                    str = &quot;0&quot; + str;</span>
+<span class="pc bpc" id="L400" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L401" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L402">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L403">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L404" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L405">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L404">                sb.append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L407">                sb.append(str).append(&quot;  &quot;);</span>
             }
         }
         
-<span class="fc bfc" id="L408" title="All 2 branches covered.">        for (i = 1; i &lt; width0; i++) {</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">        for (i = 1; i &lt; width0; i++) {</span>
             //for each node.state: 
             // if bits i and reg-&gt;width + i are set, 
             // it flips the bit reg-&gt;width + 1 + i
            
-<span class="fc" id="L413">            gates.quantum_toffoli(i, width0 + i, width0 + i + 1, reg);</span>
+<span class="fc" id="L416">            gates.quantum_toffoli(i, width0 + i, width0 + i + 1, reg);</span>
         }
         
-<span class="pc bpc" id="L416" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L417" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L418">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L419">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L420" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L421">                    str = &quot;0&quot; + str;</span>
+<span class="pc bpc" id="L419" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L420" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L421">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L422">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L424">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L423">                sb.append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L426">                sb.append(str).append(&quot;  &quot;);</span>
             }
         }
         
         //for each node.state: 
         // if bit reg-&gt;width + i is set, 
         // it flips the bit reg-&gt;width
-<span class="fc" id="L430">        gates.quantum_cnot(width0 + i, width0, reg);</span>
+<span class="fc" id="L433">        gates.quantum_cnot(width0 + i, width0, reg);</span>
         
              
-<span class="pc bpc" id="L433" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L434" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L435">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L436">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L437" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L438">                    str = &quot;0&quot; + str;</span>
+<span class="pc bpc" id="L436" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L437" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L438">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L439">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L440" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L441">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L440">                sb.append(&quot;*&quot;).append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L443">                sb.append(&quot;*&quot;).append(str).append(&quot;  &quot;);</span>
             }
         }
         
@@ -447,74 +450,74 @@ Implementation of Grover's search algorithm
         
         // not reversible
         // set high bit if all bits are set
-<span class="fc" id="L450">        gates.quantum_ccand(0, 0, reg.width-1, reg);</span>
-<span class="fc bfc" id="L451" title="All 2 branches covered.">        for (i = 1; i &lt; reg.width-2; i++) {</span>
-<span class="fc" id="L452">            gates.quantum_ccand(i, reg.width-1, reg.width-1, reg);</span>
+<span class="fc" id="L453">        gates.quantum_ccand(0, 0, reg.width-1, reg);</span>
+<span class="fc bfc" id="L454" title="All 2 branches covered.">        for (i = 1; i &lt; reg.width-2; i++) {</span>
+<span class="fc" id="L455">            gates.quantum_ccand(i, reg.width-1, reg.width-1, reg);</span>
         }
         
         
-<span class="pc bpc" id="L456" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L457" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L458">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L459">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L460" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L461">                    str = &quot;0&quot; + str;</span>
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L460" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L461">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L462">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L463" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L464">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L463">                sb.append(&quot;*&quot;).append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L466">                sb.append(&quot;*&quot;).append(str).append(&quot;  &quot;);</span>
             }
         }
         
-<span class="fc bfc" id="L467" title="All 2 branches covered.">        for (i = width0 - 1; i &gt; 0; i--) {</span>
+<span class="fc bfc" id="L470" title="All 2 branches covered.">        for (i = width0 - 1; i &gt; 0; i--) {</span>
             //for each node.state: 
             // if bits i and reg-&gt;width + i are set, 
             // it flips the bit reg.width + 1 + i
             
-<span class="fc" id="L472">            gates.quantum_toffoli(i, width0 + i, width0 + i + 1, reg);</span>
+<span class="fc" id="L475">            gates.quantum_toffoli(i, width0 + i, width0 + i + 1, reg);</span>
         }
         
-<span class="pc bpc" id="L475" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L476" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L477">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L478">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L479" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L480">                    str = &quot;0&quot; + str;</span>
+<span class="pc bpc" id="L478" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L479" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L480">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L481">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L482" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L483">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L482">                sb.append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L485">                sb.append(str).append(&quot;  &quot;);</span>
             }
         }
         
         //for each node.state: 
         // if bits 0 and 1 are set, 
         // it flips the bit reg-&gt;width + 1
-<span class="fc" id="L489">        gates.quantum_toffoli(0, 1, width0 + 1, reg);</span>
+<span class="fc" id="L492">        gates.quantum_toffoli(0, 1, width0 + 1, reg);</span>
 
-<span class="pc bpc" id="L491" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L492" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L493">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L494">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L495" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L496">                    str = &quot;0&quot; + str;</span>
+<span class="pc bpc" id="L494" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L495" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L496">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L497">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L498" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L499">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L498">                sb.append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L501">                sb.append(str).append(&quot;  &quot;);</span>
             }
         }
         
-<span class="fc bfc" id="L502" title="All 2 branches covered.">        for (i = 0; i &lt; width0; i++) {</span>
+<span class="fc bfc" id="L505" title="All 2 branches covered.">        for (i = 0; i &lt; width0; i++) {</span>
             //if query bit i is 0, flip bit i in all node states
-<span class="fc bfc" id="L504" title="All 2 branches covered.">            if ((query &amp; (1 &lt;&lt; i)) == 0) {</span>
-<span class="fc" id="L505">                gates.quantum_sigma_x(i, reg);</span>
+<span class="fc bfc" id="L507" title="All 2 branches covered.">            if ((query &amp; (1 &lt;&lt; i)) == 0) {</span>
+<span class="fc" id="L508">                gates.quantum_sigma_x(i, reg);</span>
             }
         }
         
         
-<span class="pc bpc" id="L510" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L511" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L512">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L513">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L514" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L515">                    str = &quot;0&quot; + str;</span>
+<span class="pc bpc" id="L513" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L514" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L515">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L516">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L517" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L518">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L517">                sb.append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L520">                sb.append(str).append(&quot;  &quot;);</span>
             }
             
         }
@@ -529,36 +532,36 @@ Implementation of Grover's search algorithm
         
         // not reversible
         // unset the width0 bit
-<span class="fc bfc" id="L532" title="All 2 branches covered.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="fc" id="L533">            reg.node[i].state  &amp;= ~(1L &lt;&lt; width0);</span>
+<span class="fc bfc" id="L535" title="All 2 branches covered.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="fc" id="L536">            reg.node[i].state  &amp;= ~(1L &lt;&lt; width0);</span>
         }
        
         // rotate by pi if high bit is set
-<span class="fc" id="L537">        gates.quantum_phase_kick(reg.width - 1, Math.PI, reg);</span>
+<span class="fc" id="L540">        gates.quantum_phase_kick(reg.width - 1, Math.PI, reg);</span>
         
         // unset the highest bit.
         // not reversible.
-<span class="fc bfc" id="L541" title="All 2 branches covered.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="fc" id="L542">            reg.node[i].state  &amp;= ~(1L &lt;&lt; (reg.width - 1));</span>
+<span class="fc bfc" id="L544" title="All 2 branches covered.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="fc" id="L545">            reg.node[i].state  &amp;= ~(1L &lt;&lt; (reg.width - 1));</span>
         }
         
         
-<span class="pc bpc" id="L546" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc bnc" id="L547" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L548">                StringBuilder sb = sbs[ii];</span>
-<span class="nc" id="L549">                String str = Long.toBinaryString(reg.node[ii].state);</span>
-<span class="nc bnc" id="L550" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
-<span class="nc" id="L551">                    str = &quot;0&quot; + str;</span>
+<span class="pc bpc" id="L549" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc bnc" id="L550" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L551">                StringBuilder sb = sbs[ii];</span>
+<span class="nc" id="L552">                String str = Long.toBinaryString(reg.node[ii].state);</span>
+<span class="nc bnc" id="L553" title="All 2 branches missed.">                while (str.length() &lt; reg.width) {</span>
+<span class="nc" id="L554">                    str = &quot;0&quot; + str;</span>
                 }
-<span class="nc" id="L553">                sb.append(str).append(&quot;  &quot;);</span>
+<span class="nc" id="L556">                sb.append(str).append(&quot;  &quot;);</span>
             }
             
-<span class="nc" id="L556">            System.out.println(&quot;END STATES&quot;);</span>
-<span class="nc bnc" id="L557" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
-<span class="nc" id="L558">                System.out.println(sbs[ii]);</span>
+<span class="nc" id="L559">            System.out.println(&quot;END STATES&quot;);</span>
+<span class="nc bnc" id="L560" title="All 2 branches missed.">            for (int ii = 0; ii &lt; reg.size; ii++) {</span>
+<span class="nc" id="L561">                System.out.println(sbs[ii]);</span>
             }
         }
-<span class="fc" id="L561">    }</span>
+<span class="fc" id="L564">    }</span>
     
     /**
       runtime complexity is O(reg.size * reg.width),
@@ -571,48 +574,48 @@ Implementation of Grover's search algorithm
         //|2|0^n&gt; -I_n|
         
         //Flip the target bit of each basis state, i
-<span class="fc bfc" id="L574" title="All 2 branches covered.">        for (i = 0; i &lt; width0; i++) {</span>
-<span class="fc" id="L575">            gates.quantum_sigma_x(i, reg);</span>
+<span class="fc bfc" id="L577" title="All 2 branches covered.">        for (i = 0; i &lt; width0; i++) {</span>
+<span class="fc" id="L578">            gates.quantum_sigma_x(i, reg);</span>
         }
        
-<span class="fc" id="L578">        gates.quantum_hadamard(width0 - 1, reg);</span>
+<span class="fc" id="L581">        gates.quantum_hadamard(width0 - 1, reg);</span>
 
-<span class="pc bpc" id="L580" title="1 of 2 branches missed.">        if (width0 == 3) {</span>
+<span class="pc bpc" id="L583" title="1 of 2 branches missed.">        if (width0 == 3) {</span>
         
-<span class="fc" id="L582">            gates.quantum_toffoli(0, 1, 2, reg);</span>
+<span class="fc" id="L585">            gates.quantum_toffoli(0, 1, 2, reg);</span>
         
         } else {
             
             //If bits 0 and 1 are set, it flips the target bit.
-<span class="nc" id="L587">            gates.quantum_toffoli(0, 1, width0 + 1, reg);</span>
+<span class="nc" id="L590">            gates.quantum_toffoli(0, 1, width0 + 1, reg);</span>
 
-<span class="nc bnc" id="L589" title="All 2 branches missed.">            for (i = 1; i &lt; width0 - 1; i++) {</span>
+<span class="nc bnc" id="L592" title="All 2 branches missed.">            for (i = 1; i &lt; width0 - 1; i++) {</span>
                 //If bits i and reg.width+i are set, it flips the target bit.
-<span class="nc" id="L591">                gates.quantum_toffoli(i, width0 + i, width0 + i + 1, reg);</span>
+<span class="nc" id="L594">                gates.quantum_toffoli(i, width0 + i, width0 + i + 1, reg);</span>
             }
 
             //for each reg.state, 
             //   Flip the target bit of a basis state if 
             //   the control bit is set
-<span class="nc" id="L597">            gates.quantum_cnot(width0 + i, width0 - 1, reg);</span>
+<span class="nc" id="L600">            gates.quantum_cnot(width0 + i, width0 - 1, reg);</span>
 
-<span class="nc bnc" id="L599" title="All 2 branches missed.">            for (i = width0 - 2; i &gt; 0; i--) {</span>
+<span class="nc bnc" id="L602" title="All 2 branches missed.">            for (i = width0 - 2; i &gt; 0; i--) {</span>
                 //If bits i and reg.width+i are set, it flips the target bit.
-<span class="nc" id="L601">                gates.quantum_toffoli(i, width0 + i, width0 + i + 1, reg);</span>
+<span class="nc" id="L604">                gates.quantum_toffoli(i, width0 + i, width0 + i + 1, reg);</span>
             }
 
             //If bits 0 and 1 are set, it flips the target bit.
-<span class="nc" id="L605">            gates.quantum_toffoli(0, 1, width0 + 1, reg);</span>
+<span class="nc" id="L608">            gates.quantum_toffoli(0, 1, width0 + 1, reg);</span>
         }
 
-<span class="fc" id="L608">        gates.quantum_hadamard(width0 - 1, reg);</span>
+<span class="fc" id="L611">        gates.quantum_hadamard(width0 - 1, reg);</span>
         
         //Flip the target bit of each basis state, i
-<span class="fc bfc" id="L611" title="All 2 branches covered.">        for (i = 0; i &lt; width0; i++) {</span>
-<span class="fc" id="L612">            gates.quantum_sigma_x(i, reg);</span>
+<span class="fc bfc" id="L614" title="All 2 branches covered.">        for (i = 0; i &lt; width0; i++) {</span>
+<span class="fc" id="L615">            gates.quantum_sigma_x(i, reg);</span>
         }
         
-<span class="fc" id="L615">    }</span>
+<span class="fc" id="L618">    }</span>
 
     /**
      * runtime complexity is O(reg.size * reg.width)  (because decoherence lambda is 0.0).
@@ -628,48 +631,48 @@ Implementation of Grover's search algorithm
         //unitary operator operating on two qubits, target and each i
         // |x&gt;|q&gt; ----&gt; (-1)^(f(x)) * |x&gt; 
         // (gives the found solutions negative signs)
-<span class="fc" id="L631">        oracle(target, reg, gates);</span>
+<span class="fc" id="L634">        oracle(target, reg, gates);</span>
 
-<span class="pc bpc" id="L633" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc" id="L634">            System.out.format(</span>
+<span class="pc bpc" id="L636" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc" id="L637">            System.out.format(</span>
                 &quot;AFTER oracle target=%d  reg.size=%d  hash.length=%d\n&quot;, 
-<span class="nc" id="L636">                target, reg.size, 1 &lt;&lt; reg.hashw);</span>
-<span class="nc" id="L637">            qureg.quantum_print_qureg(reg);</span>
+<span class="nc" id="L639">                target, reg.size, 1 &lt;&lt; reg.hashw);</span>
+<span class="nc" id="L640">            qureg.quantum_print_qureg(reg);</span>
         }
 
         //   H⊗n   |2|0^n&gt; -I_n|  H⊗n
 
-<span class="fc bfc" id="L642" title="All 2 branches covered.">        for (i = 0; i &lt; width0; i++) {</span>
-<span class="fc" id="L643">            gates.quantum_hadamard(i, reg);</span>
+<span class="fc bfc" id="L645" title="All 2 branches covered.">        for (i = 0; i &lt; width0; i++) {</span>
+<span class="fc" id="L646">            gates.quantum_hadamard(i, reg);</span>
         }
 
-<span class="pc bpc" id="L646" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc" id="L647">            System.out.format(</span>
+<span class="pc bpc" id="L649" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc" id="L650">            System.out.format(</span>
                 &quot;AFTER hadamard target=%d hadamard reg.size=%d\n&quot;, 
-<span class="nc" id="L649">                target, reg.size);</span>
-<span class="nc" id="L650">            qureg.quantum_print_qureg(reg);</span>
+<span class="nc" id="L652">                target, reg.size);</span>
+<span class="nc" id="L653">            qureg.quantum_print_qureg(reg);</span>
         }
 
-<span class="fc" id="L653">        inversion(reg, gates);</span>
+<span class="fc" id="L656">        inversion(reg, gates);</span>
 
-<span class="pc bpc" id="L655" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc" id="L656">            System.out.format(</span>
+<span class="pc bpc" id="L658" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc" id="L659">            System.out.format(</span>
                 &quot;AFTER target=%d inversion reg.size=%d\n&quot;, 
-<span class="nc" id="L658">                target, reg.size);</span>
-<span class="nc" id="L659">            qureg.quantum_print_qureg(reg);</span>
+<span class="nc" id="L661">                target, reg.size);</span>
+<span class="nc" id="L662">            qureg.quantum_print_qureg(reg);</span>
         }
 
-<span class="fc bfc" id="L662" title="All 2 branches covered.">        for (i = 0; i &lt; width0; i++) {</span>
-<span class="fc" id="L663">            gates.quantum_hadamard(i, reg);</span>
+<span class="fc bfc" id="L665" title="All 2 branches covered.">        for (i = 0; i &lt; width0; i++) {</span>
+<span class="fc" id="L666">            gates.quantum_hadamard(i, reg);</span>
         }
 
-<span class="pc bpc" id="L666" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc" id="L667">            System.out.format(&quot;AFTER target=%d 2nd hadamard  reg.size=%d\n&quot;, </span>
-<span class="nc" id="L668">                target, reg.size);</span>
-<span class="nc" id="L669">            qureg.quantum_print_qureg(reg);</span>
+<span class="pc bpc" id="L669" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc" id="L670">            System.out.format(&quot;AFTER target=%d 2nd hadamard  reg.size=%d\n&quot;, </span>
+<span class="nc" id="L671">                target, reg.size);</span>
+<span class="nc" id="L672">            qureg.quantum_print_qureg(reg);</span>
         }
        
-<span class="fc" id="L672">    }</span>
+<span class="fc" id="L675">    }</span>
     
     /**
      * runtime complexity is O(reg.size * reg.width)  (because decoherence lambda is 0.0).
@@ -683,13 +686,13 @@ Implementation of Grover's search algorithm
         int i;
         
         // matching state is rotated by PI
-<span class="fc" id="L686">        oracle2(target, reg, gates);</span>
+<span class="fc" id="L689">        oracle2(target, reg, gates);</span>
 
-<span class="pc bpc" id="L688" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc" id="L689">            System.out.format(</span>
+<span class="pc bpc" id="L691" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc" id="L692">            System.out.format(</span>
                 &quot;AFTER oracle2 target=%d  reg.size=%d  hash.length=%d\n&quot;, 
-<span class="nc" id="L691">                target, reg.size, 1 &lt;&lt; reg.hashw);</span>
-<span class="nc" id="L692">            qureg.quantum_print_qureg(reg);</span>
+<span class="nc" id="L694">                target, reg.size, 1 &lt;&lt; reg.hashw);</span>
+<span class="nc" id="L695">            qureg.quantum_print_qureg(reg);</span>
         }
 
         // amplify the state with high bit set       
@@ -706,31 +709,31 @@ Implementation of Grover's search algorithm
         //       to be the normalization
         // NOTE: also, assuming that an amplifier is available and a
         //       beam splitter or the equivalent
-<span class="fc" id="L709">        double avg = 1./Math.sqrt(reg.size);</span>
+<span class="fc" id="L712">        double avg = 1./Math.sqrt(reg.size);</span>
 
         // change amplitudes by their difference from avg
-<span class="fc bfc" id="L712" title="All 2 branches covered.">        for (int j = 0; j &lt; reg.size; ++j) {</span>
-<span class="fc" id="L713">            double a = reg.node[j].amplitude.re();</span>
+<span class="fc bfc" id="L715" title="All 2 branches covered.">        for (int j = 0; j &lt; reg.size; ++j) {</span>
+<span class="fc" id="L716">            double a = reg.node[j].amplitude.re();</span>
             // a = 2*avg - a
-<span class="fc" id="L715">            reg.node[j].amplitude.setReal(2. * avg - a);</span>
-<span class="fc" id="L716">            reg.node[j].amplitude.times(1./Math.sqrt(2.));</span>
+<span class="fc" id="L718">            reg.node[j].amplitude.setReal(2. * avg - a);</span>
+<span class="fc" id="L719">            reg.node[j].amplitude.times(1./Math.sqrt(2.));</span>
         }
         
-<span class="pc bpc" id="L719" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc" id="L720">            double sum = 0;</span>
-<span class="nc bnc" id="L721" title="All 2 branches missed.">            for (i = 0; i &lt; reg.size; ++i) {</span>
-<span class="nc" id="L722">                sum += reg.node[i].amplitude.squareSum();</span>
+<span class="pc bpc" id="L722" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc" id="L723">            double sum = 0;</span>
+<span class="nc bnc" id="L724" title="All 2 branches missed.">            for (i = 0; i &lt; reg.size; ++i) {</span>
+<span class="nc" id="L725">                sum += reg.node[i].amplitude.squareSum();</span>
             }
-<span class="nc" id="L724">            System.out.println(&quot;sum of squares=&quot; + sum);</span>
+<span class="nc" id="L727">            System.out.println(&quot;sum of squares=&quot; + sum);</span>
         }
         
-<span class="pc bpc" id="L727" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc" id="L728">            System.out.format(</span>
+<span class="pc bpc" id="L730" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc" id="L731">            System.out.format(</span>
                 &quot;AFTER grover target=%d reg.size=%d reg.width=%d\n&quot;, 
-<span class="nc" id="L730">                target, reg.size, reg.width);</span>
-<span class="nc" id="L731">            qureg.quantum_print_qureg(reg);</span>
+<span class="nc" id="L733">                target, reg.size, reg.width);</span>
+<span class="nc" id="L734">            qureg.quantum_print_qureg(reg);</span>
         }
-<span class="fc" id="L733">    }</span>
+<span class="fc" id="L736">    }</span>
 
     /** runtime complexity is O(reg.size * reg.width) * nLoop
        (the runtime complexity of the preparation of the register 
@@ -743,9 +746,9 @@ Implementation of Grover's search algorithm
     */
     public int run(int number) {
 
-<span class="nc" id="L746">        int width = MiscMath.numberOfBits(number + 1);</span>
+<span class="nc" id="L749">        int width = MiscMath.numberOfBits(number + 1);</span>
 
-<span class="nc" id="L748">        return run(number, width);</span>
+<span class="nc" id="L751">        return run(number, width);</span>
     }
 
     /**
@@ -765,69 +768,69 @@ Implementation of Grover's search algorithm
 
         int i;
 
-<span class="fc" id="L768">        final int N = number;</span>
+<span class="fc" id="L771">        final int N = number;</span>
 
-<span class="fc" id="L770">        Random rng = Misc.getSecureRandom();</span>
+<span class="fc" id="L773">        Random rng = Misc.getSecureRandom();</span>
 
-<span class="fc" id="L772">        Gates gates = new Gates(rng);</span>
+<span class="fc" id="L775">        Gates gates = new Gates(rng);</span>
 
-<span class="fc" id="L774">        int tmp = MiscMath.numberOfBits(N + 1);</span>
-<span class="pc bpc" id="L775" title="1 of 2 branches missed.">        if (width &lt; tmp) {</span>
-<span class="nc" id="L776">            width = tmp;</span>
+<span class="fc" id="L777">        int tmp = MiscMath.numberOfBits(N + 1);</span>
+<span class="pc bpc" id="L778" title="1 of 2 branches missed.">        if (width &lt; tmp) {</span>
+<span class="nc" id="L779">            width = tmp;</span>
         }
-<span class="pc bpc" id="L778" title="1 of 2 branches missed.">        if (width &lt; 2) {</span>
-<span class="nc" id="L779">            width = 2;</span>
+<span class="pc bpc" id="L781" title="1 of 2 branches missed.">        if (width &lt; 2) {</span>
+<span class="nc" id="L782">            width = 2;</span>
         }
-<span class="fc" id="L781">        width0 = width;</span>
+<span class="fc" id="L784">        width0 = width;</span>
 
-<span class="fc" id="L783">        QuReg qureg = new QuReg();</span>
+<span class="fc" id="L786">        QuReg qureg = new QuReg();</span>
 
-<span class="fc" id="L785">        QuantumReg reg = qureg.quantum_new_qureg(0, width0);</span>
+<span class="fc" id="L788">        QuantumReg reg = qureg.quantum_new_qureg(0, width0);</span>
 
-<span class="pc bpc" id="L787" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc" id="L788">            System.out.format(</span>
+<span class="pc bpc" id="L790" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc" id="L791">            System.out.format(</span>
                 &quot;AFTER construction  reg.size=%d reg.width=%d hash.length=%d\n&quot;, 
-<span class="nc" id="L790">                reg.size, reg.width, 1 &lt;&lt; reg.hashw);</span>
-<span class="nc" id="L791">            qureg.quantum_print_qureg(reg);</span>
+<span class="nc" id="L793">                reg.size, reg.width, 1 &lt;&lt; reg.hashw);</span>
+<span class="nc" id="L794">            qureg.quantum_print_qureg(reg);</span>
         }
         
         //Flip the target bit of each basis state, reg.width
         //runtime complexity is O(reg.size) (because decoherence lambda is 0.0).
-<span class="fc" id="L796">        qureg.quantum_addscratch(1, reg);</span>
-<span class="fc" id="L797">        reg.width *= 2;</span>
-<span class="fc" id="L798">        reg.width += 2;</span>
-<span class="fc" id="L799">        qureg.quantum_expand_and_reconstruct_hash(reg);</span>
-<span class="fc" id="L800">        gates.quantum_sigma_x(width0, reg);</span>
+<span class="fc" id="L799">        qureg.quantum_addscratch(1, reg);</span>
+<span class="fc" id="L800">        reg.width *= 2;</span>
+<span class="fc" id="L801">        reg.width += 2;</span>
+<span class="fc" id="L802">        qureg.quantum_expand_and_reconstruct_hash(reg);</span>
+<span class="fc" id="L803">        gates.quantum_sigma_x(width0, reg);</span>
         
-<span class="fc" id="L802">        System.out.format(&quot;N = %d, width0=%d reg.width=%d\n&quot;, N, width0,</span>
-<span class="fc" id="L803">            reg.width);</span>
+<span class="fc" id="L805">        System.out.format(&quot;N = %d, width0=%d reg.width=%d\n&quot;, N, width0,</span>
+<span class="fc" id="L806">            reg.width);</span>
 
-<span class="pc bpc" id="L805" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="pc bpc" id="L808" title="1 of 2 branches missed.">        if (debug) {</span>
             //DEBUG
-<span class="nc" id="L807">            System.out.format(&quot;AFTER sigma_x  reg.size=%d reg.width=%d\n&quot;, </span>
-<span class="nc" id="L808">                reg.size, reg.width);</span>
-<span class="nc" id="L809">            qureg.quantum_print_qureg(reg);</span>
+<span class="nc" id="L810">            System.out.format(&quot;AFTER sigma_x  reg.size=%d reg.width=%d\n&quot;, </span>
+<span class="nc" id="L811">                reg.size, reg.width);</span>
+<span class="nc" id="L812">            qureg.quantum_print_qureg(reg);</span>
         }
 
         //runtime complexity is O(reg.size * reg.width)
-<span class="fc bfc" id="L813" title="All 2 branches covered.">        for (i = 0; i &lt; width0 + 1; i++) {</span>
-<span class="fc" id="L814">            gates.quantum_hadamard(i, reg);</span>
+<span class="fc bfc" id="L816" title="All 2 branches covered.">        for (i = 0; i &lt; width0 + 1; i++) {</span>
+<span class="fc" id="L817">            gates.quantum_hadamard(i, reg);</span>
         }
         
-<span class="pc bpc" id="L817" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc" id="L818">            System.out.format(</span>
+<span class="pc bpc" id="L820" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc" id="L821">            System.out.format(</span>
                 &quot;AFTER 1st hadamard gates  reg.size=%d reg.width=%d hash.length=%d\n&quot;, 
-<span class="nc" id="L820">                reg.size, reg.width, 1 &lt;&lt; reg.hashw);</span>
-<span class="nc" id="L821">            qureg.quantum_print_qureg(reg);</span>
+<span class="nc" id="L823">                reg.size, reg.width, 1 &lt;&lt; reg.hashw);</span>
+<span class="nc" id="L824">            qureg.quantum_print_qureg(reg);</span>
         }
 
-<span class="pc bpc" id="L824" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc" id="L825">            System.out.format(&quot;AFTER 2 1st hadamard gates  reg.size=%d reg.width=%d hash.length=%d\n&quot;, </span>
-<span class="nc" id="L826">                reg.size, reg.width, 1 &lt;&lt; reg.hashw);</span>
-<span class="nc" id="L827">            qureg.quantum_print_qureg(reg);</span>
+<span class="pc bpc" id="L827" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc" id="L828">            System.out.format(&quot;AFTER 2 1st hadamard gates  reg.size=%d reg.width=%d hash.length=%d\n&quot;, </span>
+<span class="nc" id="L829">                reg.size, reg.width, 1 &lt;&lt; reg.hashw);</span>
+<span class="nc" id="L830">            qureg.quantum_print_qureg(reg);</span>
         }
 
-<span class="fc" id="L830">        return search(number, rng, gates, qureg, reg);</span>
+<span class="fc" id="L833">        return search(number, rng, gates, qureg, reg);</span>
     }
     
     private int search(int number, Random rng, Gates gates, QuReg qureg, 
@@ -837,60 +840,60 @@ Implementation of Grover's search algorithm
         
         // upper limit to number of iterations from:
         //&quot;Tight Bounds on Quantum Searching&quot; by Boyer, Brassard, Hoyer, and Tapp 
-<span class="fc" id="L840">        int end = (int) (Math.PI / 4 * Math.sqrt(1 &lt;&lt; width0));</span>
+<span class="fc" id="L843">        int end = (int) (Math.PI / 4 * Math.sqrt(1 &lt;&lt; width0));</span>
 
-<span class="fc" id="L842">        System.out.format(&quot;Iterating %d times\n&quot;, end);</span>
+<span class="fc" id="L845">        System.out.format(&quot;Iterating %d times\n&quot;, end);</span>
 
         //runtime complexity is O(reg.size * reg.width) * nLoop
-<span class="fc bfc" id="L845" title="All 2 branches covered.">        for (i = 1; i &lt;= end; i++) {</span>
+<span class="fc bfc" id="L848" title="All 2 branches covered.">        for (i = 1; i &lt;= end; i++) {</span>
             
-<span class="pc bpc" id="L847" title="1 of 2 branches missed.">            if (debug) {</span>
-<span class="nc" id="L848">                System.out.format(&quot;Iteration #%d\n&quot;, i);</span>
+<span class="pc bpc" id="L850" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L851">                System.out.format(&quot;Iteration #%d\n&quot;, i);</span>
             }
             
-<span class="fc" id="L851">            grover(number, reg, gates, qureg);</span>
+<span class="fc" id="L854">            grover(number, reg, gates, qureg);</span>
         }
 
-<span class="pc bpc" id="L854" title="1 of 2 branches missed.">        if (debug) { //DEBUG</span>
-<span class="nc" id="L855">            System.out.format(</span>
+<span class="pc bpc" id="L857" title="1 of 2 branches missed.">        if (debug) { //DEBUG</span>
+<span class="nc" id="L858">            System.out.format(</span>
                 &quot;AFTER grover  reg.size=%d reg.width=%d\n&quot;, 
-<span class="nc" id="L857">                reg.size, reg.width);</span>
-<span class="nc" id="L858">            qureg.quantum_print_qureg(reg);</span>
+<span class="nc" id="L860">                reg.size, reg.width);</span>
+<span class="nc" id="L861">            qureg.quantum_print_qureg(reg);</span>
         }
         
 
-<span class="fc" id="L862">        gates.quantum_hadamard(width0, reg);</span>
+<span class="fc" id="L865">        gates.quantum_hadamard(width0, reg);</span>
 
 
-<span class="pc bpc" id="L865" title="1 of 2 branches missed.">        if (debug) {//DEBUG//DEBUG</span>
-<span class="nc" id="L866">            System.out.format(</span>
+<span class="pc bpc" id="L868" title="1 of 2 branches missed.">        if (debug) {//DEBUG//DEBUG</span>
+<span class="nc" id="L869">            System.out.format(</span>
                 &quot;AFTER last hadamard  reg.size=%d reg.width=%d\n&quot;, 
-<span class="nc" id="L868">                reg.size, reg.width);</span>
-<span class="nc" id="L869">            qureg.quantum_print_qureg(reg);</span>
+<span class="nc" id="L871">                reg.size, reg.width);</span>
+<span class="nc" id="L872">            qureg.quantum_print_qureg(reg);</span>
         }
         
-<span class="fc" id="L872">        Measure measure = new Measure();</span>
+<span class="fc" id="L875">        Measure measure = new Measure();</span>
 
         // runtime complexity is O(reg.size)
-<span class="fc" id="L875">        measure.quantum_bmeasure(width0, reg, rng);</span>
+<span class="fc" id="L878">        measure.quantum_bmeasure(width0, reg, rng);</span>
 
         //DEBUG
-<span class="fc" id="L878">        System.out.format(</span>
+<span class="fc" id="L881">        System.out.format(</span>
             &quot;AFTER bmeasure reg.size=%d reg.width=%d\n&quot;, 
-<span class="fc" id="L880">            reg.size, reg.width);</span>
-<span class="fc" id="L881">        qureg.quantum_print_qureg(reg);</span>
+<span class="fc" id="L883">            reg.size, reg.width);</span>
+<span class="fc" id="L884">        qureg.quantum_print_qureg(reg);</span>
 
 
-<span class="pc bpc" id="L884" title="1 of 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="fc bfc" id="L885" title="All 2 branches covered.">            if (reg.node[i].state == number) {</span>
-<span class="fc" id="L886">                System.out.format(</span>
-<span class="fc" id="L887">                    &quot;\nFound %d with a probability of %f\n\n&quot;, number,</span>
-<span class="fc" id="L888">                    reg.node[i].amplitude.squareSum());</span>
-<span class="fc" id="L889">                return number;</span>
+<span class="pc bpc" id="L887" title="1 of 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="fc bfc" id="L888" title="All 2 branches covered.">            if (reg.node[i].state == number) {</span>
+<span class="fc" id="L889">                System.out.format(</span>
+<span class="fc" id="L890">                    &quot;\nFound %d with a probability of %f\n\n&quot;, number,</span>
+<span class="fc" id="L891">                    reg.node[i].amplitude.squareSum());</span>
+<span class="fc" id="L892">                return number;</span>
             }
         }
 
-<span class="nc" id="L893">        return -1;</span>
+<span class="nc" id="L896">        return -1;</span>
     }
     
     // ---- adding ability to find number within a list of numbers for use 
@@ -917,21 +920,21 @@ Implementation of Grover's search algorithm
      */
     public int run(int number, int width, int[] list) {
 
-<span class="fc" id="L920">        int N = number;</span>
+<span class="fc" id="L923">        int N = number;</span>
         int i;
         
-<span class="fc" id="L923">        int tmp = MiscMath.numberOfBits(N);</span>
-<span class="pc bpc" id="L924" title="1 of 2 branches missed.">        if (width &lt; tmp) {</span>
-<span class="nc" id="L925">            width = tmp;</span>
+<span class="fc" id="L926">        int tmp = MiscMath.numberOfBits(N);</span>
+<span class="pc bpc" id="L927" title="1 of 2 branches missed.">        if (width &lt; tmp) {</span>
+<span class="nc" id="L928">            width = tmp;</span>
         }
-<span class="pc bpc" id="L927" title="1 of 2 branches missed.">        if (width &lt; 2) {</span>
-<span class="nc" id="L928">            width = 2;</span>
+<span class="pc bpc" id="L930" title="1 of 2 branches missed.">        if (width &lt; 2) {</span>
+<span class="nc" id="L931">            width = 2;</span>
         }
-<span class="fc" id="L930">        width0 = width;</span>
+<span class="fc" id="L933">        width0 = width;</span>
         
-<span class="fc" id="L932">        QuReg qureg = new QuReg();</span>
+<span class="fc" id="L935">        QuReg qureg = new QuReg();</span>
 
-<span class="fc" id="L934">        Random rng = Misc.getSecureRandom();</span>
+<span class="fc" id="L937">        Random rng = Misc.getSecureRandom();</span>
         
         int ret;
         
@@ -946,32 +949,32 @@ Implementation of Grover's search algorithm
 
         } else {
             
-<span class="fc" id="L949">            QuantumReg reg = initializeRegister2(qureg, list);</span>
+<span class="fc" id="L952">            QuantumReg reg = initializeRegister2(qureg, list);</span>
 
-<span class="fc" id="L951">            System.out.format(&quot;N = %d, list.length=%d, width0=%d reg.width=%d\n&quot;, N, </span>
-<span class="fc" id="L952">                list.length, width0, reg.width);</span>
+<span class="fc" id="L954">            System.out.format(&quot;N = %d, list.length=%d, width0=%d reg.width=%d\n&quot;, N, </span>
+<span class="fc" id="L955">                list.length, width0, reg.width);</span>
 
-<span class="fc" id="L954">            ret = processInitialized2(number, reg, rng);</span>
+<span class="fc" id="L957">            ret = processInitialized2(number, reg, rng);</span>
         }
         
-<span class="fc" id="L957">        return ret;</span>
+<span class="fc" id="L960">        return ret;</span>
     }
     
     public int run(int number, int width, int setQuBits) {
     
-<span class="fc" id="L962">        width0 = width;</span>
+<span class="fc" id="L965">        width0 = width;</span>
         
-<span class="fc" id="L964">        QuReg qureg = new QuReg();</span>
-<span class="fc" id="L965">        QuantumReg reg = initializeRegister(qureg, setQuBits);</span>
+<span class="fc" id="L967">        QuReg qureg = new QuReg();</span>
+<span class="fc" id="L968">        QuantumReg reg = initializeRegister(qureg, setQuBits);</span>
         
-<span class="fc" id="L967">        System.out.format(&quot;N = %d, width0=%d reg.width=%d\n&quot;, number, </span>
-<span class="fc" id="L968">            width0, reg.width);</span>
+<span class="fc" id="L970">        System.out.format(&quot;N = %d, width0=%d reg.width=%d\n&quot;, number, </span>
+<span class="fc" id="L971">            width0, reg.width);</span>
         
-<span class="fc" id="L970">        Random rng = Misc.getSecureRandom();</span>
+<span class="fc" id="L973">        Random rng = Misc.getSecureRandom();</span>
         
-<span class="fc" id="L972">        int ret = processInitialized2(number, reg, rng);</span>
+<span class="fc" id="L975">        int ret = processInitialized2(number, reg, rng);</span>
         
-<span class="fc" id="L974">        return ret;</span>
+<span class="fc" id="L977">        return ret;</span>
     }
     
     /**
@@ -998,39 +1001,39 @@ Implementation of Grover's search algorithm
     public QuantumReg initializeRegister(QuReg qureg, 
         ComplexModifiable[] amplList, int[] stateList) {
       
-<span class="nc" id="L1001">        final int initSize = 2 * amplList.length;</span>
+<span class="nc" id="L1004">        final int initSize = 2 * amplList.length;</span>
 
-<span class="nc" id="L1003">        QuantumReg reg = qureg.quantum_new_qureg_size(initSize, width0);</span>
-<span class="nc" id="L1004">        reg.width *= 2;</span>
-<span class="nc" id="L1005">        reg.width += 2;</span>
-<span class="nc" id="L1006">        qureg.quantum_expand_and_reconstruct_hash(reg);</span>
+<span class="nc" id="L1006">        QuantumReg reg = qureg.quantum_new_qureg_size(initSize, width0);</span>
+<span class="nc" id="L1007">        reg.width *= 2;</span>
+<span class="nc" id="L1008">        reg.width += 2;</span>
+<span class="nc" id="L1009">        qureg.quantum_expand_and_reconstruct_hash(reg);</span>
         
         //need to initialize a register to have the given states from list
         //and a set of the same numbers but with negative amplitude and
         //the next highest bit set, that is width + 1
         //    rest of the algorithm should proceed in same manner.
         
-<span class="nc" id="L1013">        int offset = 1 &lt;&lt; width0;</span>
+<span class="nc" id="L1016">        int offset = 1 &lt;&lt; width0;</span>
         
         int i;
-<span class="nc" id="L1016">        double invSqrt = 1./Math.sqrt(2.);</span>
+<span class="nc" id="L1019">        double invSqrt = 1./Math.sqrt(2.);</span>
         
-<span class="nc bnc" id="L1018" title="All 2 branches missed.">        for (i = 0; i &lt; amplList.length; ++i) {</span>
-<span class="nc" id="L1019">            reg.node[i].state = stateList[i];</span>
-<span class="nc" id="L1020">            reg.node[i].state |= offset;</span>
-<span class="nc" id="L1021">            reg.node[i].amplitude.resetTo(amplList[i]);</span>
-<span class="nc" id="L1022">            reg.node[i].amplitude.times(-invSqrt);</span>
+<span class="nc bnc" id="L1021" title="All 2 branches missed.">        for (i = 0; i &lt; amplList.length; ++i) {</span>
+<span class="nc" id="L1022">            reg.node[i].state = stateList[i];</span>
+<span class="nc" id="L1023">            reg.node[i].state |= offset;</span>
+<span class="nc" id="L1024">            reg.node[i].amplitude.resetTo(amplList[i]);</span>
+<span class="nc" id="L1025">            reg.node[i].amplitude.times(-invSqrt);</span>
         }
         
-<span class="nc" id="L1025">        int idx = amplList.length;</span>
-<span class="nc bnc" id="L1026" title="All 2 branches missed.">        for (i = 0; i &lt; amplList.length; ++i) {</span>
-<span class="nc" id="L1027">            reg.node[idx].state = stateList[i];</span>
-<span class="nc" id="L1028">            reg.node[idx].amplitude.resetTo(amplList[i]);</span>
-<span class="nc" id="L1029">            reg.node[idx].amplitude.times(invSqrt);</span>
-<span class="nc" id="L1030">            idx++;</span>
+<span class="nc" id="L1028">        int idx = amplList.length;</span>
+<span class="nc bnc" id="L1029" title="All 2 branches missed.">        for (i = 0; i &lt; amplList.length; ++i) {</span>
+<span class="nc" id="L1030">            reg.node[idx].state = stateList[i];</span>
+<span class="nc" id="L1031">            reg.node[idx].amplitude.resetTo(amplList[i]);</span>
+<span class="nc" id="L1032">            reg.node[idx].amplitude.times(invSqrt);</span>
+<span class="nc" id="L1033">            idx++;</span>
         }
         
-<span class="nc" id="L1033">        return reg;</span>
+<span class="nc" id="L1036">        return reg;</span>
     }
     
     /**
@@ -1043,42 +1046,42 @@ Implementation of Grover's search algorithm
      */
     public QuantumReg initializeRegister(QuReg qureg, int setBits) {
        
-<span class="fc" id="L1046">        int nBits = MiscMath.numberOfBits(setBits);</span>
+<span class="fc" id="L1049">        int nBits = MiscMath.numberOfBits(setBits);</span>
         
         int i;
         
-<span class="fc" id="L1050">        int nSetBits = 0;</span>
-<span class="fc bfc" id="L1051" title="All 2 branches covered.">        for (i = 0; i &lt; nBits; ++i) {</span>
-<span class="pc bpc" id="L1052" title="1 of 2 branches missed.">            if ((setBits &amp; (1 &lt;&lt; i)) != 0) {</span>
-<span class="fc" id="L1053">                nSetBits++;</span>
+<span class="fc" id="L1053">        int nSetBits = 0;</span>
+<span class="fc bfc" id="L1054" title="All 2 branches covered.">        for (i = 0; i &lt; nBits; ++i) {</span>
+<span class="pc bpc" id="L1055" title="1 of 2 branches missed.">            if ((setBits &amp; (1 &lt;&lt; i)) != 0) {</span>
+<span class="fc" id="L1056">                nSetBits++;</span>
             }
         }
         
-<span class="fc" id="L1057">        QuantumReg reg = qureg.quantum_new_qureg_size(</span>
+<span class="fc" id="L1060">        QuantumReg reg = qureg.quantum_new_qureg_size(</span>
             nSetBits, width0);
 
-<span class="fc" id="L1060">        reg.width *= 2;</span>
-<span class="fc" id="L1061">        reg.width += 2;</span>
-<span class="fc" id="L1062">        qureg.quantum_expand_and_reconstruct_hash(reg);</span>
+<span class="fc" id="L1063">        reg.width *= 2;</span>
+<span class="fc" id="L1064">        reg.width += 2;</span>
+<span class="fc" id="L1065">        qureg.quantum_expand_and_reconstruct_hash(reg);</span>
         
-<span class="fc" id="L1064">        double norm = 1./Math.sqrt(nSetBits);  </span>
-<span class="fc" id="L1065">        int ii = 0;</span>
-<span class="fc bfc" id="L1066" title="All 2 branches covered.">        for (i = 0; i &lt; nBits; ++i) {</span>
-<span class="pc bpc" id="L1067" title="1 of 2 branches missed.">            if ((setBits &amp; (1 &lt;&lt; i)) != 0) {</span>
+<span class="fc" id="L1067">        double norm = 1./Math.sqrt(nSetBits);  </span>
+<span class="fc" id="L1068">        int ii = 0;</span>
+<span class="fc bfc" id="L1069" title="All 2 branches covered.">        for (i = 0; i &lt; nBits; ++i) {</span>
+<span class="pc bpc" id="L1070" title="1 of 2 branches missed.">            if ((setBits &amp; (1 &lt;&lt; i)) != 0) {</span>
                 //initializing with same state + highbit off of register
-<span class="fc" id="L1069">                reg.node[ii].state = (1 &lt;&lt; i);</span>
-<span class="fc" id="L1070">                reg.node[ii].amplitude.setReal(norm);</span>
-<span class="fc" id="L1071">                ++ii;</span>
+<span class="fc" id="L1072">                reg.node[ii].state = (1 &lt;&lt; i);</span>
+<span class="fc" id="L1073">                reg.node[ii].amplitude.setReal(norm);</span>
+<span class="fc" id="L1074">                ++ii;</span>
             }
         }
                 
-<span class="pc bpc" id="L1075" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc" id="L1076">            System.out.format(&quot;initialized  reg.size=%d reg.width=%d\n&quot;, </span>
-<span class="nc" id="L1077">                reg.size, reg.width);</span>
-<span class="nc" id="L1078">            qureg.quantum_print_qureg(reg);</span>
+<span class="pc bpc" id="L1078" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc" id="L1079">            System.out.format(&quot;initialized  reg.size=%d reg.width=%d\n&quot;, </span>
+<span class="nc" id="L1080">                reg.size, reg.width);</span>
+<span class="nc" id="L1081">            qureg.quantum_print_qureg(reg);</span>
         }
         
-<span class="fc" id="L1081">        return reg;</span>
+<span class="fc" id="L1084">        return reg;</span>
     }
     
     /**
@@ -1092,45 +1095,45 @@ Implementation of Grover's search algorithm
      */
     private QuantumReg initializeRegister(QuReg qureg, int[] list) {
         
-<span class="nc" id="L1095">        int listLen = list.length;</span>
+<span class="nc" id="L1098">        int listLen = list.length;</span>
         
-<span class="nc" id="L1097">        final int initSize = 2 * listLen;</span>
+<span class="nc" id="L1100">        final int initSize = 2 * listLen;</span>
 
-<span class="nc" id="L1099">        QuantumReg reg = qureg.quantum_new_qureg_size(initSize, width0);</span>
+<span class="nc" id="L1102">        QuantumReg reg = qureg.quantum_new_qureg_size(initSize, width0);</span>
 
-<span class="nc" id="L1101">        reg.width *= 2;</span>
-<span class="nc" id="L1102">        reg.width += 2;</span>
-<span class="nc" id="L1103">        qureg.quantum_expand_and_reconstruct_hash(reg);</span>
+<span class="nc" id="L1104">        reg.width *= 2;</span>
+<span class="nc" id="L1105">        reg.width += 2;</span>
+<span class="nc" id="L1106">        qureg.quantum_expand_and_reconstruct_hash(reg);</span>
         
         //need to initialize a register to have the given states from list
         //and a set of the same numbers but with negative amplitude and
         //the next highest bit set, that is width + 1
         //    rest of the algorithm should proceed in same manner.
                 
-<span class="nc" id="L1110">        int offset = 1 &lt;&lt; width0;</span>
+<span class="nc" id="L1113">        int offset = 1 &lt;&lt; width0;</span>
         
         int i;
         
-<span class="nc" id="L1114">        double norm = 1./Math.sqrt(initSize);  </span>
-<span class="nc bnc" id="L1115" title="All 2 branches missed.">        for (i = 0; i &lt; list.length; ++i) {</span>
-<span class="nc" id="L1116">            reg.node[i].state = list[i] + offset;</span>
-<span class="nc" id="L1117">            reg.node[i].amplitude.setReal(-norm);</span>
+<span class="nc" id="L1117">        double norm = 1./Math.sqrt(initSize);  </span>
+<span class="nc bnc" id="L1118" title="All 2 branches missed.">        for (i = 0; i &lt; list.length; ++i) {</span>
+<span class="nc" id="L1119">            reg.node[i].state = list[i] + offset;</span>
+<span class="nc" id="L1120">            reg.node[i].amplitude.setReal(-norm);</span>
         }
-<span class="nc" id="L1119">        int ii = list.length;</span>
-<span class="nc bnc" id="L1120" title="All 2 branches missed.">        for (i = 0; i &lt; list.length; ++i) {</span>
-<span class="nc" id="L1121">            reg.node[ii].state = list[i];</span>
-<span class="nc" id="L1122">            reg.node[ii].amplitude.setReal(norm);</span>
-<span class="nc" id="L1123">            ii++;</span>
+<span class="nc" id="L1122">        int ii = list.length;</span>
+<span class="nc bnc" id="L1123" title="All 2 branches missed.">        for (i = 0; i &lt; list.length; ++i) {</span>
+<span class="nc" id="L1124">            reg.node[ii].state = list[i];</span>
+<span class="nc" id="L1125">            reg.node[ii].amplitude.setReal(norm);</span>
+<span class="nc" id="L1126">            ii++;</span>
         }
         
-<span class="nc bnc" id="L1126" title="All 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc" id="L1127">            System.out.format(&quot;AFTER init reg.size=%d &quot;</span>
-<span class="nc" id="L1128">                + &quot; width0=%d reg.width=%d reg.hash.length=%d\n&quot;, reg.size,</span>
-<span class="nc" id="L1129">                width0, reg.width, (1 &lt;&lt; reg.hashw));</span>
-<span class="nc" id="L1130">            qureg.quantum_print_qureg(reg);</span>
+<span class="nc bnc" id="L1129" title="All 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc" id="L1130">            System.out.format(&quot;AFTER init reg.size=%d &quot;</span>
+<span class="nc" id="L1131">                + &quot; width0=%d reg.width=%d reg.hash.length=%d\n&quot;, reg.size,</span>
+<span class="nc" id="L1132">                width0, reg.width, (1 &lt;&lt; reg.hashw));</span>
+<span class="nc" id="L1133">            qureg.quantum_print_qureg(reg);</span>
         }
        
-<span class="nc" id="L1133">        return reg;</span>
+<span class="nc" id="L1136">        return reg;</span>
     }
     
     /**
@@ -1144,15 +1147,15 @@ Implementation of Grover's search algorithm
      */
     private QuantumReg initializeRegister2(QuReg qureg, int[] list) {
         
-<span class="fc" id="L1147">        int listLen = list.length;</span>
+<span class="fc" id="L1150">        int listLen = list.length;</span>
         
-<span class="fc" id="L1149">        final int initSize = listLen;</span>
+<span class="fc" id="L1152">        final int initSize = listLen;</span>
 
-<span class="fc" id="L1151">        QuantumReg reg = qureg.quantum_new_qureg_size(initSize, width0);</span>
+<span class="fc" id="L1154">        QuantumReg reg = qureg.quantum_new_qureg_size(initSize, width0);</span>
 
-<span class="fc" id="L1153">        reg.width *= 2;</span>
-<span class="fc" id="L1154">        reg.width += 2;</span>
-<span class="fc" id="L1155">        qureg.quantum_expand_and_reconstruct_hash(reg);</span>
+<span class="fc" id="L1156">        reg.width *= 2;</span>
+<span class="fc" id="L1157">        reg.width += 2;</span>
+<span class="fc" id="L1158">        qureg.quantum_expand_and_reconstruct_hash(reg);</span>
         
         //need to initialize a register to have the given states from list
         //and a set of the same numbers but with negative amplitude and
@@ -1161,20 +1164,20 @@ Implementation of Grover's search algorithm
                 
         int i;
         
-<span class="fc" id="L1164">        double norm = 1./Math.sqrt(initSize);  </span>
-<span class="fc bfc" id="L1165" title="All 2 branches covered.">        for (i = 0; i &lt; list.length; ++i) {</span>
-<span class="fc" id="L1166">            reg.node[i].state = list[i];</span>
-<span class="fc" id="L1167">            reg.node[i].amplitude.setReal(norm);</span>
+<span class="fc" id="L1167">        double norm = 1./Math.sqrt(initSize);  </span>
+<span class="fc bfc" id="L1168" title="All 2 branches covered.">        for (i = 0; i &lt; list.length; ++i) {</span>
+<span class="fc" id="L1169">            reg.node[i].state = list[i];</span>
+<span class="fc" id="L1170">            reg.node[i].amplitude.setReal(norm);</span>
         }
         
-<span class="pc bpc" id="L1170" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
-<span class="nc" id="L1171">            System.out.format(&quot;AFTER init reg.size=%d &quot;</span>
-<span class="nc" id="L1172">                + &quot; width0=%d reg.width=%d reg.hash.length=%d\n&quot;, reg.size,</span>
-<span class="nc" id="L1173">                width0, reg.width, (1 &lt;&lt; reg.hashw));</span>
-<span class="nc" id="L1174">            qureg.quantum_print_qureg(reg);</span>
+<span class="pc bpc" id="L1173" title="1 of 2 branches missed.">        if (debug) {//DEBUG</span>
+<span class="nc" id="L1174">            System.out.format(&quot;AFTER init reg.size=%d &quot;</span>
+<span class="nc" id="L1175">                + &quot; width0=%d reg.width=%d reg.hash.length=%d\n&quot;, reg.size,</span>
+<span class="nc" id="L1176">                width0, reg.width, (1 &lt;&lt; reg.hashw));</span>
+<span class="nc" id="L1177">            qureg.quantum_print_qureg(reg);</span>
         }
        
-<span class="fc" id="L1177">        return reg;</span>
+<span class="fc" id="L1180">        return reg;</span>
     }
     
     /**
@@ -1199,9 +1202,9 @@ Implementation of Grover's search algorithm
         
         int i;
 
-<span class="nc" id="L1202">        final int N = number;</span>
+<span class="nc" id="L1205">        final int N = number;</span>
 
-<span class="nc" id="L1204">        QuReg qureg = new QuReg();</span>
+<span class="nc" id="L1207">        QuReg qureg = new QuReg();</span>
         
         //DEBUG
         //System.out.format(&quot;AFTER construction  reg.size=%d\n&quot;, reg.size);
@@ -1212,62 +1215,62 @@ Implementation of Grover's search algorithm
         //  NOTE that if the number of times number will appear in list
         //     is known ahead of time,
         //     the term in the sqrt can be divided by that multiplicity.
-<span class="nc" id="L1215">        int end = (int) (Math.PI / 4 * Math.sqrt(1 &lt;&lt; width0));</span>
+<span class="nc" id="L1218">        int end = (int) (Math.PI / 4 * Math.sqrt(1 &lt;&lt; width0));</span>
 
-<span class="nc" id="L1217">        System.out.format(&quot;Iterating %d times\n&quot;, end);</span>
+<span class="nc" id="L1220">        System.out.format(&quot;Iterating %d times\n&quot;, end);</span>
 
-<span class="nc" id="L1219">        Gates gates = new Gates(rng);</span>
+<span class="nc" id="L1222">        Gates gates = new Gates(rng);</span>
 
         //runtime complexity is O(reg.size * reg.width) * nLoop
-<span class="nc bnc" id="L1222" title="All 2 branches missed.">        for (i = 1; i &lt;= end; i++) {</span>
+<span class="nc bnc" id="L1225" title="All 2 branches missed.">        for (i = 1; i &lt;= end; i++) {</span>
             
-<span class="nc bnc" id="L1224" title="All 2 branches missed.">            if (debug) {</span>
-<span class="nc" id="L1225">                System.out.format(&quot;Iteration #%d\n&quot;, i);</span>
+<span class="nc bnc" id="L1227" title="All 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L1228">                System.out.format(&quot;Iteration #%d\n&quot;, i);</span>
             }
             
-<span class="nc" id="L1228">            grover(N, reg, gates, qureg);</span>
+<span class="nc" id="L1231">            grover(N, reg, gates, qureg);</span>
         }
 
-<span class="nc bnc" id="L1231" title="All 2 branches missed.">        if (debug) { //DEBUG</span>
-<span class="nc" id="L1232">            System.out.format(</span>
+<span class="nc bnc" id="L1234" title="All 2 branches missed.">        if (debug) { //DEBUG</span>
+<span class="nc" id="L1235">            System.out.format(</span>
                 &quot;AFTER grover  reg.size=%d reg.width=%d\n&quot;, 
-<span class="nc" id="L1234">                reg.size, reg.width);</span>
-<span class="nc" id="L1235">            qureg.quantum_print_qureg(reg);</span>
+<span class="nc" id="L1237">                reg.size, reg.width);</span>
+<span class="nc" id="L1238">            qureg.quantum_print_qureg(reg);</span>
         }
         
 
-<span class="nc" id="L1239">        gates.quantum_hadamard(width0, reg);</span>
+<span class="nc" id="L1242">        gates.quantum_hadamard(width0, reg);</span>
 
 
-<span class="nc bnc" id="L1242" title="All 2 branches missed.">        if (debug) {//DEBUG//DEBUG</span>
-<span class="nc" id="L1243">            System.out.format(</span>
+<span class="nc bnc" id="L1245" title="All 2 branches missed.">        if (debug) {//DEBUG//DEBUG</span>
+<span class="nc" id="L1246">            System.out.format(</span>
                 &quot;AFTER last hadamard  reg.size=%d reg.width=%d\n&quot;, 
-<span class="nc" id="L1245">                reg.size, reg.width);</span>
-<span class="nc" id="L1246">            qureg.quantum_print_qureg(reg);</span>
+<span class="nc" id="L1248">                reg.size, reg.width);</span>
+<span class="nc" id="L1249">            qureg.quantum_print_qureg(reg);</span>
         }
         
-<span class="nc" id="L1249">        Measure measure = new Measure();</span>
+<span class="nc" id="L1252">        Measure measure = new Measure();</span>
 
         // runtime complexity is O(reg.size)
-<span class="nc" id="L1252">        measure.quantum_bmeasure(width0, reg, rng);</span>
+<span class="nc" id="L1255">        measure.quantum_bmeasure(width0, reg, rng);</span>
 
         //DEBUG
-<span class="nc" id="L1255">        System.out.format(</span>
+<span class="nc" id="L1258">        System.out.format(</span>
             &quot;AFTER bmeasure reg.size=%d reg.width=%d\n&quot;, 
-<span class="nc" id="L1257">            reg.size, reg.width);</span>
-<span class="nc" id="L1258">        qureg.quantum_print_qureg(reg);</span>
+<span class="nc" id="L1260">            reg.size, reg.width);</span>
+<span class="nc" id="L1261">        qureg.quantum_print_qureg(reg);</span>
 
 
-<span class="nc bnc" id="L1261" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="nc bnc" id="L1262" title="All 2 branches missed.">            if (reg.node[i].state == N) {</span>
-<span class="nc" id="L1263">                System.out.format(</span>
-<span class="nc" id="L1264">                    &quot;\nFound %d with a probability of %f\n\n&quot;, N,</span>
-<span class="nc" id="L1265">                    reg.node[i].amplitude.squareSum());</span>
-<span class="nc" id="L1266">                return number;</span>
+<span class="nc bnc" id="L1264" title="All 2 branches missed.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="nc bnc" id="L1265" title="All 2 branches missed.">            if (reg.node[i].state == N) {</span>
+<span class="nc" id="L1266">                System.out.format(</span>
+<span class="nc" id="L1267">                    &quot;\nFound %d with a probability of %f\n\n&quot;, N,</span>
+<span class="nc" id="L1268">                    reg.node[i].amplitude.squareSum());</span>
+<span class="nc" id="L1269">                return number;</span>
             }
         }
 
-<span class="nc" id="L1270">        return -1;</span>
+<span class="nc" id="L1273">        return -1;</span>
     }
 
     /**
@@ -1292,9 +1295,9 @@ Implementation of Grover's search algorithm
         
         int i;
 
-<span class="fc" id="L1295">        final int N = number;</span>
+<span class="fc" id="L1298">        final int N = number;</span>
 
-<span class="fc" id="L1297">        QuReg qureg = new QuReg();</span>
+<span class="fc" id="L1300">        QuReg qureg = new QuReg();</span>
         
         //DEBUG
         //System.out.format(&quot;AFTER construction  reg.size=%d\n&quot;, reg.size);
@@ -1305,51 +1308,51 @@ Implementation of Grover's search algorithm
         //  NOTE that if the number of times number will appear in list
         //     is known ahead of time,
         //     the term in the sqrt can be divided by that multiplicity.
-<span class="fc" id="L1308">        int end = (int) (Math.PI / 4 * Math.sqrt(1 &lt;&lt; width0));</span>
+<span class="fc" id="L1311">        int end = (int) (Math.PI / 4 * Math.sqrt(1 &lt;&lt; width0));</span>
 
-<span class="fc" id="L1310">        System.out.format(&quot;Iterating %d times\n&quot;, end);</span>
+<span class="fc" id="L1313">        System.out.format(&quot;Iterating %d times\n&quot;, end);</span>
 
-<span class="fc" id="L1312">        Gates gates = new Gates(rng);</span>
+<span class="fc" id="L1315">        Gates gates = new Gates(rng);</span>
 
         //runtime complexity is O(reg.size * reg.width) * nLoop
-<span class="fc bfc" id="L1315" title="All 2 branches covered.">        for (i = 1; i &lt;= end; i++) {</span>
+<span class="fc bfc" id="L1318" title="All 2 branches covered.">        for (i = 1; i &lt;= end; i++) {</span>
             
-<span class="pc bpc" id="L1317" title="1 of 2 branches missed.">            if (debug) {</span>
-<span class="nc" id="L1318">                System.out.format(&quot;Iteration #%d\n&quot;, i);</span>
+<span class="pc bpc" id="L1320" title="1 of 2 branches missed.">            if (debug) {</span>
+<span class="nc" id="L1321">                System.out.format(&quot;Iteration #%d\n&quot;, i);</span>
             }
             
-<span class="fc" id="L1321">            grover2(N, reg, gates, qureg);</span>
+<span class="fc" id="L1324">            grover2(N, reg, gates, qureg);</span>
         }
 
-<span class="pc bpc" id="L1324" title="1 of 2 branches missed.">        if (debug) { //DEBUG</span>
-<span class="nc" id="L1325">            System.out.format(</span>
+<span class="pc bpc" id="L1327" title="1 of 2 branches missed.">        if (debug) { //DEBUG</span>
+<span class="nc" id="L1328">            System.out.format(</span>
                 &quot;AFTER grover  reg.size=%d reg.width=%d\n&quot;, 
-<span class="nc" id="L1327">                reg.size, reg.width);</span>
-<span class="nc" id="L1328">            qureg.quantum_print_qureg(reg);</span>
+<span class="nc" id="L1330">                reg.size, reg.width);</span>
+<span class="nc" id="L1331">            qureg.quantum_print_qureg(reg);</span>
         }
         
-<span class="fc" id="L1331">        Measure measure = new Measure();</span>
+<span class="fc" id="L1334">        Measure measure = new Measure();</span>
 
         // runtime complexity is O(reg.size)
-<span class="fc" id="L1334">        measure.quantum_bmeasure(width0, reg, rng);</span>
+<span class="fc" id="L1337">        measure.quantum_bmeasure(width0, reg, rng);</span>
 
         //DEBUG
-<span class="fc" id="L1337">        System.out.format(</span>
+<span class="fc" id="L1340">        System.out.format(</span>
             &quot;AFTER bmeasure reg.size=%d reg.width=%d\n&quot;, 
-<span class="fc" id="L1339">            reg.size, reg.width);</span>
-<span class="fc" id="L1340">        qureg.quantum_print_qureg(reg);</span>
+<span class="fc" id="L1342">            reg.size, reg.width);</span>
+<span class="fc" id="L1343">        qureg.quantum_print_qureg(reg);</span>
 
 
-<span class="fc bfc" id="L1343" title="All 2 branches covered.">        for (i = 0; i &lt; reg.size; i++) {</span>
-<span class="fc bfc" id="L1344" title="All 2 branches covered.">            if (reg.node[i].state == N) {</span>
-<span class="fc" id="L1345">                System.out.format(</span>
-<span class="fc" id="L1346">                    &quot;\nFound %d with a probability of %f\n\n&quot;, N,</span>
-<span class="fc" id="L1347">                    reg.node[i].amplitude.squareSum());</span>
-<span class="fc" id="L1348">                return number;</span>
+<span class="fc bfc" id="L1346" title="All 2 branches covered.">        for (i = 0; i &lt; reg.size; i++) {</span>
+<span class="fc bfc" id="L1347" title="All 2 branches covered.">            if (reg.node[i].state == N) {</span>
+<span class="fc" id="L1348">                System.out.format(</span>
+<span class="fc" id="L1349">                    &quot;\nFound %d with a probability of %f\n\n&quot;, N,</span>
+<span class="fc" id="L1350">                    reg.node[i].amplitude.squareSum());</span>
+<span class="fc" id="L1351">                return number;</span>
             }
         }
 
-<span class="fc" id="L1352">        return -1;</span>
+<span class="fc" id="L1355">        return -1;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

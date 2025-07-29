@@ -265,16 +265,16 @@ import java.util.Set;
     public static TObjectIntMap&lt;PairInt&gt; createPointIndexMap(
         PairIntArray p) {
         
-<span class="fc" id="L268">        TObjectIntMap&lt;PairInt&gt; map = </span>
+<span class="nc" id="L268">        TObjectIntMap&lt;PairInt&gt; map = </span>
             new TObjectIntHashMap&lt;PairInt&gt;();
         
-<span class="fc bfc" id="L271" title="All 2 branches covered.">        for (int i = 0; i &lt; p.getN(); ++i) {</span>
-<span class="fc" id="L272">            PairInt pt = new PairInt(p.getX(i),</span>
-<span class="fc" id="L273">                p.getY(i));</span>
-<span class="fc" id="L274">            map.put(pt, i);</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">        for (int i = 0; i &lt; p.getN(); ++i) {</span>
+<span class="nc" id="L272">            PairInt pt = new PairInt(p.getX(i),</span>
+<span class="nc" id="L273">                p.getY(i));</span>
+<span class="nc" id="L274">            map.put(pt, i);</span>
         }
         
-<span class="fc" id="L277">        return map;</span>
+<span class="nc" id="L277">        return map;</span>
     }
     
     /**
@@ -384,4 +384,4 @@ import java.util.Set;
 <span class="nc" id="L384">        return y;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

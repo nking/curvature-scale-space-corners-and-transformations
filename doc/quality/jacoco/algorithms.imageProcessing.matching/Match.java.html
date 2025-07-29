@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Match.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.matching</a> &gt; <span class="el_source">Match.java</span></div><h1>Match.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.matching;
+
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+
+import java.util.Arrays;
+
+public class Match implements Comparable&lt;Match&gt; {
+
+    /**
+     * start index of diagonal block in A1 (i.e. p).  the matched range is starts1[i] through stops1[],
+     * inclusive.
+     * the indices are encoded into longs with assumption that the number of points in a curve
+     * fits within 8 bits.
+     */
+    protected final long[] starts1;
+    /**
+     * the sizes of the matched blocks.
+     * stops1 is calculated as starts1[i] + blocks[i] - 1.
+     * the matched range is starts1[i] through stops1[], inclusive.
+     */
+    protected final long[] blocks;
+
+    /**
+     * the offset from starts1 index.  the A2 index (i.e. q) is calculated as starts1[i] + offset[i]
+     * and individual points may need mod n2 for wrap around.
+     */
+    protected final long[] offsets2;
+    /**
+     * sum of the absolute value of chord differences between the range (stops1[i] through starts1[i]) - range (stops2[i] through starts2[i])
+     */
+    protected final double[] diffChordSums;
+
+    /**
+     * the index of the last item added to the arrays.
+     */
+<span class="fc" id="L37">    protected int lastIdx = -1;</span>
+
+<span class="fc" id="L39">    protected int BITS_PER_NUM = 8;</span>
+
+    // machine precision to use for equals of maxChordSum.  note that float and double representations are used throughout code.
+    final static double tol = 1E-10;
+
+<span class="fc" id="L44">    protected double diffChordSum = 0.;</span>
+<span class="fc" id="L45">    protected double maxChordSum = Double.NEGATIVE_INFINITY;</span>
+<span class="fc" id="L46">    protected int mLen = 0;</span>
+    /** N is the length of dimension md[0] where md[0] is NXN and md is the integral image of the chord differences.*/
+    protected final int N;
+
+    /**
+     *
+     * @param N
+     */
+<span class="fc" id="L54">    public Match(int N) {</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">        if (N &lt; 1) {</span>
+<span class="nc" id="L56">            throw new IllegalArgumentException(</span>
+<span class="nc" id="L57">                    String.format(&quot;N must be greater than 0. received N=%d&quot;, N));</span>
+        }
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (2*N &gt; (1 &lt;&lt; 16)) {</span>
+<span class="nc" id="L60">            throw new IllegalArgumentException(&quot;2*N must be less than &quot; + (1&lt;&lt;16));</span>
+        }
+<span class="fc" id="L62">        this.N = N;</span>
+        // num bits need to represent a 0-based index for up to  n1 + offset2
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (2*N &gt; 256) {</span>
+<span class="fc" id="L65">            BITS_PER_NUM = 16;</span>
+        } else {
+<span class="fc" id="L67">            BITS_PER_NUM = 8;</span>
+        }
+<span class="fc" id="L69">        int len = (int)Math.ceil((float)N/BITS_PER_NUM);</span>
+<span class="fc" id="L70">        this.starts1 = new long[len];</span>
+<span class="fc" id="L71">        this.blocks = new long[len];</span>
+<span class="fc" id="L72">        this.offsets2 = new long[len];</span>
+<span class="fc" id="L73">        this.diffChordSums = new double[N];</span>
+<span class="fc" id="L74">    }</span>
+
+    /**
+     * class to hold the result matches in a format easy to use and reverse p,with q, and scale if needed.
+     */
+    public static class Points {
+        int[] pIdxs;
+        int[] qIdxs;
+        /**
+         * sum of the chord differences w.r.t. the compared reference frames in A1, and A2
+         */
+        double chordDiffSum;
+        /**
+         * number of matching points in the compared reference frames of A1 and A2.
+         */
+        int mLen;
+
+        public Points(Match m) {
+            TIntList rStarts1 = new TIntArrayList();
+            TIntList rStops1 = new TIntArrayList();
+            TIntList rStarts2 = new TIntArrayList();
+            TIntList rStops2 = new TIntArrayList();
+            for (int i = 0; i &lt; m.starts1.length; ++i) {
+                long start1Row = m.starts1[i];
+                long offsetRow = m.offsets2[i];
+                long blockRow = m.blocks[i];
+                long tmps, tmpo, tmpb;
+                for (int colNum = 0; colNum &lt; m.BITS_PER_NUM; ++colNum) {
+                    // mask from MSB to bit colNum * BITS_PER_NUM
+                    long x = (colNum + 1) * m.BITS_PER_NUM;
+                    tmps = start1Row &amp; ((1L &lt;&lt; x) - 1);
+                    tmpo = offsetRow &amp; ((1L &lt;&lt; x) - 1);
+                    tmpb = blockRow &amp; ((1L &lt;&lt; x) - 1);
+                    long y = colNum  * m.BITS_PER_NUM;
+                    tmps &gt;&gt;= y;
+                    tmpo &gt;&gt;= y;
+                    tmpb &gt;&gt;= y;
+                    rStarts1.add((int)tmps);
+                    rStops1.add((int)(tmps + tmpb - 1));
+                    rStarts2.add((int)(tmps + tmpo));
+                    rStops2.add((int)(tmps + tmpb + tmpo - 1));
+                    if ((i * m.BITS_PER_NUM + colNum) == m.lastIdx) {
+                        break;
+                    }
+                }
+            }
+            TIntList t1 = new TIntArrayList();
+            TIntList t2 = new TIntArrayList();
+            for (int i = 0; i &lt; rStarts1.size(); ++i) {
+                for (int idx1 = rStarts1.get(i), idx2 = rStarts2.get(i); idx1 &lt;= rStops1.get(i); ++idx1, ++idx2) {
+                    t1.add(idx1);
+                    t2.add(idx2 % m.N);
+                }
+            }
+            this.pIdxs = t1.toArray();
+            this.qIdxs = t2.toArray();
+            this.chordDiffSum = m.diffChordSum;
+            this.mLen = m.mLen;
+            assert(this.pIdxs.length == this.mLen);
+        }
+
+        public void scale(int factor1, int factor2) {
+            for (int i = 0; i &lt; pIdxs.length; ++i) {
+                pIdxs[i] *= factor1;
+                qIdxs[i] *= factor2;
+            }
+        }
+        public void interchange() {
+            for (int i = 0; i &lt; pIdxs.length; ++i) {
+                if (pIdxs[i] != qIdxs[i]) {
+                    pIdxs[i] ^= qIdxs[i];
+                    qIdxs[i] ^= pIdxs[i];
+                    pIdxs[i] ^= qIdxs[i];
+                }
+            }
+        }
+    }
+
+    public Match copy() {
+<span class="nc" id="L153">        Match t = new Match(this.N);</span>
+<span class="nc" id="L154">        System.arraycopy(starts1, 0, t.starts1, 0, starts1.length);</span>
+<span class="nc" id="L155">        System.arraycopy(blocks, 0, t.blocks, 0, blocks.length);</span>
+<span class="nc" id="L156">        System.arraycopy(offsets2, 0, t.offsets2, 0, offsets2.length);</span>
+<span class="nc" id="L157">        System.arraycopy(diffChordSums, 0, t.diffChordSums, 0, diffChordSums.length);</span>
+<span class="nc" id="L158">        t.mLen = this.mLen;</span>
+<span class="nc" id="L159">        t.maxChordSum = this.maxChordSum;</span>
+<span class="nc" id="L160">        t.diffChordSum = this.diffChordSum;</span>
+<span class="nc" id="L161">        t.lastIdx = this.lastIdx;</span>
+<span class="nc" id="L162">        return t;</span>
+    }
+
+    /**
+     * add a match range to the interval
+     * @param idx the index of diagonal position with respect to A1.
+     * @param offset2
+     * @param blockSize
+     * @param diffChordSum
+     * @param matchNumber the number of this match with respect to the matched sequence it is in.  This
+     *                    parameter is needed for use with backtracking.
+     */
+    public void add(final int idx, final int offset2, final int blockSize, final double diffChordSum,
+                    final int matchNumber) {
+
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">        if (matchNumber &gt;= 2*N) {</span>
+<span class="nc" id="L178">            throw new IllegalStateException(&quot;The maximum number expected is N &quot; + (2*N - 1)</span>
+                    + &quot; but you are attempting to insert &quot; + (matchNumber+1));
+        }
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        if (matchNumber &gt; lastIdx + 1) {</span>
+<span class="nc" id="L182">            throw new IllegalStateException(String.format(&quot;Error in algorithm: lastIdx=%d and match_number to insert is %d&quot;,</span>
+<span class="nc" id="L183">                    lastIdx, matchNumber));</span>
+        }
+<span class="pc bpc" id="L185" title="2 of 4 branches missed.">        if (idx &gt; (1&lt;&lt;BITS_PER_NUM) || idx + offset2 &gt; (1&lt;&lt;BITS_PER_NUM)) {</span>
+<span class="nc" id="L186">            throw new IllegalArgumentException(&quot;expecting curve indices to be &lt; &quot; + (1 &lt;&lt; BITS_PER_NUM));</span>
+        }
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">        if (blockSize &gt; (1&lt;&lt;BITS_PER_NUM)) {</span>
+<span class="nc" id="L189">            throw new IllegalArgumentException(&quot;expecting blockSize to be &lt; &quot; + (1 &lt;&lt; BITS_PER_NUM));</span>
+        }
+<span class="fc" id="L191">        lastIdx = matchNumber;</span>
+<span class="fc" id="L192">        int r = lastIdx / BITS_PER_NUM;</span>
+<span class="fc" id="L193">        int c = lastIdx % BITS_PER_NUM;</span>
+<span class="fc" id="L194">        this.starts1[r] |= ((long)idx &lt;&lt; c * BITS_PER_NUM);</span>
+<span class="fc" id="L195">        this.blocks[r] |= ((long)blockSize &lt;&lt; c * BITS_PER_NUM);</span>
+<span class="fc" id="L196">        this.offsets2[r] |= ((long)offset2 &lt;&lt; c * BITS_PER_NUM);</span>
+<span class="fc" id="L197">        this.diffChordSums[lastIdx] = diffChordSum;</span>
+<span class="fc" id="L198">        this.mLen += blockSize;</span>
+<span class="fc" id="L199">        this.diffChordSum += diffChordSum;</span>
+<span class="fc" id="L200">    }</span>
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="nc bnc" id="L204" title="All 2 branches missed.">        if (!(obj instanceof Match)) {</span>
+<span class="nc" id="L205">            return false;</span>
+        }
+<span class="nc" id="L207">        Match other = (Match)obj;</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">        if (N != other.N) return false;</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">        if (BITS_PER_NUM != other.BITS_PER_NUM) return false;</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">        if (mLen != other.mLen) return false;</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">        if (lastIdx != other.lastIdx) return false;</span>
+        // no need to compare maxChordSum as that will be reset upong use, though could reconsider this.
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        if (Math.abs(diffChordSum - other.diffChordSum) &gt; tol) return false;</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">        if (!Arrays.equals(starts1, other.starts1)) return false;</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">        if (!Arrays.equals(blocks, other.blocks)) return false;</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">        if (!Arrays.equals(offsets2, other.offsets2)) return false;</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">        if (!listEquals(diffChordSums,other.diffChordSums)) return false;</span>
+<span class="nc" id="L218">        return true;</span>
+    }
+
+    private boolean listEquals(double[] a, double[] b) {
+<span class="nc bnc" id="L222" title="All 2 branches missed.">        if (a.length != b.length) return false;</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; ++i) {</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">            if (Math.abs(a[i] - b[i]) &gt; tol) return false;</span>
+        }
+<span class="nc" id="L226">        return true;</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L231">        int hash = fnvHashCode();</span>
+<span class="nc" id="L232">        return hash;</span>
+    }
+    //Public domain:  http://www.isthe.com/chongo/src/fnv/hash_32a.c
+<span class="fc" id="L235">    protected static int fnv321aInit = 0x811c9dc5;</span>
+<span class="fc" id="L236">    protected static int fnv32Prime = 0x01000193;</span>
+    protected int fnvHashCode() {
+<span class="nc" id="L238">        long sum = fnv321aInit;</span>
+
+<span class="nc bnc" id="L240" title="All 2 branches missed.">        for (int i = 0; i &lt; starts1.length; ++i) {</span>
+<span class="nc" id="L241">            sum ^= starts1[i];</span>
+<span class="nc" id="L242">            sum *= fnv32Prime;</span>
+<span class="nc" id="L243">            sum ^= blocks[i];</span>
+<span class="nc" id="L244">            sum *= fnv32Prime;</span>
+<span class="nc" id="L245">            sum ^= offsets2[i];</span>
+<span class="nc" id="L246">            sum *= fnv32Prime;</span>
+        }
+<span class="nc" id="L248">        sum ^= diffChordSums.hashCode();</span>
+<span class="nc" id="L249">        sum *= fnv32Prime;</span>
+
+<span class="nc" id="L251">        sum ^= lastIdx;</span>
+<span class="nc" id="L252">        sum *= fnv32Prime;</span>
+
+<span class="nc" id="L254">        sum ^= mLen;</span>
+<span class="nc" id="L255">        sum *= fnv32Prime;</span>
+
+<span class="nc" id="L257">        sum ^= N;</span>
+<span class="nc" id="L258">        sum *= fnv32Prime;</span>
+
+<span class="nc" id="L260">        sum ^= BITS_PER_NUM;</span>
+<span class="nc" id="L261">        sum *= fnv32Prime;</span>
+
+<span class="nc" id="L263">        sum ^= Double.hashCode(diffChordSum);</span>
+<span class="nc" id="L264">        sum *= fnv32Prime;</span>
+<span class="nc" id="L265">        sum ^= Double.hashCode(maxChordSum);</span>
+<span class="nc" id="L266">        sum *= fnv32Prime;</span>
+
+<span class="nc" id="L268">        return (int)sum;</span>
+    }
+
+    /**
+     * compare to objects using thire Salukwdze distances.
+     * for best results, make sure that all objects being compared have the same maxChordSum and
+     * nMaxMatchable.
+     * @param other the object to be compared.
+     * @return
+     */
+    @Override
+    public int compareTo(Match other) {
+<span class="fc" id="L280">        double maxDiffChord = Math.max(maxChordSum, other.maxChordSum);</span>
+<span class="fc" id="L281">        int maxLen = Math.max(N, other.N);</span>
+<span class="fc" id="L282">        double d1 = calcSalukDist(diffChordSum, maxDiffChord, mLen, maxLen);</span>
+<span class="fc" id="L283">        double d2 = calcSalukDist(other.diffChordSum, maxDiffChord, other.mLen, maxLen);</span>
+<span class="fc" id="L284">        return Double.compare(d1, d2);</span>
+    }
+
+    double calcSalukDist(double compChord, double maxChord, int length, int maxMatchable) {
+        double d;
+<span class="pc bpc" id="L289" title="2 of 4 branches missed.">        if (maxChord == 0 || Double.isInfinite(maxChord)) {</span>
+<span class="nc" id="L290">            d = 0;</span>
+        } else {
+<span class="fc" id="L292">            d = compChord / maxChord;</span>
+        }
+<span class="fc" id="L294">        double f = 1. - ((double)length/(double)maxMatchable);</span>
+<span class="fc" id="L295">        return f*f + d*d;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -107,7 +107,7 @@ public class CurvatureScaleSpaceCornerDetector extends
 <span class="fc" id="L107">        CSSCornerMaker cornerMaker = new CSSCornerMaker(img.getWidth(), img.getHeight());</span>
 <span class="fc" id="L108">        cornerMaker.doNotStoreCornerRegions();</span>
 <span class="fc" id="L109">        List&lt;CornerArray&gt; cornerList =</span>
-<span class="fc" id="L110">            cornerMaker.findCornersInScaleSpaceMaps(edges);</span>
+<span class="nc" id="L110">            cornerMaker.findCornersInScaleSpaceMaps(edges);</span>
         
         /*
         filter out small curvature:
@@ -115,34 +115,34 @@ public class CurvatureScaleSpaceCornerDetector extends
         for curvature smaller than 0.2 won't see changes in slope in the
              neighboring 2 points on either side.
         */
-<span class="fc" id="L118">        Map&lt;PairInt, Float&gt; cornerMap = new HashMap&lt;PairInt, Float&gt;();</span>
-<span class="fc bfc" id="L119" title="All 2 branches covered.">        for (int i = 0; i &lt; cornerList.size(); ++i) {</span>
-<span class="fc" id="L120">            CornerArray ca = cornerList.get(i);</span>
-<span class="fc bfc" id="L121" title="All 2 branches covered.">            for (int idx = 0; idx &lt; ca.getN(); ++idx) {</span>
-<span class="fc" id="L122">                float curvature = ca.getCurvature(idx);</span>
+<span class="nc" id="L118">        Map&lt;PairInt, Float&gt; cornerMap = new HashMap&lt;PairInt, Float&gt;();</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">        for (int i = 0; i &lt; cornerList.size(); ++i) {</span>
+<span class="nc" id="L120">            CornerArray ca = cornerList.get(i);</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">            for (int idx = 0; idx &lt; ca.getN(); ++idx) {</span>
+<span class="nc" id="L122">                float curvature = ca.getCurvature(idx);</span>
                 
-<span class="pc bpc" id="L124" title="1 of 2 branches missed.">                if (Math.abs(curvature) &gt; 0.05) {// should not set above 0.07...</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">                if (Math.abs(curvature) &gt; 0.05) {// should not set above 0.07...</span>
                                         
-<span class="fc" id="L126">                    cornerMap.put(new PairInt(Math.round(ca.getX(idx)),</span>
-<span class="fc" id="L127">                        Math.round(ca.getY(idx))), </span>
-<span class="fc" id="L128">                        Float.valueOf(ca.getCurvature(idx)));</span>
+<span class="nc" id="L126">                    cornerMap.put(new PairInt(Math.round(ca.getX(idx)),</span>
+<span class="nc" id="L127">                        Math.round(ca.getY(idx))), </span>
+<span class="nc" id="L128">                        Float.valueOf(ca.getCurvature(idx)));</span>
                 }
             }
         }
         
-<span class="fc" id="L133">        corners = new PairIntArray();</span>
-<span class="fc bfc" id="L134" title="All 2 branches covered.">        for (Entry&lt;PairInt, Float&gt; entry : cornerMap.entrySet()) {</span>
-<span class="fc" id="L135">            int x = entry.getKey().getX();</span>
-<span class="fc" id="L136">            int y = entry.getKey().getY();</span>
-<span class="fc" id="L137">            corners.add(x, y);</span>
-<span class="fc" id="L138">        }</span>
+<span class="nc" id="L133">        corners = new PairIntArray();</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">        for (Entry&lt;PairInt, Float&gt; entry : cornerMap.entrySet()) {</span>
+<span class="nc" id="L135">            int x = entry.getKey().getX();</span>
+<span class="nc" id="L136">            int y = entry.getKey().getY();</span>
+<span class="nc" id="L137">            corners.add(x, y);</span>
+<span class="nc" id="L138">        }</span>
         
-<span class="fc" id="L140">        filterForLocalizability(corners);</span>
+<span class="nc" id="L140">        filterForLocalizability(corners);</span>
         
-<span class="fc" id="L142">    }</span>
+<span class="nc" id="L142">    }</span>
     
     public PairIntArray getCorners() {
-<span class="fc" id="L145">        return corners;</span>
+<span class="nc" id="L145">        return corners;</span>
     }
 
     public PairIntArray getCornersForMatching() {
@@ -170,39 +170,39 @@ public class CurvatureScaleSpaceCornerDetector extends
 
     public PairIntArray getCornersInOriginalReferenceFrame() {
         
-<span class="fc" id="L173">PairIntArray cp = corners.copy();</span>
-<span class="fc" id="L174">MultiArrayMergeSort.sortByYThenX(cp);</span>
+<span class="nc" id="L173">PairIntArray cp = corners.copy();</span>
+<span class="nc" id="L174">MultiArrayMergeSort.sortByYThenX(cp);</span>
   
-<span class="fc" id="L176">        PairIntArray co = new PairIntArray();</span>
-<span class="fc bfc" id="L177" title="All 2 branches covered.">        for (int i = 0; i &lt; corners.getN(); i++) {</span>
-<span class="fc" id="L178">            int x = corners.getX(i);</span>
-<span class="fc" id="L179">            int y = corners.getY(i);</span>
-<span class="fc" id="L180">            co.add(x, y);</span>
+<span class="nc" id="L176">        PairIntArray co = new PairIntArray();</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        for (int i = 0; i &lt; corners.getN(); i++) {</span>
+<span class="nc" id="L178">            int x = corners.getX(i);</span>
+<span class="nc" id="L179">            int y = corners.getY(i);</span>
+<span class="nc" id="L180">            co.add(x, y);</span>
         }
 
-<span class="fc" id="L183">        return co;</span>
+<span class="nc" id="L183">        return co;</span>
     }
 
     public List&lt;PairIntArray&gt; getEdgesInOriginalReferenceFrame() {
 
-<span class="fc" id="L188">        List&lt;PairIntArray&gt; output = new ArrayList&lt;PairIntArray&gt;();</span>
+<span class="nc" id="L188">        List&lt;PairIntArray&gt; output = new ArrayList&lt;PairIntArray&gt;();</span>
 
-<span class="fc bfc" id="L190" title="All 2 branches covered.">        for (int i = 0; i &lt; edges.size(); i++) {</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">        for (int i = 0; i &lt; edges.size(); i++) {</span>
 
-<span class="fc" id="L192">            PairIntArray ce = new PairIntArray();</span>
+<span class="nc" id="L192">            PairIntArray ce = new PairIntArray();</span>
 
-<span class="fc" id="L194">            PairIntArray edge = edges.get(i);</span>
+<span class="nc" id="L194">            PairIntArray edge = edges.get(i);</span>
 
-<span class="fc bfc" id="L196" title="All 2 branches covered.">            for (int j = 0; j &lt; edge.getN(); j++) {</span>
-<span class="fc" id="L197">                int x = edge.getX(j);</span>
-<span class="fc" id="L198">                int y = edge.getY(j);</span>
-<span class="fc" id="L199">                ce.add(x, y);</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">            for (int j = 0; j &lt; edge.getN(); j++) {</span>
+<span class="nc" id="L197">                int x = edge.getX(j);</span>
+<span class="nc" id="L198">                int y = edge.getY(j);</span>
+<span class="nc" id="L199">                ce.add(x, y);</span>
             }
 
-<span class="fc" id="L202">            output.add(ce);</span>
+<span class="nc" id="L202">            output.add(ce);</span>
         }
 
-<span class="fc" id="L205">        return output;</span>
+<span class="nc" id="L205">        return output;</span>
     }
 
     private List&lt;PairIntArray&gt; copy(List&lt;PairIntArray&gt; edges) {
@@ -308,63 +308,63 @@ public class CurvatureScaleSpaceCornerDetector extends
      */
     private void filterForLocalizability(PairIntArray corners) {
         
-<span class="fc" id="L311">        PairIntArray keep = new PairIntArray(corners.getN());</span>
-<span class="fc bfc" id="L312" title="All 2 branches covered.">        for (int i = 0; i &lt; corners.getN(); ++i) {</span>
-<span class="fc" id="L313">            int x = corners.getX(i);</span>
-<span class="fc" id="L314">            int y = corners.getY(i);</span>
+<span class="nc" id="L311">        PairIntArray keep = new PairIntArray(corners.getN());</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">        for (int i = 0; i &lt; corners.getN(); ++i) {</span>
+<span class="nc" id="L313">            int x = corners.getX(i);</span>
+<span class="nc" id="L314">            int y = corners.getY(i);</span>
             
-<span class="fc" id="L316">            DenseMatrix m = createAutoCorrelationMatrix(x, y);</span>
+<span class="nc" id="L316">            DenseMatrix m = createAutoCorrelationMatrix(x, y);</span>
         
-<span class="fc" id="L318">            double[][] d = MatrixUtil.convertToRowMajor(m);</span>
-<span class="fc" id="L319">            double det = MatrixUtil.determinant(d);</span>
-<span class="fc" id="L320">            double trace = algorithms.imageProcessing.util.MatrixUtil.trace(d);</span>
+<span class="nc" id="L318">            double[][] d = MatrixUtil.convertToRowMajor(m);</span>
+<span class="nc" id="L319">            double det = MatrixUtil.determinant(d);</span>
+<span class="nc" id="L320">            double trace = algorithms.imageProcessing.util.MatrixUtil.trace(d);</span>
         
-<span class="fc" id="L322">            double dt = det/trace;</span>
+<span class="nc" id="L322">            double dt = det/trace;</span>
             //System.out.println(&quot;det/trace=&quot; + dt);
-<span class="fc bfc" id="L324" title="All 4 branches covered.">            if (Double.isFinite(dt) &amp;&amp; dt &gt; 10) {</span>
-<span class="fc" id="L325">                keep.add(x, y);</span>
+<span class="nc bnc" id="L324" title="All 4 branches missed.">            if (Double.isFinite(dt) &amp;&amp; dt &gt; 10) {</span>
+<span class="nc" id="L325">                keep.add(x, y);</span>
             }
         }
         
-<span class="fc" id="L329">        corners.removeRange(0, corners.getN() - 1);</span>
-<span class="fc" id="L330">        corners.addAll(keep);</span>
-<span class="fc" id="L331">    }</span>
+<span class="nc" id="L329">        corners.removeRange(0, corners.getN() - 1);</span>
+<span class="nc" id="L330">        corners.addAll(keep);</span>
+<span class="nc" id="L331">    }</span>
 
     private DenseMatrix createAutoCorrelationMatrix(int x, int y) {
         
-<span class="fc" id="L335">        int w = img.getWidth();</span>
-<span class="fc" id="L336">        int h = img.getHeight();        </span>
+<span class="nc" id="L335">        int w = img.getWidth();</span>
+<span class="nc" id="L336">        int h = img.getHeight();        </span>
         
-<span class="fc" id="L338">        int hw = 2;</span>
+<span class="nc" id="L338">        int hw = 2;</span>
                 
-<span class="fc" id="L340">        float vc = img.getValue(x, y);</span>
+<span class="nc" id="L340">        float vc = img.getValue(x, y);</span>
         
-<span class="fc" id="L342">        DenseMatrix a = new DenseMatrix(2 * hw + 1, 2 * hw + 1);</span>
+<span class="nc" id="L342">        DenseMatrix a = new DenseMatrix(2 * hw + 1, 2 * hw + 1);</span>
         
-<span class="fc bfc" id="L344" title="All 2 branches covered.">        for (int xOff = -hw; xOff &lt;= hw; ++xOff) {</span>
-<span class="fc" id="L345">            int x2 = x + xOff;</span>
-<span class="fc bfc" id="L346" title="All 2 branches covered.">            if (x2 &lt; 0) {</span>
-<span class="fc" id="L347">                x2 = 0;</span>
-<span class="fc bfc" id="L348" title="All 2 branches covered.">            } else if (x2 &gt; (w - 1)) {</span>
-<span class="fc" id="L349">                x2 = w - 1;</span>
+<span class="nc bnc" id="L344" title="All 2 branches missed.">        for (int xOff = -hw; xOff &lt;= hw; ++xOff) {</span>
+<span class="nc" id="L345">            int x2 = x + xOff;</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">            if (x2 &lt; 0) {</span>
+<span class="nc" id="L347">                x2 = 0;</span>
+<span class="nc bnc" id="L348" title="All 2 branches missed.">            } else if (x2 &gt; (w - 1)) {</span>
+<span class="nc" id="L349">                x2 = w - 1;</span>
             }
             
-<span class="fc bfc" id="L352" title="All 2 branches covered.">            for (int yOff = -hw; yOff &lt;= hw; ++yOff) {</span>
-<span class="fc" id="L353">                int y2 = y + yOff;</span>
-<span class="fc bfc" id="L354" title="All 2 branches covered.">                if (y2 &lt; 0) {</span>
-<span class="fc" id="L355">                    y2 = 0;</span>
-<span class="fc bfc" id="L356" title="All 2 branches covered.">                } else if (y2 &gt; (h - 1)) {</span>
-<span class="fc" id="L357">                    y2 = h - 1;</span>
+<span class="nc bnc" id="L352" title="All 2 branches missed.">            for (int yOff = -hw; yOff &lt;= hw; ++yOff) {</span>
+<span class="nc" id="L353">                int y2 = y + yOff;</span>
+<span class="nc bnc" id="L354" title="All 2 branches missed.">                if (y2 &lt; 0) {</span>
+<span class="nc" id="L355">                    y2 = 0;</span>
+<span class="nc bnc" id="L356" title="All 2 branches missed.">                } else if (y2 &gt; (h - 1)) {</span>
+<span class="nc" id="L357">                    y2 = h - 1;</span>
                 }
                 
-<span class="fc" id="L360">                float v = img.getValue(x2, y2);</span>
+<span class="nc" id="L360">                float v = img.getValue(x2, y2);</span>
                 
-<span class="fc" id="L362">                a.set(yOff + hw, xOff + hw, v - vc);                </span>
+<span class="nc" id="L362">                a.set(yOff + hw, xOff + hw, v - vc);                </span>
             }
         }
         
-<span class="fc" id="L366">        return a;</span>
+<span class="nc" id="L366">        return a;</span>
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -260,7 +260,7 @@ public final class CurvatureScaleSpaceImageMaker {
 
 <span class="fc" id="L261">        ScaleSpaceCurve lastCurve = null;</span>
 
-<span class="pc bpc" id="L263" title="1 of 4 branches missed.">        while (hasInflectionPoints &amp;&amp; (sigma != null) </span>
+<span class="pc bpc" id="L263" title="2 of 4 branches missed.">        while (hasInflectionPoints &amp;&amp; (sigma != null) </span>
 <span class="pc bpc" id="L264" title="1 of 2 branches missed.">            &amp;&amp; (resultingSigma &lt; SIGMA.getValue(SIGMA.TWOHUNDREDANDFIFTYSIX))) {</span>
 
             ScaleSpaceCurve curve;
@@ -277,23 +277,23 @@ public final class CurvatureScaleSpaceImageMaker {
 
 <span class="fc" id="L278">            scaleSpaceMap.put(sigma, curve);</span>
 
-<span class="fc bfc" id="L280" title="All 2 branches covered.">            hasInflectionPoints = (curve.getKIsZeroIdxSize() &gt; 0);</span>
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">            hasInflectionPoints = (curve.getKIsZeroIdxSize() &gt; 0);</span>
             
 <span class="fc" id="L282">            log.fine(&quot;sigma=&quot; + sigma + &quot; nZeros=&quot; + curve.getKIsZeroIdxSize());</span>
 
-<span class="fc bfc" id="L284" title="All 2 branches covered.">            if (hasInflectionPoints) {</span>
+<span class="pc bpc" id="L284" title="1 of 2 branches missed.">            if (hasInflectionPoints) {</span>
                 //sigma = SIGMA.increaseToFactorBy2(resultingSigma);
                 //resultingSigma *= 2;
 <span class="fc" id="L287">                sigma = SIGMA.increaseToFactorBySQRT2(resultingSigma);</span>
 
-<span class="fc" id="L289">                resultingSigma *= Math.sqrt(2);</span>
+<span class="fc" id="L289">                resultingSigma *= (float)Math.sqrt(2);</span>
                 
             }
 
 <span class="fc" id="L293">            lastCurve = curve;</span>
 <span class="fc" id="L294">        }</span>
         
-<span class="fc" id="L296">        return scaleSpaceMap;</span>
+<span class="nc" id="L296">        return scaleSpaceMap;</span>
     }
     
     public ScaleSpaceCurveImage convertScaleSpaceMapToSparseImage(
@@ -382,4 +382,4 @@ public final class CurvatureScaleSpaceImageMaker {
         }
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

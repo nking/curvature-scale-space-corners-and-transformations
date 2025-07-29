@@ -445,9 +445,9 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
 <span class="fc bfc" id="L445" title="All 2 branches covered.">        for (int i = (n - 1); i &gt;= 0; i--) {</span>
 <span class="fc" id="L446">            c[i] = (float)qty.get(i, 0);</span>
 <span class="fc bfc" id="L447" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; n; j++) {</span>
-<span class="fc" id="L448">                c[i] -= c[j] * r.get(i, j);</span>
+<span class="fc" id="L448">                c[i] -= c[j] * (float)r.get(i, j);</span>
             }
-<span class="fc" id="L450">            c[i] /= r.get(i, i);</span>
+<span class="fc" id="L450">            c[i] /= (float)r.get(i, i);</span>
         }
         
 <span class="fc" id="L453">        return c;</span>
@@ -560,4 +560,4 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

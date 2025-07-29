@@ -150,8 +150,8 @@ import java.util.Arrays;
                     
 <span class="fc" id="L151">                    out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);</span>
                                         
-<span class="fc" id="L153">                    out[pixIdx][b0] += (f0 * v);</span>
-<span class="fc" id="L154">                    out[pixIdx][b1] += (f1 * v);</span>
+<span class="fc" id="L153">                    out[pixIdx][b0] += (int)Math.round(f0 * v);</span>
+<span class="fc" id="L154">                    out[pixIdx][b1] += (int)Math.round(f1 * v);</span>
                     
                     // add bin, add pixIdxB and subtract pixIdxLB
 <span class="fc" id="L157">                    HOGUtil.add(out[pixIdx], out[pixIdxB]);</span>
@@ -163,8 +163,8 @@ import java.util.Arrays;
                          
 <span class="fc" id="L164">                    out[pixIdx] = Arrays.copyOf(out[pixIdxL], nBins);</span>
                     
-<span class="fc" id="L166">                    out[pixIdx][b0] += (f0 * v);</span>
-<span class="fc" id="L167">                    out[pixIdx][b1] += (f1 * v);</span>
+<span class="fc" id="L166">                    out[pixIdx][b0] += (int)Math.round(f0 * v);</span>
+<span class="fc" id="L167">                    out[pixIdx][b1] += (int)Math.round(f1 * v);</span>
                     
 <span class="pc bpc" id="L169" title="1 of 2 branches missed.">                } else if (y &gt; 0) {</span>
                 
@@ -172,8 +172,8 @@ import java.util.Arrays;
                      
 <span class="fc" id="L173">                    out[pixIdx] = Arrays.copyOf(out[pixIdxB], nBins);</span>
                     
-<span class="fc" id="L175">                    out[pixIdx][b0] += (f0 * v);</span>
-<span class="fc" id="L176">                    out[pixIdx][b1] += (f1 * v);</span>
+<span class="fc" id="L175">                    out[pixIdx][b0] += (int)Math.round(f0 * v);</span>
+<span class="fc" id="L176">                    out[pixIdx][b1] += (int)Math.round(f1 * v);</span>
                 }
             }
         }
@@ -283,4 +283,4 @@ import java.util.Arrays;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -664,17 +664,17 @@ import java.util.*;
 <span class="fc" id="L664">        double r = (9.*b*c - 27.*d - 2.*b*b*b)/54.;</span>
 <span class="fc" id="L665">        double discriminant = q*q*q + r*r;</span>
             
-<span class="fc bfc" id="L667" title="All 2 branches covered.">        if (discriminant &gt;= 0) {</span>
+<span class="pc bpc" id="L667" title="1 of 2 branches missed.">        if (discriminant &gt;= 0) {</span>
             
             // discriminant &gt; 0: one root is real and two complex conjugate
             // discriminant == 0 : all roots are real and at least two are equal
             
-<span class="fc" id="L672">            double s = realcuberoot(r + Math.sqrt(discriminant));   </span>
-<span class="fc" id="L673">            double t = realcuberoot(r - Math.sqrt(discriminant));</span>
+<span class="nc" id="L672">            double s = realcuberoot(r + Math.sqrt(discriminant));   </span>
+<span class="nc" id="L673">            double t = realcuberoot(r - Math.sqrt(discriminant));</span>
     
-<span class="fc" id="L675">            double root = s + t - bOn3;</span>
+<span class="nc" id="L675">            double root = s + t - bOn3;</span>
         
-<span class="fc" id="L677">            return new double[]{root};</span>
+<span class="nc" id="L677">            return new double[]{root};</span>
             
         } else {
 
@@ -697,7 +697,7 @@ import java.util.*;
     }
    
     public static double realcuberoot(double x) {
-<span class="fc bfc" id="L700" title="All 2 branches covered.">        double sign = (x &lt; 0.) ? -1 : 1;</span>
+<span class="pc bpc" id="L700" title="1 of 2 branches missed.">        double sign = (x &lt; 0.) ? -1 : 1;</span>
 <span class="fc" id="L701">        double y = sign * Math.pow(Math.abs(x), 1./3.);</span>
 <span class="fc" id="L702">        return y;</span>
     }
@@ -2098,18 +2098,18 @@ import java.util.*;
      */
     public static int calculateObjectSize(Set&lt;PairInt&gt; points) throws GrahamScanTooFewPointsException {
         // O(N*lg_2(N))
-<span class="fc" id="L2101">        PairInt[] points2 = new PairInt[points.size()];</span>
-<span class="fc" id="L2102">        int i = 0;</span>
-<span class="fc bfc" id="L2103" title="All 2 branches covered.">        for (PairInt p : points) {</span>
-<span class="fc" id="L2104">            points2[i] = p;</span>
-<span class="fc" id="L2105">            ++i;</span>
-<span class="fc" id="L2106">        }</span>
-<span class="fc" id="L2107">        PairInt[] fp = LargestDistancePair.find(points2);</span>
-<span class="pc bpc" id="L2108" title="2 of 4 branches missed.">        if (fp == null || fp.length &lt; 2) {            </span>
+<span class="nc" id="L2101">        PairInt[] points2 = new PairInt[points.size()];</span>
+<span class="nc" id="L2102">        int i = 0;</span>
+<span class="nc bnc" id="L2103" title="All 2 branches missed.">        for (PairInt p : points) {</span>
+<span class="nc" id="L2104">            points2[i] = p;</span>
+<span class="nc" id="L2105">            ++i;</span>
+<span class="nc" id="L2106">        }</span>
+<span class="nc" id="L2107">        PairInt[] fp = LargestDistancePair.find(points2);</span>
+<span class="nc bnc" id="L2108" title="All 4 branches missed.">        if (fp == null || fp.length &lt; 2) {            </span>
 <span class="nc" id="L2109">            throw new IllegalArgumentException(&quot;did not find a furthest pair&quot; + &quot; in points&quot;);</span>
         }
-<span class="fc" id="L2111">        double dist = ORBMatcher.distance(fp[0], fp[1]);</span>
-<span class="fc" id="L2112">        return (int) Math.round(dist);</span>
+<span class="nc" id="L2111">        double dist = ORBMatcher.distance(fp[0], fp[1]);</span>
+<span class="nc" id="L2112">        return (int) Math.round(dist);</span>
     }
     
     /**
@@ -2119,7 +2119,7 @@ import java.util.*;
      * @return 
      */
     public static int calculateObjectSize(PairIntArray points) throws GrahamScanTooFewPointsException {
-<span class="fc" id="L2122">        return calculateObjectSize(Misc.convert(points));</span>
+<span class="nc" id="L2122">        return calculateObjectSize(Misc.convert(points));</span>
     }
    
     // ---- 32 bit hash methods ---
@@ -2535,4 +2535,4 @@ import java.util.*;
     }
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

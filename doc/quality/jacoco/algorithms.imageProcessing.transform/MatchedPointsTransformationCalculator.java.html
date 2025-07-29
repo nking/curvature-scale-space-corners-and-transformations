@@ -879,9 +879,9 @@ public class MatchedPointsTransformationCalculator {
         
 <span class="fc" id="L880">        double[] thetas = new double[pairIndexes.size()];</span>
 
-<span class="fc" id="L882">        float scaleSum = 0;</span>
-<span class="fc" id="L883">        float transXSum= 0;</span>
-<span class="fc" id="L884">        float transYSum = 0;</span>
+<span class="fc" id="L882">        double scaleSum = 0;</span>
+<span class="fc" id="L883">        double transXSum= 0;</span>
+<span class="fc" id="L884">        double transYSum = 0;</span>
 <span class="fc" id="L885">        int count = 0;</span>
 <span class="fc bfc" id="L886" title="All 2 branches covered.">        for (PairInt pairIndex : pairIndexes) {</span>
 
@@ -961,9 +961,9 @@ public class MatchedPointsTransformationCalculator {
 <span class="fc" id="L961">            count++;</span>
 <span class="fc" id="L962">        }</span>
         
-<span class="fc" id="L964">        float scaleAvg = scaleSum/(float)pairIndexes.size();</span>
-<span class="fc" id="L965">        float transXAvg = transXSum/(float)pairIndexes.size();</span>
-<span class="fc" id="L966">        float transYAvg = transYSum/(float)pairIndexes.size();</span>
+<span class="fc" id="L964">        double scaleAvg = scaleSum/pairIndexes.size();</span>
+<span class="fc" id="L965">        double transXAvg = transXSum/pairIndexes.size();</span>
+<span class="fc" id="L966">        double transYAvg = transYSum/pairIndexes.size();</span>
                 
 <span class="fc" id="L968">        boolean useRadians = true;</span>
 <span class="fc" id="L969">        double thetaAvg = AngleUtil.calculateAverageWithQuadrantCorrections(</span>
@@ -971,9 +971,9 @@ public class MatchedPointsTransformationCalculator {
         
 <span class="fc" id="L972">        TransformationParameters params = new TransformationParameters();</span>
 <span class="fc" id="L973">        params.setRotationInRadians((float)thetaAvg);</span>
-<span class="fc" id="L974">        params.setScale(scaleAvg);</span>
-<span class="fc" id="L975">        params.setTranslationX(transXAvg);</span>
-<span class="fc" id="L976">        params.setTranslationY(transYAvg);</span>
+<span class="fc" id="L974">        params.setScale((float)scaleAvg);</span>
+<span class="fc" id="L975">        params.setTranslationX((float)transXAvg);</span>
+<span class="fc" id="L976">        params.setTranslationY((float)transYAvg);</span>
 <span class="fc" id="L977">        params.setOriginX((float)centroidX1);</span>
 <span class="fc" id="L978">        params.setOriginY((float)centroidY1);</span>
         // this is the number of data points as the number of pairs
@@ -1370,10 +1370,10 @@ public class MatchedPointsTransformationCalculator {
                 }
             }
             
-<span class="fc bfc" id="L1373" title="All 2 branches covered.">            if (maxDistIdx &gt; -1) {</span>
+<span class="pc bpc" id="L1373" title="1 of 2 branches missed.">            if (maxDistIdx &gt; -1) {</span>
 <span class="fc" id="L1374">                pairIndexes.add(new PairInt(i1, maxDistIdx));</span>
             }
         }
 <span class="fc" id="L1377">    }</span>
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -167,7 +167,6 @@ import java.util.Set;
      * with that label.  Note that the label indexes are
      * the pixel indexes also.
      * 
-     * @param img
      * @param labels
      * @return map w/ key = label, index = all indexes in labels
      * with that label.  Note that the label indexes are
@@ -176,19 +175,19 @@ import java.util.Set;
     public static TIntObjectMap&lt;TIntSet&gt; createLabelIndexMap(
         int[] labels) {
         
-<span class="fc" id="L179">        TIntObjectMap&lt;TIntSet&gt; map = new TIntObjectHashMap&lt;TIntSet&gt;();</span>
+<span class="fc" id="L178">        TIntObjectMap&lt;TIntSet&gt; map = new TIntObjectHashMap&lt;TIntSet&gt;();</span>
         
-<span class="fc bfc" id="L181" title="All 2 branches covered.">        for (int i = 0; i &lt; labels.length; ++i) {</span>
-<span class="fc" id="L182">            int label = labels[i];</span>
-<span class="fc" id="L183">            TIntSet set = map.get(label);</span>
-<span class="fc bfc" id="L184" title="All 2 branches covered.">            if (set == null) {</span>
-<span class="fc" id="L185">                set = new TIntHashSet();</span>
-<span class="fc" id="L186">                map.put(label, set);</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        for (int i = 0; i &lt; labels.length; ++i) {</span>
+<span class="fc" id="L181">            int label = labels[i];</span>
+<span class="fc" id="L182">            TIntSet set = map.get(label);</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">            if (set == null) {</span>
+<span class="fc" id="L184">                set = new TIntHashSet();</span>
+<span class="fc" id="L185">                map.put(label, set);</span>
             }
-<span class="fc" id="L188">            set.add(i);</span>
+<span class="fc" id="L187">            set.add(i);</span>
         }
         
-<span class="fc" id="L191">        return map;</span>
+<span class="fc" id="L190">        return map;</span>
     }
     
     /**
@@ -200,22 +199,22 @@ import java.util.Set;
     public static TIntObjectMap&lt;Set&lt;PairInt&gt;&gt; extractLabelPoints(
         Image img, int[] labels) {
         
-<span class="pc bnc" id="L203" title="All 2 branches missed.">        assert(labels.length == img.getNPixels());</span>
+<span class="pc bnc" id="L202" title="All 2 branches missed.">        assert(labels.length == img.getNPixels());</span>
         
-<span class="fc" id="L205">        TIntObjectMap&lt;Set&lt;PairInt&gt;&gt; out </span>
+<span class="fc" id="L204">        TIntObjectMap&lt;Set&lt;PairInt&gt;&gt; out </span>
             = new TIntObjectHashMap&lt;Set&lt;PairInt&gt;&gt;();
         
-<span class="fc bfc" id="L208" title="All 2 branches covered.">        for (int i = 0; i &lt; labels.length; ++i) {</span>
-<span class="fc" id="L209">            int label = labels[i];</span>
-<span class="fc" id="L210">            Set&lt;PairInt&gt; set = out.get(label);</span>
-<span class="fc bfc" id="L211" title="All 2 branches covered.">            if (set == null) {</span>
-<span class="fc" id="L212">                set = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc" id="L213">                out.put(label, set);</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">        for (int i = 0; i &lt; labels.length; ++i) {</span>
+<span class="fc" id="L208">            int label = labels[i];</span>
+<span class="fc" id="L209">            Set&lt;PairInt&gt; set = out.get(label);</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">            if (set == null) {</span>
+<span class="fc" id="L211">                set = new HashSet&lt;PairInt&gt;();</span>
+<span class="fc" id="L212">                out.put(label, set);</span>
             }
-<span class="fc" id="L215">            set.add(new PairInt(img.getCol(i), img.getRow(i)));</span>
+<span class="fc" id="L214">            set.add(new PairInt(img.getCol(i), img.getRow(i)));</span>
         }
         
-<span class="fc" id="L218">        return out;</span>
+<span class="fc" id="L217">        return out;</span>
     }
     
     /**
@@ -227,43 +226,43 @@ import java.util.Set;
     public static TIntObjectMap&lt;Set&lt;PairInt&gt;&gt; extractRowMajorLabelPoints(
         Image img, int[][] labels) {
         
-<span class="nc bnc" id="L230" title="All 2 branches missed.">        assert(labels.length*labels[0].length == img.getNPixels());</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">        assert(labels.length*labels[0].length == img.getNPixels());</span>
         
-<span class="nc" id="L232">        TIntObjectMap&lt;Set&lt;PairInt&gt;&gt; out </span>
+<span class="nc" id="L231">        TIntObjectMap&lt;Set&lt;PairInt&gt;&gt; out </span>
             = new TIntObjectHashMap&lt;Set&lt;PairInt&gt;&gt;();
         
-<span class="nc bnc" id="L235" title="All 2 branches missed.">        for (int j = 0; j &lt; labels.length; ++j) {</span>
-<span class="nc bnc" id="L236" title="All 2 branches missed.">            for (int i = 0; i &lt; labels[j].length; ++i) {</span>
-<span class="nc" id="L237">                int label = labels[j][i];</span>
-<span class="nc" id="L238">                Set&lt;PairInt&gt; set = out.get(label);</span>
-<span class="nc bnc" id="L239" title="All 2 branches missed.">                if (set == null) {</span>
-<span class="nc" id="L240">                    set = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc" id="L241">                    out.put(label, set);</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">        for (int j = 0; j &lt; labels.length; ++j) {</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">            for (int i = 0; i &lt; labels[j].length; ++i) {</span>
+<span class="nc" id="L236">                int label = labels[j][i];</span>
+<span class="nc" id="L237">                Set&lt;PairInt&gt; set = out.get(label);</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">                if (set == null) {</span>
+<span class="nc" id="L239">                    set = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc" id="L240">                    out.put(label, set);</span>
                 }
-<span class="nc" id="L243">                set.add(new PairInt(img.getCol(i), img.getRow(i)));</span>
+<span class="nc" id="L242">                set.add(new PairInt(img.getCol(i), img.getRow(i)));</span>
             }
         }
         
-<span class="nc" id="L247">        return out;</span>
+<span class="nc" id="L246">        return out;</span>
     }
     
     public static int[] createLabelsFromContiguousSets(
         List&lt;Set&lt;PairInt&gt;&gt; sets, Image img) {
         
-<span class="fc" id="L253">        int[] labels = new int[img.getNPixels()];</span>
-<span class="fc" id="L254">        int count = 0;</span>
-<span class="fc bfc" id="L255" title="All 2 branches covered.">        for (int i = 0; i &lt; sets.size(); ++i) {</span>
-<span class="fc bfc" id="L256" title="All 2 branches covered.">            for (Set&lt;PairInt&gt; set : sets) {</span>
-<span class="fc bfc" id="L257" title="All 2 branches covered.">                for (PairInt p : set) {</span>
-<span class="fc" id="L258">                    int pixIdx = img.getInternalIndex(p.getX(), p.getY());</span>
-<span class="fc" id="L259">                    labels[pixIdx] = count;</span>
-<span class="fc" id="L260">                }</span>
-<span class="fc" id="L261">            }</span>
-<span class="fc" id="L262">            count++;</span>
+<span class="fc" id="L252">        int[] labels = new int[img.getNPixels()];</span>
+<span class="fc" id="L253">        int count = 0;</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        for (int i = 0; i &lt; sets.size(); ++i) {</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">            for (Set&lt;PairInt&gt; set : sets) {</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">                for (PairInt p : set) {</span>
+<span class="fc" id="L257">                    int pixIdx = img.getInternalIndex(p.getX(), p.getY());</span>
+<span class="fc" id="L258">                    labels[pixIdx] = count;</span>
+<span class="fc" id="L259">                }</span>
+<span class="fc" id="L260">            }</span>
+<span class="fc" id="L261">            count++;</span>
         }
-<span class="pc bnc" id="L264" title="All 2 branches missed.">        assert(sets.size() == count);</span>
+<span class="pc bnc" id="L263" title="All 2 branches missed.">        assert(sets.size() == count);</span>
         
-<span class="fc" id="L266">        return labels;</span>
+<span class="fc" id="L265">        return labels;</span>
     }
 
     /**
@@ -278,51 +277,51 @@ import java.util.Set;
     public static TIntObjectMap&lt;TIntSet&gt; createAdjacencyLabelMap(
         Image img, int[] labels, boolean excludeNegativeLabels) {
         
-<span class="fc" id="L281">        TIntObjectMap&lt;TIntSet&gt; adjacencyMap =</span>
+<span class="fc" id="L280">        TIntObjectMap&lt;TIntSet&gt; adjacencyMap =</span>
             new TIntObjectHashMap&lt;TIntSet&gt;();
 
-<span class="fc" id="L284">        int h = img.getHeight();</span>
-<span class="fc" id="L285">        int w = img.getWidth();</span>
+<span class="fc" id="L283">        int h = img.getHeight();</span>
+<span class="fc" id="L284">        int w = img.getWidth();</span>
         
-<span class="fc" id="L287">        int[] dxs = Misc.dx4;</span>
-<span class="fc" id="L288">        int[] dys = Misc.dy4;</span>
+<span class="fc" id="L286">        int[] dxs = Misc.dx4;</span>
+<span class="fc" id="L287">        int[] dys = Misc.dy4;</span>
         
-<span class="fc bfc" id="L290" title="All 2 branches covered.">        for (int idx1 = 0; idx1 &lt; labels.length; ++idx1) {</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">        for (int idx1 = 0; idx1 &lt; labels.length; ++idx1) {</span>
             
-<span class="fc" id="L292">            int l1 = labels[idx1];</span>
+<span class="fc" id="L291">            int l1 = labels[idx1];</span>
             
-<span class="pc bpc" id="L294" title="2 of 4 branches missed.">            if (excludeNegativeLabels &amp;&amp; (l1 &lt; 0)) {</span>
-<span class="nc" id="L295">                continue;</span>
+<span class="pc bpc" id="L293" title="2 of 4 branches missed.">            if (excludeNegativeLabels &amp;&amp; (l1 &lt; 0)) {</span>
+<span class="nc" id="L294">                continue;</span>
             }
             
-<span class="fc" id="L298">            TIntSet set1 = adjacencyMap.get(l1);</span>
-<span class="fc bfc" id="L299" title="All 2 branches covered.">            if (set1 == null) {</span>
-<span class="fc" id="L300">                set1 = new TIntHashSet();</span>
-<span class="fc" id="L301">                adjacencyMap.put(l1, set1);</span>
+<span class="fc" id="L297">            TIntSet set1 = adjacencyMap.get(l1);</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">            if (set1 == null) {</span>
+<span class="fc" id="L299">                set1 = new TIntHashSet();</span>
+<span class="fc" id="L300">                adjacencyMap.put(l1, set1);</span>
             }
                         
-<span class="fc" id="L304">            int x = img.getCol(idx1);</span>
-<span class="fc" id="L305">            int y = img.getRow(idx1);</span>
-<span class="fc bfc" id="L306" title="All 2 branches covered.">            for (int j = 0; j &lt; dxs.length; ++j) {</span>
-<span class="fc" id="L307">                int x2 = x + dxs[j];</span>
-<span class="fc" id="L308">                int y2 = y + dys[j];</span>
-<span class="fc bfc" id="L309" title="All 8 branches covered.">                if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (w - 1) ||</span>
+<span class="fc" id="L303">            int x = img.getCol(idx1);</span>
+<span class="fc" id="L304">            int y = img.getRow(idx1);</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">            for (int j = 0; j &lt; dxs.length; ++j) {</span>
+<span class="fc" id="L306">                int x2 = x + dxs[j];</span>
+<span class="fc" id="L307">                int y2 = y + dys[j];</span>
+<span class="fc bfc" id="L308" title="All 8 branches covered.">                if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (w - 1) ||</span>
                     (y2 &gt; (h - 1)))) {
-<span class="fc" id="L311">                    continue;</span>
+<span class="fc" id="L310">                    continue;</span>
                 }
-<span class="fc" id="L313">                int idx2 = img.getInternalIndex(x2, y2);</span>
-<span class="fc" id="L314">                int l2 = labels[idx2];</span>
-<span class="fc bfc" id="L315" title="All 2 branches covered.">                if (l1 == l2) {</span>
-<span class="fc" id="L316">                    continue;</span>
+<span class="fc" id="L312">                int idx2 = img.getInternalIndex(x2, y2);</span>
+<span class="fc" id="L313">                int l2 = labels[idx2];</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">                if (l1 == l2) {</span>
+<span class="fc" id="L315">                    continue;</span>
                 }
-<span class="pc bpc" id="L318" title="2 of 4 branches missed.">                if (excludeNegativeLabels &amp;&amp; (l2 &lt; 0)) {</span>
-<span class="nc" id="L319">                    continue;</span>
+<span class="pc bpc" id="L317" title="2 of 4 branches missed.">                if (excludeNegativeLabels &amp;&amp; (l2 &lt; 0)) {</span>
+<span class="nc" id="L318">                    continue;</span>
                 }
-<span class="fc" id="L321">                set1.add(l2);</span>
+<span class="fc" id="L320">                set1.add(l2);</span>
             }
         }
         
-<span class="fc" id="L325">        return adjacencyMap;</span>
+<span class="fc" id="L324">        return adjacencyMap;</span>
     }
 
     /**
@@ -337,51 +336,51 @@ import java.util.Set;
     public static TIntObjectMap&lt;TIntSet&gt; createAdjacencyLabelMap(
         GreyscaleImage img, int[] labels, boolean excludeNegativeLabels) {
         
-<span class="nc" id="L340">        TIntObjectMap&lt;TIntSet&gt; adjacencyMap =</span>
+<span class="nc" id="L339">        TIntObjectMap&lt;TIntSet&gt; adjacencyMap =</span>
             new TIntObjectHashMap&lt;TIntSet&gt;();
 
-<span class="nc" id="L343">        int h = img.getHeight();</span>
-<span class="nc" id="L344">        int w = img.getWidth();</span>
+<span class="nc" id="L342">        int h = img.getHeight();</span>
+<span class="nc" id="L343">        int w = img.getWidth();</span>
         
-<span class="nc" id="L346">        int[] dxs = Misc.dx4;</span>
-<span class="nc" id="L347">        int[] dys = Misc.dy4;</span>
+<span class="nc" id="L345">        int[] dxs = Misc.dx4;</span>
+<span class="nc" id="L346">        int[] dys = Misc.dy4;</span>
         
-<span class="nc bnc" id="L349" title="All 2 branches missed.">        for (int idx1 = 0; idx1 &lt; labels.length; ++idx1) {</span>
+<span class="nc bnc" id="L348" title="All 2 branches missed.">        for (int idx1 = 0; idx1 &lt; labels.length; ++idx1) {</span>
             
-<span class="nc" id="L351">            int l1 = labels[idx1];</span>
+<span class="nc" id="L350">            int l1 = labels[idx1];</span>
             
-<span class="nc bnc" id="L353" title="All 4 branches missed.">            if (excludeNegativeLabels &amp;&amp; (l1 &lt; 0)) {</span>
-<span class="nc" id="L354">                continue;</span>
+<span class="nc bnc" id="L352" title="All 4 branches missed.">            if (excludeNegativeLabels &amp;&amp; (l1 &lt; 0)) {</span>
+<span class="nc" id="L353">                continue;</span>
             }
             
-<span class="nc" id="L357">            TIntSet set1 = adjacencyMap.get(l1);</span>
-<span class="nc bnc" id="L358" title="All 2 branches missed.">            if (set1 == null) {</span>
-<span class="nc" id="L359">                set1 = new TIntHashSet();</span>
-<span class="nc" id="L360">                adjacencyMap.put(l1, set1);</span>
+<span class="nc" id="L356">            TIntSet set1 = adjacencyMap.get(l1);</span>
+<span class="nc bnc" id="L357" title="All 2 branches missed.">            if (set1 == null) {</span>
+<span class="nc" id="L358">                set1 = new TIntHashSet();</span>
+<span class="nc" id="L359">                adjacencyMap.put(l1, set1);</span>
             }
                         
-<span class="nc" id="L363">            int x = img.getCol(idx1);</span>
-<span class="nc" id="L364">            int y = img.getRow(idx1);</span>
-<span class="nc bnc" id="L365" title="All 2 branches missed.">            for (int j = 0; j &lt; dxs.length; ++j) {</span>
-<span class="nc" id="L366">                int x2 = x + dxs[j];</span>
-<span class="nc" id="L367">                int y2 = y + dys[j];</span>
-<span class="nc bnc" id="L368" title="All 8 branches missed.">                if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (w - 1) ||</span>
+<span class="nc" id="L362">            int x = img.getCol(idx1);</span>
+<span class="nc" id="L363">            int y = img.getRow(idx1);</span>
+<span class="nc bnc" id="L364" title="All 2 branches missed.">            for (int j = 0; j &lt; dxs.length; ++j) {</span>
+<span class="nc" id="L365">                int x2 = x + dxs[j];</span>
+<span class="nc" id="L366">                int y2 = y + dys[j];</span>
+<span class="nc bnc" id="L367" title="All 8 branches missed.">                if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (w - 1) ||</span>
                     (y2 &gt; (h - 1)))) {
-<span class="nc" id="L370">                    continue;</span>
+<span class="nc" id="L369">                    continue;</span>
                 }
-<span class="nc" id="L372">                int idx2 = img.getInternalIndex(x2, y2);</span>
-<span class="nc" id="L373">                int l2 = labels[idx2];</span>
-<span class="nc bnc" id="L374" title="All 2 branches missed.">                if (l1 == l2) {</span>
-<span class="nc" id="L375">                    continue;</span>
+<span class="nc" id="L371">                int idx2 = img.getInternalIndex(x2, y2);</span>
+<span class="nc" id="L372">                int l2 = labels[idx2];</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">                if (l1 == l2) {</span>
+<span class="nc" id="L374">                    continue;</span>
                 }
-<span class="nc bnc" id="L377" title="All 4 branches missed.">                if (excludeNegativeLabels &amp;&amp; (l2 &lt; 0)) {</span>
-<span class="nc" id="L378">                    continue;</span>
+<span class="nc bnc" id="L376" title="All 4 branches missed.">                if (excludeNegativeLabels &amp;&amp; (l2 &lt; 0)) {</span>
+<span class="nc" id="L377">                    continue;</span>
                 }
-<span class="nc" id="L380">                set1.add(l2);</span>
+<span class="nc" id="L379">                set1.add(l2);</span>
             }
         }
         
-<span class="nc" id="L384">        return adjacencyMap;</span>
+<span class="nc" id="L383">        return adjacencyMap;</span>
     }
 
     /**
@@ -395,94 +394,94 @@ import java.util.Set;
     public static TIntObjectMap&lt;TIntSet&gt; createAdjacencyLabelMap(
         GreyscaleImage img, int[] labels) {
         
-<span class="nc" id="L398">        TIntObjectMap&lt;TIntSet&gt; adjacencyMap =</span>
+<span class="nc" id="L397">        TIntObjectMap&lt;TIntSet&gt; adjacencyMap =</span>
             new TIntObjectHashMap&lt;TIntSet&gt;();
 
-<span class="nc" id="L401">        int h = img.getHeight();</span>
-<span class="nc" id="L402">        int w = img.getWidth();</span>
+<span class="nc" id="L400">        int h = img.getHeight();</span>
+<span class="nc" id="L401">        int w = img.getWidth();</span>
         
-<span class="nc" id="L404">        int[] dxs = Misc.dx4;</span>
-<span class="nc" id="L405">        int[] dys = Misc.dy4;</span>
+<span class="nc" id="L403">        int[] dxs = Misc.dx4;</span>
+<span class="nc" id="L404">        int[] dys = Misc.dy4;</span>
         
-<span class="nc bnc" id="L407" title="All 2 branches missed.">        for (int idx1 = 0; idx1 &lt; labels.length; ++idx1) {</span>
+<span class="nc bnc" id="L406" title="All 2 branches missed.">        for (int idx1 = 0; idx1 &lt; labels.length; ++idx1) {</span>
             
-<span class="nc" id="L409">            int l1 = labels[idx1];</span>
+<span class="nc" id="L408">            int l1 = labels[idx1];</span>
             
-<span class="nc" id="L411">            TIntSet set1 = adjacencyMap.get(l1);</span>
-<span class="nc bnc" id="L412" title="All 2 branches missed.">            if (set1 == null) {</span>
-<span class="nc" id="L413">                set1 = new TIntHashSet();</span>
-<span class="nc" id="L414">                adjacencyMap.put(l1, set1);</span>
+<span class="nc" id="L410">            TIntSet set1 = adjacencyMap.get(l1);</span>
+<span class="nc bnc" id="L411" title="All 2 branches missed.">            if (set1 == null) {</span>
+<span class="nc" id="L412">                set1 = new TIntHashSet();</span>
+<span class="nc" id="L413">                adjacencyMap.put(l1, set1);</span>
             }
                         
-<span class="nc" id="L417">            int x = img.getCol(idx1);</span>
-<span class="nc" id="L418">            int y = img.getRow(idx1);</span>
-<span class="nc bnc" id="L419" title="All 2 branches missed.">            for (int j = 0; j &lt; dxs.length; ++j) {</span>
-<span class="nc" id="L420">                int x2 = x + dxs[j];</span>
-<span class="nc" id="L421">                int y2 = y + dys[j];</span>
-<span class="nc bnc" id="L422" title="All 8 branches missed.">                if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (w - 1) ||</span>
+<span class="nc" id="L416">            int x = img.getCol(idx1);</span>
+<span class="nc" id="L417">            int y = img.getRow(idx1);</span>
+<span class="nc bnc" id="L418" title="All 2 branches missed.">            for (int j = 0; j &lt; dxs.length; ++j) {</span>
+<span class="nc" id="L419">                int x2 = x + dxs[j];</span>
+<span class="nc" id="L420">                int y2 = y + dys[j];</span>
+<span class="nc bnc" id="L421" title="All 8 branches missed.">                if (x2 &lt; 0 || y2 &lt; 0 || (x2 &gt; (w - 1) ||</span>
                     (y2 &gt; (h - 1)))) {
-<span class="nc" id="L424">                    continue;</span>
+<span class="nc" id="L423">                    continue;</span>
                 }
-<span class="nc" id="L426">                int idx2 = img.getInternalIndex(x2, y2);</span>
-<span class="nc" id="L427">                int l2 = labels[idx2];</span>
-<span class="nc bnc" id="L428" title="All 2 branches missed.">                if (l1 == l2) {</span>
-<span class="nc" id="L429">                    continue;</span>
+<span class="nc" id="L425">                int idx2 = img.getInternalIndex(x2, y2);</span>
+<span class="nc" id="L426">                int l2 = labels[idx2];</span>
+<span class="nc bnc" id="L427" title="All 2 branches missed.">                if (l1 == l2) {</span>
+<span class="nc" id="L428">                    continue;</span>
                 }
-<span class="nc" id="L431">                set1.add(l2);</span>
+<span class="nc" id="L430">                set1.add(l2);</span>
             }
         }
         
-<span class="nc" id="L435">        return adjacencyMap;</span>
+<span class="nc" id="L434">        return adjacencyMap;</span>
     }
     
     public static void condenseLabels(int[] labels) {
         
-<span class="fc" id="L440">        int count = 0;</span>
-<span class="fc" id="L441">        TIntIntMap map = new TIntIntHashMap();</span>
-<span class="fc bfc" id="L442" title="All 2 branches covered.">        for (int i = 0; i &lt; labels.length; ++i) {</span>
-<span class="fc" id="L443">            int label = labels[i];</span>
+<span class="fc" id="L439">        int count = 0;</span>
+<span class="fc" id="L440">        TIntIntMap map = new TIntIntHashMap();</span>
+<span class="fc bfc" id="L441" title="All 2 branches covered.">        for (int i = 0; i &lt; labels.length; ++i) {</span>
+<span class="fc" id="L442">            int label = labels[i];</span>
             int label2;
-<span class="fc bfc" id="L445" title="All 2 branches covered.">            if (map.containsKey(label)) {</span>
-<span class="fc" id="L446">                label2 = map.get(label);</span>
+<span class="fc bfc" id="L444" title="All 2 branches covered.">            if (map.containsKey(label)) {</span>
+<span class="fc" id="L445">                label2 = map.get(label);</span>
             } else {
-<span class="fc" id="L448">                label2 = count;</span>
-<span class="fc" id="L449">                count++;</span>
-<span class="fc" id="L450">                map.put(label, label2);</span>
+<span class="fc" id="L447">                label2 = count;</span>
+<span class="fc" id="L448">                count++;</span>
+<span class="fc" id="L449">                map.put(label, label2);</span>
             }
-<span class="fc" id="L452">            labels[i] = label2;</span>
+<span class="fc" id="L451">            labels[i] = label2;</span>
         }
-<span class="fc" id="L454">    }</span>
+<span class="fc" id="L453">    }</span>
 
     public static boolean assertAllPointsFound(
         List&lt;Set&lt;PairInt&gt;&gt; listOfSets, int width, int height) {
 
-<span class="nc" id="L459">        Set&lt;PairInt&gt; allPoints = new HashSet&lt;PairInt&gt;();</span>
-<span class="nc bnc" id="L460" title="All 2 branches missed.">        for (Set&lt;PairInt&gt; set : listOfSets) {</span>
-<span class="nc bnc" id="L461" title="All 2 branches missed.">            for (PairInt p : set) {</span>
-<span class="nc" id="L462">                boolean exists = allPoints.contains(p);</span>
-<span class="nc bnc" id="L463" title="All 2 branches missed.">                if (exists) {</span>
-<span class="nc" id="L464">                    return false;</span>
+<span class="nc" id="L458">        Set&lt;PairInt&gt; allPoints = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L459" title="All 2 branches missed.">        for (Set&lt;PairInt&gt; set : listOfSets) {</span>
+<span class="nc bnc" id="L460" title="All 2 branches missed.">            for (PairInt p : set) {</span>
+<span class="nc" id="L461">                boolean exists = allPoints.contains(p);</span>
+<span class="nc bnc" id="L462" title="All 2 branches missed.">                if (exists) {</span>
+<span class="nc" id="L463">                    return false;</span>
                 }
-<span class="nc" id="L466">                allPoints.add(p);</span>
-<span class="nc" id="L467">            }</span>
-<span class="nc" id="L468">        }</span>
-<span class="nc bnc" id="L469" title="All 2 branches missed.">        if (allPoints.size() != width * height) {</span>
-<span class="nc" id="L470">            return false;</span>
+<span class="nc" id="L465">                allPoints.add(p);</span>
+<span class="nc" id="L466">            }</span>
+<span class="nc" id="L467">        }</span>
+<span class="nc bnc" id="L468" title="All 2 branches missed.">        if (allPoints.size() != width * height) {</span>
+<span class="nc" id="L469">            return false;</span>
         }
         
-<span class="nc bnc" id="L473" title="All 2 branches missed.">        for (int i = 0; i &lt; width; ++i) {</span>
-<span class="nc bnc" id="L474" title="All 2 branches missed.">            for (int j = 0; j &lt; height; ++j) {</span>
-<span class="nc" id="L475">                PairInt p = new PairInt(i, j);</span>
-<span class="nc" id="L476">                boolean exists = allPoints.contains(p);</span>
-<span class="nc bnc" id="L477" title="All 2 branches missed.">                if (!exists) {</span>
-<span class="nc" id="L478">                    return false;</span>
+<span class="nc bnc" id="L472" title="All 2 branches missed.">        for (int i = 0; i &lt; width; ++i) {</span>
+<span class="nc bnc" id="L473" title="All 2 branches missed.">            for (int j = 0; j &lt; height; ++j) {</span>
+<span class="nc" id="L474">                PairInt p = new PairInt(i, j);</span>
+<span class="nc" id="L475">                boolean exists = allPoints.contains(p);</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">                if (!exists) {</span>
+<span class="nc" id="L477">                    return false;</span>
                 }
-<span class="nc" id="L480">                boolean rmvd = allPoints.remove(p);</span>
-<span class="nc bnc" id="L481" title="All 2 branches missed.">                assert(rmvd);</span>
+<span class="nc" id="L479">                boolean rmvd = allPoints.remove(p);</span>
+<span class="nc bnc" id="L480" title="All 2 branches missed.">                assert(rmvd);</span>
             }
         }
         
-<span class="nc" id="L485">        return allPoints.isEmpty();        </span>
+<span class="nc" id="L484">        return allPoints.isEmpty();        </span>
     }
     
     /**
@@ -497,55 +496,55 @@ import java.util.Set;
     public static TIntObjectMap&lt;TIntSet&gt; createAdjacencySetMap(
         List&lt;Set&lt;PairInt&gt;&gt; contiguousSets) {
 
-<span class="fc" id="L500">        TObjectIntMap&lt;PairInt&gt; pointIndexMap =</span>
+<span class="fc" id="L499">        TObjectIntMap&lt;PairInt&gt; pointIndexMap =</span>
             new TObjectIntHashMap&lt;PairInt&gt;();
-<span class="fc bfc" id="L502" title="All 2 branches covered.">        for (int i = 0; i &lt; contiguousSets.size(); ++i) {</span>
-<span class="fc bfc" id="L503" title="All 2 branches covered.">            for (PairInt p : contiguousSets.get(i)) {</span>
-<span class="fc" id="L504">                pointIndexMap.put(p, i);</span>
-<span class="fc" id="L505">            }</span>
+<span class="fc bfc" id="L501" title="All 2 branches covered.">        for (int i = 0; i &lt; contiguousSets.size(); ++i) {</span>
+<span class="fc bfc" id="L502" title="All 2 branches covered.">            for (PairInt p : contiguousSets.get(i)) {</span>
+<span class="fc" id="L503">                pointIndexMap.put(p, i);</span>
+<span class="fc" id="L504">            }</span>
         }
 
-<span class="fc" id="L508">        TIntObjectMap&lt;TIntSet&gt; contigAdjacencyMap =</span>
+<span class="fc" id="L507">        TIntObjectMap&lt;TIntSet&gt; contigAdjacencyMap =</span>
             new TIntObjectHashMap&lt;TIntSet&gt;();
 
-<span class="fc" id="L511">        int[] dxs = Misc.dx4;</span>
-<span class="fc" id="L512">        int[] dys = Misc.dy4;</span>
-<span class="fc bfc" id="L513" title="All 2 branches covered.">        for (int lIdx = 0; lIdx &lt; contiguousSets.size(); ++lIdx) {</span>
+<span class="fc" id="L510">        int[] dxs = Misc.dx4;</span>
+<span class="fc" id="L511">        int[] dys = Misc.dy4;</span>
+<span class="fc bfc" id="L512" title="All 2 branches covered.">        for (int lIdx = 0; lIdx &lt; contiguousSets.size(); ++lIdx) {</span>
 
-<span class="fc" id="L515">            TIntSet setIdx1 = contigAdjacencyMap.get(lIdx);</span>
-<span class="pc bpc" id="L516" title="1 of 2 branches missed.">            if (setIdx1 == null) {</span>
-<span class="fc" id="L517">                setIdx1 = new TIntHashSet();</span>
-<span class="fc" id="L518">                contigAdjacencyMap.put(lIdx, setIdx1);</span>
+<span class="fc" id="L514">            TIntSet setIdx1 = contigAdjacencyMap.get(lIdx);</span>
+<span class="pc bpc" id="L515" title="1 of 2 branches missed.">            if (setIdx1 == null) {</span>
+<span class="fc" id="L516">                setIdx1 = new TIntHashSet();</span>
+<span class="fc" id="L517">                contigAdjacencyMap.put(lIdx, setIdx1);</span>
             }
 
-<span class="fc" id="L521">            Set&lt;PairInt&gt; set = contiguousSets.get(lIdx);</span>
-<span class="fc bfc" id="L522" title="All 2 branches covered.">            for (PairInt p : set) {</span>
-<span class="fc" id="L523">                int x = p.getX();</span>
-<span class="fc" id="L524">                int y = p.getY();</span>
-<span class="fc bfc" id="L525" title="All 2 branches covered.">                for (int j = 0; j &lt; dxs.length; ++j) {</span>
-<span class="fc" id="L526">                    int x2 = x + dxs[j];</span>
-<span class="fc" id="L527">                    int y2 = y + dys[j];</span>
-<span class="fc" id="L528">                    PairInt p2 = new PairInt(x2, y2);</span>
-<span class="fc bfc" id="L529" title="All 2 branches covered.">                    if (!pointIndexMap.containsKey(p2)) {</span>
-<span class="fc" id="L530">                        continue;</span>
+<span class="fc" id="L520">            Set&lt;PairInt&gt; set = contiguousSets.get(lIdx);</span>
+<span class="fc bfc" id="L521" title="All 2 branches covered.">            for (PairInt p : set) {</span>
+<span class="fc" id="L522">                int x = p.getX();</span>
+<span class="fc" id="L523">                int y = p.getY();</span>
+<span class="fc bfc" id="L524" title="All 2 branches covered.">                for (int j = 0; j &lt; dxs.length; ++j) {</span>
+<span class="fc" id="L525">                    int x2 = x + dxs[j];</span>
+<span class="fc" id="L526">                    int y2 = y + dys[j];</span>
+<span class="fc" id="L527">                    PairInt p2 = new PairInt(x2, y2);</span>
+<span class="fc bfc" id="L528" title="All 2 branches covered.">                    if (!pointIndexMap.containsKey(p2)) {</span>
+<span class="fc" id="L529">                        continue;</span>
                     }
-<span class="fc" id="L532">                    int lIdx2 = pointIndexMap.get(p2);</span>
-<span class="fc bfc" id="L533" title="All 2 branches covered.">                    if (lIdx == lIdx2) {</span>
-<span class="fc" id="L534">                        continue;</span>
+<span class="fc" id="L531">                    int lIdx2 = pointIndexMap.get(p2);</span>
+<span class="fc bfc" id="L532" title="All 2 branches covered.">                    if (lIdx == lIdx2) {</span>
+<span class="fc" id="L533">                        continue;</span>
                     }
                 
-<span class="fc" id="L537">                    setIdx1.add(lIdx2);</span>
+<span class="fc" id="L536">                    setIdx1.add(lIdx2);</span>
                 }
-<span class="fc" id="L539">            }</span>
+<span class="fc" id="L538">            }</span>
         }
 
-<span class="fc bfc" id="L542" title="All 2 branches covered.">        for (int lIdx1 = 0; lIdx1 &lt; contiguousSets.size(); ++lIdx1) {</span>
-<span class="fc" id="L543">            TIntSet setIdx1 = contigAdjacencyMap.get(lIdx1);</span>
-<span class="fc" id="L544">            setIdx1.remove(lIdx1);</span>
+<span class="fc bfc" id="L541" title="All 2 branches covered.">        for (int lIdx1 = 0; lIdx1 &lt; contiguousSets.size(); ++lIdx1) {</span>
+<span class="fc" id="L542">            TIntSet setIdx1 = contigAdjacencyMap.get(lIdx1);</span>
+<span class="fc" id="L543">            setIdx1.remove(lIdx1);</span>
         }
 
-<span class="fc" id="L547">        return contigAdjacencyMap;</span>
+<span class="fc" id="L546">        return contigAdjacencyMap;</span>
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

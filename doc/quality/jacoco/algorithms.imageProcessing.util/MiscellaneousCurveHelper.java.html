@@ -725,21 +725,21 @@ import java.util.logging.Logger;
 
     public double[] calculateXYCentroids(PairIntArray xy) {
 
-<span class="fc" id="L728">        double xc = 0;</span>
-<span class="fc" id="L729">        double yc = 0;</span>
+<span class="nc" id="L728">        double xc = 0;</span>
+<span class="nc" id="L729">        double yc = 0;</span>
 
-<span class="fc bfc" id="L731" title="All 2 branches covered.">        for (int i = 0; i &lt; xy.getN(); i++) {</span>
+<span class="nc bnc" id="L731" title="All 2 branches missed.">        for (int i = 0; i &lt; xy.getN(); i++) {</span>
 
-<span class="fc" id="L733">            xc += xy.getX(i);</span>
+<span class="nc" id="L733">            xc += xy.getX(i);</span>
 
-<span class="fc" id="L735">            yc += xy.getY(i);</span>
+<span class="nc" id="L735">            yc += xy.getY(i);</span>
         }
 
-<span class="fc" id="L738">        xc /= (double)xy.getN();</span>
+<span class="nc" id="L738">        xc /= (double)xy.getN();</span>
 
-<span class="fc" id="L740">        yc /= (double)xy.getN();</span>
+<span class="nc" id="L740">        yc /= (double)xy.getN();</span>
 
-<span class="fc" id="L742">        return new double[]{xc, yc};</span>
+<span class="nc" id="L742">        return new double[]{xc, yc};</span>
     }
 
     public double[] calculateXYCentroids(PairFloatArray xy) {
@@ -1505,28 +1505,28 @@ import java.util.logging.Logger;
 
     public PairIntArray scaleDown(PairIntArray a, float scale) {
         
-<span class="fc" id="L1508">        double[] cenXY = calculateXYCentroids(a);</span>
+<span class="nc" id="L1508">        double[] cenXY = calculateXYCentroids(a);</span>
      
-<span class="fc" id="L1510">        TransformationParameters params = new TransformationParameters();</span>
-<span class="fc" id="L1511">        params.setOriginX((float)cenXY[0]);</span>
-<span class="fc" id="L1512">        params.setOriginX((float)cenXY[1]);</span>
-<span class="fc" id="L1513">        params.setScale(scale);</span>
+<span class="nc" id="L1510">        TransformationParameters params = new TransformationParameters();</span>
+<span class="nc" id="L1511">        params.setOriginX((float)cenXY[0]);</span>
+<span class="nc" id="L1512">        params.setOriginX((float)cenXY[1]);</span>
+<span class="nc" id="L1513">        params.setScale(scale);</span>
         
-<span class="fc" id="L1515">        Transformer transformer = new Transformer();</span>
-<span class="fc" id="L1516">        PairIntArray b = transformer.applyTransformation(params, a);</span>
+<span class="nc" id="L1515">        Transformer transformer = new Transformer();</span>
+<span class="nc" id="L1516">        PairIntArray b = transformer.applyTransformation(params, a);</span>
     
         // when shrinking, there may be overlapping points
-<span class="fc" id="L1519">        Set&lt;PairInt&gt; added = new HashSet&lt;PairInt&gt;();</span>
-<span class="fc bfc" id="L1520" title="All 2 branches covered.">        for (int i = (b.getN() - 1); i &gt; -1; --i) {</span>
-<span class="fc" id="L1521">            PairInt p = new PairInt(b.getX(i), b.getY(i));</span>
-<span class="pc bpc" id="L1522" title="1 of 2 branches missed.">            if (added.contains(p)) {</span>
+<span class="nc" id="L1519">        Set&lt;PairInt&gt; added = new HashSet&lt;PairInt&gt;();</span>
+<span class="nc bnc" id="L1520" title="All 2 branches missed.">        for (int i = (b.getN() - 1); i &gt; -1; --i) {</span>
+<span class="nc" id="L1521">            PairInt p = new PairInt(b.getX(i), b.getY(i));</span>
+<span class="nc bnc" id="L1522" title="All 2 branches missed.">            if (added.contains(p)) {</span>
 <span class="nc" id="L1523">                b.removeRange(i, i);</span>
             } else {
-<span class="fc" id="L1525">                added.add(p);</span>
+<span class="nc" id="L1525">                added.add(p);</span>
             }
         }
         
-<span class="fc" id="L1529">        return b;</span>
+<span class="nc" id="L1529">        return b;</span>
     }
 
     public PairIntArray createContiguousCircle(float radius) {
@@ -1585,4 +1585,4 @@ import java.util.logging.Logger;
 <span class="nc" id="L1585">        return circle;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

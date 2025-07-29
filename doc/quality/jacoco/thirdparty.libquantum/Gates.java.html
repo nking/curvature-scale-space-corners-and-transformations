@@ -269,7 +269,7 @@ public class Gates {
      */
    public void quantum_swaptheleads(int width, QuantumReg reg) {
         int i, j;
-        int pat1, pat2;
+        long pat1, pat2;
 <span class="fc" id="L273">        int[] qec = new int[1];</span>
         //MAX_UNSIGNED l;
         long l;
@@ -288,7 +288,7 @@ public class Gates {
                 // calculate left bit pattern 
                 
                 // TODO: revisit c narrowing
-<span class="fc" id="L291">                pat1 = (int)(reg.node[i].state % (1L &lt;&lt; width));</span>
+<span class="fc" id="L291">                pat1 = (reg.node[i].state % (1L &lt;&lt; width));</span>
                 
                 //calculate right but pattern 
 <span class="fc" id="L294">                pat2 = 0;</span>
@@ -1610,4 +1610,4 @@ public class Gates {
 <span class="fc" id="L1610">    }</span>
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

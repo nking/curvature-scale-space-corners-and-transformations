@@ -85,8 +85,8 @@ import java.util.Set;
                     //TODO: revisit this for range of kernel sizes vs edge sizes
                     // replicate
 <span class="fc" id="L87">                    curveIdx = -1*curveIdx - 1;</span>
-<span class="fc bfc" id="L88" title="All 2 branches covered.">                    if (curveIdx &gt; (curveLength - 1)) {</span>
-<span class="fc" id="L89">                        curveIdx = curveLength - 1;</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">                    if (curveIdx &gt; (curveLength - 1)) {</span>
+<span class="nc" id="L89">                        curveIdx = curveLength - 1;</span>
                     }
                 }
 <span class="fc bfc" id="L92" title="All 2 branches covered.">            } else if (curveIdx &gt;= (curveLength)) {</span>
@@ -105,8 +105,8 @@ import java.util.Set;
                     //TODO: revisit this for range of kernel sizes vs edge sizes
 <span class="fc" id="L106">                    int diff = curveIdx - curveLength;</span>
 <span class="fc" id="L107">                    curveIdx = curveLength - diff - 1;</span>
-<span class="fc bfc" id="L108" title="All 2 branches covered.">                    if (curveIdx &lt; 0) {</span>
-<span class="fc" id="L109">                        curveIdx = 0;</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">                    if (curveIdx &lt; 0) {</span>
+<span class="nc" id="L109">                        curveIdx = 0;</span>
                     }
                 }
             }
@@ -850,4 +850,4 @@ import java.util.Set;
 <span class="nc" id="L850">        return sum;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

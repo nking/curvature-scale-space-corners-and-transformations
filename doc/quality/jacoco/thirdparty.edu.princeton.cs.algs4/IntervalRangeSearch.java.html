@@ -29,50 +29,50 @@ import java.util.List;
     }
     
     public List&lt;Interval&lt;T&gt;&gt; getAllIntervals() {
-<span class="fc" id="L32">        List&lt;Interval&lt;T&gt;&gt; list = new ArrayList&lt;Interval&lt;T&gt;&gt;();</span>
-<span class="fc" id="L33">        IntervalRangeSearch.this.getAllIntervals(root, list);</span>
-<span class="fc" id="L34">        return list;</span>
+<span class="nc" id="L32">        List&lt;Interval&lt;T&gt;&gt; list = new ArrayList&lt;Interval&lt;T&gt;&gt;();</span>
+<span class="nc" id="L33">        IntervalRangeSearch.this.getAllIntervals(root, list);</span>
+<span class="nc" id="L34">        return list;</span>
     }
     
     public void getAllIntervals(List&lt;Interval&lt;T&gt;&gt; outputIntervals, 
         List&lt;Value&gt; outputValues) {
-<span class="fc" id="L39">        getAllIntervals(root, outputIntervals, outputValues);</span>
-<span class="fc" id="L40">    }</span>
+<span class="nc" id="L39">        getAllIntervals(root, outputIntervals, outputValues);</span>
+<span class="nc" id="L40">    }</span>
     
     private void getAllIntervals(RangeSearchNode&lt;Interval&lt;T&gt;, Value&gt; x, 
         List&lt;Interval&lt;T&gt;&gt; outputIntervals, List&lt;Value&gt; outputValues) {
         
-<span class="fc bfc" id="L45" title="All 2 branches covered.">        if (x == null) {</span>
-<span class="fc" id="L46">            return;</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        if (x == null) {</span>
+<span class="nc" id="L46">            return;</span>
         }
-<span class="fc" id="L48">        outputIntervals.add(x.key);</span>
-<span class="fc" id="L49">        outputValues.add(x.val);</span>
+<span class="nc" id="L48">        outputIntervals.add(x.key);</span>
+<span class="nc" id="L49">        outputValues.add(x.val);</span>
             
-<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (x.left != null) {</span>
-<span class="fc" id="L52">            getAllIntervals(x.left, outputIntervals, outputValues);</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        if (x.left != null) {</span>
+<span class="nc" id="L52">            getAllIntervals(x.left, outputIntervals, outputValues);</span>
         }
         
-<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (x.right != null) {</span>
-<span class="fc" id="L56">            getAllIntervals(x.right, outputIntervals, outputValues);</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        if (x.right != null) {</span>
+<span class="nc" id="L56">            getAllIntervals(x.right, outputIntervals, outputValues);</span>
         }
-<span class="fc" id="L58">    }</span>
+<span class="nc" id="L58">    }</span>
     
     private void getAllIntervals(RangeSearchNode&lt;Interval&lt;T&gt;, Value&gt; x, 
         List&lt;Interval&lt;T&gt;&gt; list) {
         
-<span class="pc bpc" id="L63" title="1 of 2 branches missed.">        if (x == null) {</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">        if (x == null) {</span>
 <span class="nc" id="L64">            return;</span>
         }
-<span class="fc" id="L66">        list.add(x.key);</span>
+<span class="nc" id="L66">        list.add(x.key);</span>
             
-<span class="fc bfc" id="L68" title="All 2 branches covered.">        if (x.left != null) {</span>
-<span class="fc" id="L69">            getAllIntervals(x.left, list);</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        if (x.left != null) {</span>
+<span class="nc" id="L69">            getAllIntervals(x.left, list);</span>
         }
         
-<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (x.right != null) {</span>
-<span class="fc" id="L73">            getAllIntervals(x.right, list);</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        if (x.right != null) {</span>
+<span class="nc" id="L73">            getAllIntervals(x.right, list);</span>
         }
-<span class="fc" id="L75">    }</span>
+<span class="nc" id="L75">    }</span>
     
     private void range0(RangeSearchNode&lt;Interval&lt;T&gt;, Value&gt; x, 
         Interval&lt;T&gt; interval, Queue&lt;Interval&lt;T&gt;&gt; list) {
@@ -105,9 +105,9 @@ import java.util.List;
         // if xmin &gt; interval.max
         //   search rgt
         
-<span class="pc bpc" id="L108" title="3 of 4 branches missed.">        if ((x.left != null) &amp;&amp; (intersects || </span>
+<span class="pc bpc" id="L108" title="1 of 4 branches missed.">        if ((x.left != null) &amp;&amp; (intersects || </span>
 <span class="nc bnc" id="L109" title="All 2 branches missed.">            (x.key.max().compareTo(interval.min()) &lt; 1)) ) {</span>
-<span class="nc" id="L110">            range0(x.left, interval, list);</span>
+<span class="fc" id="L110">            range0(x.left, interval, list);</span>
         }
         
 <span class="fc bfc" id="L113" title="All 4 branches covered.">        if ((x.right != null) &amp;&amp; (intersects || </span>
@@ -117,4 +117,4 @@ import java.util.List;
 <span class="fc" id="L117">    }</span>
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

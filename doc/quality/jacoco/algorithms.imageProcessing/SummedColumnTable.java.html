@@ -4,7 +4,7 @@
  * 
  * @author nichole
  */
-<span class="fc" id="L7">public class SummedColumnTable {</span>
+<span class="nc" id="L7">public class SummedColumnTable {</span>
     
     /**
      * sum along columns, that is a[i][*]
@@ -14,17 +14,17 @@
      */
     public float[][] create(float[][] a) {
 
-<span class="fc" id="L17">        int w = a.length;</span>
-<span class="fc" id="L18">        int h = a[0].length;</span>
+<span class="nc" id="L17">        int w = a.length;</span>
+<span class="nc" id="L18">        int h = a[0].length;</span>
         
-<span class="fc" id="L20">        ImageProcessor imp = new ImageProcessor();</span>
+<span class="nc" id="L20">        ImageProcessor imp = new ImageProcessor();</span>
 
-<span class="fc" id="L22">        float[][] out = imp.copy(a);</span>
+<span class="nc" id="L22">        float[][] out = imp.copy(a);</span>
         //applyAbsoluteValue
-<span class="fc bfc" id="L24" title="All 2 branches covered.">        for (int x = 0; x &lt; w; ++x) {</span>
-<span class="fc bfc" id="L25" title="All 2 branches covered.">            for (int y = 0; y &lt; h; ++y) {</span>
-<span class="fc" id="L26">                float v = out[x][y];</span>
-<span class="pc bpc" id="L27" title="1 of 2 branches missed.">                if (v &lt; 0) {</span>
+<span class="nc bnc" id="L24" title="All 2 branches missed.">        for (int x = 0; x &lt; w; ++x) {</span>
+<span class="nc bnc" id="L25" title="All 2 branches missed.">            for (int y = 0; y &lt; h; ++y) {</span>
+<span class="nc" id="L26">                float v = out[x][y];</span>
+<span class="nc bnc" id="L27" title="All 2 branches missed.">                if (v &lt; 0) {</span>
 <span class="nc" id="L28">                    out[x][y] *= -1;</span>
                 }
             }
@@ -32,15 +32,15 @@
         
         // sum along columns, that is a[i][*]
         
-<span class="fc bfc" id="L35" title="All 2 branches covered.">        for (int i = 0; i &lt; w; ++i) {</span>
-<span class="fc bfc" id="L36" title="All 2 branches covered.">            for (int j = 0; j &lt; h; ++j) {</span>
-<span class="fc bfc" id="L37" title="All 2 branches covered.">                if (j &gt; 0) {</span>
-<span class="fc" id="L38">                    out[i][j] += out[i][j - 1];</span>
+<span class="nc bnc" id="L35" title="All 2 branches missed.">        for (int i = 0; i &lt; w; ++i) {</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">            for (int j = 0; j &lt; h; ++j) {</span>
+<span class="nc bnc" id="L37" title="All 2 branches missed.">                if (j &gt; 0) {</span>
+<span class="nc" id="L38">                    out[i][j] += out[i][j - 1];</span>
                 }
             }
         }
 
-<span class="fc" id="L43">        return out;</span>
+<span class="nc" id="L43">        return out;</span>
     }
     
     /**
@@ -59,13 +59,13 @@
     public void extractWindowInColumn(float[][] input, 
         int start, int stop, int row, float output[]) {
         
-<span class="fc bfc" id="L62" title="All 2 branches covered.">        if (start == 0) {</span>
-<span class="fc" id="L63">            output[0] = input[row][stop];</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        if (start == 0) {</span>
+<span class="nc" id="L63">            output[0] = input[row][stop];</span>
         } else {
-<span class="fc" id="L65">            output[0] = input[row][stop] - input[row][start - 1];</span>
+<span class="nc" id="L65">            output[0] = input[row][stop] - input[row][start - 1];</span>
         }
-<span class="fc" id="L67">        output[1] = stop - start + 1;        </span>
-<span class="fc" id="L68">    }</span>
+<span class="nc" id="L67">        output[1] = stop - start + 1;        </span>
+<span class="nc" id="L68">    }</span>
     
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

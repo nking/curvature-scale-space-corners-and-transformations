@@ -89,26 +89,39 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
 <span class="fc" id="L89">    }</span>
     
     double[][] getMatrixA() {
+        // 0    1    2      3       4     5     6
+        //x    y    x^2    x^3    x^4    xy    yx^2
+        /*
+        x^4   x^3   x^2
+        x^3   x^2   x
+        x^2   x      n
+         */
+<span class="fc" id="L99">        double[][] A = new double[3][3];</span>
+<span class="fc" id="L100">        A[0] = new double[]{moments_[4], moments_[3], moments_[2] };</span>
+<span class="fc" id="L101">        A[1] = new double[]{moments_[3], moments_[2], moments_[0] };</span>
+<span class="fc" id="L102">        A[2] = new double[]{moments_[2], moments_[0], n};   </span>
         
-<span class="fc" id="L93">        double[][] A = new double[3][3];</span>
-<span class="fc" id="L94">        A[0] = new double[]{moments_[4], moments_[3], moments_[2] };</span>
-<span class="fc" id="L95">        A[1] = new double[]{moments_[3], moments_[2], moments_[0] };</span>
-<span class="fc" id="L96">        A[2] = new double[]{moments_[2], moments_[0], n};   </span>
-        
-<span class="fc" id="L98">        return A;</span>
+<span class="fc" id="L104">        return A;</span>
     }
     
     double[][] getRHS() {
-<span class="fc" id="L102">        double[][] Y = new double[3][1];</span>
-<span class="fc" id="L103">        Y[0] = new double[]{moments_[6]};</span>
-<span class="fc" id="L104">        Y[1] = new double[]{moments_[5]};</span>
-<span class="fc" id="L105">        Y[2] = new double[]{moments_[1]};</span>
-<span class="fc" id="L106">        return Y;</span>
+        // 0    1    2      3       4     5     6
+        //x    y    x^2    x^3    x^4    xy    yx^2
+        /*
+        y*x^2
+        xy
+        y
+         */
+<span class="fc" id="L115">        double[][] Y = new double[3][1];</span>
+<span class="fc" id="L116">        Y[0] = new double[]{moments_[6]};</span>
+<span class="fc" id="L117">        Y[1] = new double[]{moments_[5]};</span>
+<span class="fc" id="L118">        Y[2] = new double[]{moments_[1]};</span>
+<span class="fc" id="L119">        return Y;</span>
     }
     
     double[] getRHSVector() {
-<span class="fc" id="L110">        double[] Y = new double[]{moments_[6], moments_[5], moments_[1]};</span>
-<span class="fc" id="L111">        return Y;</span>
+<span class="fc" id="L123">        double[] Y = new double[]{moments_[6], moments_[5], moments_[1]};</span>
+<span class="fc" id="L124">        return Y;</span>
     }
     
     /**
@@ -152,81 +165,81 @@ import no.uib.cipr.matrix.UpperTriangDenseMatrix;
         
         // helpful also was the Go solution of http://rosettacode.org/wiki/Polynomial_Fitting
         
-<span class="fc" id="L155">        double[][] A = getMatrixA();</span>
+<span class="fc" id="L168">        double[][] A = getMatrixA();</span>
         
-<span class="fc" id="L157">        double[][] Y = getRHS();</span>
+<span class="fc" id="L170">        double[][] Y = getRHS();</span>
         
-<span class="fc" id="L159">        Matrix mA = new DenseMatrix(A);</span>
+<span class="fc" id="L172">        Matrix mA = new DenseMatrix(A);</span>
         
-<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        if (debug) {</span>
-<span class="nc" id="L162">            System.out.println(&quot;row0=&quot; + Arrays.toString(A[0]));</span>
-<span class="nc" id="L163">            System.out.println(&quot;row1=&quot; + Arrays.toString(A[1]));</span>
-<span class="nc" id="L164">            System.out.println(&quot;row2=&quot; + Arrays.toString(A[2]));</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="nc" id="L175">            System.out.println(&quot;row0=&quot; + Arrays.toString(A[0]));</span>
+<span class="nc" id="L176">            System.out.println(&quot;row1=&quot; + Arrays.toString(A[1]));</span>
+<span class="nc" id="L177">            System.out.println(&quot;row2=&quot; + Arrays.toString(A[2]));</span>
         }
         
-<span class="fc" id="L167">        QR qr = QR.factorize(mA);</span>
-<span class="fc" id="L168">        DenseMatrix q = qr.getQ();</span>
-<span class="fc" id="L169">        UpperTriangDenseMatrix r = qr.getR();</span>
+<span class="fc" id="L180">        QR qr = QR.factorize(mA);</span>
+<span class="fc" id="L181">        DenseMatrix q = qr.getQ();</span>
+<span class="fc" id="L182">        UpperTriangDenseMatrix r = qr.getR();</span>
         
-<span class="fc" id="L171">        Matrix qT = algorithms.matrix.MatrixUtil.transpose(q);</span>
-<span class="fc" id="L172">        double[] qTY = MatrixUtil.multiplyMatrixByColumnVector(qT, getRHSVector());</span>
-<span class="fc" id="L173">        float[] c = new float[3];</span>
-<span class="fc bfc" id="L174" title="All 2 branches covered.">        for (int i = (3 - 1); i &gt;= 0; i--) {</span>
-<span class="fc" id="L175">            c[i] = (float)qTY[i];</span>
-<span class="fc bfc" id="L176" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; 3; j++) {</span>
-<span class="fc" id="L177">                c[i] -= c[j] * r.get(i, j);</span>
+<span class="fc" id="L184">        Matrix qT = algorithms.matrix.MatrixUtil.transpose(q);</span>
+<span class="fc" id="L185">        double[] qTY = MatrixUtil.multiplyMatrixByColumnVector(qT, getRHSVector());</span>
+<span class="fc" id="L186">        float[] c = new float[3];</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        for (int i = (3 - 1); i &gt;= 0; i--) {</span>
+<span class="fc" id="L188">            c[i] = (float)qTY[i];</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">            for (int j = (i + 1); j &lt; 3; j++) {</span>
+<span class="fc" id="L190">                c[i] -= c[j] * (float)r.get(i, j);</span>
             }
-<span class="fc" id="L179">            c[i] /= r.get(i, i);</span>
+<span class="fc" id="L192">            c[i] /= (float)r.get(i, i);</span>
         }
         
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">        if (debug) {</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">        if (debug) {</span>
             
-<span class="nc" id="L184">            System.out.println(&quot;abc=&quot; + Arrays.toString(c));</span>
+<span class="nc" id="L197">            System.out.println(&quot;abc=&quot; + Arrays.toString(c));</span>
         
-<span class="nc bnc" id="L186" title="All 2 branches missed.">            for (int i = 0; i &lt; 3; ++i) {</span>
-<span class="nc" id="L187">                double s = 0;</span>
-<span class="nc bnc" id="L188" title="All 2 branches missed.">                for (int j = 0; j &lt; 3; ++j) {</span>
-<span class="nc" id="L189">                    s += c[j] * A[i][j];</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">            for (int i = 0; i &lt; 3; ++i) {</span>
+<span class="nc" id="L200">                double s = 0;</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">                for (int j = 0; j &lt; 3; ++j) {</span>
+<span class="nc" id="L202">                    s += c[j] * A[i][j];</span>
                 }
-<span class="nc" id="L191">                System.out.println(&quot;sum=&quot; + s + &quot; rhs=&quot; + Y[i][0]);</span>
+<span class="nc" id="L204">                System.out.println(&quot;sum=&quot; + s + &quot; rhs=&quot; + Y[i][0]);</span>
             }
         }
         
         //qr_res  = test of QR factorization, norm1(Q*R-A)/(n*eps)
         
-<span class="fc" id="L197">        return c;</span>
+<span class="fc" id="L210">        return c;</span>
     }
     
     public static String plotFit(float[] coefficients, Set&lt;PairInt&gt; points, 
         int plotXMax, int plotYMax, int plotNumber, String plotLabel) {
     
         //System.out.println(&quot;coeff=&quot; + Arrays.toString(coefficients));
-<span class="fc" id="L204">        float[] rev = reverse(coefficients);</span>
+<span class="fc" id="L217">        float[] rev = reverse(coefficients);</span>
         //System.out.println(&quot;rev=&quot; + Arrays.toString(rev));
         
-<span class="fc" id="L207">        return PolynomialFitter.plotFit(rev, points, plotXMax, plotYMax, </span>
+<span class="fc" id="L220">        return PolynomialFitter.plotFit(rev, points, plotXMax, plotYMax, </span>
             plotNumber, plotLabel);
     }
     
     private static float[] reverse(float[] coeff) {
-<span class="pc bnc" id="L212" title="All 2 branches missed.">        assert(coeff.length == 3);</span>
-<span class="fc" id="L213">        float[] rev = new float[3];</span>
-<span class="fc" id="L214">        rev[0] = coeff[2];</span>
-<span class="fc" id="L215">        rev[1] = coeff[1];</span>
-<span class="fc" id="L216">        rev[2] = coeff[0];</span>
-<span class="fc" id="L217">        return rev;</span>
+<span class="pc bnc" id="L225" title="All 2 branches missed.">        assert(coeff.length == 3);</span>
+<span class="fc" id="L226">        float[] rev = new float[3];</span>
+<span class="fc" id="L227">        rev[0] = coeff[2];</span>
+<span class="fc" id="L228">        rev[1] = coeff[1];</span>
+<span class="fc" id="L229">        rev[2] = coeff[0];</span>
+<span class="fc" id="L230">        return rev;</span>
     }
     
     public static double calcResiduals(float[] coefficients, Set&lt;PairInt&gt; points) {
         
-<span class="fc" id="L222">        return PolynomialFitter.calcResiduals(reverse(coefficients), points);</span>
+<span class="fc" id="L235">        return PolynomialFitter.calcResiduals(reverse(coefficients), points);</span>
     }
     
     public ParabolaLeastSquares copy() {
-<span class="nc" id="L226">        ParabolaLeastSquares cp = new ParabolaLeastSquares();</span>
-<span class="nc" id="L227">        System.arraycopy(moments_, 0, cp.moments_, 0, moments_.length);</span>
-<span class="nc" id="L228">        cp.n = n;</span>
-<span class="nc" id="L229">        return cp;</span>
+<span class="nc" id="L239">        ParabolaLeastSquares cp = new ParabolaLeastSquares();</span>
+<span class="nc" id="L240">        System.arraycopy(moments_, 0, cp.moments_, 0, moments_.length);</span>
+<span class="nc" id="L241">        cp.n = n;</span>
+<span class="nc" id="L242">        return cp;</span>
     }
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

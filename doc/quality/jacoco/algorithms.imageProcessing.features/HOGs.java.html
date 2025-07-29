@@ -500,7 +500,7 @@ public class HOGs {
 <span class="pc bnc" id="L500" title="All 2 branches missed.">        assert(!Double.isNaN(norm));</span>
 
 <span class="fc bfc" id="L502" title="All 2 branches covered.">        for (int i = 0; i &lt; out.length; ++i) {</span>
-<span class="fc" id="L503">            out[i] *= norm;</span>
+<span class="fc" id="L503">            out[i] *= (int)Math.round(norm);</span>
             //assert(out[i] &gt;= 0);
         }
 
@@ -883,4 +883,4 @@ public class HOGs {
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

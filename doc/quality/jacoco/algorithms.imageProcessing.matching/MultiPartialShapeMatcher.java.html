@@ -1,0 +1,642 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MultiPartialShapeMatcher.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jacoco Report</a> &gt; <a href="index.source.html" class="el_package">algorithms.imageProcessing.matching</a> &gt; <span class="el_source">MultiPartialShapeMatcher.java</span></div><h1>MultiPartialShapeMatcher.java</h1><pre class="source lang-java linenums">package algorithms.imageProcessing.matching;
+
+import algorithms.misc.MiscMath;
+import algorithms.signalProcessing.CurveResampler;
+import algorithms.util.FormatArray;
+import algorithms.util.PairFloatArray;
+import algorithms.util.PairIntArray;
+import algorithms.util.PolygonAndPointPlotter;
+import com.spotify.voyager.jni.Index;
+
+import java.util.*;
+
+/**
+ * A class to Query a closed curve's shape against a database of closed curve shapes
+ * and find the best &lt;em&gt;articulated&lt;/em&gt; match for the Query
+ * based upon algorithm in paper
+ *  &quot;Efficient Partial Shape Matching
+ *     of Outer Contours: by Donoser et al.
+ *  implemented in PartialShapeMatcher.java
+ *
+ * &lt;pre&gt;
+
+ *  The databases construction have r.t.c. O(L*(NS^2)) where NS is the common number of points
+ *  all curves are resampled to and L is the number of curves.
+ *
+ *  The Query construction has r.t.c. O(NS^2) and the search of Indexed embeddings is
+ *  O(topK*log(topK)*log(NS)*log(L*NS*(log(NS^2))) where topK is the top results.
+ *
+ *  Details of Index creation:
+ *    - the indexes are instances of an approximate nearest neighbor library that indexes embeddings.
+ *    The java enabled Spotify Voyager API is used for this purpose.
+ *    - descriptor images for each closed curve are constructed following the algorithm by Donoser et al.
+ *    in PartialShapeMatcher where the descriptor is part of the data structures built for
+ *    for pairwise curve matching.  The descriptors are chord angles formed between relative orientations
+ *    of a chord formed from the static reference point i, and a point j and a point j-1 as j marches
+ *    around the curve.  N descriptors are formed with each point taking the role of the static reference
+ *    point.  The final descriptor is then N X N where N is the number of points in the curve.
+ *    - embeddings are made from each row of the descriptor, but offset to start at the reference point
+ *    (which is the same as the row number).
+ *    An embedding of length N is made for each row.
+ *    And then log(N)-1 more embeddings are extracted for the curve starting at its reference point.
+ *    e.g. if N=16 and row=2, we have the following embedding indexes (the embeddings would be vectors
+ *    of the values for those descriptor chords at those indices):
+ *    [2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,1], [2,3,4,5,6,7,8,9], [2,3,4,5], [2,3]
+ *    though the later would probably be dropped as being a smaller embedding than a minimum limit.
+ *    And so the number of embeddings created is L*N*log(N).
+ *    A Voyager Index is made for each unique length of the embeddings (i.e. log(N) or so Indexes are made)
+ *    and the embeddings are stored in the Index for their length.
+ *    =&gt; the runtime complexity for building the database is then O(L*N^2)
+ *
+ *  Details of query:
+ *    - a descriptor image is made for the Query and it is chopped up into embeddings just as the Indexed
+ *    target shapes were.
+ *    The runtime complexity for that is O(N^2).
+ *    - each of the N*log(N) query embeddings are searched against the Index of same length.
+ *    Each ANN search for the topK is log(N_I) where N_I is the number of items stored in the Index.
+ *    There are log(N) different Indexes so the runtime complexity is something like O(N * log(N) * log(N_I)).
+ *    - The topK results are kept and ordered over all searches using the Salukwdze comparison from PartialShapeMatcher.
+ *    The runtime complexity is O(N * log(N) * log(topK))
+ *    ==&gt; The overall runtime complexity of just the Query is then O(N^2).
+ *
+ * This algorithm could be implemented to use vectorization (intrinsics in SIMD or ISPC etc) and
+ * vector shifts and total embeddings being composed of 8-wide or 16-wide vectors.
+ *
+ * The Voyager Index API uses vectorization.
+ *
+ *&lt;/pre&gt;
+ */
+<span class="fc" id="L69">public class MultiPartialShapeMatcher {</span>
+
+    /**
+     * the number of points that each closed curve will be scaled to.
+     */
+    protected final int curveDimension;
+
+    /**
+     * the smallest embedding length that will be used in creating internal indexes
+     */
+    protected final int minBlockSize;
+
+    protected final Indexer indexer;
+
+    protected final List&lt;PairFloatArray&gt; targetCurves;
+    protected final Map&lt;Integer, Integer&gt; originalIndexes;
+    protected final List&lt;Float&gt; unscaleFactors;
+
+    /**
+     * class to build and hold Voyager indexes of target curves
+     */
+    protected static class Indexer {
+
+        // see https://spotify.github.io/voyager/java/com/spotify/voyager/package-summary.html
+        // NOTE that a SIGSEGV can occur for cases of adding to an Index in 1 batch a very large number
+        // of embeddings of large length .  might be due to large use of the native stack memory
+        // (near 1GB memory needed for example on OTC laptop where no
+        // changes for java stack size have been made nor any for heap)
+
+        /**
+         * map of different size indexes to search.  key = embedding length, value = the Voyager indexer
+         */
+
+        public final Map&lt;Integer, Index&gt; indexMap;
+        public final int nEmbeddings;
+        public Indexer(int nEmbeddings) {
+            this.nEmbeddings = nEmbeddings;
+            this.indexMap = new HashMap&lt;&gt;(nEmbeddings);
+        }
+
+        public Index.QueryResults query(float[] embedding, int topK) {
+            int len = embedding.length;
+            Index index = indexMap.get(len);
+            if (index == null) {
+                throw new IllegalArgumentException(&quot;embedding length not found in Indexes: &quot; + len);
+            }
+            if (index.getNumElements() &lt; Integer.MAX_VALUE) {
+                topK = Math.min(topK, (int) index.getNumElements());
+            }
+            return index.query(embedding, topK);
+        }
+
+        /**
+         * search the index for topK approximate nearest neighbors for the given embeddings
+         * @param embeddings an array of embeddings of same length
+         * @param topK number of best results to return
+         * @return topK nearest neighbors, approximately
+         */
+        public Index.QueryResults[] query(float[][] embeddings, int topK) {
+            int len = embeddings[0].length;
+            Index index = indexMap.get(len);
+            if (index == null) {
+                throw new IllegalArgumentException(&quot;embedding length not found in Indexes: &quot; + len);
+            }
+            if (index.getNumElements() &lt; Integer.MAX_VALUE) {
+                topK = Math.min(topK, (int) index.getNumElements());
+            }
+            //DEBUG
+            //System.out.printf(&quot;Indexer %d, nEmb=%d\n&quot;, len, index.getNumElements());
+            return index.query(embeddings, topK, -1);
+        }
+
+        public void addEmbeddingsIndex(float[][] embeddings, long[] ids) {
+            int len = embeddings[0].length;
+            if (!indexMap.containsKey(len)) {
+                indexMap.put(len, new Index(Index.SpaceType.Euclidean, len));
+            }
+
+            // have to batch the embeddings to avoid a SIGSEGV that appears to be due to using too much
+            //   memory in native methods
+            //
+            // default stack size can be obtained from command line:
+            // java -XX:+PrintFlagsFinal -version | grep StackSize
+
+            // DEBUG trying a subset.  succeeds with only 10 embeddings of length 30276.
+            // succeeds w/ 100 embeddings of length 30276.
+            // and also w/ 1000 embeddings of length 30276 but takes a long time.
+            // fails for 30176 embeddings of length 30276.
+
+            //TODO: batching could be improved w/ a look at memory and stack properties or allow user
+            // more configuration options
+
+            Index index = indexMap.get(len);
+
+            long nE = embeddings.length;
+            if (nE * len &lt; 10_000_000) {
+                // -1 is numThreads.  If -1 (the default), the number of CPUs available on the current machine will be used.
+                long[] outIds = index.addItems(embeddings, ids, -1);
+            } else {
+                double nB = Math.ceil(nE * len / 1E7);
+                int batchSize = (int)Math.ceil(nE / nB);
+                int b = batchSize;
+                for (int i = 0; i &lt; nE; i+= batchSize) {
+                    if (nE - i &lt; batchSize) {
+                        // batch is smaller than batchsize
+                        b = (int)nE - i;
+                    }
+                    // copy from [i, i+b-1] into arrays to load
+                    float[][] embeddings2 = copy(embeddings, i, i+b-1);
+                    long[] ids2 = Arrays.copyOfRange(ids, i, i+b);
+                    long[] outIds = index.addItems(embeddings2, ids2, -1);
+                }
+            }
+        }
+
+        /**
+         * copy rows i0 through i1, inclusive of array a
+         * @param a
+         * @param i0 first index to copy
+         * @param i1 last index to copy, inclusive
+         * @return copied rows i0 through i1, inclusive, of array a
+         */
+        private float[][] copy(float[][] a, int i0, int i1) {
+            int len = a[i0].length;
+            float[][] out = new float[i1 - i0 + 1][];
+            for (int i = i0, j = 0; i &lt;= i1; ++i, ++j) {
+                out[j] = Arrays.copyOf(a[i0], len);
+            }
+            return out;
+        }
+    }
+
+    /**
+     * constructor.  r.t.c. is O(L*(NS^2)) where L is closedCurves.size() and NS = curveDimension.
+     * @param curveDimension all curves are scaled to this length
+     * @param minBlockSize the smallest vector length that will be created during this search.  e.g. should be at least 3
+     * though practically you should consider minBlockSize &gt;= 0.1*curveDimension.
+     * @param closedCurves the shapes to scale to curveDimension, create embeddings for, and store in internal
+     *                     Indexes for future queries.
+     */
+<span class="fc" id="L209">    public MultiPartialShapeMatcher(int curveDimension, int minBlockSize, List&lt;PairFloatArray&gt; closedCurves) {</span>
+
+        //TODO: consider refactoring to improve testability
+
+        // filter for minBlockSize
+<span class="fc" id="L214">        Map&lt;Integer, Integer&gt; originalIndexes = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L215">        List&lt;PairFloatArray&gt; targetCurves = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L216">        List&lt;Float&gt; unscaleFactors = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">        for (int i = 0; i &lt; closedCurves.size(); ++i) {</span>
+<span class="fc" id="L218">            PairFloatArray p = closedCurves.get(i);</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">            if (p.getN() &gt;= minBlockSize) {</span>
+<span class="fc" id="L220">                originalIndexes.put(targetCurves.size(), i);</span>
+<span class="fc" id="L221">                targetCurves.add(p);</span>
+<span class="fc" id="L222">                unscaleFactors.add((p.getN() - 1.f)/(curveDimension - 1.f));</span>
+            }
+        }
+
+        //[closedCurves.size][this.curveDimension-1][this.curveDimension-1]
+<span class="fc" id="L227">        float[][][] descriptors = createDescriptors(curveDimension, minBlockSize, targetCurves);</span>
+<span class="pc bnc" id="L228" title="All 2 branches missed.">        assert(descriptors.length == targetCurves.size());</span>
+        //assert(descriptors[0].length == this.curveDimension);
+        //assert(descriptors[0][0].length == this.curveDimension);
+
+        /*{//DEBUG
+            print(descriptors[13][0]);
+        }*/
+
+<span class="fc" id="L236">        Indexer indexer = new Indexer(targetCurves.size());</span>
+<span class="fc" id="L237">        addEmbeddingsToIndexes(descriptors, indexer, minBlockSize, unscaleFactors);</span>
+<span class="fc" id="L238">        this.indexer = indexer;</span>
+<span class="fc" id="L239">        this.targetCurves = targetCurves;</span>
+<span class="fc" id="L240">        this.curveDimension = curveDimension;</span>
+<span class="fc" id="L241">        this.minBlockSize = minBlockSize;</span>
+<span class="fc" id="L242">        this.originalIndexes = originalIndexes;</span>
+<span class="fc" id="L243">        this.unscaleFactors = unscaleFactors;</span>
+<span class="fc" id="L244">    }</span>
+
+    protected static void addEmbeddingsToIndexes(float[][][] descriptors, Indexer indexer, int minBlockSize,
+                                                 List&lt;Float&gt; unscaleFactors) {
+<span class="fc" id="L248">        int L = descriptors.length;</span>
+
+<span class="fc" id="L250">        int n = descriptors[0].length;</span>
+<span class="fc" id="L251">        int nr = (int)(Math.log(n)/Math.log(2));</span>
+<span class="fc" id="L252">        int dr = n/nr;</span>
+
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        for (int r = 0; r &lt; nr; ++r){</span>
+<span class="fc" id="L255">            int len = n - (r*dr);</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">            if (len &lt; minBlockSize) {</span>
+<span class="fc" id="L257">                break;</span>
+            }
+            // ids are a composite of iCurve and iDiag.
+            // idx = iCurve * n + iDiag.
+            // iCurve = idx / n;
+            // iDiag = idx % n
+<span class="fc" id="L263">            long[] ids = new long[L*n];</span>
+<span class="fc" id="L264">            float[][] embeddings = new float[L*n][len];</span>
+<span class="fc" id="L265">            int j = 0;</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">            for (int iCurve = 0; iCurve &lt; L; ++iCurve) {</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">                if (Math.round(len * unscaleFactors.get(iCurve)) &lt; minBlockSize) {</span>
+<span class="fc" id="L268">                    continue;</span>
+                }
+<span class="fc bfc" id="L270" title="All 2 branches covered.">                for (int iDiag = 0; iDiag &lt; n; ++iDiag) {</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">                    if ((iDiag + len) &gt; n) {</span>
+<span class="fc" id="L272">                        int len1 = n - iDiag;</span>
+<span class="fc" id="L273">                        System.arraycopy(descriptors[iCurve][iDiag], iDiag, embeddings[j], 0, len1);</span>
+                        // wrap around
+<span class="fc" id="L275">                        int len2 = iDiag + len - n;</span>
+<span class="fc" id="L276">                        System.arraycopy(descriptors[iCurve][iDiag],0, embeddings[j], len1, len2);</span>
+<span class="fc" id="L277">                    } else {</span>
+<span class="fc" id="L278">                        System.arraycopy(descriptors[iCurve][iDiag], iDiag, embeddings[j], 0, len);</span>
+                    }
+<span class="fc" id="L280">                    ids[j] = iCurve * n + iDiag;</span>
+<span class="fc" id="L281">                    ++j;</span>
+                }
+            }
+<span class="fc" id="L284">            embeddings = copyRows(embeddings, j);</span>
+<span class="fc" id="L285">            ids = Arrays.copyOf(ids, j);</span>
+            // store in indexer
+<span class="fc" id="L287">            indexer.addEmbeddingsIndex(embeddings, ids);</span>
+        }
+<span class="fc" id="L289">    }</span>
+
+    // return list of curve index, and offset to start match
+    public static class Results {
+        // top k curves found int he database
+        final List&lt;PairFloatArray&gt; dbCurves;
+        // the indexes w.r.t. the original list of curves to place in the database.  they were filtered by minBlockSize.
+        final List&lt;Integer&gt; originalCurveIndexes;
+        final List&lt;Integer&gt; offsetsQuery;
+        final List&lt;Integer&gt; offsetsTargets;
+        final List&lt;Integer&gt; matchingLengths;
+        final List&lt;Float&gt; distances;
+        public Results(int n) {
+            dbCurves = new ArrayList&lt;&gt;();
+            originalCurveIndexes = new ArrayList&lt;&gt;();
+            offsetsTargets = new ArrayList&lt;&gt;();
+            offsetsQuery = new ArrayList&lt;&gt;();
+            matchingLengths = new ArrayList&lt;&gt;();
+            distances = new ArrayList&lt;&gt;();
+        }
+        public void add(int origCurveIndex, PairFloatArray dbCurve, int targetOffset, int queryOffset,
+                        int length, float distance) {
+            dbCurves.add(dbCurve);
+            originalCurveIndexes.add(origCurveIndex);
+            offsetsTargets.add(targetOffset);
+            offsetsQuery.add(queryOffset);
+            matchingLengths.add(length);
+            distances.add(distance);
+        }
+
+        public List&lt;PairFloatArray&gt; getDBCurves() {
+            return dbCurves;
+        }
+
+        public List&lt;Integer&gt; getOriginalCurveIndexes() {
+            return originalCurveIndexes;
+        }
+
+        public List&lt;Integer&gt; getOffsetsQuery() {
+            return offsetsQuery;
+        }
+
+        public List&lt;Integer&gt; getOffsetsTargets() {
+            return offsetsTargets;
+        }
+
+        public List&lt;Integer&gt; getMatchingLengths() {
+            return matchingLengths;
+        }
+
+        public List&lt;Float&gt; getDistances() {
+            return distances;
+        }
+    }
+
+    /**
+     * search for topK nearest neighbors to queryCurve in the shapes indexes.
+     * @param queryCurve the query closed curve
+     * @param topK the number of best results to return
+     * @return the nearest matched curves as the matching curves in their natural scale, the offset point
+     * that the match begins, the length of the match as the number of matching points, and the distance
+     * of the match.
+     */
+    public Results query(PairFloatArray queryCurve, final int topK) {
+
+<span class="fc" id="L354">        PairFloatArray q1 = createScaledCurve(queryCurve, this.curveDimension);</span>
+
+<span class="fc" id="L356">        float unscaleFactorQ = (queryCurve.getN() - 1.f)/(this.curveDimension - 1.f);</span>
+
+        /*{ //DEBUG
+            try {
+                plot(q1, System.currentTimeMillis());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }*/
+
+<span class="fc" id="L366">        float[][] descriptor = PartialShapeMatcher.createDescriptorMatrix(q1);</span>
+
+<span class="fc" id="L368">        final int n = descriptor.length;</span>
+
+        /*{//DEBUG
+            System.out.printf(&quot;QUERY:\n&quot;);
+            print(descriptor[0]);
+        }*/
+
+<span class="fc" id="L375">        final float maxLength = descriptor.length;</span>
+
+        // build a TreeSet to sort topK resultsTree from queries:
+        // calculate maxDist as Euclidean distance of 2 vectors of chord differences, where a
+        // single chord diff maximum possible value is up to 2*pi
+        // so maxDiff = this.curveDimension*2*pi
+        //final float maxDiff = (float)(1.1 * maxLength * Math.PI * 2.);
+<span class="fc" id="L382">        float maxDiff = (float)(Math.PI * 2.);</span>
+
+        // using a tree to keep to reduce the sort from O(n*log(n)) to O(n*(log(k)) by removing when tree size &gt; k
+<span class="fc" id="L385">        TreeSet&lt;float[]&gt; resultsTree = new TreeSet&lt;&gt;(new Comparator&lt;float[]&gt;() {</span>
+            @Override
+            public int compare(float[] o1, float[] o2) {
+                // salukwdze comparator:
+                //int c = Double.compare(o1[5], o2[5]);
+                // euclidean distance normalized by length, comparator:
+                int c = Double.compare(o1[0]/o1[1], o2[0]/o2[1]);
+                if (c != 0) {
+                    return c;
+                }
+                // compare the insertion number.  this is here only to make sure entries with same salk dist
+                // are unique tree entries
+                return Float.compare(o1[4], o2[4]);
+            }
+        });
+
+        /*
+        create query embeddings:
+        avoiding redundant search of whole curves by using row 0 of descriptor for length N embedding.
+        The other embeddings:
+        (1) row 0 of descriptor
+        (2) the log(N)-1 embeddings of row 0-N-1
+         */
+
+<span class="fc" id="L409">        long insId = 0;</span>
+
+<span class="fc" id="L411">        float[] embedding = Arrays.copyOf(descriptor[0], descriptor[0].length);</span>
+<span class="fc" id="L412">        Index.QueryResults res = indexer.query(embedding, topK);</span>
+
+        //DEBUG
+        //print(res, embedding.length, 0, n);
+
+<span class="fc" id="L417">        long[] labels = res.getLabels();</span>
+<span class="fc" id="L418">        float[] distsSq = res.getDistances();</span>
+<span class="fc" id="L419">        int queryOffset = 0;</span>
+<span class="fc bfc" id="L420" title="All 2 branches covered.">        for (int i = 0; i &lt; distsSq.length; ++i, ++insId) {</span>
+<span class="fc" id="L421">            float d = (float)Math.sqrt(distsSq[i]);</span>
+<span class="fc" id="L422">            float[] result = new float[]{d, embedding.length, labels[i], queryOffset, insId,</span>
+<span class="fc" id="L423">                    normalizeAndCalcSalukDist(d, maxDiff, embedding.length, maxLength)};</span>
+<span class="fc" id="L424">            resultsTree.add(result);</span>
+<span class="pc bpc" id="L425" title="1 of 2 branches missed.">            if (resultsTree.size() &gt; topK) {</span>
+<span class="nc" id="L426">                resultsTree.removeLast();</span>
+            }
+        }
+
+<span class="fc" id="L430">        int L = this.targetCurves.size();</span>
+<span class="fc" id="L431">        int nr = (int)(Math.log(n)/Math.log(2));</span>
+<span class="fc" id="L432">        int dr = n/nr;</span>
+
+<span class="fc bfc" id="L434" title="All 2 branches covered.">        for (int r = 0; r &lt; nr; ++r){</span>
+<span class="fc" id="L435">            int len = n - (r*dr);</span>
+<span class="fc bfc" id="L436" title="All 2 branches covered.">            if (len &lt; this.minBlockSize) {</span>
+<span class="fc" id="L437">                break;</span>
+            }
+<span class="pc bpc" id="L439" title="1 of 2 branches missed.">            if (Math.round(len * unscaleFactorQ) &lt; this.minBlockSize) {</span>
+<span class="nc" id="L440">                continue;</span>
+            }
+            // idsQ are iDiag, that is, the reference point, the offset from 0
+<span class="fc" id="L443">            int[] idsQ = new int[n];</span>
+<span class="fc" id="L444">            float[][] embeddingsQ = new float[n][len];</span>
+<span class="fc" id="L445">            int j = 0;</span>
+<span class="fc bfc" id="L446" title="All 2 branches covered.">            for (int iDiag = 0; iDiag &lt; n; ++iDiag) {</span>
+<span class="fc bfc" id="L447" title="All 2 branches covered.">                if ((iDiag + len) &gt; n) {</span>
+<span class="fc" id="L448">                    int len1 = n - iDiag;</span>
+<span class="fc" id="L449">                    System.arraycopy(descriptor[iDiag], iDiag, embeddingsQ[j], 0, len1);</span>
+                    // wrap around
+<span class="fc" id="L451">                    int len2 = iDiag + len - n;</span>
+<span class="fc" id="L452">                    System.arraycopy(descriptor[iDiag],0, embeddingsQ[j], len1, len2);</span>
+<span class="fc" id="L453">                } else {</span>
+<span class="fc" id="L454">                    System.arraycopy(descriptor[iDiag], iDiag, embeddingsQ[j], 0, len);</span>
+                }
+<span class="fc" id="L456">                idsQ[j] = iDiag;</span>
+<span class="fc" id="L457">                ++j;</span>
+            }
+            /*{//DEBUG
+                if (len &lt; 20) {
+                    System.out.printf(&quot;Desc=%s\n&quot;, FormatArray.toString(descriptor, &quot;%.2f&quot;));
+                    System.out.printf(&quot;embeddings=%s\n&quot;, FormatArray.toString(embeddingsQ, &quot;%.2f&quot;));
+                }
+            }*/
+<span class="pc bnc" id="L465" title="All 2 branches missed.">            assert(j == n);</span>
+
+            // there is a Index.QueryResults for every embeddingsQ, which has same index as idsQ
+<span class="fc" id="L468">            Index.QueryResults[] indexResults = indexer.query(embeddingsQ, topK);</span>
+
+<span class="fc bfc" id="L470" title="All 2 branches covered.">            for (int ii = 0; ii &lt; indexResults.length; ++ii, ++insId) {</span>
+<span class="fc" id="L471">                queryOffset = idsQ[ii];</span>
+<span class="fc" id="L472">                Index.QueryResults indexRes = indexResults[ii];</span>
+<span class="fc" id="L473">                labels = indexRes.getLabels();</span>
+<span class="fc" id="L474">                distsSq = indexRes.getDistances();</span>
+
+<span class="fc bfc" id="L476" title="All 2 branches covered.">                for (int i = 0; i &lt; distsSq.length; ++i) {</span>
+<span class="fc" id="L477">                    float d = (float)Math.sqrt(distsSq[i]);</span>
+                    // store in result, the dist, length, codedIndexLabel, query curve offset index
+<span class="fc" id="L479">                    float[] result = new float[]{d, len, labels[i], queryOffset, insId,</span>
+<span class="fc" id="L480">                            normalizeAndCalcSalukDist(d, maxDiff, len, maxLength)};</span>
+<span class="fc" id="L481">                    resultsTree.add(result);</span>
+<span class="fc bfc" id="L482" title="All 2 branches covered.">                    if (resultsTree.size() &gt; topK) {</span>
+<span class="fc" id="L483">                        resultsTree.removeLast();</span>
+                    }
+                }
+            }
+        }
+
+<span class="fc" id="L489">        Results out = new Results(resultsTree.size());</span>
+
+        // resolve the curve index, shift index, and iDiag ref index to get the point offset index
+        // and then use the scale to estimate the offset index within the original curve
+<span class="fc" id="L493">        int i = 0;</span>
+        long id;
+<span class="fc bfc" id="L495" title="All 2 branches covered.">        for (float[] result : resultsTree) {</span>
+            //result: the dist, length, codedIndexLabel, query curve offset index
+<span class="fc" id="L497">            id = (long)result[2];</span>
+<span class="fc" id="L498">            int iCurve = (int)(id / (long)n);</span>
+<span class="fc" id="L499">            int iDiag = (int)(id % (long)n);</span>
+<span class="fc" id="L500">            PairFloatArray curve = this.targetCurves.get(iCurve);</span>
+            // undo the scaling used in curve resampler:
+<span class="fc" id="L502">            float unscaleFactorT = this.unscaleFactors.get(iCurve);</span>
+<span class="fc" id="L503">            int targetOffset = Math.round(iDiag * unscaleFactorT);</span>
+<span class="fc" id="L504">            int length = Math.round(result[1] * unscaleFactorT);</span>
+<span class="fc" id="L505">            queryOffset = Math.round(result[3] * unscaleFactorQ);</span>
+            /*{//DEBUG
+                System.out.printf(&quot;targetIdx=%d, target_p0=(%f,%f), query_q0=(%f,%f), len=%.0f, dist=%.3e, saluk=%.3e\n&quot;,
+                        iCurve,
+                        curve.getX(iDiag), curve.getY(iDiag),
+                        q1.getX((int)result[3]), q1.getY((int)result[3]),
+                        result[1], result[0],
+                        calcSalukDist((float)(result[0]/Math.sqrt(result[1])), maxDiff, length, maxLength));
+            }*/
+<span class="fc" id="L514">            out.add(this.originalIndexes.get(iCurve), curve, targetOffset, queryOffset, length, result[0]);</span>
+<span class="fc" id="L515">            ++i;</span>
+<span class="fc" id="L516">        }</span>
+
+<span class="fc" id="L518">        return out;</span>
+    }
+
+    private void print(Index.QueryResults res, int len, int queryOffset, int n) {
+<span class="nc" id="L522">        System.out.printf(&quot;queryOffset=%d, length=%d, res=\n&quot;,queryOffset, len);</span>
+<span class="nc bnc" id="L523" title="All 2 branches missed.">        for (int i = 0; i &lt; res.getLabels().length; ++i) {</span>
+<span class="nc" id="L524">            long id = res.getLabels()[i];</span>
+<span class="nc" id="L525">            System.out.printf(&quot;id=%d, target_curve=%d, target_offset=%d, distSq=%f, dist=%f\n&quot;,</span>
+<span class="nc" id="L526">                    id, id/n, id%n, res.getDistances()[i],</span>
+<span class="nc" id="L527">                    Math.sqrt(res.getDistances()[i]));</span>
+        }
+<span class="nc" id="L529">    }</span>
+
+    protected static float normalizeAndCalcSalukDist(float compChord, float maxChord,
+                                         float length, float maxMatchable) {
+        //return calcSalukDist((float)(compChord/Math.sqrt(length)), maxChord, length, maxMatchable);
+<span class="fc" id="L534">        return calcSalukDist(compChord/length, maxChord, length, maxMatchable);</span>
+    }
+
+    protected static float calcSalukDist(float compChord, float maxChord,
+                                          float length, float maxMatchable) {
+        float d;
+<span class="pc bpc" id="L540" title="1 of 2 branches missed.">        if (maxChord == 0) {</span>
+<span class="nc" id="L541">            d = 0;</span>
+        } else {
+<span class="fc" id="L543">            d = compChord / maxChord;</span>
+        }
+<span class="fc" id="L545">        float f = 1.f - (length/maxMatchable);</span>
+<span class="fc" id="L546">        return f*f + d*d;</span>
+    }
+
+    protected static PairFloatArray createScaledCurve(PairFloatArray p, int curveDimension) {
+        //TODO: edit to store original number of points
+<span class="fc" id="L551">        float[][] pxy = new float[2][p.getN()];</span>
+<span class="fc" id="L552">        pxy[0] = Arrays.copyOf(p.getX(), p.getN());</span>
+<span class="fc" id="L553">        pxy[1] = Arrays.copyOf(p.getY(), p.getN());</span>
+<span class="fc" id="L554">        float[][] xyOut = CurveResampler.resample(pxy, curveDimension);</span>
+<span class="fc" id="L555">        PairFloatArray p2 = new PairFloatArray();</span>
+<span class="fc bfc" id="L556" title="All 2 branches covered.">        for (int i = 0; i &lt; xyOut[0].length; ++i) {</span>
+<span class="fc" id="L557">            p2.add(xyOut[0][i], xyOut[1][i]);</span>
+        }
+<span class="fc" id="L559">        return p2;</span>
+    }
+
+    public static List&lt;PairFloatArray&gt; convert(List&lt;PairIntArray&gt; p) {
+<span class="fc" id="L563">        List&lt;PairFloatArray&gt; out = new ArrayList&lt;&gt;(p.size());</span>
+<span class="fc bfc" id="L564" title="All 2 branches covered.">        for (PairIntArray q : p) {</span>
+<span class="fc" id="L565">            out.add(convert(q));</span>
+<span class="fc" id="L566">        }</span>
+<span class="fc" id="L567">        return out;</span>
+    }
+    public static float[][] convertToArray(PairFloatArray p) {
+<span class="nc" id="L570">        float[][] out = new float[p.getN()][];</span>
+<span class="nc bnc" id="L571" title="All 2 branches missed.">        for (int i = 0; i &lt; p.getN(); ++i) {</span>
+<span class="nc" id="L572">            out[i] = new float[]{p.getX(i), p.getY(i)};</span>
+        }
+<span class="nc" id="L574">        return out;</span>
+    }
+
+    public static PairFloatArray convert(PairIntArray p) {
+<span class="fc" id="L578">        PairFloatArray f = new PairFloatArray(p.getN());</span>
+<span class="fc bfc" id="L579" title="All 2 branches covered.">        for (int i = 0; i &lt; p.getN(); ++i) {</span>
+<span class="fc" id="L580">            f.add(p.getX(i), p.getY(i));</span>
+        }
+<span class="fc" id="L582">        return f;</span>
+    }
+
+    /**
+     * create a descriptor image for each curve
+     * @param closedCurves
+     * @return descriptors array with dimensions: [closedCurves.size][this.curveDimension-1][this.curveDimension-1]
+     */
+    protected static float[][][] createDescriptors(int curveDimension, int minBlockSize,
+        List&lt;PairFloatArray&gt; closedCurves) {
+
+<span class="fc" id="L593">        float[][][] descriptors = new float[closedCurves.size()][][];</span>
+        // building the descriptors:
+        // r.t.c. is O(n * curveDimension^2)
+<span class="fc bfc" id="L596" title="All 2 branches covered.">        for (int i = 0; i &lt; closedCurves.size(); ++i) {</span>
+<span class="fc" id="L597">            PairFloatArray p = closedCurves.get(i);</span>
+<span class="fc" id="L598">            PairFloatArray p2 = createScaledCurve(p, curveDimension);</span>
+            /*{//DEBUG
+                //if (i == 1191)
+                try {
+                    plot(p2, i*10000);//System.currentTimeMillis());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }*/
+<span class="fc" id="L607">            float[][] a2 = PartialShapeMatcher.createDescriptorMatrix(p2);</span>
+<span class="fc" id="L608">            descriptors[i] = a2;</span>
+        }
+<span class="fc" id="L610">        return descriptors;</span>
+    }
+
+    private static float[][] copyRows(float[][] a, int nRows) {
+<span class="fc" id="L614">        float[][] b = new float[nRows][];</span>
+<span class="fc bfc" id="L615" title="All 2 branches covered.">        for (int i = 0; i &lt; nRows; ++i) {</span>
+<span class="fc" id="L616">            b[i] = Arrays.copyOf(a[i], a[i].length);</span>
+        }
+<span class="fc" id="L618">        return b;</span>
+    }
+
+    private static String plot(PairFloatArray p, long fn) throws Exception {
+
+<span class="nc" id="L623">        float[] x = Arrays.copyOf(p.getX(), p.getN());</span>
+<span class="nc" id="L624">        float[] y = Arrays.copyOf(p.getY(), p.getN());</span>
+<span class="nc" id="L625">        float xMax = MiscMath.findMax(x) + 1;</span>
+<span class="nc" id="L626">        float yMax = MiscMath.findMax(y) + 1;</span>
+
+<span class="nc" id="L628">        PolygonAndPointPlotter plot = new PolygonAndPointPlotter();</span>
+
+<span class="nc" id="L630">        plot.addPlot(0, xMax, 0, yMax,</span>
+                x, y, x, y, &quot;&quot;);
+
+<span class="nc" id="L633">        return plot.writeFile(fn);</span>
+    }
+
+    private static void print(float[] emb) {
+<span class="nc" id="L637">        System.out.printf(&quot;b=%s\n&quot;, FormatArray.toString(emb, &quot;%.3f&quot;));</span>
+<span class="nc" id="L638">    }</span>
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

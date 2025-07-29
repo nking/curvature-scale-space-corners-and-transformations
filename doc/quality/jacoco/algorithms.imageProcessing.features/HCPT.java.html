@@ -244,7 +244,7 @@ public class HCPT {
 <span class="nc" id="L244">            throw new IllegalArgumentException(</span>
                 &quot;histA and histB must be same dimensions&quot;);
         }
-        
+
 <span class="fc" id="L248">        int nBins = histA.length;</span>
                 
         /*
@@ -418,7 +418,7 @@ public class HCPT {
 <span class="pc bnc" id="L418" title="All 2 branches missed.">        assert(!Double.isNaN(norm));</span>
 
 <span class="fc bfc" id="L420" title="All 2 branches covered.">        for (int i = 0; i &lt; out.length; ++i) {</span>
-<span class="fc" id="L421">            out[i] *= norm;</span>
+<span class="fc" id="L421">            out[i] *= (int)Math.round(norm);</span>
 <span class="pc bnc" id="L422" title="All 2 branches missed.">            assert(out[i] &gt;= 0);</span>
         }
 
@@ -511,4 +511,4 @@ public class HCPT {
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

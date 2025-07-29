@@ -125,8 +125,8 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
      * @param factor
      */
     public void setOtsuScaleFactor(float factor) {
-<span class="nc" id="L128">        otsuScaleFactor = factor;</span>
-<span class="nc" id="L129">    }</span>
+<span class="fc" id="L128">        otsuScaleFactor = factor;</span>
+<span class="fc" id="L129">    }</span>
     
     public void setToNotUseNonMaximumSuppression() {
 <span class="nc" id="L132">        performNonMaxSuppr = false;</span>
@@ -143,8 +143,8 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
 <span class="nc" id="L143">    }</span>
     
     public void setToUseSingleThresholdIn2LayerFilter() {
-<span class="nc" id="L146">        useAdaptive2Layer = false;</span>
-<span class="nc" id="L147">    }</span>
+<span class="fc" id="L146">        useAdaptive2Layer = false;</span>
+<span class="fc" id="L147">    }</span>
     
     /**
      * override the default factor of low threshold below high threshold, which
@@ -257,7 +257,7 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
 
 <span class="fc" id="L258">        double[][] threshImg = null;</span>
        
-<span class="pc bpc" id="L260" title="2 of 4 branches missed.">        if (useAdaptive2Layer &amp;&amp; useAdaptiveThreshold) {</span>
+<span class="pc bpc" id="L260" title="1 of 4 branches missed.">        if (useAdaptive2Layer &amp;&amp; useAdaptiveThreshold) {</span>
 <span class="nc" id="L261">            AdaptiveThresholding th = new AdaptiveThresholding();</span>
 <span class="nc" id="L262">            threshImg = th.createAdaptiveThresholdImage(</span>
 <span class="nc" id="L263">                imageProcessor.copy(gradientXY), 15, 0.2);</span>
@@ -314,7 +314,7 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
          
 <span class="fc" id="L315">        float tHigh = 0;</span>
 <span class="fc" id="L316">        float tLow = 0;</span>
-<span class="pc bpc" id="L317" title="2 of 4 branches missed.">        if (!useAdaptive2Layer || !useAdaptiveThreshold) {</span>
+<span class="pc bpc" id="L317" title="1 of 4 branches missed.">        if (!useAdaptive2Layer || !useAdaptiveThreshold) {</span>
 <span class="fc" id="L318">            OtsuThresholding ot = new OtsuThresholding();</span>
 <span class="fc" id="L319">            tHigh = otsuScaleFactor * ot.calculateBinaryThreshold256(gradientXY);</span>
 <span class="fc" id="L320">            tLow = tHigh/factorBelowHighThreshold;</span>
@@ -868,4 +868,4 @@ public class CannyEdgeFilterAdaptiveDeltaE2000 {
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

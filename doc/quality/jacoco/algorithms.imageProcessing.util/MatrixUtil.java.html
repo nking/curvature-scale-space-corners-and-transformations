@@ -610,14 +610,14 @@ import no.uib.cipr.matrix.sparse.SparseVector;
     
     public static double trace(double[][] d) {
         
-<span class="fc" id="L613">        double sum = 0;</span>
+<span class="nc" id="L613">        double sum = 0;</span>
         
-<span class="fc" id="L615">        int n = Math.min(d.length, d[0].length);</span>
-<span class="fc bfc" id="L616" title="All 2 branches covered.">        for (int i = 0; i &lt; n; ++i) {</span>
-<span class="fc" id="L617">            sum += d[i][i];</span>
+<span class="nc" id="L615">        int n = Math.min(d.length, d[0].length);</span>
+<span class="nc bnc" id="L616" title="All 2 branches missed.">        for (int i = 0; i &lt; n; ++i) {</span>
+<span class="nc" id="L617">            sum += d[i][i];</span>
         }
         
-<span class="fc" id="L620">        return sum;</span>
+<span class="nc" id="L620">        return sum;</span>
     }
 
     public static class EigenValuesAndVectors {
@@ -1127,4 +1127,4 @@ import no.uib.cipr.matrix.sparse.SparseVector;
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

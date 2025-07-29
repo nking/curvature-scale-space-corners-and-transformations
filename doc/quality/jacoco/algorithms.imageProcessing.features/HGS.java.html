@@ -489,7 +489,7 @@ public class HGS {
 <span class="pc bnc" id="L489" title="All 2 branches missed.">        assert(!Double.isNaN(norm));</span>
 
 <span class="fc bfc" id="L491" title="All 2 branches covered.">        for (int i = 0; i &lt; out.length; ++i) {</span>
-<span class="fc" id="L492">            out[i] *= norm;</span>
+<span class="fc" id="L492">            out[i] *= (int)Math.round(norm);</span>
 <span class="pc bnc" id="L493" title="All 2 branches missed.">            assert(out[i] &gt;= 0);</span>
         }
 
@@ -583,4 +583,4 @@ public class HGS {
     }
 
 }
-</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>
