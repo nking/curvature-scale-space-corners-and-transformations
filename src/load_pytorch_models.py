@@ -100,7 +100,7 @@ def save(model, params, model_dir, model_name):
         json.dump(params, f, indent=4)
     torch.save(model.state_dict(), get_saved_model_filepath(model_dir, model_name))
 
-def save_quantized(model, params, model_dir, model_name):
+def _save_quantized(model, params, model_dir, model_name):
     #params = convert_float32_to_float64(params)
     params = params.copy()
     if 'optimizer' in params:
@@ -137,7 +137,7 @@ def load_model(model_dir, model_name, device):
     
     return model, params
         
-def load_quantized_model(model_dir, model_name):
+def _load_quantized_model(model_dir, model_name):
     with open(get_quantized_json_param_filepath(model_dir, model_name), 'r') as f:
         params = json.load(f)
     num_classes_custom = params['num_classes_custom']
