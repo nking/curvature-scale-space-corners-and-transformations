@@ -35,25 +35,25 @@
     <section class="main-content">
       <p>This holds a few summary notes and snapshots.</p>
 
-<p>Machine Learning:</p>
+<p>Object Detection and Machine Learning Notebooks:</p>
         <ul>
             <li> Object detection with the
-                <a href="https://paperswithcode.com/method/ssd">(SSD)</a>
-                single-stage object detection algorithm.
-                Using transfer-learning from a pre-trained SSD model and re-fitting the
-                classifier using android lawn statue images
-                while retaining (not re-training) the detection head weights
-                learned from the COCO dataset, the android statues are identified in
-                video frames from a YouTube video.
+                <a href="https://docs.pytorch.org/vision/main/models/faster_rcnn.html">(Faster RCNN)</a>
+                two-stage object detection algorithm. The backbone is a ResNet 50 CNN w/ 
+                a Feature Pyramid Network pretrained on the COCO dataset.
+                A transfer-learning technique called fine-tuning is used to replace the last layer,
+                that is, the classification layer to adapt the model to the small, specific dataset
+                of android statue images.  The fine-tuned model is then used on unseen video frames
+                from a YouTube video.
                 <table>
                     <tr>
                         <td>
-                            <a href="https://raw.githubusercontent.com/nking/curvature-scale-space-corners-and-transformations/master/src/duckies_and_statues,_interactive_eager_few_shot_obj_det_training_colab.ipynb">The colab notebook.</a>
+                            <a href="https://raw.githubusercontent.com/nking/curvature-scale-space-corners-and-transformations/master/src/FineTunePretrainedObjectDetector2.ipynb">The jupyter notebook.</a>
                         </td>
                         <td>
-                            <a href="images/android_statues_obj_det_ssd_07.png">
+                            <a href="images/android_statues_obj_det_fasterrcnn_01.png">
                                 <img alt="snapshots of object detection with android lawn statues"
-                                     src="images/android_statues_obj_det_ssd_07.png"
+                                     src="images/android_statues_obj_det_fasterrcnn_01.png"
                                      width="30" height="30"/>
                             </a>
                         </td>
