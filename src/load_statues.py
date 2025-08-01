@@ -43,12 +43,12 @@ class_mapping_1 = {1:'cupcake', 2:'euclair', 3:'icecream', 4:'gingerbread_man',
 #"xywh"	Boxes defined by (x_center, y_center, width, height) — center + dimensions
 #"center_xywh"	Used internally for encoding offsets during training
 
-def make_bb(ytop, xleft, ybottom, xright, w, h) :
+def make_bb(y_min, x_min, y_max, x_max, w, h) :
   '''
   for pytorch
-  "xyxy"	Boxes defined by (y_min, x_min, y_max, x_max)
+  "xyxy"	Boxes defined by (x_min, y_min, x_max, y_max)
   '''
-  return [xleft, ytop, xright, ybottom]
+  return [x_min, y_min, x_max, y_max]
 
 def load_image_into_numpy_array(path : str):
   """Load an image from path into a numpy array.
