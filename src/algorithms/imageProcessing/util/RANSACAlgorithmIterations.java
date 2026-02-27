@@ -7,46 +7,6 @@ import algorithms.misc.MiscMath;
  * should be used to ensure with 99% certainty or other that a set of points is 
  * findable as a subset of n matchable points.
 <pre>
-nPoints is the number of points that contain true and false matches.
-        
-nTruePoints is the number of true matches within nPoints.
-        
-k is the number of points to draw at one time for a RANSAC sample test iteration.
-
-nCombinations is the number of combinations of samples of size k is nPoints!/(k!*(nPoints-k)!).
-
-For a sample, the first draw of a matching point out of nPoints has 
-possibility of being all 'true' points = (nTruePoints/nPoints).
-For the same sample, the second draw in the sample has the possibility 
-of being all 'true' points = (nTruePoints - 1)/(nPoints - 1).
-etc.   The possibility that the sample is composed of all 'true' points is
-then (nTruePoints/nPoints) * ((nTruePoints - 1)/(nPoints - 1)) *
-         ((nTruePoints - 2)/(nPoints - 2)) ... ((nTruePoints - k - 1)/(nPoints - k - 1))
-
-The total number of 'true' samples within all possible combinations of size k 
-from nPoints is then
-nCombinations * ((nTruePoints/nPoints)*(nTruePoints - 1)/(nPoints - 1)...((nTruePoints - k-1)/(nPoints - k-1))
-(this is verified in algorithms.stats.ransac.CountingTest)
-
-The fraction of all 'true' samples, 
-that is the number of samples composed of all 'true' points divided by number of 
-all possible samples,
-is then just the possibility that a sample is all 'true', that is
-     ((nTruePoints/nPoints)*(nTruePoints - 1)/(nPoints - 1)...((nTruePoints - k-1)/(nPoints - k-1))
-
-let pSample be the fraction just calculated.
-
-knowing pSample for a sample now, need to calculate the number of samples that
-need to be drawn in order to have a high confidence that at least one
-sample was a true sample.
-
-Naively, that would be the inverse of pSample.
-
-Now that have the statistics in a form of 2 states, can use binomial statistics,
-the binomial theorem, to determine the number of fails before the first
-success (sample is 'true').   This is similar to a Geometric distribution when
-simplified below.
-          
     m = the number of success trials which is the minimum here, '1'
     nIter is the number of iterations needed 
     
@@ -91,12 +51,12 @@ public class RANSACAlgorithmIterations {
     the probability that all the data points selected in one subsample are non-outliers.
     
     let m = sub-sample size (e.g. 7 for Fundamental Matrix correspondence)
-    let w = percent outliers
+    let p_err = percent outliers = error rate in the ensemble of all data points
     let N = number of subsamples to achieve gamma probability
     
-    gamma = 1 - ( (1 - w^m)^N)
+    gamma = 1 - ( (1 - p_err^m)^N)
 
-    z = 1. - math.pow(1. - w, m)
+    z = 1. - math.pow(1. - p_err, m)
     
     N = Math.log(1. - 0.95)/Math.log(z)
     
@@ -128,15 +88,29 @@ public class RANSACAlgorithmIterations {
     for probability gamma in excess of 95%:
 
     let m = sub-sample size (e.g. 7 for Fundamental Matrix correspondence)
-    let w = percent outliers
-    let N = number of subsamples to achieve gamma probability
+    let p_in = inlier ratio.
+      hence p_out = 1 - p_in.
+    let p be the desired success probability
+    let N = number of subsamples to achieve p probability
 
-    gamma = 1 - ( (1 - w^m)^N)
+    probability that all points in a single sample are inliers
+    is (p_in)^m which is (1 - p_out)^m)
 
-    z = 1. - math.pow(1. - w, m)
+    we have (1 - p_out)^m) for the probability of all inliers in a sample,
+    so then P(not all inliers) = 1 - (1 - p_out)^m).
 
-    N = Math.log(1. - 0.95)/Math.log(z)
-    
+    then the probability of N samples of "not all inlier" samples
+    is P(all N samples have at least one outlier) = (1 - (1 - p_out)^m)^N.
+
+    The complement is that at least one sample is all inliers
+    p = P(in N samples, at least 1 is all inliers) = 1 - ((1 - (1 - p_out)^m)^N)
+
+    p = 1 - ((1 - (1 - p_out)^m)^N)
+    1 - p = (1 - (1 - p_out)^m)^N
+    log(1 - p) = N * log(1 - (1 - p_out)^m))
+    N = log(1-p) / log(1 - (1 - p_out)^m))
+
+ 
     table of N's for m=7, 8 and eps from 5%to 50%:
     
     m |  5%  10%  20%  25%  30%  40%  50%
@@ -183,12 +157,28 @@ public class RANSACAlgorithmIterations {
         }
 
         /*
-        1 - gamma = (1 - (1 - eps)^p)^m
-           let Z = (1 - (1 - eps)^p)
-           let g = 1 - gamma
-        g = Z^m
-        log(g) = m*log(Z);
-        m = log(g) / log(Z)
+        let m = sub-sample size (e.g. 7 for Fundamental Matrix correspondence)
+        let p_in = inlier ratio.
+          hence p_out = 1 - p_in.
+        let p be the desired success probability
+        let N = number of subsamples to achieve p probability
+
+        probability that all points in a single sample are inliers
+        is (p_in)^m which is (1 - p_out)^m)
+
+        we have (1 - p_out)^m) for the probability of all inliers in a sample,
+        so then P(not all inliers) = 1 - (1 - p_out)^m).
+
+        then the probability of N samples of "not all inlier" samples
+        is P(all N samples have at least one outlier) = (1 - (1 - p_out)^m)^N.
+
+        The complement is that at least one sample is all inliers
+        p = P(in N samples, at least 1 is all inliers) = 1 - ((1 - (1 - p_out)^m)^N)
+
+        p = 1 - ((1 - (1 - p_out)^m)^N)
+        1 - p = (1 - (1 - p_out)^m)^N
+        log(1 - p) = N * log(1 - (1 - p_out)^m))
+        N = log(1-p) / log(1 - (1 - p_out)^m))
         */
         int m = subSampleSize;
         double w = (double)outlierPercent/100.;

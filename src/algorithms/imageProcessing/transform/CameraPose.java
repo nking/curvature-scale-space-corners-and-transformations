@@ -338,6 +338,16 @@ public class CameraPose {
 
         int i, j;
 
+        /* using DLT to reformat into factors:
+         x_i = P*X_i where X_i is in homogeneous cords
+           and so x_i = P_1*x_1 / (P_3*x_3)
+           and y_i = P_2*x_2 / (P_3*x_3)
+           where P_1, P_2, and P_3 are the rows of P
+
+         DLT uses x_i cross (P*X_i) = 0
+         factor out the components into factors of x_1 in column 0 and y_2 in column 1
+        */
+
         // 2*n X 12
         double xi, yi, Xi, Yi, Zi;
         double[][] ell = new double[2*n][12];
