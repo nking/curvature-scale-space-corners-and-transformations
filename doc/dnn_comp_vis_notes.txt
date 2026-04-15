@@ -1,0 +1,74 @@
+hard coding HOG in keras model:
+
+- make the image gradient with a conv2d layer
+  and sobel kernels: 
+     g_x = [[-1, 0, 1],[-2, 0, 2], [-1, 0, 1]
+     g_y = [[-1, -2, -1], [0,0,0], [1.2.1]]
+  this can be done to make intensity gradients
+  and/or cieluv-space color gradients
+
+- then a lambda layer to create theta and magnitude
+  polar maooings:
+
+  M = sqrt( g_x^2 + g_y^2)
+  theta = arctan(g_y/g_x)
+
+  output is 1 channel for each of M, T
+
+- to simulate the blocks of histograms of theta
+  where the histogram bins are 0 to 180 degrees
+  and for each pixel in the 8x8 block,
+  the histogram bin for the pixel theta is
+  incremented by the pixel magnitude.
+  - binning:
+    e.g. 9 channels:
+      bin_centers = np.linspace(0, 180, 9, endpoint=False)
+      # to populate the filters (i.e. channels) 
+      # using magnitude and theta
+      # we create a layer that is the response for each bin:
+      def get_hog_bin_layer(n_bins:int=9):
+          bin_width = 180./n_bins
+          def binning_logic(inputs):
+             M = inputs[0]
+             T = inputs[1]
+             bin_outputs = []
+             for center in bin_centers:
+                 dist = tf.abs(T - center)
+                 dist = tf.minimum(dist, 180-dist)
+                 strength = tf.maximum(0., 1-(dist./bin_width))
+                 bin_outputs.append(M * strength)
+             return tf.concat(bin_outputs, axis=-1)
+          return tf.keras.layers.Lambda(binning_logic)
+    output is high dim volume like n_img_pix x block_size x 9 channels
+
+  - average pooling 2D:
+    pool size 8x8, stride 8x8
+    sums up the gradient magnitudes  within the block
+    for that angle.
+    result is a grid of histograms
+    
+  - then block normalization:
+    DepthwiseConv2D layer followed by a Lambda normalization
+    v = v /sqrt(||v||^2 + eps)
+
+  result is a flattened feature vector like a HOG's vector
+
+Pros are the rotation invariance.  might be useful in
+     low powered devices.
+cons are that it's not skew invariant and doesn't handle
+     other projections aside from rotation in plane,
+     and doesn't use fine details of phase.
+ 
+-------
+but in 2026, one would code for Group Equivariance instead
+
+Group Equivariant convolutions:
+   - layer 1:
+     detects an edge at 0, 90, 180, 270 simultaneously
+     def rotate_kernel(kernel):
+         k90 = tf.image.rot90(kernel, k=1) 
+         k180 = tf.image.rot90(kernel, k=2) 
+         k270 = tf.image.rot90(kernel, k=3) 
+         return tf.stack([kernel, k90, k180, k270], axis=-1) 
+     follow up on rest of this...
+
